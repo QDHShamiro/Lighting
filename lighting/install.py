@@ -1,9 +1,12 @@
 import base64
 import hashlib
 import json
+import os
+import re
 import shutil
 import sys
 import winreg
+from pathlib import Path
 
 from lighting import defaults as D
 
@@ -117,6 +120,95 @@ def unregister():
             pass
 
 
+def copy_exe():
+    src = D.ROOT / "bin" / "lighting.exe"
+    dst = D.BIN / "lighting.exe"
+    if not src.exists() or src.resolve() == dst.resolve():
+        return
+    data = src.read_bytes()
+    try:
+        if dst.read_bytes() == data:
+            return
+    except OSError:
+        pass
+    D.BIN.mkdir(parents=True, exist_ok=True)
+    old = dst.with_suffix(".old")
+    for step in (old.unlink, lambda: dst.replace(old)):
+        try:
+            step()
+        except OSError:
+            pass
+    dst.write_bytes(data)
+
+
+def add_to_path():
+    import ctypes
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_READ | winreg.KEY_WRITE) as k:
+        try:
+            cur, kind = winreg.QueryValueEx(k, "Path")
+        except OSError:
+            cur, kind = "", winreg.REG_EXPAND_SZ
+        parts = [p for p in cur.split(";") if p]
+        if any(p.rstrip("\\").lower() == str(D.BIN).lower() for p in parts):
+            return False
+        winreg.SetValueEx(k, "Path", 0, kind, ";".join(parts + [str(D.BIN)]))
+    ctypes.windll.user32.SendMessageTimeoutW(0xFFFF, 0x1A, 0, "Environment", 2, 2000, None)
+    return True
+
+
+def mcp_entry():
+    return {"command": str(D.BIN / "lighting.exe"), "args": ["mcp"]}
+
+
+def merge_json(path, key, entry):
+    try:
+        data = json.loads(path.read_text("utf-8"))
+    except FileNotFoundError:
+        data = {}
+    except ValueError:
+        raise SystemExit("%s is not valid JSON, fix it or add the server by hand" % path)
+    data.setdefault(key, {})["lighting"] = entry
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2), "utf-8")
+
+
+def merge_toml(path):
+    exe = str(D.BIN / "lighting.exe").replace("\\", "\\\\")
+    block = '[mcp_servers.lighting]\ncommand = "%s"\nargs = ["mcp"]\n' % exe
+    try:
+        text = path.read_text("utf-8")
+    except FileNotFoundError:
+        text = ""
+    text = re.sub(r"(?ms)^\[mcp_servers\.lighting\]\n.*?(?=^\[|\Z)", "", text).rstrip()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text((text + "\n\n" if text else "") + block, "utf-8")
+
+
+def agents():
+    home = Path.home()
+    appdata = Path(os.environ.get("APPDATA") or home / "AppData" / "Roaming")
+    return {
+        "claude-desktop": lambda: merge_json(appdata / "Claude" / "claude_desktop_config.json", "mcpServers", mcp_entry()),
+        "codex": lambda: merge_toml(home / ".codex" / "config.toml"),
+        "cursor": lambda: merge_json(home / ".cursor" / "mcp.json", "mcpServers", mcp_entry()),
+        "gemini": lambda: merge_json(home / ".gemini" / "settings.json", "mcpServers", mcp_entry()),
+        "windsurf": lambda: merge_json(home / ".codeium" / "windsurf" / "mcp_config.json", "mcpServers", mcp_entry()),
+        "vscode": lambda: merge_json(appdata / "Code" / "User" / "mcp.json", "servers", dict(mcp_entry(), type="stdio")),
+    }
+
+
+def install_agent(name):
+    table = agents()
+    if name not in table:
+        raise SystemExit("usage: lighting install <%s>" % "|".join(table))
+    from lighting import boot
+    boot.ensure_venv()
+    refresh()
+    table[name]()
+    print("lighting MCP server added to %s, restart it to load the tool" % name)
+    return 0
+
+
 def refresh():
     D.HOME.mkdir(parents=True, exist_ok=True)
     D.OUT.mkdir(parents=True, exist_ok=True)
@@ -125,6 +217,10 @@ def refresh():
     ext_id = copy_extension() or extension_id(source_manifest())
     write_host(ext_id)
     register()
+    try:
+        copy_exe()
+    except OSError:
+        pass
     return ext_id
 
 
@@ -162,6 +258,11 @@ def setup(manual=False, browser=None):
     print("lighting %s set up" % D.version())
     print("native host registered for: %s" % ", ".join(register()))
     print("browsers found: %s" % (", ".join(browsers) or "none"))
+    try:
+        if add_to_path():
+            print("added %s to your PATH (new terminals and other AIs find `lighting`)" % D.BIN)
+    except OSError as e:
+        print("could not add %s to PATH: %s" % (D.BIN, e))
     connected = connected_lines()
     if not connected and not manual and browsers:
         print("loading the extension by itself (Windows UI Automation, takes ~10 s) ...", flush=True)
@@ -188,7 +289,7 @@ def uninstall(purge):
     boot.stop_daemon()
     unregister()
     if purge:
-        for p in (D.OUT, D.EXT):
+        for p in (D.OUT, D.EXT, D.BIN):
             shutil.rmtree(p, ignore_errors=True)
         for p in (D.HOST_BAT, D.HOST_PY, D.HOST_JSON, D.KEY, D.LOG, D.CONFIG, D.PIDFILE, D.STAMP, D.HOME / "client-root"):
             try:
@@ -205,6 +306,8 @@ def main(argv):
     if argv[0] == "uninstall":
         return uninstall("--purge" in argv)
     try:
+        if argv[0] == "install":
+            return install_agent(argv[1] if len(argv) > 1 else "")
         pick = next((a for a in argv[1:] if a in D.BROWSER_EXES), None)
         return setup(manual="--manual" in argv, browser=pick)
     except SystemExit as e:

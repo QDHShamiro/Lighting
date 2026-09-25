@@ -12,7 +12,7 @@ const DETACHED: u32 = 0x0000_0008 | 0x0000_0200 | 0x0800_0000;
 const BREAKAWAY: u32 = 0x0100_0000;
 const ERROR_PIPE_BUSY: i32 = 231;
 const LOCAL: &[&str] = &[
-    "", "help", "-h", "--help", "version", "--version", "daemon", "host", "mcp", "setup", "uninstall",
+    "", "help", "-h", "--help", "version", "--version", "daemon", "host", "mcp", "setup", "uninstall", "install",
 ];
 
 fn home() -> PathBuf {
@@ -22,14 +22,23 @@ fn home() -> PathBuf {
     }
 }
 
-fn root() -> PathBuf {
+fn root(home: &Path) -> PathBuf {
     let exe = env::current_exe().unwrap_or_default();
     let text = exe.display().to_string();
     let exe = PathBuf::from(text.strip_prefix(r"\\?\").unwrap_or(&text));
-    exe.parent()
+    let own = exe
+        .parent()
         .and_then(Path::parent)
         .map(Path::to_path_buf)
-        .unwrap_or_else(|| PathBuf::from("."))
+        .unwrap_or_else(|| PathBuf::from("."));
+    if own.join("lighting").join("__init__.py").exists() {
+        return own;
+    }
+    fs::read_to_string(home.join("client-root"))
+        .map(|s| PathBuf::from(s.trim()))
+        .ok()
+        .filter(|p| p.join("lighting").join("__init__.py").exists())
+        .unwrap_or(own)
 }
 
 fn norm(s: &str) -> String {
@@ -209,7 +218,7 @@ fn main() {
         None => raw,
     };
     let home = home();
-    let root = root();
+    let root = root(&home);
     let first = args.first().map(String::as_str).unwrap_or("");
     if LOCAL.contains(&first) || !ready(&home, &root) {
         python(&home, &root, &args);
