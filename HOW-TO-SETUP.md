@@ -14,11 +14,14 @@ bin/lighting.exe                               Rust client (client/), on Claude'
 skills/lighting/                               SKILL.md + references/, loaded on description match
 commands/                                      /lighting:setup, :status, :bench
 lighting/                                      Python package: daemon, CLI fallback, host, desktop, OCR, MCP, selftest
+lighting/routines.py                           task trace, repetition learning (alignment), run, repair, stats
+lighting/record.py, deskrec.py                 record start/stop; low-level mouse/keyboard hooks + own UIA worker
 extension/                                     MV3 extension (ES modules) + page scripts + vendored Defuddle
-tests/fixture.html                             selftest page (traps: hidden injection text, modal, confirm(), cookie banner, iframe, long lists)
+extension/page-rec.js                          in-page recorder (injected while recording, REC badge)
+tests/fixture.html                             selftest page (traps: hidden injection text, modal, confirm(), cookie banner, iframe, long lists, nameless button, video)
 ```
 
-Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, extension copy, host.bat + host.py, host json, client-root, log, config). The plugin root changes on every update, so nothing is written there; `client-root` records the active one.
+Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, extension copy, host.bat + host.py, host json, client-root, log, config, bin/, routines/, episodes.jsonl, apps.json, bench-real.json). The plugin root changes on every update, so nothing is written there; `client-root` records the active one.
 
 ## 2. Ground truth (verified on Windows 11, Brave 154, Claude Code plugin docs 2026-09)
 
@@ -67,6 +70,17 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - A new page on the same origin whose first 6+ lines match the last page (role + name, href and `*` ignored) prints them as `e1-e19 same header as the last page`. Only on navigation (`open`, clicks that navigate, plain `snap` on a new URL); `--all`, `-s`, `-f`, `--force`, `--diff` always print everything. GitHub issues -> pulls: ~505 -> ~433 tokens.
 - A version bump makes the daemon reload the extension on the next call; the first selftest after a bump can fail one check with `browser disconnected`. Run it again.
 
+- Filters rank per term: whole word > word start > substring, and only each term's best tier is shown (`-f sos` drops "Sosa La M" when "SOS" exists). Same code for web (`page.js`), desktop snapshots, `windows -f`, OCR `read -f` (`common.tiers` / `best_only`) and desktop `click "text"`, where equal names prefer button > link > menuitem > ... > dataitem (Spotify rows have a dataitem and a button with the same name; the dataitem only selects).
+- Stale guard: the background keeps the last URL (origin + path + query) of every tab after each command. A text-targeted click/type/fill/select/check/hover on a tab whose URL changed in between (user navigated, autoplay, pushState) is refused once with the new URL. Ref targets are not affected (refs die with the page anyway).
+- `<video>`/`<audio controls>` get a line (`e40 video 0:02/0:15 playing muted`). TikTok's playing video has `opacity: 0` and sits under an overlay, so media skip the opacity, aria-hidden and cover checks.
+- Nameless controls print a hint from `data-e2e`/`data-testid`/`data-test`/`data-qa`/`data-cy`/`id`/`name` (`button #feed-follow`); `click "#feed-follow"` resolves it. Generic or random values (`tux-web-icon-button`, 4+ digits, hashes) are skipped.
+- `launch` resolves names with `Get-StartApps` (Store apps included, ~1.5 s, cached in `apps.json` for a day) and starts `shell:AppsFolder\<AppID>`. The window is the new foreground/new window, stable for 0.6 s; single-instance apps that were already open are found by exe/title after 0.5 s. German Windows calls Notepad "Editor".
+- Desktop `click "text"`/`type "Field"` re-snapshot when the last snapshot is older than 1.5 s or from another window: UIA elements get reused with new names (Spotify search results), so old refs pointed at off-screen rows.
+- Routines: `commands.run_one` calls `routines.observe` after every non-system command. Actions become stable steps (`ctx.last_target` holds the resolved name/role/hint of e-/d-refs, the extension returns `target` + `where` with every tab command). Episodes end after 45 s idle or when an entry command (`open`/`launch`/`focus`) switches site after 2+ actions, or at `stop`. Learning = Smith-Waterman local alignment of the new episode against the last 150 (step similarity = token LCS ratio, gaps allowed), then a second pass after substituting the slot values found in the first. Differing token runs (punctuation glue merged) become params named after the fill/type label, the key before `:`/`=`, else item/page/app/text.
+- `run` retries transient errors (nothing matches, is gone, page changed, ...) for up to 6 s per step, adds `--first` on "matches several", skips optional steps, stops before `--yes` steps, verifies the end state (params in title/URL, else same URL prefix / same exe). Unverified = failed. A run that fails and is finished by hand becomes the next version at episode end (`repair`). Selftest and bench set `ctx.no_learn`.
+- Recorder: web events come from `page-rec.js` in the isolated world (trusted events only; Lighting's own CDP input counts as trusted, its `selectOpt`/`setValue` synthetic events do not). Desktop: `WH_MOUSE_LL` + `WH_KEYBOARD_LL` on their own thread with a message loop; the callbacks only queue, a second thread with its **own** COM apartment and `IUIAutomation` resolves `ElementFromPoint`/`GetFocusedElement` (UIA objects from the command thread cannot be used there). Injected input is ignored unless `--injected` (selftest). Keys become text via `ToUnicodeEx` with flag 4 (keeps dead-key state), AltGr = ctrl+alt + printable char.
+- Writing other programs' config files: keep their line endings (`eol_of`). Python's `write_text` on Windows turned the LF `~/.codex/config.toml` into CRLF.
+
 ## 3. Build order when changing things
 
 1. Python: edit `lighting/*.py`, `py_compile`, then `lighting stop` (next call starts the new daemon).
@@ -81,10 +95,12 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-lighting selftest              # must print 61/61 passed
+lighting selftest              # must print 82/82 passed
 lighting bench
+lighting bench --real          # compare tokens with the last run
 ```
 Then one real page by hand (`open`, `snap`, `click`, `text`) and one real app (`windows`, `snap w<N>`, `click d<N>`).
+For routines: do one task twice with different values, `lighting routine learn`, then `lighting run <name> param=...`.
 
 ## 5. Mistakes already made (do not repeat)
 
@@ -101,6 +117,9 @@ Then one real page by hand (`open`, `snap`, `click`, `text`) and one real app (`
 - **The selftest reused the working tab** (`open` without `--new`) and closed it at the end. It now opens its own tabs, and a decoy tab proves that `close` returns to the previous tab instead of the first tab of the group (that bug made a test click land on GitHub).
 - **Benchmarks on the small test page hid the big-page costs.** Measure on a real heavy page too (a GitHub compare view with a large diff).
 - **A Python heredoc turned `\n` into a real line break again** (selftest.py). Anything with backslashes goes through the Edit tool.
+- **And again in 0.4.0** (`\r\n` in install.py, a `\\[` regex in page.js). Heredoc replacements with backslashes either break the file or silently match nothing. Edit tool, or `chr(13)`/`chr(10)` in generated code.
+- **The first routine learner treated flags as data**: `open x -n` vs `open y` split "Context-Engine" into two parameters. Slots are computed from arguments only; flags only affect similarity.
+- **`routine learn` "worked" while nothing was verified**: a run that clicked the wrong "Issues" link reported ok. Verification failures now fail the run and count in the stats.
 - **The `text` selftest only checked the page title**, which the plain-text fallback also contains, so the broken Defuddle bundle went unnoticed. It now requires a Markdown table from the fixture.
 - **Only the fixture was tested.** A sweep over real sites (GitHub, YouTube, Wikipedia, SpigotMC, Modrinth, Hugging Face, PaperMC docs) found six output and timing problems in one hour. Repeat that sweep after bigger changes.
 

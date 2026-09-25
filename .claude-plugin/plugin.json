@@ -1,7 +1,7 @@
 {
   "name": "lighting",
-  "version": "0.3.2",
-  "description": "Drive your real browser and the Windows desktop from Claude Code with compact text snapshots instead of screenshots: fewer tokens, faster steps.",
+  "version": "0.4.0",
+  "description": "Drive your real browser and the Windows desktop from Claude Code with compact text snapshots instead of screenshots, and replay learned tasks in one call.",
   "author": {
     "name": "QDHShamiro",
     "url": "https://github.com/QDHShamiro"

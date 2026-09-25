@@ -109,6 +109,10 @@ def call(ctx, cmd, args=None, timeout=D.CALL_TIMEOUT, want=None):
     ctx.target = ("web", host.brand)
     if not msg.get("ok"):
         raise Fail(str(msg.get("error") or "browser error"))
+    if msg.get("target"):
+        ctx.last_target = msg["target"]
+    if msg.get("where"):
+        ctx.where = dict(msg["where"], kind="web")
     return msg
 
 
@@ -117,12 +121,17 @@ def out(ctx, cmd, args=None, timeout=D.CALL_TIMEOUT, name=None, lines=D.SNAP_LIN
     return cap(msg.get("out", ""), name or cmd, lines=lines)
 
 
-def target_args(pos):
+def target_args(pos, flags=None):
     if not pos:
         raise Fail("need a ref (e12) or \"text\"")
     if REF_RE.match(pos[0]):
         return {"ref": pos[0]}, pos[1:]
-    return {"text": pos[0]}, pos[1:]
+    args = {"text": pos[0]}
+    if flags and flags.get("first"):
+        args["first"] = True
+    if flags and flags.get("role"):
+        args["role"] = flags["role"]
+    return args, pos[1:]
 
 
 def normalize_url(u):
@@ -175,7 +184,7 @@ def cmd_text(ctx, pos, flags):
 
 
 def cmd_click(ctx, pos, flags):
-    args, _ = target_args(pos)
+    args, _ = target_args(pos, flags)
     args.update({"yes": bool(flags.get("yes")), "force": bool(flags.get("force")), "trace": bool(flags.get("trace"))})
     if flags.get("right"):
         args["button"] = "right"
@@ -185,7 +194,7 @@ def cmd_click(ctx, pos, flags):
 
 
 def cmd_type(ctx, pos, flags):
-    args, rest = target_args(pos)
+    args, rest = target_args(pos, flags)
     if ctx.secret is not None:
         args.update({"value": ctx.secret, "secret": True})
     else:
@@ -220,7 +229,7 @@ def cmd_press(ctx, pos, flags):
 
 
 def cmd_select(ctx, pos, flags):
-    args, rest = target_args(pos)
+    args, rest = target_args(pos, flags)
     if not rest:
         raise Fail("select needs an option", 'lighting select e7 "Germany"')
     args["option"] = " ".join(rest)
@@ -228,13 +237,13 @@ def cmd_select(ctx, pos, flags):
 
 
 def cmd_check(ctx, pos, flags):
-    args, rest = target_args(pos)
+    args, rest = target_args(pos, flags)
     args["on"] = not (rest and rest[0].lower() in ("off", "false", "0", "no", "uncheck"))
     return out(ctx, "check", args, D.LOAD_TIMEOUT)
 
 
 def cmd_hover(ctx, pos, flags):
-    args, _ = target_args(pos)
+    args, _ = target_args(pos, flags)
     return out(ctx, "hover", args, D.LOAD_TIMEOUT)
 
 

@@ -5,7 +5,7 @@ import time
 from lighting import defaults as D
 from lighting import pointer
 from lighting import win
-from lighting.common import Fail, cap, hit, ref_kind, terms
+from lighting.common import Fail, best_only, cap, ref_kind, terms, tiers
 
 BROWSER_EXES = {"brave.exe", "chrome.exe", "msedge.exe", "opera.exe", "vivaldi.exe"}
 CHROMIUM_CLASS = "Chrome_WidgetWin_1"
@@ -19,6 +19,7 @@ class AppState:
         self.seq = 0
         self.ocr = {}
         self.hwnd = None
+        self.snap_t = 0.0
 
 
 def state(ctx):
@@ -129,7 +130,7 @@ def snapshot(ctx, hwnd, flags):
         time.sleep(0.4)
         root, items = uia.collect(hwnd, with_text=bool(flags.get("text")), skip_rect=skip)
     filt = terms(flags.get("f"))
-    lines, refs, row = [], {}, None
+    lines, refs, row, ft = [], {}, None, {}
     for el in items:
         role, name, extra = uia.describe(el)
         name, extra = BIDI.sub("", name), BIDI.sub("", extra)
@@ -152,8 +153,10 @@ def snapshot(ctx, hwnd, flags):
                 lines[row[0]] += " | " + val
             continue
         row = None
-        if filt and not hit(filt, name, role, extra):
+        t = tiers(filt, name, role, extra) if filt else None
+        if t is not None and not any(t):
             continue
+        ft[len(lines)] = t
         if role == "text":
             lines.append("  %s" % name)
             continue
@@ -162,6 +165,10 @@ def snapshot(ctx, hwnd, flags):
         if role in ("listitem", "dataitem"):
             row = (len(lines) - 1, uia.rect_of(el), name)
     st.refs = refs
+    st.snap_t = time.time()
+    st.snap_hwnd = hwnd
+    if filt:
+        lines = best_only([(ft.get(i), l) for i, l in enumerate(lines)])
     head = header(ctx, hwnd, " (%d controls%s)" % (len(refs), ", browser page hidden: use lighting snap for the page" if skip else ""))
     if not lines:
         lines.append("(no controls found: try lighting read %s for screen text)" % wref(ctx, hwnd))
@@ -171,7 +178,8 @@ def snapshot(ctx, hwnd, flags):
 def cmd_windows(ctx, pos, flags):
     lines = list_windows(ctx)
     if flags.get("f"):
-        lines = [l for l in lines if hit(terms(flags["f"]), l)]
+        filt = terms(flags["f"])
+        lines = best_only([(t, l) for t, l in ((tiers(filt, l), l) for l in lines) if any(t)])
     return cap("\n".join(lines) or "no windows", "windows", lines=80)
 
 
@@ -181,6 +189,132 @@ def cmd_focus(ctx, pos, flags):
     hwnd = target(ctx, pos)
     ok = pointer.front(hwnd)
     return ("ok " if ok else "err: Windows refused to switch, ") + header(ctx, hwnd)
+
+
+_apps = {"t": 0.0, "list": []}
+RUNNABLE = (".exe", ".bat", ".cmd", ".com", ".ps1", ".vbs", ".vbe", ".js", ".jse", ".wsf", ".msi", ".scr", ".lnk", ".url")
+
+
+def start_apps(fresh=False):
+    import json
+    cache = D.HOME / "apps.json"
+    if not fresh and not _apps["list"]:
+        try:
+            if time.time() - cache.stat().st_mtime < 86400:
+                _apps["list"] = [tuple(a) for a in json.loads(cache.read_text("utf-8"))]
+                _apps["t"] = cache.stat().st_mtime
+        except (OSError, ValueError):
+            pass
+    if fresh or not _apps["list"]:
+        import subprocess
+        script = ("[Console]::OutputEncoding=[Text.Encoding]::UTF8; "
+                  "Get-StartApps | Select-Object Name,AppID | ConvertTo-Json -Compress")
+        res = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+                             capture_output=True, timeout=30, creationflags=0x08000000)
+        try:
+            data = json.loads(res.stdout.decode("utf-8", "replace") or "[]")
+        except ValueError:
+            data = []
+        data = data if isinstance(data, list) else [data]
+        _apps["list"] = [(a.get("Name") or "", a.get("AppID") or "") for a in data if a.get("AppID")]
+        _apps["t"] = time.time()
+        try:
+            cache.write_text(json.dumps(_apps["list"]), "utf-8")
+        except OSError:
+            pass
+    return _apps["list"]
+
+
+def find_app(name):
+    n = name.lower()
+
+    def rank(entry):
+        t = entry[0].lower()
+        return 5 if t == n else tiers([n], t)[0] + (1 if t.startswith(n) else 0)
+
+    for fresh in (False, True):
+        if fresh and time.time() - _apps["t"] < 5:
+            break
+        best = max(((rank(a), -len(a[0]), a) for a in start_apps(fresh)), default=None)
+        if best and best[0] > 0:
+            return best[2]
+    return None
+
+
+def owner_of(wins, hint):
+    words = [w for w in re.split(r"[^a-z0-9]+", (hint or "").lower()) if len(w) > 2]
+    for w in sorted(wins, key=lambda x: not x["fg"]):
+        exe = (w["exe"] or "").lower().replace(".exe", "")
+        if any(word == exe or word in w["title"].lower() for word in words):
+            return w
+    return None
+
+
+def wait_window(before, fg0, ms, hint, running):
+    t0 = time.time()
+    deadline = t0 + ms / 1000.0
+    seen_at, pick = None, None
+    while time.time() < deadline:
+        wins = win.windows()
+        new = [w for w in wins if w["hwnd"] not in before]
+        fg = next((w for w in wins if w["fg"]), None)
+        cand = next((w for w in new if w["fg"]), None) or (new[-1] if new else None)
+        if not cand and fg and fg["hwnd"] != fg0:
+            cand = fg
+        if not cand and time.time() - t0 > (0.5 if running else 1.5):
+            cand = owner_of(wins, hint)
+        if cand:
+            if not pick or cand["hwnd"] != pick["hwnd"]:
+                pick, seen_at = cand, time.time()
+            elif time.time() - seen_at > 0.6:
+                return pick["hwnd"]
+        time.sleep(0.15)
+    return pick["hwnd"] if pick else None
+
+
+def cmd_launch(ctx, pos, flags):
+    if not pos:
+        raise Fail("launch needs an app name, URI or path", 'lighting launch spotify | launch "spotify:search:SOS"')
+    spec = " ".join(pos)
+    path = spec.strip('"')
+    uri = re.match(r"^[a-z][a-z0-9+.-]+:", spec, re.I) is not None
+    wins0 = win.windows()
+    before = {w["hwnd"] for w in wins0}
+    fg0 = win.foreground()
+    if os.path.exists(path):
+        if path.lower().endswith(RUNNABLE) and not flags.get("yes"):
+            raise Fail("%s runs a program" % os.path.basename(path), "lighting launch \"%s\" --yes (only if the user asked for it)" % path)
+        os.startfile(path)
+        what = hint = os.path.splitext(os.path.basename(path))[0]
+    elif uri:
+        if spec.lower().startswith("file:") and not flags.get("yes"):
+            raise Fail("file: URIs can run programs", "lighting launch <path> --yes")
+        os.startfile(spec)
+        what, hint = spec, spec.split(":", 1)[0]
+    else:
+        app = find_app(spec)
+        if not app:
+            raise Fail('no app named "%s" in the start menu' % spec, "lighting launch <name as in the start menu>, a URI or a path")
+        os.startfile("shell:AppsFolder\\" + app[1])
+        what = hint = app[0]
+    hwnd = wait_window(before, fg0, int(flags.get("timeout") or 10000), hint, owner_of(wins0, hint) is not None)
+    if not hwnd:
+        return "ok (started %s, no window yet) -> try: lighting windows" % what
+    st = state(ctx)
+    st.hwnd = hwnd
+    ctx.target = ("app", hwnd)
+    return "ok (%s) -> %s" % (what, header(ctx, hwnd))
+
+
+def cmd_close(ctx, pos, flags):
+    hwnd = find_window(ctx, pos[0])
+    head = header(ctx, hwnd)
+    win.close(hwnd)
+    for _ in range(20):
+        if not win.alive(hwnd) or not win.visible(hwnd):
+            return "closed " + head
+        time.sleep(0.1)
+    return "asked to close " + head + " (still open, it may show a save dialog) -> try: lighting windows"
 
 
 def cmd_snap(ctx, pos, flags):
@@ -229,6 +363,39 @@ def ocr_click(ctx, text_or_ref, flags):
     return 'ok (clicked "%s" at %d,%d via mouse, cursor restored)' % (t[:40], x, y)
 
 
+def by_text(ctx, hwnd, text, roles=None):
+    from lighting import uia
+    tl = text.lower()
+    st = state(ctx)
+    for attempt in range(2):
+        if attempt or not st.refs or time.time() - st.snap_t > 1.5 or getattr(st, "snap_hwnd", None) != hwnd:
+            snapshot(ctx, hwnd, {})
+        items = []
+        for ref, cand in state(ctx).refs.items():
+            role, name = uia.describe(cand)[:2]
+            if not roles or role in roles:
+                items.append((ref, cand, name.lower(), ROLE_RANK.get(role, 9)))
+        ranked = [(4 if x[2] == tl else tiers([tl], x[2])[0], x) for x in items]
+        top = max((r for r, _ in ranked), default=0)
+        if top:
+            best = min((x for r, x in ranked if r == top), key=lambda x: x[3])
+            return best[0], best[1]
+    return None, None
+
+
+ROLE_RANK = {"button": 0, "link": 1, "menuitem": 2, "splitbutton": 2, "checkbox": 3, "radio": 3, "tab": 3,
+             "edit": 4, "combobox": 4, "treeitem": 5, "listitem": 6, "dataitem": 6}
+
+
+def note_target(ctx, el):
+    from lighting import uia
+    try:
+        role, name = uia.describe(el)[:2]
+        ctx.last_target = {"name": name, "role": role}
+    except Exception:
+        ctx.last_target = None
+
+
 def cmd_click(ctx, pos, flags):
     from lighting import uia
     if not pos:
@@ -243,21 +410,14 @@ def cmd_click(ctx, pos, flags):
     if kind == "d":
         el = element(ctx, arg)
     else:
-        el = None
-        tl = arg.lower()
-        for attempt in range(2):
-            if attempt or not state(ctx).refs:
-                snapshot(ctx, hwnd, {})
-            items = [(ref, cand, uia.describe(cand)[1].lower()) for ref, cand in state(ctx).refs.items()]
-            hit = next((x for x in items if x[2] == tl), None) or next((x for x in items if tl in x[2]), None)
-            if hit:
-                arg, el = hit[0], hit[1]
-                break
+        ref, el = by_text(ctx, hwnd, arg)
         if el is None:
             res = ocr_click(ctx, pos[0], flags) if state(ctx).ocr else None
             if res:
                 return res
             raise Fail('nothing called "%s" in %s' % (pos[0], wref(ctx, hwnd)), "lighting snap, or lighting read for screen text")
+        arg = ref
+    note_target(ctx, el)
     x, y = center(el)
     if flags.get("mouse") or flags.get("right") or flags.get("double"):
         pointer.blitz_click(x, y, "right" if flags.get("right") else "left", 2 if flags.get("double") else 1, hwnd=hwnd)
@@ -271,11 +431,37 @@ def cmd_click(ctx, pos, flags):
     return "ok %s (mouse click, cursor restored)" % arg
 
 
+FIELD_ROLES = ("edit", "combobox", "document", "spinner")
+
+
+def focused_in(hwnd):
+    from lighting import uia
+    try:
+        el = uia.api()[0].GetFocusedElement()
+    except Exception:
+        el = None
+    if el is None or el.CurrentProcessId != win.pid_of(hwnd):
+        raise Fail("nothing focused in %s" % win.text_of(hwnd)[:40], "lighting click the field first, or type d<N> text")
+    return el
+
+
 def cmd_type(ctx, pos, flags):
     from lighting import uia
-    if not pos or ref_kind(pos[0]) != "d":
-        raise Fail("type needs a d-ref", 'lighting type d5 "hello"')
-    el = element(ctx, pos[0])
+    if not pos:
+        raise Fail("type needs a d-ref, a field name or focused", 'lighting type d5 "hello" | type "Search" hello')
+    if ref_kind(pos[0]) == "d":
+        el = element(ctx, pos[0])
+    elif pos[0].lower() == "focused":
+        el = focused_in(target(ctx))
+    else:
+        hwnd = target(ctx)
+        ref, el = by_text(ctx, hwnd, pos[0], FIELD_ROLES)
+        if el is None:
+            ref, el = by_text(ctx, hwnd, pos[0])
+        if el is None:
+            raise Fail('no field called "%s" in %s' % (pos[0], wref(ctx, hwnd)), "lighting snap")
+        pos = [ref] + list(pos[1:])
+    note_target(ctx, el)
     text = ctx.secret if ctx.secret is not None else " ".join(pos[1:])
     if flags.get("append"):
         cur = uia.get_value(el) or ""
@@ -392,9 +578,11 @@ def cmd_read(ctx, pos, flags):
         cx, cy = int(box[0] + x + w / 2), int(box[1] + y + h / 2)
         ref = "o%d" % i
         st.ocr[ref] = (text, cx, cy)
-        if filt and not hit(filt, text):
+        t = tiers(filt, text) if filt else None
+        if t is not None and not any(t):
             continue
-        out.append('%s "%s" @%d,%d' % (ref, text.replace('"', "'"), cx, cy))
+        out.append((t, '%s "%s" @%d,%d' % (ref, text.replace('"', "'"), cx, cy)))
+    out = best_only(out)
     head = header(ctx, hwnd, " (screen text, %d lines)" % len(lines)) if hwnd else "[screen] (screen text, %d lines)" % len(lines)
     return cap(head + "\n" + ("\n".join(out) or "(no text found)"), "read", lines=D.SNAP_LINES)
 

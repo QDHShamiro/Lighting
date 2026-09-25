@@ -12,7 +12,7 @@ DESCRIPTION = (
     "text | read https://docs.site/page | do \"click e3; type e4 hi; press Enter\" | windows | snap w2 | "
     "click d5 | read w2 (screen text via OCR) | shot e5. Output is compact text with refs "
     "(e = web element, d = app control, o = screen text, w = window, t = tab). Cheapest first: read/text/snap -f, "
-    "screenshots last. Run: help"
+    "screenshots last. Tasks done before: routines, then run <name> param=value (one call). Run: help"
 )
 TOOL = {
     "name": "lighting",

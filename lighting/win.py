@@ -199,6 +199,14 @@ def alive(hwnd):
     return bool(hwnd) and bool(user32.IsWindow(hwnd))
 
 
+def visible(hwnd):
+    return bool(user32.IsWindowVisible(hwnd))
+
+
+def close(hwnd):
+    user32.PostMessageW(hwnd, 0x0010, 0, 0)
+
+
 def foreground():
     return user32.GetForegroundWindow()
 
