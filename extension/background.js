@@ -108,10 +108,10 @@ async function snap(a, tab) {
   if (a.frame) {
     const fid = await frameId(tabId, a.frame);
     const res = await page(tabId, "snap", [Object.assign(opts, { force: true })], fid);
-    return formatSnap(tabId, res).replace(/^e(\d+) /gm, "f" + fid + ".e$1 ").replace(/^\[t\d+\]/, "[t" + T.sid(tabId) + " frame " + a.frame + "]");
+    return formatSnap(tabId, res, 0, true).replace(/^e(\d+) /gm, "f" + fid + ".e$1 ").replace(/^\[t\d+\]/, "[t" + T.sid(tabId) + " frame " + a.frame + "]");
   }
   const res = await page(tabId, "snap", [opts]);
-  return formatSnap(tabId, res);
+  return formatSnap(tabId, res, 0, opts.all || !!opts.scope || !!opts.filter || opts.force || opts.diff);
 }
 
 async function text(a, tab) {

@@ -63,6 +63,10 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - `lighting install <ai>` writes absolute paths to `~/.lighting/bin/lighting.exe`: plugin roots change on every update, that path does not. It is blocked through MCP because it prints to stdout.
 - Snapshot links: same-page links print `.`, links under the current path `./rest`, queries over 40 chars `?…`. On a GitHub repo page that cut the snapshot from 2,199 to 1,876 chars.
 
+- `snap -f` first filters the visible area; with no hit there it walks the whole page (unpruned) once. Word-start hits win over mid-word hits (`-f mit` lists "MIT license", not "commits").
+- A new page on the same origin whose first 6+ lines match the last page (role + name, href and `*` ignored) prints them as `e1-e19 same header as the last page`. Only on navigation (`open`, clicks that navigate, plain `snap` on a new URL); `--all`, `-s`, `-f`, `--force`, `--diff` always print everything. GitHub issues -> pulls: ~505 -> ~433 tokens.
+- A version bump makes the daemon reload the extension on the next call; the first selftest after a bump can fail one check with `browser disconnected`. Run it again.
+
 ## 3. Build order when changing things
 
 1. Python: edit `lighting/*.py`, `py_compile`, then `lighting stop` (next call starts the new daemon).

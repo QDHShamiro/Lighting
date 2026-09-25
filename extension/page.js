@@ -325,7 +325,9 @@
     const layers = overlays(cut);
     let hitMs = 0;
     const filter = opts.filter ? opts.filter.toLowerCase().split("|").map((s) => s.trim()).filter(Boolean) : null;
+    const starts = filter ? filter.map((f) => new RegExp("(^|[^\\p{L}\\p{N}])" + f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "u")) : null;
     const matches = (s) => filter.some((f) => s.includes(f));
+    const strength = (s) => (starts.some((r) => r.test(s)) ? 2 : matches(s) ? 1 : 0);
     const lines = [], seen = new Set();
     let below = 0, above = 0;
     const land = new Map();
@@ -367,8 +369,9 @@
       const role = roleOf(el);
       const name = nameOf(el);
       if (role === "clickable" && !name) continue;
-      if (filter && !(matches(name.toLowerCase()) || matches(role) || matches(String(el.value || "").toLowerCase()))) continue;
-      const entry = { el, role, name };
+      const fs = filter ? Math.max(strength(name.toLowerCase()), strength(role), strength(String(el.value || "").toLowerCase())) : 0;
+      if (filter && !fs) continue;
+      const entry = { el, role, name, fs };
       if (collapseOk) {
         const lm = el.closest(LANDMARK);
         if (lm) {
@@ -390,6 +393,7 @@
       }
       lines.push(entry);
     }
+    if (filter && lines.some((e) => e.fs === 2)) for (const e of lines) if (e.fs === 1) e.drop = true;
     const hrefOf = (e) => (e && !e.heading && e.role === "link" ? e.el.href || "" : null);
     for (let i = 0; i < lines.length; i++) {
       const e = lines[i], nx = lines[i + 1], pv = lines[i - 1];
@@ -451,15 +455,20 @@
     if (!opts.force && S.muts === S.lastMuts && location.href === S.lastHref && Math.round(scrollY) === S.lastY && sig === S.sig) {
       return { unchanged: true, title: document.title, url: location.href };
     }
-    const res = collectLines(opts);
+    let res = collectLines(opts);
     if (res.error) return res;
+    if (opts.filter && !opts.all && !res.lines.some((l) => /^e\d+ /.test(l))) {
+      res = collectLines(Object.assign({}, opts, { all: true }));
+      res.notes = res.notes.concat(res.lines.some((l) => /^e\d+ /.test(l)) ? "(no match in view, matches from the whole page; click scrolls to them)" : '(no match for "' + opts.filter + '" on the whole page)');
+      res.searched = true;
+    }
     const prev = S.last;
     S.last = res.ids;
     S.lastMuts = S.muts;
     S.lastHref = location.href;
     S.lastY = Math.round(scrollY);
     S.sig = sig;
-    const out = { title: document.title, url: location.href, lines: res.lines, notes: res.notes, below: res.below, above: res.above };
+    const out = { title: document.title, url: location.href, lines: res.lines, notes: res.notes, searched: res.searched, below: res.below, above: res.above };
     if (opts.diff) {
       out.lines = res.lines.filter((l) => /^e\d+ /.test(l) && !prev.has(l.split(" ")[0]));
       out.removed = [...prev].filter((r) => !res.ids.has(r)).length;

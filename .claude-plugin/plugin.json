@@ -1,6 +1,6 @@
 {
   "name": "lighting",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Drive your real browser and the Windows desktop from Claude Code with compact text snapshots instead of screenshots: fewer tokens, faster steps.",
   "author": {
     "name": "QDHShamiro",
