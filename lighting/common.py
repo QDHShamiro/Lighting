@@ -52,3 +52,11 @@ def cap(text, name, lines=None, chars=D.OUT_CHARS):
 
 def tokens(text):
     return len(text) // 4 + 1
+
+
+def terms(f):
+    return [t.strip() for t in (f or "").lower().split("|") if t.strip()]
+
+
+def hit(words, *texts):
+    return any(w in (x or "").lower() for w in words for x in texts)

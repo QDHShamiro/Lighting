@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lighting Fixture</title>
 <style>
 body { font-family: Segoe UI, sans-serif; margin: 20px; }
@@ -34,6 +35,7 @@ body { font-family: Segoe UI, sans-serif; margin: 20px; }
 <p id="result">Not submitted</p>
 <button id="del">Delete all</button>
 <button id="om">Open modal</button>
+<button id="tg" aria-pressed="false">Dark mode</button>
 <div id="modal" role="dialog" aria-modal="true" aria-label="Settings"><div class="box"><h2>Settings</h2><button id="cm">Close modal</button></div></div>
 <div class="card" id="card">Clickable card without role</div>
 <p><a href="/second" target="_blank">Open in new tab</a></p>
@@ -54,6 +56,7 @@ $("om").onclick = () => { $("modal").style.display = "block"; };
 $("cm").onclick = () => { $("modal").style.display = "none"; };
 $("card").onclick = () => { $("card").textContent = "Card clicked"; };
 $("rej").onclick = () => $("cookie-banner").remove();
+$("tg").onclick = () => $("tg").setAttribute("aria-pressed", String($("tg").getAttribute("aria-pressed") !== "true"));
 for (let i = 1; i <= 40; i++) {
   const li = document.createElement("li");
   li.innerHTML = '<a href="#item' + i + '">Item ' + i + "</a>";

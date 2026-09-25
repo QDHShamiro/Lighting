@@ -22,11 +22,9 @@
     return 0;
   }
 
-  function find(query, opts) {
-    const ql = clean(query).toLowerCase();
-    if (!ql) return { none: true };
+  function rank(cands, ql, opts) {
     const list = [];
-    for (const c of L.candidates()) {
+    for (const c of cands) {
       let s = score(c.name, ql);
       if (!s && c.el.value && typeof c.el.value === "string") s = score(clean(c.el.value), ql) / 2;
       if (!s) continue;
@@ -35,16 +33,27 @@
       if (opts && opts.role && c.role !== opts.role) continue;
       list.push({ c, s });
     }
-    list.sort((a, b) => b.s - a.s);
-    if (list.length) {
-      const top = list[0].s;
-      const same = list.filter((x) => x.s === top && x.c.name.toLowerCase() === list[0].c.name.toLowerCase());
-      if (same.length > 1 && !(opts && opts.first)) {
-        return { ambiguous: same.slice(0, 4).map((x) => L.line(x.c.el, x.c.role, x.c.name)) };
-      }
-      const b = list[0].c;
-      return { ref: ref(b.el), name: b.name, role: b.role };
+    return list.sort((a, b) => b.s - a.s);
+  }
+
+  function pick(list, opts) {
+    const top = list[0].s;
+    const same = list.filter((x) => x.s === top && x.c.name.toLowerCase() === list[0].c.name.toLowerCase());
+    if (same.length > 1 && !(opts && opts.first)) {
+      return { ambiguous: same.slice(0, 4).map((x) => L.line(x.c.el, x.c.role, x.c.name)) };
     }
+    const b = list[0].c;
+    return { ref: ref(b.el), name: b.name, role: b.role };
+  }
+
+  function find(query, opts) {
+    const ql = clean(query).toLowerCase();
+    if (!ql) return { none: true };
+    const needle = ql.replace(/\s+/g, "");
+    const quick = rank(L.candidates(null, needle, true), ql, opts);
+    if (quick.length && quick[0].s >= 110) return pick(quick, opts);
+    const list = rank(L.candidates(null, needle), ql, opts);
+    if (list.length) return pick(list, opts);
     const tw = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_TEXT);
     let t;
     while ((t = tw.nextNode())) {
@@ -193,11 +202,12 @@
     }
     md = md.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
     if (opts.filter) {
-      const fl = opts.filter.toLowerCase();
+      const fl = opts.filter.toLowerCase().split("|").map((s) => s.trim()).filter(Boolean);
       const parts = md.split(/\n\n+/);
       const keep = [];
       parts.forEach((p, i) => {
-        if (p.toLowerCase().includes(fl)) {
+        const low = p.toLowerCase();
+        if (fl.some((f) => low.includes(f))) {
           if (i > 0 && /^#/.test(parts[i - 1]) && !keep.includes(parts[i - 1])) keep.push(parts[i - 1]);
           keep.push(p);
         }
@@ -267,8 +277,34 @@
     });
   }
 
+  function marks(on) {
+    const old = document.querySelector("lt-pointer[data-marks]");
+    if (old) old.remove();
+    if (!on) return { n: 0 };
+    const host = document.createElement("lt-pointer");
+    host.setAttribute("data-marks", "");
+    host.style.cssText = "all:initial;position:fixed;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none";
+    const sh = host.attachShadow({ mode: "closed" });
+    let n = 0;
+    for (const r of S.last) {
+      const el = get(r);
+      if (!el) continue;
+      const b = el.getBoundingClientRect();
+      const off = L.frameOffset(el.ownerDocument);
+      const x = b.left + off.x, y = b.top + off.y;
+      if (b.width < 2 || b.height < 2 || y + b.height <= 0 || x + b.width <= 0 || y >= innerHeight || x >= innerWidth) continue;
+      const tag = document.createElement("span");
+      tag.textContent = r.replace(/^e/, "");
+      tag.style.cssText = "position:fixed;left:" + Math.max(0, Math.round(x) - 2) + "px;top:" + Math.max(0, Math.round(y) - 2) + "px;font:bold 11px/13px Arial,sans-serif;color:#fff;background:#ff8a00;border:1px solid #fff;border-radius:3px;padding:0 3px;box-shadow:0 1px 2px rgba(0,0,0,.6)";
+      sh.appendChild(tag);
+      n++;
+    }
+    document.documentElement.appendChild(host);
+    return { n };
+  }
+
   function pointer(x, y) {
-    let host = document.querySelector("lt-pointer");
+    let host = document.querySelector("lt-pointer:not([data-marks])");
     if (!host) {
       host = document.createElement("lt-pointer");
       const sh = host.attachShadow({ mode: "closed" });
@@ -335,6 +371,34 @@
     return { y: Math.round(scrollY), h: document.documentElement.scrollHeight, vh: innerHeight, vw: innerWidth };
   }
 
+  function roomIn(el, dy) {
+    if (el.scrollHeight <= el.clientHeight + 1) return 0;
+    return dy < 0 ? el.scrollTop : el.scrollHeight - el.clientHeight - el.scrollTop;
+  }
+
+  function scroller(x, y, dy) {
+    let el = document.elementFromPoint(x, y);
+    while (el && el !== document.body && el !== document.documentElement) {
+      if (/(auto|scroll|overlay)/.test(getComputedStyle(el).overflowY) && roomIn(el, dy) > 1) return el;
+      el = el.parentElement || (el.getRootNode() && el.getRootNode().host) || null;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+
+  function scrollBy(x, y, dy, to) {
+    const el = scroller(x, y, to === "top" ? -1 : to === "bottom" ? 1 : dy);
+    const before = el.scrollTop;
+    if (to === "top") el.scrollTo({ top: 0, behavior: "instant" });
+    else if (to === "bottom") el.scrollTo({ top: el.scrollHeight, behavior: "instant" });
+    else el.scrollBy({ top: dy, behavior: "instant" });
+    const max = el.scrollHeight - el.clientHeight;
+    return {
+      moved: Math.abs(el.scrollTop - before) >= 1,
+      scrollable: max > 1,
+      pct: max > 1 ? Math.round((el.scrollTop / max) * 100) : 0,
+    };
+  }
+
   function visibleText(t) {
     const tl = t.toLowerCase();
     const tw = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_TEXT);
@@ -355,5 +419,5 @@
     return { name: nameOf(el), role: L.roleOf(el), tag: el.tagName, desc: describe(el) };
   }
 
-  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, dismiss, mark, unmark, scrollInfo, visibleText, info };
+  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, info };
 })();

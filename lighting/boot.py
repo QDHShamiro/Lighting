@@ -37,9 +37,10 @@ def ensure_venv():
     if old == sig and D.PY.exists():
         if not (D.HOME / "client-root").exists():
             (D.HOME / "client-root").write_text(str(D.ROOT), "utf-8")
+        os.utime(D.STAMP)
         return False
     if not D.PY.exists() or old.split("|")[0] != sig.split("|")[0]:
-        say("installing dependencies (one time, ~20 s) ...")
+        say("installing dependencies (one time, ~20-60 s) ...")
         D.HOME.mkdir(parents=True, exist_ok=True)
         if not D.PY.exists():
             subprocess.run([uv(), "venv", "--quiet", "--python", ">=3.11", str(D.VENV)], check=True)

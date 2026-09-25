@@ -5,7 +5,7 @@ import time
 from lighting import defaults as D
 from lighting import pointer
 from lighting import win
-from lighting.common import Fail, cap, ref_kind
+from lighting.common import Fail, cap, hit, ref_kind, terms
 
 BROWSER_EXES = {"brave.exe", "chrome.exe", "msedge.exe", "opera.exe", "vivaldi.exe"}
 CHROMIUM_CLASS = "Chrome_WidgetWin_1"
@@ -121,7 +121,7 @@ def snapshot(ctx, hwnd, flags):
     if len(items) < 3 and win.class_of(hwnd) == CHROMIUM_CLASS:
         time.sleep(0.4)
         root, items = uia.collect(hwnd, with_text=bool(flags.get("text")), skip_rect=skip)
-    filt = (flags.get("f") or "").lower()
+    filt = terms(flags.get("f"))
     lines, refs = [], {}
     for el in items:
         role, name, extra = uia.describe(el)
@@ -137,7 +137,7 @@ def snapshot(ctx, hwnd, flags):
             ref = "d%d" % st.seq
             st.ids[key] = ref
         refs[ref] = el
-        if filt and filt not in name.lower() and filt not in role and filt not in extra.lower():
+        if filt and not hit(filt, name, role, extra):
             continue
         if role == "text":
             lines.append("  %s" % name)
@@ -154,7 +154,7 @@ def snapshot(ctx, hwnd, flags):
 def cmd_windows(ctx, pos, flags):
     lines = list_windows(ctx)
     if flags.get("f"):
-        lines = [l for l in lines if flags["f"].lower() in l.lower()]
+        lines = [l for l in lines if hit(terms(flags["f"]), l)]
     return cap("\n".join(lines) or "no windows", "windows", lines=80)
 
 
@@ -347,11 +347,17 @@ def region(ctx, pos):
     if pos and pos[0] == "screen":
         return None, win.virtual_screen()
     hwnd = target(ctx, pos)
+    if win.user32.IsIconic(hwnd):
+        raise Fail("%s is minimized, nothing to capture" % wref(ctx, hwnd), "lighting focus %s" % wref(ctx, hwnd))
     return hwnd, win.rect(hwnd)
 
 
-def grab(box):
+def grab(box, hwnd=None):
     from PIL import ImageGrab
+    if hwnd and hwnd != win.foreground():
+        img = win.print_window(hwnd)
+        if img is not None:
+            return img
     pointer.hide()
     return ImageGrab.grab(bbox=box, all_screens=True)
 
@@ -359,17 +365,17 @@ def grab(box):
 def cmd_read(ctx, pos, flags):
     from lighting import ocr
     hwnd, box = region(ctx, pos)
-    img = grab(box)
+    img = grab(box, hwnd)
     lines = ocr.recognize(img, flags.get("lang") or ctx.cfg.get("ocr_lang"))
     st = state(ctx)
     st.ocr = {}
     out = []
-    filt = (flags.get("f") or "").lower()
+    filt = terms(flags.get("f"))
     for i, (text, x, y, w, h) in enumerate(lines, 1):
         cx, cy = int(box[0] + x + w / 2), int(box[1] + y + h / 2)
         ref = "o%d" % i
         st.ocr[ref] = (text, cx, cy)
-        if filt and filt not in text.lower():
+        if filt and not hit(filt, text):
             continue
         out.append('%s "%s" @%d,%d' % (ref, text.replace('"', "'"), cx, cy))
     head = header(ctx, hwnd, " (screen text, %d lines)" % len(lines)) if hwnd else "[screen] (screen text, %d lines)" % len(lines)
@@ -379,7 +385,7 @@ def cmd_read(ctx, pos, flags):
 def cmd_shot(ctx, pos, flags):
     from lighting.browser import save_image
     hwnd, box = region(ctx, pos)
-    img = grab(box)
+    img = grab(box, hwnd)
     key = "app-%s" % (hwnd or "screen")
     return save_image(ctx, img, key, bool(flags.get("if-changed")),
                       int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH))

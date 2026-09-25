@@ -2,12 +2,14 @@ const GROUP = "Lighting";
 let target = null;
 let groupId = null;
 const alias = { seq: 0, fwd: {}, back: {} };
+let mru = [];
 
 export async function restore() {
   try {
-    const s = await chrome.storage.session.get(["target", "alias"]);
+    const s = await chrome.storage.session.get(["target", "alias", "mru"]);
     if (typeof s.target === "number") target = s.target;
     if (s.alias && s.alias.fwd) Object.assign(alias, s.alias);
+    if (Array.isArray(s.mru)) mru = s.mru;
   } catch (e) {}
 }
 
@@ -25,7 +27,7 @@ export function sid(realId) {
 
 export function rid(text) {
   const n = Number(String(text).replace(/^t/, ""));
-  return alias.back[n] !== undefined ? alias.back[n] : n;
+  return alias.back[n] !== undefined ? alias.back[n] : null;
 }
 
 export function getTarget() {
@@ -34,7 +36,17 @@ export function getTarget() {
 
 export function setTarget(id) {
   target = id;
-  chrome.storage.session.set({ target: id }).catch(() => {});
+  if (id !== null) mru = [id, ...mru.filter((x) => x !== id)].slice(0, 20);
+  chrome.storage.session.set({ target: id, mru }).catch(() => {});
+}
+
+export async function previous(excluding) {
+  for (const id of mru) {
+    if (id !== excluding && (await inGroup(id))) return id;
+  }
+  const tabs = (await groupTabs()).filter((t) => t.id !== excluding);
+  tabs.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
+  return tabs.length ? tabs[0].id : null;
 }
 
 async function lightingGroup(windowId) {
@@ -88,22 +100,12 @@ export async function create() {
 }
 
 export async function resolve(requested) {
-  const id = typeof requested === "number" ? requested : target;
-  if (id === null || id === undefined) return null;
-  try {
-    await chrome.tabs.get(id);
-    return id;
-  } catch (e) {
-    if (id === target) {
-      const tabs = await groupTabs();
-      if (tabs.length) {
-        setTarget(tabs[0].id);
-        return tabs[0].id;
-      }
-      setTarget(null);
-    }
-    return null;
+  if (typeof requested === "number") {
+    return chrome.tabs.get(requested).then(() => requested, () => null);
   }
+  if (target !== null && (await chrome.tabs.get(target).then(() => true, () => false))) return target;
+  setTarget(await previous(target));
+  return target;
 }
 
 export async function groupTabs() {

@@ -88,6 +88,7 @@ class Daemon:
         self.abort = threading.Event()
         self.started = time.time()
         self.hotkey = False
+        self.hosts_seen = set()
         self.lock = threading.Lock()
 
     def add_host(self, conn, hello):

@@ -41,6 +41,13 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - `fetch` with `credentials: "include"` fails against APIs that answer `Access-Control-Allow-Origin: *`. Default is `same-origin`; `--cookies` forces include.
 - After a daemon restart the extension needs ~0.3-1 s to reconnect. `ensure_host` waits up to 6 s when the browser process is running instead of failing at once, and `any_browser` (routing, `status`, `selftest`) waits until the daemon is `RECONNECT_GRACE` (2.5 s) old, so a first `click` is not routed to the desktop.
 - `cmd.exe` re-reads a running batch file from its old byte offset after each command. Rewriting `host.bat` while Brave's host runs made cmd start a second host that waited forever for a hello the extension had already sent, and the extension never saw a disconnect. `host.bat` is therefore one static line (`%~dp0`-relative, `& exit /b`), written only when its bytes change; `host.py` next to it reads the plugin root from `client-root` at start.
+- `elementFromPoint` is a full hit test. On a GitHub diff with 62,000 elements it costs ~14 ms per call, which made the old 3-point cover check take 0.8 s per snapshot. Snapshots now hit-test only items that overlap a fixed/sticky/absolute element (collected during the walk), within a 60 ms budget, and skip off-screen `li/tr/article/row` subtrees (their controls are only counted). Elements of 1 px or less (screen-reader-only) are not listed.
+- Text search (`click "..."`) first searches the visible area only and stops on an exact visible match; only then it walks the whole page. A cheap `textContent`/attribute prefilter (whitespace removed) avoids `innerText` on non-matching elements.
+- CDP `mouseWheel` in a background or occluded window waits for a rendered frame (2.2 s on GitHub). `scroll` moves the nearest scrollable ancestor with JS; the wheel event is only the fallback for pages that cannot scroll at all (maps, canvas apps).
+- `chrome.storage.session` is cleared on every extension reload (update, `ext-reload`). The target falls back to the most recently used tab in the "Lighting" group, and tab aliases the extension does not know are rejected instead of being read as raw tab ids.
+- Device-metrics overrides in a background tab: a second change waits for a frame ack that never comes. `viewport` polls `innerWidth` and shows the tab for a moment if nothing changed within 250 ms.
+- Extensions cannot open `data:` URLs as top-level pages (the tab stays `about:blank`).
+- The Rust client treats the venv as stale when `requirements.txt` or `plugin.json` is newer than `venv/.lighting-stamp`; the Python side touches the stamp when nothing had to change. Without that a new dependency never got installed within the same plugin root.
 - Rust's `Command` on Windows passes every inheritable handle to the child. A daemon started by the client inherited the caller's stdout pipe and kept it open, so `lighting ... | cat` (and the Bash tool) hung until timeout on every cold start. The client clears `HANDLE_FLAG_INHERIT` on its std handles before spawning. Python's `Popen(close_fds=True)` passes a handle list and is safe.
 
 ## 3. Build order when changing things
@@ -57,7 +64,7 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-lighting selftest              # must print 41/41 passed
+lighting selftest              # must print 61/61 passed
 lighting bench
 ```
 Then one real page by hand (`open`, `snap`, `click`, `text`) and one real app (`windows`, `snap w<N>`, `click d<N>`).
@@ -74,6 +81,9 @@ Then one real page by hand (`open`, `snap`, `click`, `text`) and one real app (`
 - **`fetch /path` from Git Bash failed** because the path had been rewritten to the Git install folder before Lighting saw it.
 - **Switching plugin roots killed the browser connection for good** because `refresh()` rewrote `host.bat` under a running `cmd.exe`, and `rmtree` of the loaded extension copy left a window where the files were missing. Now the host files are static and the extension copy is overwritten in place.
 - **Every cold start hung the calling shell** because the daemon inherited the client's stdout pipe. Test cold starts through a pipe: `lighting stop; timeout 25 lighting status | cat`.
+- **The selftest reused the working tab** (`open` without `--new`) and closed it at the end. It now opens its own tabs, and a decoy tab proves that `close` returns to the previous tab instead of the first tab of the group (that bug made a test click land on GitHub).
+- **Benchmarks on the small test page hid the big-page costs.** Measure on a real heavy page too (a GitHub compare view with a large diff).
+- **A Python heredoc turned `\n` into a real line break again** (selftest.py). Anything with backslashes goes through the Edit tool.
 
 ## 6. Failure modes
 

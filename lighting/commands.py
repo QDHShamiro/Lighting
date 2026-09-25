@@ -7,7 +7,7 @@ from lighting import defaults as D
 from lighting.common import Fail, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
-          "body", "method", "button", "region", "delta"}
+          "body", "method", "button", "region", "delta", "file"}
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone"}
 
 
@@ -109,7 +109,7 @@ def route(ctx, name, pos, flags):
     if name in SYSTEM:
         return SYSTEM[name](ctx, pos, flags)
     if name == "read":
-        if pos and is_url(pos[0]):
+        if pos and (is_url(pos[0]) or pos[0].lower().endswith(".pdf")):
             return web().read_url(ctx, pos, flags)
         return app().cmd_read(ctx, pos, flags)
     if name in APP_ONLY:
@@ -329,7 +329,7 @@ SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}
 APP_ONLY = {"windows", "focus", "clip"}
 WEB_ONLY = {"open", "text", "fill", "select", "check", "wait", "expect", "table", "fetch", "js", "dismiss",
-            "upload", "tabs", "tab", "close", "back", "forward", "reload", "dialog", "downloads", "console"}
+            "upload", "tabs", "tab", "close", "back", "forward", "reload", "dialog", "downloads", "console", "viewport"}
 
 
 def cap_lines(text, name, ctx=None):

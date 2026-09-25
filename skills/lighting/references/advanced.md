@@ -45,4 +45,4 @@
 - `cannot script this page` (brave://, chrome://, Web Store, PDF viewer) -> use desktop control on the browser window: `lighting snap w1 --web`.
 - `dialog open: confirm "..."` -> `lighting dialog accept` or `dismiss`.
 - Something hangs: `lighting stop` restarts the background process on the next call.
-- `lighting selftest` runs 41 checks (browser + desktop) in about 4 s.
+- `lighting selftest` runs 61 checks (browser + desktop) in about 5 s.

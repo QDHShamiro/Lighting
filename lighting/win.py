@@ -392,3 +392,56 @@ def post_click(hwnd):
 def virtual_screen():
     x, y = user32.GetSystemMetrics(76), user32.GetSystemMetrics(77)
     return x, y, x + user32.GetSystemMetrics(78), y + user32.GetSystemMetrics(79)
+
+
+gdi32 = ctypes.WinDLL("gdi32")
+user32.GetDC.argtypes = [W.HWND]
+user32.GetDC.restype = W.HDC
+user32.ReleaseDC.argtypes = [W.HWND, W.HDC]
+user32.PrintWindow.argtypes = [W.HWND, W.HDC, W.UINT]
+gdi32.CreateCompatibleDC.argtypes = [W.HDC]
+gdi32.CreateCompatibleDC.restype = W.HDC
+gdi32.CreateCompatibleBitmap.argtypes = [W.HDC, ctypes.c_int, ctypes.c_int]
+gdi32.CreateCompatibleBitmap.restype = W.HBITMAP
+gdi32.SelectObject.argtypes = [W.HDC, W.HGDIOBJ]
+gdi32.SelectObject.restype = W.HGDIOBJ
+gdi32.DeleteObject.argtypes = [W.HGDIOBJ]
+gdi32.DeleteDC.argtypes = [W.HDC]
+gdi32.GetDIBits.argtypes = [W.HDC, W.HBITMAP, W.UINT, W.UINT, ctypes.c_void_p, ctypes.c_void_p, W.UINT]
+
+
+class BITMAPINFOHEADER(ctypes.Structure):
+    _fields_ = [("biSize", W.DWORD), ("biWidth", W.LONG), ("biHeight", W.LONG), ("biPlanes", W.WORD),
+                ("biBitCount", W.WORD), ("biCompression", W.DWORD), ("biSizeImage", W.DWORD),
+                ("biXPelsPerMeter", W.LONG), ("biYPelsPerMeter", W.LONG), ("biClrUsed", W.DWORD),
+                ("biClrImportant", W.DWORD)]
+
+
+def print_window(hwnd):
+    from PIL import Image
+    wr = W.RECT()
+    if user32.IsIconic(hwnd) or not user32.GetWindowRect(hwnd, ctypes.byref(wr)):
+        return None
+    w, h = wr.right - wr.left, wr.bottom - wr.top
+    if w <= 0 or h <= 0:
+        return None
+    screen = user32.GetDC(None)
+    dc = gdi32.CreateCompatibleDC(screen)
+    bmp = gdi32.CreateCompatibleBitmap(screen, w, h)
+    old = gdi32.SelectObject(dc, bmp)
+    try:
+        if not user32.PrintWindow(hwnd, dc, 2):
+            return None
+        head = BITMAPINFOHEADER(ctypes.sizeof(BITMAPINFOHEADER), w, -h, 1, 32, 0, 0, 0, 0, 0, 0)
+        buf = ctypes.create_string_buffer(w * h * 4)
+        if gdi32.GetDIBits(dc, bmp, 0, h, buf, ctypes.byref(head), 0) != h:
+            return None
+        img = Image.frombuffer("RGB", (w, h), buf, "raw", "BGRX", 0, 1)
+    finally:
+        gdi32.SelectObject(dc, old)
+        gdi32.DeleteObject(bmp)
+        gdi32.DeleteDC(dc)
+        user32.ReleaseDC(None, screen)
+    l, t, r, b = rect(hwnd)
+    img = img.crop((l - wr.left, t - wr.top, r - wr.left, b - wr.top))
+    return None if max(img.resize((32, 32)).convert("L").getextrema()) < 8 else img

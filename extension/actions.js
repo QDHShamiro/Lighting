@@ -371,24 +371,33 @@ export async function scroll(a, tab) {
     y = r.y;
   }
   const dir = a.dir || "down";
+  const end = dir === "up" || dir === "top" ? "top" : "end";
+  const move = async (dy, to) => {
+    const s = await page(tabId, "act.scrollBy", [x, y, dy, to]);
+    if (s.moved || s.scrollable) return s;
+    await I.wheel(tabId, x, y, to === "top" ? -info.h : to === "bottom" ? info.h : dy);
+    return null;
+  };
+  let last = null;
   if (dir === "top" || dir === "bottom") {
-    await page(tabId, "act.settle", [0, 0]);
-    await I.wheel(tabId, x, y, dir === "top" ? -info.h : info.h);
+    last = await move(0, dir);
   } else if (a.until) {
     const max = a.max || 12;
     for (let i = 0; i < max; i++) {
       if (cfg.abort) throw new Error("stopped by hotkey");
       const v = await page(tabId, "act.visibleText", [a.until]);
       if (v.ok) return 'found "' + trunc(a.until, 40) + '" after ' + i + " scrolls";
-      await I.wheel(tabId, x, y, (dir === "up" ? -1 : 1) * Math.round(info.vh * 0.8));
+      last = await move((dir === "up" ? -1 : 1) * Math.round(info.vh * 0.8));
+      if (last && !last.moved) throw new Error('"' + a.until + '" not found (reached the ' + end + " after " + i + " scrolls)");
       await page(tabId, "act.settle", [150, 1200]).catch(() => {});
     }
     throw new Error('"' + a.until + '" not found after ' + max + " scrolls");
   } else {
     const px = a.delta ? Number(a.delta) : Math.round(info.vh * 0.8);
-    await I.wheel(tabId, x, y, dir === "up" ? -px : px);
+    last = await move(dir === "up" ? -px : px);
   }
   await page(tabId, "act.settle", [150, 1500]).catch(() => {});
+  if (last) return "ok (scroll " + last.pct + "%" + (last.moved ? "" : ", already at the " + end) + ")";
   const now = await page(tabId, "act.scrollInfo", []);
   const pct = Math.round((now.y / Math.max(1, now.h - now.vh)) * 100);
   return "ok (scroll " + Math.max(0, Math.min(100, pct)) + "%)";
