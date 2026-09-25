@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.graphify/
+*.pem
+*.key
+node_modules/
+.idea/
+.vscode/
+client/target/
+target/
+graphify-out/
+.claude/
