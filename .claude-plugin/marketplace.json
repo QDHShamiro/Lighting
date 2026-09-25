@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "lighting",
+  "description": "Lighting: browser and Windows desktop control for Claude Code with token-lean text snapshots.",
+  "owner": {
+    "name": "QDHShamiro",
+    "url": "https://github.com/QDHShamiro"
+  },
+  "plugins": [
+    {
+      "name": "lighting",
+      "description": "The lighting command drives your open Brave, Chrome or Edge through a small extension and any Windows app through UI Automation and OCR, answering in short text lines instead of screenshots.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

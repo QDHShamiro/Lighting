@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "lighting": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/lighting.exe",
+      "args": ["mcp"]
+    }
+  }
+}
