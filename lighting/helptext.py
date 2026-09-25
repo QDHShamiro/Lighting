@@ -13,7 +13,7 @@ web     open <url> [-n]   snap [-f "a|b"] [-s css|ref] [--all] [--diff]   text [
 desktop windows   focus <w>   snap <w> [--web]   click <d|o|"text">   type <d> <text>
         press <keys>   read [w|screen]   shot [w|screen]   clip [get|set <text>]
 system  do "cmd; cmd; ..."   status   stop   config [key value]   log   version
-        setup [--manual]   selftest [web|app]   bench   ext-reload   uninstall [--purge]
+        setup [--manual]   install <ai>   selftest [web|app]   bench   ext-reload   uninstall [--purge]
 
 Output is plain text, one line per action. Big results go to a file (path printed).
 Safety: banking/payment sites are read-only, risky clicks and long URL data to new sites need --yes,

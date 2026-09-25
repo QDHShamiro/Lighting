@@ -1,13 +1,13 @@
 {
   "name": "lighting",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Drive your real browser and the Windows desktop from Claude Code with compact text snapshots instead of screenshots: fewer tokens, faster steps.",
   "author": {
     "name": "QDHShamiro",
     "url": "https://github.com/QDHShamiro"
   },
-  "homepage": "https://github.com/QDHShamiro/lighting#readme",
-  "repository": "https://github.com/QDHShamiro/lighting",
+  "homepage": "https://github.com/QDHShamiro/Lighting#readme",
+  "repository": "https://github.com/QDHShamiro/Lighting",
   "license": "MIT",
   "keywords": [
     "browser",

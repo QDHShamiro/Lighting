@@ -97,11 +97,14 @@
       for (const k of [...u.searchParams.keys()]) {
         if (/^(utm_|fbclid|gclid|dclid|msclkid|yclid|twclid|ttclid|mc_|igshid|_hsenc|_hsmi|mkt_tok)/i.test(k) || (yt && /^(pp|si|feature)$/.test(k))) u.searchParams.delete(k);
       }
+      const qs = u.search.length > 40 ? "?…" : u.search;
       if (u.origin === location.origin) {
-        if (u.pathname === location.pathname && u.search === location.search && u.hash) return u.hash;
-        return trunc(u.pathname + u.search + u.hash, 60);
+        if (u.pathname === location.pathname && u.search === location.search) return u.hash || ".";
+        const here = location.pathname.replace(/\/$/, "");
+        const p = here && u.pathname.startsWith(here + "/") ? "." + u.pathname.slice(here.length) : u.pathname;
+        return trunc(p + qs + (u.hash.length > 30 ? "" : u.hash), 60);
       }
-      return trunc(u.host.replace(/^www\./, "") + u.pathname.replace(/\/$/, "") + u.search, 60);
+      return trunc(u.host.replace(/^www\./, "") + u.pathname.replace(/\/$/, "") + qs, 60);
     } catch (e) {
       return "";
     }

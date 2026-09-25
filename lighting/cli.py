@@ -57,7 +57,7 @@ def main():
         from lighting import mcp
         mcp.main()
         return
-    if cmd in ("setup", "uninstall"):
+    if cmd in ("setup", "uninstall", "install"):
         from lighting import install
         sys.exit(install.main(argv))
     stats = "--stats" in argv

@@ -6,7 +6,9 @@ Runbook for Claude Code: building, verifying and changing Lighting without redis
 ## 1. Layout
 
 ```
-.claude-plugin/plugin.json, marketplace.json   plugin + marketplace (source "./"), version lives in plugin.json only
+.claude-plugin/plugin.json, marketplace.json   Claude Code plugin + marketplace (source "./")
+.codex-plugin/plugin.json                      Codex plugin (skills only, MCP comes from `lighting install codex`)
+.agents/plugins/marketplace.json               Codex marketplace (source local "./")
 bin/lighting.exe                               Rust client (client/), on Claude's PATH through the plugin bin/ dir
 .mcp.json                                      MCP server: lighting.exe mcp (1 tool)
 skills/lighting/                               SKILL.md + references/, loaded on description match
@@ -57,12 +59,16 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - `[tabindex]` alone does not make a control: focusable scroll containers and tooltip triggers (`tabindex=0`, no pointer cursor) are skipped; empty "stretched" links take the card's title as name.
 - Rust's `Command` on Windows passes every inheritable handle to the child. A daemon started by the client inherited the caller's stdout pipe and kept it open, so `lighting ... | cat` (and the Bash tool) hung until timeout on every cold start. The client clears `HANDLE_FLAG_INHERIT` on its std handles before spawning. Python's `Popen(close_fds=True)` passes a handle list and is safe.
 
+- Codex does not put a plugin's `bin/` on PATH. `refresh()` copies the exe to `~/.lighting/bin` (rename-then-write, a running exe can be renamed but not overwritten) and `setup` adds that folder to the user `Path`. The copied exe has no plugin root next to it, so the client falls back to `client-root` when `../lighting/__init__.py` is missing.
+- `lighting install <ai>` writes absolute paths to `~/.lighting/bin/lighting.exe`: plugin roots change on every update, that path does not. It is blocked through MCP because it prints to stdout.
+- Snapshot links: same-page links print `.`, links under the current path `./rest`, queries over 40 chars `?…`. On a GitHub repo page that cut the snapshot from 2,199 to 1,876 chars.
+
 ## 3. Build order when changing things
 
 1. Python: edit `lighting/*.py`, `py_compile`, then `lighting stop` (next call starts the new daemon).
 2. Extension: edit `extension/*.js`, check the modules load (copy to `.mjs`, `node --check`, import with a mocked `chrome`), then `lighting ext-reload`. If the service worker is broken it cannot reload itself: run `lighting setup`, which reloads it through the extensions page.
 3. Client: `cd client && cargo build --release`, copy `target/release/lighting.exe` to `bin/`. It links the CRT statically (no VC++ runtime needed).
-4. Versions: bump only `.claude-plugin/plugin.json`. The extension manifest version is rewritten from it when the extension is copied; a mismatch makes the daemon reload the extension once.
+4. Versions: bump `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together; the runtime reads the Claude one. The extension manifest version is rewritten from it when the extension is copied; a mismatch makes the daemon reload the extension once.
 
 ## 4. Verification protocol (do not report done before all pass)
 

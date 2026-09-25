@@ -12,3 +12,4 @@ client/target/
 target/
 graphify-out/
 .claude/
+bin/*.old

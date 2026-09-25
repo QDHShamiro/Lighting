@@ -1,127 +1,227 @@
-# Lighting
+<h1 align="center">Lighting</h1>
 
-Browser and Windows desktop control for [Claude Code](https://claude.com/claude-code), built for **few tokens and fast steps**.
+<p align="center">
+  <em>Your real browser and every Windows app, as a few lines of text.</em>
+</p>
 
-Lighting drives your real, logged-in browser (Brave, Chrome, Edge) through a small extension and any Windows app through UI Automation and OCR. It answers in short text lines with refs instead of accessibility dumps and screenshots.
+<p align="center">
+  <img src="https://img.shields.io/badge/claude%20code-plugin-111111?style=flat-square" alt="Claude Code plugin">
+  <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
+  <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
+  <img src="https://img.shields.io/badge/selftest-61%2F61-111111?style=flat-square" alt="61/61 selftest">
+  <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
+  <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
+</p>
 
-```
-$ lighting open github.com/QDHShamiro
-[t1] QDHShamiro (QDHShamiro) - github.com/QDHShamiro (scroll 0%)
-e13 link "Overview" * ->/QDHShamiro
-e14 link "Repositories 44 (44)" ->/QDHShamiro?tab=repositories
-...
-$ lighting click "Repositories"
-ok e14 -> github.com/QDHShamiro?tab=repositories
-```
+---
 
-## Measured: same page, same machine
+## The problem
 
-GitHub profile page, Brave 154 on Windows 11. Lighting numbers are the CLI call in Bash. Claude in Chrome numbers come from the tool-call timestamps in the Claude Code transcript. Tokens are estimated as characters / 4.
+You ask your AI to check something on a website. It takes a screenshot: ~2,350 tokens. It reads the
+page: ~13,500 tokens, cut off halfway. It clicks, and takes another screenshot to see what happened.
 
-| Task | Claude in Chrome | Lighting |
-|---|---|---|
-| Open the page and get something to act on | 2 calls: `navigate` 1.8 s + `read_page` 0.9 s | 1 call: `open` 2.2 s (includes GitHub's load time), ~480 tokens |
-| Snapshot again | `read_page interactive` 0.9 s, many elements without names | `snap` 0.12 s, ~490 tokens, names + states |
-| Whole page | `read_page` 0.37 s, **~13,500 tokens**, cut off at 50,000 of 64,787 chars | `snap --all` 0.12 s, **~990 tokens** |
-| Find one thing | `find` (not measured) | `snap -f repositories` 0.12 s, ~50 tokens |
-| Screenshot | 1920x951 viewport = ~2,350 image tokens (computed, 28 px patches) | `shot` writes a 1024 px JPEG (~700 tokens, computed), only if you Read it |
+Ten steps later the context is full of pixels and accessibility dumps, and the AI is still logged
+out, because it drives a fresh browser that knows none of your accounts.
 
-Built-in test page (`lighting selftest`, 61 checks, browser + desktop): **61/61 in 5.2 s**. A click including navigation check and change report: ~140 ms. Filling and submitting a 4-field form: ~160 ms. A CLI round trip: ~50 ms.
-
-Big pages stay fast. GitHub compare view with a 7,000-line diff (62,000 elements), same machine:
-
-| Step | 0.1.0 | now |
-|---|---|---|
-| `snap` | 1.2 s | 0.11 s |
-| `click "Text"` / `hover "Text"` on a visible element | 1.2 s | 0.4 s |
-| `scroll down` | 2.2 s | 0.17 s |
-
-Real sites after load, same machine: `snap` takes 17-49 ms on SpigotMC, Modrinth, Hugging Face, GitHub, YouTube and Wikipedia. `text` returns the article as Markdown via Defuddle (Wikipedia's Minecraft article: 0.8 s) and plain page text on listing pages; links are reduced to their text unless `--links` is given.
+None of that is what the AI needs. It needs to know what it can click, and whether the click worked.
 
 ## What it does
 
-**Browser** (your normal profile, all logins)
-- `open`, `snap` (visible usable elements, covered and hidden ones left out, `-f "login|email"` filters), `text` (page as markdown via [Defuddle](https://github.com/kepano/defuddle)), `read <url> [url2 ...]` (pages and PDFs as text without a browser, in parallel)
-- `click`, `type`, `fill "Label=value" --submit`, `press`, `select`, `check`, `hover`, `drag`, `scroll --until`
-- `wait`, `expect`, `table`, `fetch --pick` (JSON with your cookies), `js` (or `js --file`), `upload`, `downloads`, `console`, `dialog accept|dismiss`, `dismiss` (cookie banners)
-- `shot --marks` puts the e-refs on the screenshot, `viewport 390x844` shows the mobile layout
-- Works in its own orange tab group, can take over any tab on request, follows links that open new tabs
-- JavaScript dialogs do not freeze it; it tells you and waits for `dialog accept|dismiss`
+Lighting drives **your** browser (Brave, Chrome, Edge, with all your logins) through a small
+extension, and any Windows app through UI Automation and OCR. Every answer is short text with refs:
 
-**Windows desktop**
-- `windows`, `snap w2` (UI Automation controls), `click d5`, `type d5 text`, `press ctrl+s`, `scroll`, `drag`
-- Background first: clicks and typing use UI Automation patterns, your mouse stays where it is
-- `read w2` reads screen text with Windows OCR (games, canvas UIs), `click o3` clicks that text with a quick real click and puts your cursor back
-- `shot w2` and `read w2` capture the window itself, even when other windows cover it
-- An orange pointer shows where Lighting acts
+```
+$ lighting open github.com/QDHShamiro/Context-Engine
+[t1] QDHShamiro/Context-Engine - github.com/QDHShamiro/Context-Engine (scroll 0%)
+e15 link "Code" * ->.
+e16 link "Issues" ->./issues
+e17 link "Pull requests" ->./pulls
+e27 button "Star QDHShamiro/Context-Engine"
+...
+$ lighting click "Issues"
+ok e16 -> github.com/QDHShamiro/Context-Engine/issues
+```
 
-**Built for agents**
-- One line per action: `ok`, `ok -> new-url` with a mini snapshot, or `ok (+3 new: ...)`
-- `do "step; step; step"` runs several steps in one call
-- Big outputs are cut and saved to a file you can grep
-- Errors say what to do next: `err: e12 is covered by div.cookie -> try: lighting dismiss`
+```
+  your AI ──Bash──→ lighting.exe (Rust, ~50 ms) ──┐
+  your AI ──MCP───→ lighting mcp ─────────────────┴─→ daemon ──┬─→ extension ──→ your open browser
+                                                               ├─→ UI Automation ──→ Windows apps
+                                                               └─→ Windows OCR ──→ games, canvas UIs
+```
 
-## Install (Claude Code plugin)
+Only visible, usable elements are listed. Hidden text never reaches the model, links under the
+current page are shown as `./path`, tracking parameters are dropped, and a 60-link footer collapses
+to one line. You pay for what you can act on.
+
+---
+
+## Measured
+
+Same GitHub page, Brave 154, Windows 11. Tokens are characters / 4.
+
+| Task | Claude in Chrome | Lighting |
+|---|---|---|
+| Open a page and get something to act on | 2 calls, 2.7 s | 1 call, **~480 tokens** |
+| Snapshot again | 0.9 s, many elements without names | **0.12 s**, names + states |
+| Whole page | **~13,500 tokens**, cut off at 50,000 of 64,787 chars | **~990 tokens** |
+| Find one thing | `find` | `snap -f repositories`, **~50 tokens** |
+| Screenshot | ~2,350 image tokens | only when you ask for one, ~700 |
+
+- `lighting selftest`: **61/61 in 5.2 s** (browser + desktop).
+- Click with navigation check and change report: ~140 ms. Filling and submitting a form: ~160 ms.
+- GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
+- `snap` on SpigotMC, Modrinth, Hugging Face, GitHub, YouTube, Wikipedia: 17-49 ms.
+
+---
+
+## Install
 
 Requirements: Windows 10/11, [uv](https://docs.astral.sh/uv/getting-started/installation/), and Brave, Chrome or Edge.
 
+**Claude Code**
+
 ```
-/plugin marketplace add QDHShamiro/lighting
+/plugin marketplace add QDHShamiro/Lighting
 /plugin install lighting@lighting
 /lighting:setup
 ```
 
-`/lighting:setup` installs the Python dependencies into `~/.lighting/venv`, registers the native messaging host and **loads the extension into your browser by itself** (it opens the extensions page, switches on Developer mode and picks the folder through Windows UI Automation). If that is not possible it prints the three manual steps.
-
-The plugin adds the `lighting` command to Claude Code's shell, a skill that teaches Claude to use it cheaply, the commands `/lighting:setup`, `/lighting:status`, `/lighting:bench`, and an MCP tool `lighting` for clients without a shell.
-
-## How it works
+**Codex**
 
 ```
-Claude Code --Bash--> bin/lighting.exe (Rust, ~50 ms) --+
-Claude Code --MCP---> lighting mcp -----------------------+--> named pipe --> lighting daemon (Python)
-                                                                                |-- UI Automation, OCR, input, pointer
-                                                                                +-- native host --> browser extension (MV3)
-                                                                                                     chrome.debugger + page scripts
+codex plugin marketplace add QDHShamiro/Lighting
 ```
 
-- The daemon starts on the first call and stays. The pipe is protected by a random token in `~/.lighting/key`.
-- The extension only talks to the local native host, never to web pages.
-- Snapshots are built in the page by a small script (no full accessibility tree), with stable refs kept in the extension's isolated world.
+Then install `lighting` from `/plugins`, and run once in a terminal:
+
+```
+<plugin folder>\bin\lighting.exe setup
+lighting install codex
+```
+
+**Cursor, Gemini CLI, VS Code (Copilot), Windsurf, Claude Desktop, any MCP client**
+
+```bash
+git clone https://github.com/QDHShamiro/Lighting.git
+Lighting\bin\lighting.exe setup
+lighting install cursor        # or: gemini | vscode | windsurf | claude-desktop | codex
+```
+
+`setup` installs the Python side into `~/.lighting`, registers the native messaging host,
+**loads the extension into your browser by itself** (it opens the extensions page, switches on
+Developer mode and picks the folder through UI Automation) and puts `lighting` on your PATH.
+`install <ai>` adds the MCP server to that AI's config and leaves everything else in it alone.
+
+<details>
+<summary><b>MCP config by hand</b></summary>
+
+```json
+{
+  "mcpServers": {
+    "lighting": {
+      "command": "C:\\Users\\<you>\\.lighting\\bin\\lighting.exe",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+One tool, `lighting`, that takes one command line (`snap -f price`). Codex uses TOML:
+
+```toml
+[mcp_servers.lighting]
+command = "C:\\Users\\<you>\\.lighting\\bin\\lighting.exe"
+args = ["mcp"]
+```
+
+</details>
+
+---
+
+## Commands
+
+**Browser** (your normal profile, all logins)
+
+| | |
+|---|---|
+| Look | `open <url>` · `snap [-f "a\|b"] [-s e40] [--diff] [--all]` · `text` (Markdown via [Defuddle](https://github.com/kepano/defuddle)) · `read <url> [url2 ...]` (pages and PDFs, no browser) · `shot --marks` |
+| Act | `click` · `type` · `fill "Email=a@b.c" --submit` · `press` · `select` · `check` · `hover` · `drag` · `scroll --until "text"` · `upload` |
+| Wait | `wait "text" \| url:/x \| 1500 [--gone]` · `expect "text"` |
+| Data | `table e8` · `fetch /api/me --pick login` (with your cookies) · `js` |
+| Tabs | `tabs` · `tab t3` · `close` · `back` · `reload` · `dialog accept\|dismiss` · `dismiss` (cookie banners) · `viewport 390x844` |
+
+**Windows desktop**
+
+| | |
+|---|---|
+| Look | `windows` · `snap w2` (UI Automation) · `read w2` (OCR) · `shot w2` (even when covered) |
+| Act | `click d5` · `click o3` (OCR text, real click, cursor goes back) · `type d5 text` · `press ctrl+s` · `clip get\|set` |
+
+Clicks and typing go through UI Automation in the background, your mouse stays where it is.
+`do "fill Email=a@b.c; click Continue; expect Welcome"` runs several steps in one call.
+`lighting help` lists everything.
+
+---
 
 ## Safety
 
 - Banking and payment sites are read-only (`~/.lighting/blocklist.txt`).
 - Buttons that look irreversible (buy, pay, delete, ...) need `--yes`.
 - Hidden text is never shown to the model, which blocks a common prompt-injection trick.
+- A URL with a long query to a site not opened yet needs `--yes`, so injected instructions cannot quietly send data out.
 - Secrets come from environment variables (`--env VAR`) and are never logged.
-- A URL that carries a long query to a site not opened yet (`open`, `fetch`, `read`) needs `--yes`, so injected instructions cannot quietly send data out.
 - **Ctrl+Alt+End** stops everything immediately.
-- The browser shows its "is being debugged" bar while Lighting controls a tab.
 
-## Commands
+<details>
+<summary><b>Files it creates, and how to remove it</b></summary>
 
-Run `lighting help` for the full list. The skill in `skills/lighting/` documents every command for Claude.
+Everything lives in `%USERPROFILE%\.lighting\`: the Python venv, the extension copy, the native host,
+`bin\lighting.exe`, the pipe key, the blocklist, a 24 h output cache and the action log (typed text
+and secrets are never logged). Registry: the native messaging host keys for Brave, Chrome, Edge and
+Chromium, and `.lighting\bin` in your user `Path`.
+
+```
+lighting uninstall          # registry keys off, daemon stopped
+lighting uninstall --purge  # also removes ~/.lighting except the venv
+```
+
+</details>
+
+<details>
+<summary><b>How it works</b></summary>
+
+- The daemon starts on the first call and stays. The pipe is protected by a random token in `~/.lighting/key`.
+- The extension only talks to the local native host, never to web pages.
+- Snapshots are built in the page by a small script (no full accessibility tree), refs stay stable in the extension's isolated world.
+- JavaScript dialogs do not freeze it: it reports them and waits for `dialog accept|dismiss`.
+- Links that open a new tab switch the target automatically.
+
+`HOW-TO-SETUP.md` has every trap this works around.
+
+</details>
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `no browser ... connected` | `lighting setup` |
+| `lighting: command not found` | open a new terminal after `setup`, or run `bin\lighting.exe setup` again |
+| `cannot script this page` (brave://, Web Store) | `lighting snap w1 --web` controls the browser window instead |
+| Something hangs | `lighting stop`, the next call starts a fresh daemon |
+
+## Limits
+
+- Windows only. Firefox is not supported (no `debugger` extension API).
+- Cross-origin iframes: snapshot with `--frame host`, clicks there are DOM clicks.
+- Apps running as administrator only take input when the terminal runs as administrator too.
 
 ## Development
 
 ```
 cd client && cargo build --release && copy target\release\lighting.exe ..\bin\
-lighting stop            # restart the daemon with new Python code
-lighting ext-reload      # copy extension files and reload the extension
-lighting selftest        # 61 checks, browser + desktop
-lighting bench           # speed and size table on the test page
+lighting stop && lighting ext-reload && lighting selftest && lighting bench
 claude plugin validate .
 ```
-
-`HOW-TO-SETUP.md` is the runbook with everything learned while building it.
-
-## Limits
-
-- Windows only for now.
-- Firefox is not supported (no `debugger` extension API).
-- Cross-origin iframes: snapshot with `--frame host`, clicks there are DOM clicks.
-- Windows blocks input to apps running as administrator unless the terminal runs as administrator too.
 
 ## License
 
