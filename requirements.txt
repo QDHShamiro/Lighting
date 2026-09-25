@@ -8,3 +8,4 @@ winrt-Windows.Graphics.Imaging>=3
 winrt-Windows.Media.Ocr>=3
 winrt-Windows.Storage.Streams>=3
 pypdf>=4
+truststore>=0.9

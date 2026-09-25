@@ -146,13 +146,28 @@ async function point(tabId, x, y) {
   await page(tabId, "act.pointer", [x, y], 0, 2000).catch(() => {});
 }
 
-async function after(tabId, nav, beforeUrl, extra, mark) {
+function leavesPage(r, before) {
+  if (!r.href || r.blank || /^javascript:/i.test(r.href)) return false;
+  return r.href.split("#")[0] !== String(before || "").split("#")[0];
+}
+
+async function titleChange(tabId, title, ms) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) {
+    const t = await chrome.tabs.get(tabId).catch(() => null);
+    if (!t || t.title !== title) return;
+    await T.sleep(50);
+  }
+}
+
+async function after(tabId, nav, beforeUrl, extra, mark, startBudget, beforeTitle, target) {
   const quiet = page(tabId, "act.settle", [100, 1500], 0, 8000).catch(() => null);
-  const st = await nav.wait(100, LOAD_MS);
+  const st = await nav.wait(startBudget || 100, LOAD_MS);
   if (mark) mark("nav");
   const navigated = st.started || st.dcl;
-  if (navigated) {
+  if (navigated || st.spa) {
     await quiet;
+    if (st.spa && !navigated && beforeTitle !== undefined) await titleChange(tabId, beforeTitle, 3000);
     await page(tabId, "act.settle", [250, 3000], 0, 8000).catch(() => {});
   } else {
     await quiet;
@@ -169,7 +184,13 @@ async function after(tabId, nav, beforeUrl, extra, mark) {
     const tail = res ? "\n" + formatSnap(tabId, res, cfg.navLines) : "";
     return "ok" + (extra || "") + " -> " + T.short(tab.url, 80) + (st.error ? " (" + st.error + ")" : "") + tail;
   }
-  const d = await page(tabId, "diff", []).catch(() => null);
+  let d = await page(tabId, "diff", []).catch(() => null);
+  if (d && !d.added.length && !d.removed && target) {
+    const now = await page(tabId, "act.lineOf", [target.ref]).catch(() => null);
+    if (now && now !== target.line) return "ok" + (extra || "") + " -> " + now;
+    await page(tabId, "act.settle", [150, 2000, 500], 0, 8000).catch(() => {});
+    d = await page(tabId, "diff", []).catch(() => null);
+  }
   if (!d || (!d.added.length && !d.removed)) return "ok" + (extra || "");
   const shown = d.added.slice(0, 5);
   let s = "ok" + (extra || "");
@@ -202,7 +223,8 @@ export async function click(a, tab) {
   if (r.gone) throw new Error(f.ref + " is gone (page changed) -> try: lighting snap");
   if (r.covered && !a.force) throw new Error(f.ref + " is covered by " + r.covered + " -> try: lighting dismiss, press Escape, or click --force");
   if (!a.yes && risky(r.name)) throw new Error('confirm: "' + trunc(r.name, 50) + '" looks irreversible -> rerun with --yes');
-  const before = (await chrome.tabs.get(tabId)).url;
+  const bt = await chrome.tabs.get(tabId);
+  const before = bt.url;
   await point(tabId, r.x, r.y);
   mark("point");
   const nav = T.watchNav(tabId);
@@ -212,7 +234,7 @@ export async function click(a, tab) {
     nav.stop();
     return "ok" + (a.text ? " " + f.ref : "") + ", then " + dlg;
   }
-  const res = await after(tabId, nav, before, a.text ? " " + f.ref : "", a.trace ? mark : null);
+  const res = await after(tabId, nav, before, a.text ? " " + f.ref : "", a.trace ? mark : null, leavesPage(r, before) ? 3000 : 100, bt.title, { ref: f.ref, line: r.line });
   return a.trace ? res + "\ntrace: " + marks.join(", ") + " | input: " + I.timings.join(", ") : res;
 }
 

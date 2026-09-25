@@ -48,6 +48,13 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - Device-metrics overrides in a background tab: a second change waits for a frame ack that never comes. `viewport` polls `innerWidth` and shows the tab for a moment if nothing changed within 250 ms.
 - Extensions cannot open `data:` URLs as top-level pages (the tab stays `about:blank`).
 - The Rust client treats the venv as stale when `requirements.txt` or `plugin.json` is newer than `venv/.lighting-stamp`; the Python side touches the stamp when nothing had to change. Without that a new dependency never got installed within the same plugin root.
+- Chrome rejects an injected content script that contains a Unicode noncharacter (a raw U+FFFF sat in a Defuddle regex) with "It isn't UTF-8 encoded". Defuddle never loaded until the bundle was patched to use `￿` escapes; `text` silently used the `innerText` fallback. The injection error is now reported in the output.
+- Defuddle returns only the navigation on listing and app pages (Modrinth, YouTube home, SpigotMC lists). `text` switches to the page text when the reader view is under 30% of it.
+- Python's OpenSSL builds certificate chains from the Windows store and can pick an expired intermediate (`read https://en.wikipedia.org` failed, the browser was fine). `read` verifies with `truststore` (native Windows verification).
+- Background tabs render no frames, so CSS animations never advance: a GitHub overlay stayed at opacity 0 and was invisible to snapshots. Finite running animations are finished before every snapshot and text search (infinite ones are left alone).
+- GitHub hydrates `react-partial` islands on first interaction; the click's effect arrives ~300-400 ms later. When the diff after a click is empty and the clicked element did not change state, `after()` waits up to 500 ms for a mutation and diffs again. A changed element state is reported directly (`ok -> e5 checkbox "x" [x]`).
+- SPA navigation (GitHub Turbo/React) changes the URL first and renders later. Clicks on links to another URL wait up to 3 s for the navigation to start, then for the title to change, then for quiet.
+- `[tabindex]` alone does not make a control: focusable scroll containers and tooltip triggers (`tabindex=0`, no pointer cursor) are skipped; empty "stretched" links take the card's title as name.
 - Rust's `Command` on Windows passes every inheritable handle to the child. A daemon started by the client inherited the caller's stdout pipe and kept it open, so `lighting ... | cat` (and the Bash tool) hung until timeout on every cold start. The client clears `HANDLE_FLAG_INHERIT` on its std handles before spawning. Python's `Popen(close_fds=True)` passes a handle list and is safe.
 
 ## 3. Build order when changing things
@@ -84,6 +91,8 @@ Then one real page by hand (`open`, `snap`, `click`, `text`) and one real app (`
 - **The selftest reused the working tab** (`open` without `--new`) and closed it at the end. It now opens its own tabs, and a decoy tab proves that `close` returns to the previous tab instead of the first tab of the group (that bug made a test click land on GitHub).
 - **Benchmarks on the small test page hid the big-page costs.** Measure on a real heavy page too (a GitHub compare view with a large diff).
 - **A Python heredoc turned `\n` into a real line break again** (selftest.py). Anything with backslashes goes through the Edit tool.
+- **The `text` selftest only checked the page title**, which the plain-text fallback also contains, so the broken Defuddle bundle went unnoticed. It now requires a Markdown table from the fixture.
+- **Only the fixture was tested.** A sweep over real sites (GitHub, YouTube, Wikipedia, SpigotMC, Modrinth, Hugging Face, PaperMC docs) found six output and timing problems in one hour. Repeat that sweep after bigger changes.
 
 ## 6. Failure modes
 

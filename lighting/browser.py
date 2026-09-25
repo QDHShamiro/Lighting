@@ -6,7 +6,7 @@ import subprocess
 import time
 
 from lighting import defaults as D
-from lighting.common import Fail, cap, hit, is_url, outfile, ref_kind, terms, win_path
+from lighting.common import Fail, cap, hit, is_url, outfile, plain_links, ref_kind, terms, win_path
 
 REF_RE = re.compile(r"^(?:f\d+\.)?e\d+$")
 _reloaded = set()
@@ -169,7 +169,7 @@ def cmd_snap(ctx, pos, flags):
 
 
 def cmd_text(ctx, pos, flags):
-    msg = call(ctx, "text", {"filter": flags.get("f"), "raw": bool(flags.get("raw"))}, 40)
+    msg = call(ctx, "text", {"filter": flags.get("f"), "raw": bool(flags.get("raw")), "links": bool(flags.get("links"))}, 40)
     limit = int(flags.get("max") or D.TEXT_CHARS)
     return cap(msg.get("out", ""), "text", chars=limit)
 
@@ -459,6 +459,20 @@ def pdf_text(raw):
     return "\n\n".join("[p%d] %s" % (i, (p.extract_text() or "").strip()) for i, p in enumerate(pages, 1)), len(pages)
 
 
+_tls = []
+
+
+def tls():
+    if not _tls:
+        import ssl
+        try:
+            import truststore
+            _tls.append(truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT))
+        except ImportError:
+            _tls.append(ssl.create_default_context())
+    return _tls[0]
+
+
 def fetch_page(ctx, url):
     import urllib.request
     from lighting import html2md
@@ -478,7 +492,7 @@ def fetch_page(ctx, url):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) lighting/" + D.version(),
     })
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
+        with urllib.request.urlopen(req, timeout=20, context=tls()) as r:
             ctype = r.headers.get("content-type", "")
             pdf = "pdf" in ctype or url.lower().split("?")[0].endswith(".pdf")
             raw = r.read(D.PDF_BYTES if pdf else 4_000_000)
@@ -500,6 +514,8 @@ def fetch_page(ctx, url):
 
 def read_one(ctx, url, flags, chars):
     title, text, final, how = fetch_page(ctx, url)
+    if not flags.get("links"):
+        text = plain_links(text)
     if flags.get("f"):
         fl = terms(flags["f"])
         parts = re.split(r"\n\s*\n", text)

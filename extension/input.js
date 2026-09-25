@@ -97,10 +97,12 @@ export async function click(tabId, x, y, opts) {
   lap("attach");
   const button = (opts && opts.button) || "left";
   const count = (opts && opts.count) || 1;
+  const buttons = { left: 1, right: 2, middle: 4 }[button] || 1;
+  send(tabId, "Input.dispatchMouseEvent", { type: "mouseMoved", x, y }).catch(() => {});
   for (let i = 1; i <= count; i++) {
-    await send(tabId, "Input.dispatchMouseEvent", { type: "mousePressed", x, y, button, clickCount: i });
+    await send(tabId, "Input.dispatchMouseEvent", { type: "mousePressed", x, y, button, buttons, clickCount: i });
     lap("down");
-    await send(tabId, "Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button, clickCount: i });
+    await send(tabId, "Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button, buttons: 0, clickCount: i });
     lap("up");
   }
 }

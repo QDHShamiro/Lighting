@@ -54,6 +54,16 @@ def tokens(text):
     return len(text) // 4 + 1
 
 
+CODE_RE = re.compile(r"(```[\s\S]*?```|`[^`\n]*`)")
+LINK_RE = re.compile(r"!?\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)")
+FOOT_RE = re.compile(r"\[\^[^\]]+\](?!:)")
+
+
+def plain_links(md):
+    parts = CODE_RE.split(md)
+    return "".join(p if i % 2 else FOOT_RE.sub("", LINK_RE.sub(r"\1", p)) for i, p in enumerate(parts))
+
+
 def terms(f):
     return [t.strip() for t in (f or "").lower().split("|") if t.strip()]
 

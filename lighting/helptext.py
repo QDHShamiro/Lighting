@@ -1,12 +1,12 @@
 HELP = """lighting <command> [args]   browser + Windows desktop for Claude Code
 refs: e12 web element | d5 app control | o3 screen text | w2 window | t77 tab
 
-web     open <url> [-n]   snap [-f "a|b"] [-s css|ref] [--all] [--diff]   text [-f txt]
+web     open <url> [-n]   snap [-f "a|b"] [-s css|ref] [--all] [--diff]   text [-f txt] [--links]
         click <ref|"text"> [--yes] [--force]   fill "Label=value" ... [--submit]
         type <ref> <text> [--env VAR] [--append]   press <keys>   select <ref> <option>
         check <ref> [off]   hover <ref>   drag <ref> <ref>   scroll [ref|up|down] [--until "text"]
         wait <"text"|url:x|ms|ref> [--gone]   expect <"text"|url:x> [--gone]   table <ref|css>
-        fetch <url> [--pick a.b]   read <url|file.pdf> [url ...]   js <code|--file f>   dismiss
+        fetch <url> [--pick a.b]   read <url|file.pdf> [url ...] [--links]   js <code|--file f>   dismiss
         upload <ref> <file>   tabs   tab <id>   close [id]   back   forward   reload
         shot [ref] [--marks] [--if-changed]   viewport <WxH|reset>
         dialog accept|dismiss [text]   downloads   console

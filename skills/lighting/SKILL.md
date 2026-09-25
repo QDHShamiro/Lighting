@@ -13,7 +13,7 @@ Refs: `e12` web element, `d5` app control, `o3` screen text, `w2` window, `t4` t
 2. `lighting read <url> [url2 ...]` public pages or PDFs as text, in parallel, no browser.
 3. `lighting open <url>` returns a compact snapshot of what is visible.
 4. `lighting snap -f "login|email"` filter, `snap -s e40` one region, `snap --diff` only changes, `snap --all` whole page.
-5. `lighting text [-f word]` readable page text (markdown).
+5. `lighting text [-f word]` readable page text (markdown, links as plain text; `--links` keeps URLs).
 6. `lighting shot [e5|w2] [--marks]` writes a small JPEG (`--marks` labels e-refs); Read it only when visuals matter.
 
 ## Web
@@ -31,7 +31,7 @@ tabs   tab t3   close [t3]   back   forward   reload   downloads   console   dis
 dialog accept|dismiss [text]     upload e5 C:/path/file.pdf     viewport 390x844 | viewport reset
 ```
 Actions answer `ok`, `ok -> new-url` plus a mini snapshot, or `ok (+N new)` with the new elements.
-Several steps in one call: `lighting do "fill Email=a@b.c; click Continue; expect Welcome"`.
+Several steps in one call: `lighting do "fill Email=a@b.c; click Continue; expect Welcome"` (actions before the last step print one line; reading steps print in full).
 Secrets never go in the command: `lighting type e3 --env PASS` or `fill "Password=@secret" --env PASS`.
 
 ## Desktop (Windows apps)
