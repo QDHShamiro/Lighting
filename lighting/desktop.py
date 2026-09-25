@@ -107,6 +107,13 @@ def is_browser(hwnd):
     return win.class_of(hwnd) == CHROMIUM_CLASS and win.exe_of(win.pid_of(hwnd)).lower() in BROWSER_EXES
 
 
+BIDI = re.compile("[‎‏‪-‮⁦-⁩]")
+
+
+def inside(a, b):
+    return a[1] >= b[1] - 2 and a[3] <= b[3] + 2 and a[0] >= b[0] - 2
+
+
 def snapshot(ctx, hwnd, flags):
     from lighting import uia
     st = state(ctx)
@@ -122,9 +129,10 @@ def snapshot(ctx, hwnd, flags):
         time.sleep(0.4)
         root, items = uia.collect(hwnd, with_text=bool(flags.get("text")), skip_rect=skip)
     filt = terms(flags.get("f"))
-    lines, refs = [], {}
+    lines, refs, row = [], {}, None
     for el in items:
         role, name, extra = uia.describe(el)
+        name, extra = BIDI.sub("", name), BIDI.sub("", extra)
         if role == "text" and (not name or len(name) > 120):
             continue
         if not name and role in ("listitem", "dataitem", "treeitem", "tab", "button", "link", "menuitem") and not extra:
@@ -137,6 +145,13 @@ def snapshot(ctx, hwnd, flags):
             ref = "d%d" % st.seq
             st.ids[key] = ref
         refs[ref] = el
+        if row and role in ("edit", "text") and inside(uia.rect_of(el), row[1]):
+            m = re.search(r'="([^"]*)"', extra)
+            val = m.group(1) if m else (name if role == "text" else "")
+            if val and val != row[2] and len(lines[row[0]]) < 160:
+                lines[row[0]] += " | " + val
+            continue
+        row = None
         if filt and not hit(filt, name, role, extra):
             continue
         if role == "text":
@@ -144,6 +159,8 @@ def snapshot(ctx, hwnd, flags):
             continue
         label = name if len(name) <= 60 else name[:57] + "..."
         lines.append("%s %s%s%s" % (ref, role, ' "%s"' % label.replace('"', "'") if label else "", extra))
+        if role in ("listitem", "dataitem"):
+            row = (len(lines) - 1, uia.rect_of(el), name)
     st.refs = refs
     head = header(ctx, hwnd, " (%d controls%s)" % (len(refs), ", browser page hidden: use lighting snap for the page" if skip else ""))
     if not lines:

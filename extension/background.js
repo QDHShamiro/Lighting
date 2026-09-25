@@ -116,13 +116,16 @@ async function snap(a, tab) {
 
 async function text(a, tab) {
   const tabId = await tabOf(tab);
+  let why = "";
   if (!a.raw) {
     try {
       const [probe] = await chrome.scripting.executeScript({ target: { tabId }, func: () => !!globalThis.Defuddle });
       if (!probe.result) await chrome.scripting.executeScript({ target: { tabId }, files: ["defuddle.js"] });
-    } catch (e) {}
+    } catch (e) {
+      why = String((e && e.message) || e).slice(0, 120);
+    }
   }
-  const res = await page(tabId, "act.text", [{ filter: a.filter || null, raw: !!a.raw }], 0, 25000);
+  const res = await page(tabId, "act.text", [{ filter: a.filter || null, raw: !!a.raw, links: !!a.links, why }], 0, 25000);
   return header(tabId, { title: res.title, url: res.url }) + "\n" + res.text;
 }
 

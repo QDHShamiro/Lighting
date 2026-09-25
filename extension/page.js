@@ -4,6 +4,8 @@
   const OURS = "LT-POINTER";
   const INTERACTIVE =
     'a[href],button,input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="combobox"],[role="textbox"],[role="searchbox"],[role="slider"],[role="spinbutton"],[role="treeitem"],[contenteditable=""],[contenteditable="true"],[tabindex]:not([tabindex="-1"]),[onclick]';
+  const CONTROL =
+    'a[href],button,input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="combobox"],[role="textbox"],[role="searchbox"],[role="slider"],[role="spinbutton"],[role="treeitem"],[contenteditable=""],[contenteditable="true"]';
   const LANDMARK = 'nav,aside,footer,[role="navigation"],[role="complementary"],[role="contentinfo"]';
   const ITEM = 'li,tr,article,[role="listitem"],[role="row"],[role="article"]';
   const ROLE_INPUT = { checkbox: "checkbox", radio: "radio", range: "slider", number: "spinbutton", search: "searchbox", button: "button", submit: "button", reset: "button", image: "button", file: "file", color: "color", date: "date", "datetime-local": "date", time: "time", month: "date", week: "date" };
@@ -79,6 +81,11 @@
       if (inner) s = inner.getAttribute("alt") || inner.getAttribute("aria-label") || inner.getAttribute("title");
     }
     if (!clean(s)) s = el.getAttribute("title") || "";
+    if (!clean(s) && t === "A" && !el.children.length && el.parentElement) {
+      const p = el.parentElement;
+      const titled = p.querySelector('h1,h2,h3,h4,[class*="title" i],[class*="name" i]');
+      s = titled ? titled.innerText : (p.innerText || "").trim().split("\n")[0];
+    }
     return clean(s);
   }
 
@@ -86,7 +93,10 @@
     try {
       const u = new URL(href, location.href);
       if (u.protocol === "javascript:") return "";
-      for (const k of [...u.searchParams.keys()]) if (/^(utm_|fbclid|gclid|mc_|igshid)/i.test(k)) u.searchParams.delete(k);
+      const yt = /(^|\.)youtube\.com$/.test(u.hostname);
+      for (const k of [...u.searchParams.keys()]) {
+        if (/^(utm_|fbclid|gclid|dclid|msclkid|yclid|twclid|ttclid|mc_|igshid|_hsenc|_hsmi|mkt_tok)/i.test(k) || (yt && /^(pp|si|feature)$/.test(k))) u.searchParams.delete(k);
+      }
       if (u.origin === location.origin) {
         if (u.pathname === location.pathname && u.search === location.search && u.hash) return u.hash;
         return trunc(u.pathname + u.search + u.hash, 60);
@@ -169,13 +179,19 @@
     return !p || getComputedStyle(p).cursor !== "pointer";
   }
 
+  function where(ax, ay, w, h) {
+    if (ax + w <= 0 || ax >= innerWidth) return "away";
+    if (ay >= innerHeight) return "below";
+    if (ay + h <= 0) return scrollY > 0 && ay + scrollY + h > 0 ? "above" : "away";
+    return "in";
+  }
+
   function offscreen(n, off, cut) {
     const r = n.getBoundingClientRect();
     if (!r.width && !r.height) return false;
-    const ax = r.left + off.x, ay = r.top + off.y;
-    if (ay >= innerHeight || ax >= innerWidth) cut.below += n.querySelectorAll(INTERACTIVE).length;
-    else if (ay + r.height <= 0 || ax + r.width <= 0) cut.above += n.querySelectorAll(INTERACTIVE).length;
-    else return false;
+    const pos = where(r.left + off.x, r.top + off.y, r.width, r.height);
+    if (pos === "in") return false;
+    if (pos !== "away") cut[pos] += n.querySelectorAll(INTERACTIVE).length;
     return true;
   }
 
@@ -195,11 +211,14 @@
     let n = tw.nextNode();
     while (n) {
       const t = n.tagName;
-      const isInt = n.matches(INTERACTIVE);
       const cs = t === "BODY" || t === "HTML" ? null : getComputedStyle(n);
+      let isInt = n.matches(INTERACTIVE);
+      if (isInt && !n.matches(CONTROL)) {
+        isInt = !n.querySelector(INTERACTIVE) && (n.hasAttribute("onclick") || (cs && cs.cursor === "pointer"));
+      }
       if (cut && cs && (cs.position === "fixed" || cs.position === "sticky" || cs.position === "absolute")) cut.layers.push({ el: n, off });
       const head = !isInt && (/^H[1-3]$/.test(t) || n.getAttribute("role") === "heading");
-      if (isInt || head || (cs && pointerish(n, cs) && !n.closest(INTERACTIVE) && !n.querySelector(INTERACTIVE))) {
+      if (isInt || head || (cs && pointerish(n, cs) && !n.closest(CONTROL) && !n.querySelector(INTERACTIVE))) {
         out.push({ el: n, off, heading: head });
       }
       if (n.shadowRoot) walk(n.shadowRoot, off, out, frames, cut);
@@ -216,6 +235,15 @@
         }
       }
       n = tw.nextNode();
+    }
+  }
+
+  function flushAnimations() {
+    if (!document.getAnimations) return;
+    for (const a of document.getAnimations()) {
+      try {
+        if (a.playState === "running" && a.effect && a.effect.getComputedTiming().endTime !== Infinity) a.finish();
+      } catch (e) {}
     }
   }
 
@@ -287,6 +315,7 @@
         notesOut.push('modal "' + q(trunc(nameOf(m), 50)) + '" open: page behind is hidden (press Escape to close)');
       }
     }
+    flushAnimations();
     const items = [], frames = [];
     const cut = { below: 0, above: 0, layers: [], prune: !opts.all };
     walk(scope, { x: 0, y: 0 }, items, frames, cut);
@@ -306,21 +335,23 @@
       if (!it.heading && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
       if (el.closest('[aria-hidden="true"]')) continue;
       const ax = r.left + it.off.x, ay = r.top + it.off.y;
-      const inView = ay + r.height > 0 && ax + r.width > 0 && ay < vh && ax < vw;
+      const pos = where(ax, ay, r.width, r.height);
+      const inView = pos === "in";
       if (!inView && !opts.all) {
         if (!it.heading) {
-          if (ay >= vh) below++;
-          else above++;
+          if (pos === "below") below++;
+          else if (pos === "above") above++;
         }
         continue;
       }
       if (it.heading) {
-        const txt = trunc(clean(el.innerText), 80);
+        const full = clean(el.innerText);
+        const txt = trunc(full, 80);
         const lvl = /^H([1-3])$/.exec(el.tagName);
         const hashes = "#".repeat(lvl ? Number(lvl[1]) : Math.min(3, Number(el.getAttribute("aria-level")) || 2));
         if (txt && !filter && !seen.has(txt)) {
           seen.add(txt);
-          lines.push({ el, text: hashes + " " + txt, heading: true });
+          lines.push({ el, text: hashes + " " + txt, raw: full.toLowerCase(), heading: true });
         }
         continue;
       }
@@ -356,12 +387,28 @@
       }
       lines.push(entry);
     }
+    const hrefOf = (e) => (e && !e.heading && e.role === "link" ? e.el.href || "" : null);
+    for (let i = 0; i < lines.length; i++) {
+      const e = lines[i], nx = lines[i + 1], pv = lines[i - 1];
+      if (e.heading) {
+        if (nx && !nx.heading && nx.name && (e.el.contains(nx.el) || nx.el.contains(e.el)) && nx.name.toLowerCase().startsWith(e.raw)) e.drop = true;
+        continue;
+      }
+      const h = hrefOf(e);
+      if (!h) continue;
+      if (!e.name) {
+        for (let j = Math.max(0, i - 3); j <= Math.min(lines.length - 1, i + 3); j++) {
+          if (j !== i && hrefOf(lines[j]) === h && lines[j].name) e.drop = true;
+        }
+      } else if (hrefOf(pv) === h && !pv.drop && pv.name === e.name) e.drop = true;
+    }
     const bigLand = new Set([...land.entries()].filter(([, b]) => b.count > 12).map(([lm]) => lm));
     const bigList = new Map();
     for (const [list, g] of groups) if (g.items.size > 8) bigList.set(list, [...g.items].slice(0, 5));
     const out = [], landDone = new Set(), listDone = new Set();
     const ids = new Set();
     for (const e of lines) {
+      if (e.drop) continue;
       if (e.heading) {
         out.push(e.text);
         continue;
@@ -451,6 +498,9 @@
       role: roleOf(el),
       covered: hit ? describe(hit) : null,
       dpr: devicePixelRatio,
+      href: el.tagName === "A" ? el.href : "",
+      blank: el.tagName === "A" && el.target === "_blank",
+      line: line(el, roleOf(el), nameOf(el)),
     };
   }
 
@@ -471,6 +521,7 @@
   }
 
   function candidates(root, needle, viewOnly) {
+    flushAnimations();
     const items = [], frames = [];
     walk(root || document.documentElement, { x: 0, y: 0 }, items, frames, viewOnly ? { below: 0, above: 0, layers: [], prune: true } : undefined);
     const vw = innerWidth, vh = innerHeight, out = [];
@@ -490,5 +541,5 @@
     return out;
   }
 
-  globalThis.__lt = { S, get, ref, roleOf, nameOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, INTERACTIVE };
+  globalThis.__lt = { S, get, ref, roleOf, nameOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, INTERACTIVE, CONTROL };
 })();

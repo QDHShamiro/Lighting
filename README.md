@@ -36,6 +36,8 @@ Big pages stay fast. GitHub compare view with a 7,000-line diff (62,000 elements
 | `click "Text"` / `hover "Text"` on a visible element | 1.2 s | 0.4 s |
 | `scroll down` | 2.2 s | 0.17 s |
 
+Real sites after load, same machine: `snap` takes 17-49 ms on SpigotMC, Modrinth, Hugging Face, GitHub, YouTube and Wikipedia. `text` returns the article as Markdown via Defuddle (Wikipedia's Minecraft article: 0.8 s) and plain page text on listing pages; links are reduced to their text unless `--links` is given.
+
 ## What it does
 
 **Browser** (your normal profile, all logins)

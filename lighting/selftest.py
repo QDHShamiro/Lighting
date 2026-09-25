@@ -157,7 +157,7 @@ def browser(r, base):
     r.step("table as tsv", ["table", "#prices"], lambda o, e: not e and "Beta\t2.50" in o)
     r.step("type contenteditable", ["type", "Notes", "hello from lighting"], ok)
     r.step("notes text present", ["expect", "hello from lighting"], ok)
-    r.step("text (markdown)", ["text"], lambda o, e: not e and "Lighting Fixture" in o and "IGNORE ALL" not in o)
+    r.step("text (markdown)", ["text"], lambda o, e: not e and "| Beta | 2.50 |" in o and "IGNORE ALL" not in o and "<iframe" not in o and "readable view" not in o)
     r.step("js", ["js", "document.title"], lambda o, e: o.strip() == "Lighting Fixture")
     r.step("fetch json-less", ["fetch", base + "frame"], lambda o, e: not e and "200" in o)
     r.step("snap iframe", ["snap", "--frame", "127.0.0.1"], lambda o, e: not e and "Frame button" in o)

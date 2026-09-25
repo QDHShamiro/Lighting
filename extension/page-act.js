@@ -60,7 +60,7 @@
       if (!t.data || !t.data.toLowerCase().includes(ql)) continue;
       const host = t.parentElement;
       if (!host || !visible(host)) continue;
-      const target = host.closest(L.INTERACTIVE) || host;
+      const target = host.closest(L.CONTROL) || host;
       return { ref: ref(target), name: trunc(clean(target.innerText || t.data), 60), role: "text" };
     }
     return { none: true };
@@ -186,19 +186,30 @@
 
   function text(opts) {
     opts = opts || {};
-    let md = "", title = document.title;
+    let md = "", title = document.title, note = "";
+    if (!globalThis.Defuddle && !opts.raw) note = "readable view not loaded" + (opts.why ? ": " + opts.why : "");
     if (globalThis.Defuddle && !opts.raw) {
       try {
         const res = new globalThis.Defuddle(hiddenFree(), { markdown: true, url: location.href }).parse();
         md = res.content || "";
         title = res.title || title;
+        if (!md.trim()) note = "readable view was empty";
       } catch (e) {
         md = "";
+        note = "readable view failed: " + String((e && e.message) || e).slice(0, 120);
       }
     }
+    if (!opts.links) {
+      md = md.split(/(```[\s\S]*?```|`[^`\n]*`)/).map((p, i) => (i % 2 ? p : p.replace(/!?\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)/g, "$1").replace(/\[\^[^\]]+\](?!:)/g, "").replace(/<(iframe|video|audio|embed|object|svg)\b[^>]*>(?:[\s\S]*?<\/\1>)?/gi, ""))).join("");
+    }
+    const main = document.querySelector('main,[role="main"],article') || document.body || document.documentElement;
+    if (md.trim() && md.length < 3000) {
+      const plain = main.innerText || "";
+      if (plain.length > 1500 && md.length < plain.length * 0.3) md = "";
+    }
     if (!md.trim()) {
-      const main = document.querySelector('main,[role="main"],article') || document.body || document.documentElement;
       md = main.innerText || "";
+      if (note) md = "(" + note + ", plain text follows)\n" + md;
     }
     md = md.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
     if (opts.filter) {
@@ -259,19 +270,27 @@
     });
   }
 
-  function settle(quiet, max) {
+  function settle(quiet, max, waitFirst) {
     return new Promise((resolve) => {
-      const t0 = Date.now();
-      let last = S.muts, changed = t0;
+      const t0 = Date.now(), start = S.muts;
+      let last = S.muts, changed = t0, seen = false;
       const iv = setInterval(() => {
         const now = Date.now();
         if (S.muts !== last) {
           last = S.muts;
           changed = now;
+          seen = true;
+        }
+        if (waitFirst && !seen) {
+          if (now - t0 >= waitFirst) {
+            clearInterval(iv);
+            resolve({ ms: now - t0, changed: false });
+          }
+          return;
         }
         if (now - changed >= quiet || now - t0 >= max) {
           clearInterval(iv);
-          resolve(now - t0);
+          resolve({ ms: now - t0, changed: S.muts !== start });
         }
       }, 25);
     });
@@ -413,11 +432,16 @@
     return { ok: false };
   }
 
+  function lineOf(r) {
+    const el = get(r);
+    return el ? L.line(el, L.roleOf(el), nameOf(el)) : null;
+  }
+
   function info(r) {
     const el = get(r);
     if (!el) return { gone: true };
     return { name: nameOf(el), role: L.roleOf(el), tag: el.tagName, desc: describe(el) };
   }
 
-  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, info };
+  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, lineOf, info };
 })();
