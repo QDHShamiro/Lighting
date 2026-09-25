@@ -1,0 +1,24 @@
+{
+  "name": "lighting",
+  "version": "0.1.0",
+  "description": "Drive your real browser and the Windows desktop from Claude Code with compact text snapshots instead of screenshots: fewer tokens, faster steps.",
+  "author": {
+    "name": "QDHShamiro",
+    "url": "https://github.com/QDHShamiro"
+  },
+  "homepage": "https://github.com/QDHShamiro/lighting#readme",
+  "repository": "https://github.com/QDHShamiro/lighting",
+  "license": "MIT",
+  "keywords": [
+    "browser",
+    "automation",
+    "desktop",
+    "windows",
+    "ui-automation",
+    "ocr",
+    "tokens",
+    "brave",
+    "chrome",
+    "mcp"
+  ]
+}

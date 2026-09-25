@@ -1,0 +1,9 @@
+comtypes>=1.4
+pillow>=10
+winrt-runtime>=3
+winrt-Windows.Foundation>=3
+winrt-Windows.Foundation.Collections>=3
+winrt-Windows.Globalization>=3
+winrt-Windows.Graphics.Imaging>=3
+winrt-Windows.Media.Ocr>=3
+winrt-Windows.Storage.Streams>=3
