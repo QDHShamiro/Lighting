@@ -26,14 +26,25 @@ GitHub profile page, Brave 154 on Windows 11. Lighting numbers are the CLI call 
 | Find one thing | `find` (not measured) | `snap -f repositories` 0.12 s, ~50 tokens |
 | Screenshot | 1920x951 viewport = ~2,350 image tokens (computed, 28 px patches) | `shot` writes a 1024 px JPEG (~700 tokens, computed), only if you Read it |
 
-Built-in test page (`lighting selftest`, 41 checks, browser + desktop): **41/41 in 3.9 s**. A click including navigation check and change report: ~200 ms. Filling and submitting a 4-field form: ~160 ms. A CLI round trip: ~50 ms.
+Built-in test page (`lighting selftest`, 61 checks, browser + desktop): **61/61 in 5.2 s**. A click including navigation check and change report: ~140 ms. Filling and submitting a 4-field form: ~160 ms. A CLI round trip: ~50 ms.
+
+Big pages stay fast. GitHub compare view with a 7,000-line diff (62,000 elements), same machine:
+
+| Step | 0.1.0 | now |
+|---|---|---|
+| `snap` | 1.2 s | 0.11 s |
+| `click "Text"` / `hover "Text"` on a visible element | 1.2 s | 0.4 s |
+| `scroll down` | 2.2 s | 0.17 s |
+
+Real sites after load, same machine: `snap` takes 17-49 ms on SpigotMC, Modrinth, Hugging Face, GitHub, YouTube and Wikipedia. `text` returns the article as Markdown via Defuddle (Wikipedia's Minecraft article: 0.8 s) and plain page text on listing pages; links are reduced to their text unless `--links` is given.
 
 ## What it does
 
 **Browser** (your normal profile, all logins)
-- `open`, `snap` (visible usable elements, covered and hidden ones left out), `text` (page as markdown via [Defuddle](https://github.com/kepano/defuddle)), `read <url>` (markdown without a browser)
+- `open`, `snap` (visible usable elements, covered and hidden ones left out, `-f "login|email"` filters), `text` (page as markdown via [Defuddle](https://github.com/kepano/defuddle)), `read <url> [url2 ...]` (pages and PDFs as text without a browser, in parallel)
 - `click`, `type`, `fill "Label=value" --submit`, `press`, `select`, `check`, `hover`, `drag`, `scroll --until`
-- `wait`, `expect`, `table`, `fetch --pick` (JSON with your cookies), `js`, `upload`, `downloads`, `console`, `dialog accept|dismiss`, `dismiss` (cookie banners)
+- `wait`, `expect`, `table`, `fetch --pick` (JSON with your cookies), `js` (or `js --file`), `upload`, `downloads`, `console`, `dialog accept|dismiss`, `dismiss` (cookie banners)
+- `shot --marks` puts the e-refs on the screenshot, `viewport 390x844` shows the mobile layout
 - Works in its own orange tab group, can take over any tab on request, follows links that open new tabs
 - JavaScript dialogs do not freeze it; it tells you and waits for `dialog accept|dismiss`
 
@@ -41,6 +52,7 @@ Built-in test page (`lighting selftest`, 41 checks, browser + desktop): **41/41 
 - `windows`, `snap w2` (UI Automation controls), `click d5`, `type d5 text`, `press ctrl+s`, `scroll`, `drag`
 - Background first: clicks and typing use UI Automation patterns, your mouse stays where it is
 - `read w2` reads screen text with Windows OCR (games, canvas UIs), `click o3` clicks that text with a quick real click and puts your cursor back
+- `shot w2` and `read w2` capture the window itself, even when other windows cover it
 - An orange pointer shows where Lighting acts
 
 **Built for agents**
@@ -83,6 +95,7 @@ Claude Code --MCP---> lighting mcp -----------------------+--> named pipe --> li
 - Buttons that look irreversible (buy, pay, delete, ...) need `--yes`.
 - Hidden text is never shown to the model, which blocks a common prompt-injection trick.
 - Secrets come from environment variables (`--env VAR`) and are never logged.
+- A URL that carries a long query to a site not opened yet (`open`, `fetch`, `read`) needs `--yes`, so injected instructions cannot quietly send data out.
 - **Ctrl+Alt+End** stops everything immediately.
 - The browser shows its "is being debugged" bar while Lighting controls a tab.
 
@@ -96,7 +109,7 @@ Run `lighting help` for the full list. The skill in `skills/lighting/` documents
 cd client && cargo build --release && copy target\release\lighting.exe ..\bin\
 lighting stop            # restart the daemon with new Python code
 lighting ext-reload      # copy extension files and reload the extension
-lighting selftest        # 41 checks, browser + desktop
+lighting selftest        # 61 checks, browser + desktop
 lighting bench           # speed and size table on the test page
 claude plugin validate .
 ```

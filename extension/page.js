@@ -4,18 +4,22 @@
   const OURS = "LT-POINTER";
   const INTERACTIVE =
     'a[href],button,input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="combobox"],[role="textbox"],[role="searchbox"],[role="slider"],[role="spinbutton"],[role="treeitem"],[contenteditable=""],[contenteditable="true"],[tabindex]:not([tabindex="-1"]),[onclick]';
+  const CONTROL =
+    'a[href],button,input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="combobox"],[role="textbox"],[role="searchbox"],[role="slider"],[role="spinbutton"],[role="treeitem"],[contenteditable=""],[contenteditable="true"]';
   const LANDMARK = 'nav,aside,footer,[role="navigation"],[role="complementary"],[role="contentinfo"]';
   const ITEM = 'li,tr,article,[role="listitem"],[role="row"],[role="article"]';
   const ROLE_INPUT = { checkbox: "checkbox", radio: "radio", range: "slider", number: "spinbutton", search: "searchbox", button: "button", submit: "button", reset: "button", image: "button", file: "file", color: "color", date: "date", "datetime-local": "date", time: "time", month: "date", week: "date" };
   const TEXTISH = new Set(["textbox", "searchbox", "spinbutton", "combobox", "date", "time", "color"]);
+  const HIT_BUDGET_MS = 60;
 
+  const ours = (n) => n.nodeName === OURS;
   new MutationObserver((list) => {
     for (const m of list) {
       const t = m.target;
-      if (!(t && t.nodeType === 1 && (t.tagName === OURS || t.closest(OURS)))) {
-        S.muts++;
-        return;
-      }
+      if (t && t.nodeType === 1 && (t.tagName === OURS || t.closest(OURS))) continue;
+      if (m.type === "childList" && [...m.addedNodes].every(ours) && [...m.removedNodes].every(ours)) continue;
+      S.muts++;
+      return;
     }
   }).observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
 
@@ -77,6 +81,11 @@
       if (inner) s = inner.getAttribute("alt") || inner.getAttribute("aria-label") || inner.getAttribute("title");
     }
     if (!clean(s)) s = el.getAttribute("title") || "";
+    if (!clean(s) && t === "A" && !el.children.length && el.parentElement) {
+      const p = el.parentElement;
+      const titled = p.querySelector('h1,h2,h3,h4,[class*="title" i],[class*="name" i]');
+      s = titled ? titled.innerText : (p.innerText || "").trim().split("\n")[0];
+    }
     return clean(s);
   }
 
@@ -84,7 +93,10 @@
     try {
       const u = new URL(href, location.href);
       if (u.protocol === "javascript:") return "";
-      for (const k of [...u.searchParams.keys()]) if (/^(utm_|fbclid|gclid|mc_|igshid)/i.test(k)) u.searchParams.delete(k);
+      const yt = /(^|\.)youtube\.com$/.test(u.hostname);
+      for (const k of [...u.searchParams.keys()]) {
+        if (/^(utm_|fbclid|gclid|dclid|msclkid|yclid|twclid|ttclid|mc_|igshid|_hsenc|_hsmi|mkt_tok)/i.test(k) || (yt && /^(pp|si|feature)$/.test(k))) u.searchParams.delete(k);
+      }
       if (u.origin === location.origin) {
         if (u.pathname === location.pathname && u.search === location.search && u.hash) return u.hash;
         return trunc(u.pathname + u.search + u.hash, 60);
@@ -101,6 +113,9 @@
       const a = el.getAttribute("aria-checked");
       const on = el.checked === true || a === "true";
       s += a === "mixed" ? " [-]" : on ? " [x]" : " [ ]";
+    } else if (el.hasAttribute("aria-pressed")) {
+      const p = el.getAttribute("aria-pressed");
+      s += p === "mixed" ? " [-]" : p === "true" ? " [x]" : " [ ]";
     } else if (TEXTISH.has(role)) {
       if (el.tagName === "SELECT") {
         const o = el.selectedOptions && el.selectedOptions[0];
@@ -112,7 +127,7 @@
       }
     }
     if (el.disabled || el.getAttribute("aria-disabled") === "true") s += " (disabled)";
-    if (el.getAttribute("aria-selected") === "true" || el.getAttribute("aria-pressed") === "true" || (el.getAttribute("aria-current") && el.getAttribute("aria-current") !== "false")) s += " *";
+    if (el.getAttribute("aria-selected") === "true" || (el.getAttribute("aria-current") && el.getAttribute("aria-current") !== "false")) s += " *";
     const ex = el.getAttribute("aria-expanded");
     if (ex === "true") s += " (expanded)";
     else if (ex === "false") s += " (collapsed)";
@@ -158,14 +173,29 @@
     return el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + (cls ? "." + cls : "") + (nm ? ' "' + q(nm) + '"' : "");
   }
 
-  function pointerish(el) {
-    const cs = getComputedStyle(el);
+  function pointerish(el, cs) {
     if (cs.cursor !== "pointer") return false;
     const p = el.parentElement;
     return !p || getComputedStyle(p).cursor !== "pointer";
   }
 
-  function walk(root, off, out, frames) {
+  function where(ax, ay, w, h) {
+    if (ax + w <= 0 || ax >= innerWidth) return "away";
+    if (ay >= innerHeight) return "below";
+    if (ay + h <= 0) return scrollY > 0 && ay + scrollY + h > 0 ? "above" : "away";
+    return "in";
+  }
+
+  function offscreen(n, off, cut) {
+    const r = n.getBoundingClientRect();
+    if (!r.width && !r.height) return false;
+    const pos = where(r.left + off.x, r.top + off.y, r.width, r.height);
+    if (pos === "in") return false;
+    if (pos !== "away") cut[pos] += n.querySelectorAll(INTERACTIVE).length;
+    return true;
+  }
+
+  function walk(root, off, out, frames, cut) {
     const doc = root.ownerDocument || root;
     const tw = doc.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
       acceptNode(n) {
@@ -174,17 +204,24 @@
         if (!n.checkVisibility()) {
           return getComputedStyle(n).display === "contents" ? NodeFilter.FILTER_SKIP : NodeFilter.FILTER_REJECT;
         }
+        if (cut && cut.prune && n.matches(ITEM) && offscreen(n, off, cut)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       },
     });
     let n = tw.nextNode();
     while (n) {
       const t = n.tagName;
-      const isInt = n.matches(INTERACTIVE);
-      if (isInt || /^H[1-3]$/.test(t) || n.getAttribute("role") === "heading" || (!isInt && t !== "BODY" && t !== "HTML" && pointerish(n) && !n.closest(INTERACTIVE) && !n.querySelector(INTERACTIVE))) {
-        out.push({ el: n, off, heading: !isInt && (/^H[1-3]$/.test(t) || n.getAttribute("role") === "heading") });
+      const cs = t === "BODY" || t === "HTML" ? null : getComputedStyle(n);
+      let isInt = n.matches(INTERACTIVE);
+      if (isInt && !n.matches(CONTROL)) {
+        isInt = !n.querySelector(INTERACTIVE) && (n.hasAttribute("onclick") || (cs && cs.cursor === "pointer"));
       }
-      if (n.shadowRoot) walk(n.shadowRoot, off, out, frames);
+      if (cut && cs && (cs.position === "fixed" || cs.position === "sticky" || cs.position === "absolute")) cut.layers.push({ el: n, off });
+      const head = !isInt && (/^H[1-3]$/.test(t) || n.getAttribute("role") === "heading");
+      if (isInt || head || (cs && pointerish(n, cs) && !n.closest(CONTROL) && !n.querySelector(INTERACTIVE))) {
+        out.push({ el: n, off, heading: head });
+      }
+      if (n.shadowRoot) walk(n.shadowRoot, off, out, frames, cut);
       if (t === "IFRAME" || t === "FRAME") {
         let inner = null;
         try {
@@ -192,13 +229,44 @@
         } catch (e) {}
         if (inner && inner.documentElement) {
           const r = n.getBoundingClientRect();
-          walk(inner.documentElement, { x: off.x + r.left + n.clientLeft, y: off.y + r.top + n.clientTop }, out, frames);
+          walk(inner.documentElement, { x: off.x + r.left + n.clientLeft, y: off.y + r.top + n.clientTop }, out, frames, cut);
         } else {
           frames.push(n);
         }
       }
       n = tw.nextNode();
     }
+  }
+
+  function flushAnimations() {
+    if (!document.getAnimations) return;
+    for (const a of document.getAnimations()) {
+      try {
+        if (a.playState === "running" && a.effect && a.effect.getComputedTiming().endTime !== Infinity) a.finish();
+      } catch (e) {}
+    }
+  }
+
+  function overlays(cut) {
+    const out = [];
+    for (const { el, off } of cut.layers) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8) continue;
+      const x = r.left + off.x, y = r.top + off.y;
+      if (y >= innerHeight || x >= innerWidth || y + r.height <= 0 || x + r.width <= 0) continue;
+      if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+      out.push({ el, x, y, r: x + r.width, b: y + r.height });
+    }
+    return out;
+  }
+
+  function mayBeCovered(el, x, y, w, h, layers) {
+    for (const o of layers) {
+      if (o.x >= x + w || o.r <= x || o.y >= y + h || o.b <= y) continue;
+      if (o.el === el || o.el.contains(el) || el.contains(o.el)) continue;
+      return true;
+    }
+    return false;
   }
 
   function modalOf() {
@@ -247,9 +315,14 @@
         notesOut.push('modal "' + q(trunc(nameOf(m), 50)) + '" open: page behind is hidden (press Escape to close)');
       }
     }
+    flushAnimations();
     const items = [], frames = [];
-    walk(scope, { x: 0, y: 0 }, items, frames);
-    const filter = opts.filter ? opts.filter.toLowerCase() : null;
+    const cut = { below: 0, above: 0, layers: [], prune: !opts.all };
+    walk(scope, { x: 0, y: 0 }, items, frames, cut);
+    const layers = overlays(cut);
+    let hitMs = 0;
+    const filter = opts.filter ? opts.filter.toLowerCase().split("|").map((s) => s.trim()).filter(Boolean) : null;
+    const matches = (s) => filter.some((f) => s.includes(f));
     const lines = [], seen = new Set();
     let below = 0, above = 0;
     const land = new Map();
@@ -258,33 +331,40 @@
     for (const it of items) {
       const el = it.el;
       const r = el.getBoundingClientRect();
-      if (r.width < 1 || r.height < 1) continue;
+      if (r.width <= 1 || r.height <= 1) continue;
       if (!it.heading && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
       if (el.closest('[aria-hidden="true"]')) continue;
       const ax = r.left + it.off.x, ay = r.top + it.off.y;
-      const inView = ay + r.height > 0 && ax + r.width > 0 && ay < vh && ax < vw;
+      const pos = where(ax, ay, r.width, r.height);
+      const inView = pos === "in";
       if (!inView && !opts.all) {
         if (!it.heading) {
-          if (ay >= vh) below++;
-          else above++;
+          if (pos === "below") below++;
+          else if (pos === "above") above++;
         }
         continue;
       }
       if (it.heading) {
-        const txt = trunc(clean(el.innerText), 80);
+        const full = clean(el.innerText);
+        const txt = trunc(full, 80);
         const lvl = /^H([1-3])$/.exec(el.tagName);
         const hashes = "#".repeat(lvl ? Number(lvl[1]) : Math.min(3, Number(el.getAttribute("aria-level")) || 2));
         if (txt && !filter && !seen.has(txt)) {
           seen.add(txt);
-          lines.push({ el, text: hashes + " " + txt, heading: true });
+          lines.push({ el, text: hashes + " " + txt, raw: full.toLowerCase(), heading: true });
         }
         continue;
       }
-      if (inView && covered(el, r)) continue;
+      if (inView && hitMs < HIT_BUDGET_MS && mayBeCovered(el, ax, ay, r.width, r.height, layers)) {
+        const t0 = performance.now();
+        const hit = covered(el, r);
+        hitMs += performance.now() - t0;
+        if (hit) continue;
+      }
       const role = roleOf(el);
       const name = nameOf(el);
       if (role === "clickable" && !name) continue;
-      if (filter && !(name.toLowerCase().includes(filter) || role.includes(filter) || String(el.value || "").toLowerCase().includes(filter))) continue;
+      if (filter && !(matches(name.toLowerCase()) || matches(role) || matches(String(el.value || "").toLowerCase()))) continue;
       const entry = { el, role, name };
       if (collapseOk) {
         const lm = el.closest(LANDMARK);
@@ -307,12 +387,28 @@
       }
       lines.push(entry);
     }
+    const hrefOf = (e) => (e && !e.heading && e.role === "link" ? e.el.href || "" : null);
+    for (let i = 0; i < lines.length; i++) {
+      const e = lines[i], nx = lines[i + 1], pv = lines[i - 1];
+      if (e.heading) {
+        if (nx && !nx.heading && nx.name && (e.el.contains(nx.el) || nx.el.contains(e.el)) && nx.name.toLowerCase().startsWith(e.raw)) e.drop = true;
+        continue;
+      }
+      const h = hrefOf(e);
+      if (!h) continue;
+      if (!e.name) {
+        for (let j = Math.max(0, i - 3); j <= Math.min(lines.length - 1, i + 3); j++) {
+          if (j !== i && hrefOf(lines[j]) === h && lines[j].name) e.drop = true;
+        }
+      } else if (hrefOf(pv) === h && !pv.drop && pv.name === e.name) e.drop = true;
+    }
     const bigLand = new Set([...land.entries()].filter(([, b]) => b.count > 12).map(([lm]) => lm));
     const bigList = new Map();
     for (const [list, g] of groups) if (g.items.size > 8) bigList.set(list, [...g.items].slice(0, 5));
     const out = [], landDone = new Set(), listDone = new Set();
     const ids = new Set();
     for (const e of lines) {
+      if (e.drop) continue;
       if (e.heading) {
         out.push(e.text);
         continue;
@@ -343,7 +439,7 @@
       ids.add(ref(e.el));
       out.push(line(e.el, e.role, e.name));
     }
-    return { lines: out, ids, below, above, notes: notesOut.concat(notes(frames)) };
+    return { lines: out, ids, below: below + cut.below, above: above + cut.above, notes: notesOut.concat(notes(frames)) };
   }
 
   function snap(opts) {
@@ -402,26 +498,48 @@
       role: roleOf(el),
       covered: hit ? describe(hit) : null,
       dpr: devicePixelRatio,
+      href: el.tagName === "A" ? el.href : "",
+      blank: el.tagName === "A" && el.target === "_blank",
+      line: line(el, roleOf(el), nameOf(el)),
     };
   }
 
-  function candidates(root) {
+  function hay(el) {
+    const text = el.textContent || "";
+    let h = text;
+    for (const a of ["aria-label", "title", "placeholder", "alt", "name"]) {
+      const v = el.getAttribute(a);
+      if (v) h += " " + v;
+    }
+    if (typeof el.value === "string") h += " " + el.value;
+    const lb = el.getAttribute("aria-labelledby");
+    if (lb) for (const id of lb.split(/\s+/)) h += " " + ((el.ownerDocument.getElementById(id) || {}).textContent || "");
+    if (el.labels) for (const l of el.labels) h += " " + l.textContent;
+    const inner = text.trim() ? null : el.querySelector("img[alt],[aria-label],[title]");
+    if (inner) h += " " + (inner.getAttribute("alt") || "") + (inner.getAttribute("aria-label") || "") + (inner.getAttribute("title") || "");
+    return h.toLowerCase().replace(/\s+/g, "");
+  }
+
+  function candidates(root, needle, viewOnly) {
+    flushAnimations();
     const items = [], frames = [];
-    walk(root || document.documentElement, { x: 0, y: 0 }, items, frames);
+    walk(root || document.documentElement, { x: 0, y: 0 }, items, frames, viewOnly ? { below: 0, above: 0, layers: [], prune: true } : undefined);
     const vw = innerWidth, vh = innerHeight, out = [];
     for (const it of items) {
       if (it.heading) continue;
       const el = it.el;
+      if (needle && !hay(el).includes(needle)) continue;
       const r = el.getBoundingClientRect();
       if (r.width < 1 || r.height < 1) continue;
       if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
       if (el.closest('[aria-hidden="true"]')) continue;
       const ax = r.left + it.off.x, ay = r.top + it.off.y;
       const inView = ay + r.height > 0 && ax + r.width > 0 && ay < vh && ax < vw;
+      if (viewOnly && !inView) continue;
       out.push({ el, role: roleOf(el), name: nameOf(el), inView });
     }
     return out;
   }
 
-  globalThis.__lt = { S, get, ref, roleOf, nameOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, INTERACTIVE };
+  globalThis.__lt = { S, get, ref, roleOf, nameOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, INTERACTIVE, CONTROL };
 })();

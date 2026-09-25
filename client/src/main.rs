@@ -40,8 +40,20 @@ fn scripts(home: &Path, exe: &str) -> PathBuf {
     home.join("venv").join("Scripts").join(exe)
 }
 
+fn mtime(p: &Path) -> Option<std::time::SystemTime> {
+    fs::metadata(p).and_then(|m| m.modified()).ok()
+}
+
 fn ready(home: &Path, root: &Path) -> bool {
+    let stamp = mtime(&home.join("venv").join(".lighting-stamp"));
+    let fresh = |p: PathBuf| match (stamp, mtime(&p)) {
+        (_, None) => true,
+        (Some(s), Some(f)) => s >= f,
+        (None, Some(_)) => false,
+    };
     scripts(home, "pythonw.exe").exists()
+        && fresh(root.join("requirements.txt"))
+        && fresh(root.join(".claude-plugin").join("plugin.json"))
         && fs::read_to_string(home.join("client-root"))
             .map(|s| norm(&s) == norm(&root.display().to_string()))
             .unwrap_or(false)

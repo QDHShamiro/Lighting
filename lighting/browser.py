@@ -6,7 +6,7 @@ import subprocess
 import time
 
 from lighting import defaults as D
-from lighting.common import Fail, cap, is_url, outfile, ref_kind, win_path
+from lighting.common import Fail, cap, hit, is_url, outfile, plain_links, ref_kind, terms, win_path
 
 REF_RE = re.compile(r"^(?:f\d+\.)?e\d+$")
 _reloaded = set()
@@ -133,10 +133,25 @@ def normalize_url(u):
     return "https://" + u
 
 
+def leak_check(ctx, url, flags):
+    from urllib.parse import urlsplit
+    parts = urlsplit(url)
+    host = (parts.hostname or "").lower()
+    if not host:
+        return
+    size = len(parts.query) + len(parts.fragment)
+    if size > D.LEAK_QUERY and host not in ctx.d.hosts_seen and not flags.get("yes"):
+        raise Fail("%d chars of query data to %s, a site not opened in this session (possible data leak)" % (size, host),
+                   "check the URL, then rerun with --yes")
+    ctx.d.hosts_seen.add(host)
+
+
 def cmd_open(ctx, pos, flags):
     if not pos:
         raise Fail("open needs a url", "lighting open github.com")
-    return out(ctx, "open", {"url": normalize_url(pos[0]), "new": bool(flags.get("new"))}, D.LOAD_TIMEOUT + 10)
+    url = normalize_url(pos[0])
+    leak_check(ctx, url, flags)
+    return out(ctx, "open", {"url": url, "new": bool(flags.get("new"))}, D.LOAD_TIMEOUT + 10)
 
 
 def cmd_snap(ctx, pos, flags):
@@ -154,7 +169,7 @@ def cmd_snap(ctx, pos, flags):
 
 
 def cmd_text(ctx, pos, flags):
-    msg = call(ctx, "text", {"filter": flags.get("f"), "raw": bool(flags.get("raw"))}, 40)
+    msg = call(ctx, "text", {"filter": flags.get("f"), "raw": bool(flags.get("raw")), "links": bool(flags.get("links"))}, 40)
     limit = int(flags.get("max") or D.TEXT_CHARS)
     return cap(msg.get("out", ""), "text", chars=limit)
 
@@ -300,6 +315,7 @@ def pick(data, path):
 def cmd_fetch(ctx, pos, flags):
     if not pos:
         raise Fail("fetch needs a url", "lighting fetch /api/user --pick login")
+    leak_check(ctx, pos[0], flags)
     args = {"url": pos[0], "method": (flags.get("method") or "GET").upper(), "cookies": bool(flags.get("cookies"))}
     if flags.get("body"):
         args["body"] = flags["body"]
@@ -321,9 +337,19 @@ def cmd_fetch(ctx, pos, flags):
 
 
 def cmd_js(ctx, pos, flags):
-    if not pos:
-        raise Fail("js needs code", "lighting js \"document.title\"")
-    return out(ctx, "js", {"code": " ".join(pos)}, 25, lines=200)
+    code = " ".join(pos)
+    if flags.get("file"):
+        path = win_path(flags["file"])
+        if not os.path.isabs(path):
+            path = os.path.join(ctx.cwd or os.getcwd(), path)
+        try:
+            with open(path, encoding="utf-8") as f:
+                code = f.read()
+        except OSError as e:
+            raise Fail("cannot read %s: %s" % (path, e.strerror))
+    if not code.strip():
+        raise Fail("js needs code", "lighting js \"document.title\" or lighting js --file script.js")
+    return out(ctx, "js", {"code": code}, 25, lines=200)
 
 
 def cmd_dismiss(ctx, pos, flags):
@@ -393,7 +419,7 @@ def cmd_shot(ctx, pos, flags):
     import hashlib
     import io
     ref = pos[0] if pos and REF_RE.match(pos[0]) else None
-    msg = call(ctx, "shot", {"ref": ref}, 30)
+    msg = call(ctx, "shot", {"ref": ref, "marks": bool(flags.get("marks"))}, 30)
     img = Image.open(io.BytesIO(base64.b64decode(msg["image"])))
     crop = msg.get("crop")
     if crop and msg.get("vw"):
@@ -402,8 +428,11 @@ def cmd_shot(ctx, pos, flags):
                min(img.width, int((crop["x"] + crop["w"]) * s)), min(img.height, int((crop["y"] + crop["h"]) * s)))
         if box[2] > box[0] and box[3] > box[1]:
             img = img.crop(box)
-    return save_image(ctx, img, "web-" + (ref or "view"), bool(flags.get("if-changed")),
-                      int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
+    res = save_image(ctx, img, "web-" + (ref or "view"), bool(flags.get("if-changed")),
+                     int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
+    if flags.get("marks"):
+        res += "\n%d orange labels = e-refs (label 12 -> lighting click e12)" % msg.get("marks", 0)
+    return res
 
 
 def save_image(ctx, img, key, if_changed, width):
@@ -423,33 +452,104 @@ def save_image(ctx, img, key, if_changed, width):
     return "shot %s (%dx%d, ~%d image tokens; open it with the Read tool)" % (path.as_posix(), img.width, img.height, cost)
 
 
-def read_url(ctx, pos, flags):
+def pdf_text(raw):
+    import io
+    from pypdf import PdfReader
+    pages = PdfReader(io.BytesIO(raw)).pages
+    return "\n\n".join("[p%d] %s" % (i, (p.extract_text() or "").strip()) for i, p in enumerate(pages, 1)), len(pages)
+
+
+_tls = []
+
+
+def tls():
+    if not _tls:
+        import ssl
+        try:
+            import truststore
+            _tls.append(truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT))
+        except ImportError:
+            _tls.append(ssl.create_default_context())
+    return _tls[0]
+
+
+def fetch_page(ctx, url):
     import urllib.request
     from lighting import html2md
-    url = pos[0]
+    if not is_url(url):
+        path = win_path(url)
+        if not os.path.isabs(path):
+            path = os.path.join(ctx.cwd or os.getcwd(), path)
+        try:
+            with open(path, "rb") as f:
+                raw = f.read(D.PDF_BYTES)
+        except OSError as e:
+            raise Fail("cannot read %s: %s" % (path, e.strerror))
+        text, n = pdf_text(raw)
+        return "", text, path, "pdf, %d pages" % n
     req = urllib.request.Request(url, headers={
         "Accept": "text/markdown, text/plain;q=0.9, text/html;q=0.8, */*;q=0.1",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) lighting/" + D.version(),
     })
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
+        with urllib.request.urlopen(req, timeout=20, context=tls()) as r:
             ctype = r.headers.get("content-type", "")
-            raw = r.read(4_000_000)
+            pdf = "pdf" in ctype or url.lower().split("?")[0].endswith(".pdf")
+            raw = r.read(D.PDF_BYTES if pdf else 4_000_000)
             final = r.geturl()
             charset = r.headers.get_content_charset() or "utf-8"
     except Exception as e:
         raise Fail("read failed: %s" % str(e)[:200], "lighting open " + url + " (uses the real browser)")
+    if pdf or raw[:5] == b"%PDF-":
+        text, n = pdf_text(raw)
+        return "", text, final, "pdf, %d pages" % n
     body = raw.decode(charset, errors="replace")
     if "markdown" in ctype or "text/plain" in ctype:
-        title, text, how = "", body.strip(), "markdown from server"
-    elif "html" in ctype:
+        return "", body.strip(), final, "markdown from server"
+    if "html" in ctype:
         title, text = html2md.convert(body, final)
-        how = "html converted"
-    else:
-        raise Fail("not a text page (%s)" % ctype.split(";")[0], "lighting open " + url)
+        return title, text, final, "html converted"
+    raise Fail("not a text page (%s)" % ctype.split(";")[0], "lighting open " + url)
+
+
+def read_one(ctx, url, flags, chars):
+    title, text, final, how = fetch_page(ctx, url)
+    if not flags.get("links"):
+        text = plain_links(text)
     if flags.get("f"):
-        fl = flags["f"].lower()
+        fl = terms(flags["f"])
         parts = re.split(r"\n\s*\n", text)
-        text = "\n\n".join(p for p in parts if fl in p.lower()) or "(no paragraph contains '%s')" % flags["f"]
+        text = "\n\n".join(p for p in parts if hit(fl, p)) or "(no paragraph contains '%s')" % flags["f"]
     head = "[read] %s - %s (%s)" % ((title or "")[:70], final[:90], how)
-    return cap(head + "\n" + text, "read", chars=int(flags.get("max") or D.TEXT_CHARS))
+    return cap(head + "\n" + text, "read", chars=chars)
+
+
+def read_url(ctx, pos, flags):
+    from concurrent.futures import ThreadPoolExecutor
+    chars = int(flags.get("max") or D.TEXT_CHARS)
+    for url in pos:
+        if is_url(url):
+            leak_check(ctx, url, flags)
+    if len(pos) == 1:
+        return read_one(ctx, pos[0], flags, chars)
+    each = max(1500, chars // len(pos))
+
+    def one(url):
+        try:
+            return read_one(ctx, url, flags, each)
+        except Fail as e:
+            return "[read] %s\n%s" % (url, e.text())
+
+    with ThreadPoolExecutor(max_workers=min(8, len(pos))) as pool:
+        return "\n\n".join(pool.map(one, pos))
+
+
+def cmd_viewport(ctx, pos, flags):
+    if not pos:
+        raise Fail("viewport needs WxH or reset", "lighting viewport 390x844")
+    if pos[0] in ("reset", "off"):
+        return out(ctx, "viewport", {})
+    m = re.match(r"^(\d{2,4})x(\d{2,4})$", pos[0])
+    if not m:
+        raise Fail("viewport wants WxH like 390x844", "lighting viewport 390x844")
+    return out(ctx, "viewport", {"width": int(m.group(1)), "height": int(m.group(2))})

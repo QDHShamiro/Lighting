@@ -116,13 +116,16 @@ async function snap(a, tab) {
 
 async function text(a, tab) {
   const tabId = await tabOf(tab);
+  let why = "";
   if (!a.raw) {
     try {
       const [probe] = await chrome.scripting.executeScript({ target: { tabId }, func: () => !!globalThis.Defuddle });
       if (!probe.result) await chrome.scripting.executeScript({ target: { tabId }, files: ["defuddle.js"] });
-    } catch (e) {}
+    } catch (e) {
+      why = String((e && e.message) || e).slice(0, 120);
+    }
   }
-  const res = await page(tabId, "act.text", [{ filter: a.filter || null, raw: !!a.raw }], 0, 25000);
+  const res = await page(tabId, "act.text", [{ filter: a.filter || null, raw: !!a.raw, links: !!a.links, why }], 0, 25000);
   return header(tabId, { title: res.title, url: res.url }) + "\n" + res.text;
 }
 
@@ -229,10 +232,19 @@ async function shot(a, tab) {
       if (r.gone) throw new Error(a.ref + " is gone -> try: lighting snap");
       crop = { x: r.x - r.w / 2, y: r.y - r.h / 2, w: r.w, h: r.h };
     }
-    const m = await C.send(tabId, "Page.getLayoutMetrics");
-    const vp = m.cssVisualViewport || m.visualViewport || {};
-    const img = await C.send(tabId, "Page.captureScreenshot", { format: "jpeg", quality: a.quality || 70 });
-    return { image: img.data, crop, vw: vp.clientWidth, vh: vp.clientHeight };
+    let marks = 0;
+    if (a.marks) {
+      await page(tabId, "snap", [{ force: true }]);
+      marks = (await page(tabId, "act.marks", [true])).n;
+    }
+    try {
+      const m = await C.send(tabId, "Page.getLayoutMetrics");
+      const vp = m.cssVisualViewport || m.visualViewport || {};
+      const img = await C.send(tabId, "Page.captureScreenshot", { format: "jpeg", quality: a.quality || 70 });
+      return { image: img.data, crop, vw: vp.clientWidth, vh: vp.clientHeight, marks };
+    } finally {
+      if (a.marks) await page(tabId, "act.marks", [false]).catch(() => {});
+    }
   });
 }
 
@@ -272,6 +284,36 @@ async function downloads() {
   }).join("\n");
 }
 
+async function innerWidth(tabId) {
+  const r = await C.send(tabId, "Runtime.evaluate", { expression: "innerWidth", returnByValue: true }).catch(() => null);
+  return r && r.result ? r.result.value : null;
+}
+
+async function viewport(a, tab) {
+  const tabId = await tabOf(tab);
+  await C.attach(tabId);
+  const before = await innerWidth(tabId);
+  const mobile = a.width <= 600;
+  const changed = async (ms) => {
+    const t0 = Date.now();
+    while (Date.now() - t0 < ms) {
+      if ((await innerWidth(tabId)) !== before) return true;
+      await T.sleep(25);
+    }
+    return false;
+  };
+  if (!a.width) {
+    await C.send(tabId, "Emulation.clearDeviceMetricsOverride");
+    await C.send(tabId, "Emulation.setTouchEmulationEnabled", { enabled: false }).catch(() => {});
+  } else {
+    await C.send(tabId, "Emulation.setDeviceMetricsOverride", { width: a.width, height: a.height, deviceScaleFactor: 0, mobile });
+    await C.send(tabId, "Emulation.setTouchEmulationEnabled", { enabled: mobile, maxTouchPoints: mobile ? 5 : 1 }).catch(() => {});
+  }
+  if (!(await changed(250))) await T.showBriefly(tabId, () => changed(500));
+  if (!a.width) return "ok (viewport reset)";
+  return "ok (viewport " + a.width + "x" + a.height + (mobile ? ", mobile" : "") + ", until lighting viewport reset or 5 min idle)";
+}
+
 async function consoleCmd(a, tab) {
   const tabId = await tabOf(tab);
   const fresh = !C.isAttached(tabId);
@@ -292,7 +334,7 @@ async function dismiss(a, tab) {
 
 async function tabCmd(a) {
   const id = T.rid(a.id);
-  const t = await chrome.tabs.get(id).catch(() => null);
+  const t = id === null ? null : await chrome.tabs.get(id).catch(() => null);
   if (!t) throw new Error("no tab " + a.id + " -> try: lighting tabs");
   T.setTarget(id);
   return "target t" + T.sid(id) + " " + trunc(t.title, 50) + " - " + T.short(t.url, 60);
@@ -300,12 +342,10 @@ async function tabCmd(a) {
 
 async function close(a, tab) {
   const id = a.id ? T.rid(a.id) : await tabOf(tab);
+  if (id === null) throw new Error("no tab " + a.id + " -> try: lighting tabs");
   if (!a.force && !(await T.inGroup(id))) throw new Error("t" + T.sid(id) + " is not a Lighting tab -> add --force to close it anyway");
   await chrome.tabs.remove(id);
-  if (id === T.getTarget()) {
-    const rest = await T.groupTabs();
-    T.setTarget(rest.length ? rest[0].id : null);
-  }
+  if (id === T.getTarget()) T.setTarget(await T.previous(id));
   const next = T.getTarget();
   return "closed t" + T.sid(id) + (next ? ", target now t" + T.sid(next) : "");
 }
@@ -389,6 +429,8 @@ async function run(cmd, a, tab) {
       return downloads();
     case "console":
       return consoleCmd(a, tab);
+    case "viewport":
+      return viewport(a, tab);
     case "dismiss":
       return dismiss(a, tab);
     default:

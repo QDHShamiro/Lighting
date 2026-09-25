@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Lighting",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Lets Claude Code drive this browser through the local lighting command. Talks only to the Lighting native host on this PC.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmsdSg2YnGg1aXKj1hdgE5BIUFqbe3tsDlT+/nz1fDwCeEcDQU9//9AQUslBo7+sA4a+rQnREGug27nOJL9QCecOWoCBgWTOVVxWpEeGsuSbH2abFAe6MXbzTrLhPBpGB79sXjCGWdN4gsjiqVEpYMPN0Hiu1nJ47WfsnzfMhI2sLLZ6C4G9IJCyGU6m2KVEE1oAbZVwK2640cpOx0Wa6iGyvGUPZ7oHiHlpEWYIDRosTWrNZq2eT3Pdg1XbO5mv4xBfPNS+6x20C4TRIlFYL6V4ehpSu1HQyY4CxaVlAmqjWdOIUr1PFbzbkeecDVatHJ6kbD4UV5p2pp6ullnHV4QIDAQAB",
   "minimum_chrome_version": "116",

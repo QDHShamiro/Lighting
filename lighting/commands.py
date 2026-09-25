@@ -7,7 +7,7 @@ from lighting import defaults as D
 from lighting.common import Fail, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
-          "body", "method", "button", "region", "delta"}
+          "body", "method", "button", "region", "delta", "file"}
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone"}
 
 
@@ -109,7 +109,7 @@ def route(ctx, name, pos, flags):
     if name in SYSTEM:
         return SYSTEM[name](ctx, pos, flags)
     if name == "read":
-        if pos and is_url(pos[0]):
+        if pos and (is_url(pos[0]) or pos[0].lower().endswith(".pdf")):
             return web().read_url(ctx, pos, flags)
         return app().cmd_read(ctx, pos, flags)
     if name in APP_ONLY:
@@ -186,14 +186,18 @@ def cmd_do(ctx, pos, flags):
         if ctx.d.abort.is_set():
             lines.append("%d stopped by hotkey" % i)
             break
+        argv = tokenize(step)
         try:
-            out, _, _ = run_one(ctx, tokenize(step))
+            out, _, _ = run_one(ctx, argv)
         except Fail as e:
             left = len(steps) - i
             lines.append("%d %s%s" % (i, e.text(), " (stopped, %d skipped)" % left if left else ""))
             break
+        text = out if isinstance(out, str) else json.dumps(out)
+        if i < len(steps) and parse(argv)[0] not in READS:
+            text = text.split("\n", 1)[0]
         prefix = "%d " % i if len(steps) > 1 else ""
-        lines.append(prefix + (out if isinstance(out, str) else json.dumps(out)))
+        lines.append(prefix + text)
     return "\n".join(lines)
 
 
@@ -224,10 +228,11 @@ def cmd_status(ctx, pos, flags):
         pick = web().pick_host(ctx, quiet=True)
         for h in hosts:
             info = h.info
+            old = info.get("ext") and info.get("ext") != D.version()
             lines.append("browser %s %s | ext %s%s%s" % (
                 h.brand, info.get("browserVersion", "?"), info.get("ext", "?"),
                 " | in use" if h is pick else "",
-                " | OUTDATED, run: lighting setup" if info.get("ext") and info.get("ext") != D.version() else ""))
+                (" | updating extension to " + D.version() if h.brand in web()._reloaded else " | OUTDATED, run: lighting setup") if old else ""))
     else:
         lines.append("browser none connected (extension not loaded or browser closed) -> lighting setup")
     if ctx.target:
@@ -326,10 +331,12 @@ def cmd_bench(ctx, pos, flags):
 
 SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status, "config": cmd_config,
           "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload}
+READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
+         "console", "expect", "wait", "clip", "help", "version", "config"}
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}
 APP_ONLY = {"windows", "focus", "clip"}
 WEB_ONLY = {"open", "text", "fill", "select", "check", "wait", "expect", "table", "fetch", "js", "dismiss",
-            "upload", "tabs", "tab", "close", "back", "forward", "reload", "dialog", "downloads", "console"}
+            "upload", "tabs", "tab", "close", "back", "forward", "reload", "dialog", "downloads", "console", "viewport"}
 
 
 def cap_lines(text, name, ctx=None):
