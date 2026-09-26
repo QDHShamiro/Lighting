@@ -56,6 +56,7 @@
     if (/^H[1-6]$/.test(t)) return "heading";
     if (t === "VIDEO") return "video";
     if (t === "AUDIO") return "audio";
+    if (t === "IMG") return "img";
     return "clickable";
   }
 
@@ -100,7 +101,10 @@
       const ty = (el.type || "").toLowerCase();
       s = el.getAttribute("placeholder") || el.getAttribute("title") || (ty === "submit" || ty === "button" || ty === "reset" ? el.value : "") || el.getAttribute("name") || "";
     }
-    if (!s && t === "IMG") s = el.alt;
+    if (!s && t === "IMG") {
+      const cap = el.closest("figure") && el.closest("figure").querySelector("figcaption");
+      s = el.alt || (cap ? cap.innerText : "") || el.title;
+    }
     if (!s && t !== "INPUT" && t !== "TEXTAREA" && t !== "SELECT") s = el.innerText;
     if (!clean(s)) {
       const inner = el.querySelector("img[alt],[aria-label],[title]");
@@ -156,6 +160,7 @@
       }
     }
     if (role === "video" || role === "audio") return mediaState(el);
+    if (role === "img") return el.naturalWidth ? " " + el.naturalWidth + "x" + el.naturalHeight : "";
     if (el.disabled || el.getAttribute("aria-disabled") === "true") s += " (disabled)";
     if (el.getAttribute("aria-selected") === "true" || (el.getAttribute("aria-current") && el.getAttribute("aria-current") !== "false")) s += " *";
     const ex = el.getAttribute("aria-expanded");
@@ -169,7 +174,7 @@
   }
 
   function line(el, role, name) {
-    const hint = name || role === "video" || role === "audio" ? "" : hintOf(el);
+    const hint = name || role === "video" || role === "audio" || role === "img" ? "" : hintOf(el);
     return ref(el) + " " + role + (name ? ' "' + q(trunc(name, 60)) + '"' : hint ? " #" + hint : "") + state(el, role);
   }
 
@@ -249,7 +254,7 @@
       }
       if (cut && cs && (cs.position === "fixed" || cs.position === "sticky" || cs.position === "absolute")) cut.layers.push({ el: n, off });
       const head = !isInt && (/^H[1-3]$/.test(t) || n.getAttribute("role") === "heading");
-      const media = (t === "VIDEO" || (t === "AUDIO" && n.controls)) && !isInt;
+      const media = (t === "VIDEO" || (t === "AUDIO" && n.controls) || (t === "IMG" && cut && cut.images)) && !isInt;
       if (isInt || head || media || (cs && pointerish(n, cs) && !n.closest(CONTROL) && !n.querySelector(INTERACTIVE))) {
         out.push({ el: n, off, heading: head, media });
       }
@@ -349,7 +354,7 @@
     }
     flushAnimations();
     const items = [], frames = [];
-    const cut = { below: 0, above: 0, layers: [], prune: !opts.all };
+    const cut = { below: 0, above: 0, layers: [], prune: !opts.all, images: !!opts.media };
     walk(scope, { x: 0, y: 0 }, items, frames, cut);
     const layers = overlays(cut);
     let hitMs = 0;
@@ -366,8 +371,9 @@
       const el = it.el;
       const r = el.getBoundingClientRect();
       if (r.width <= 1 || r.height <= 1) continue;
-      if (!it.heading && !it.media && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
-      if (!it.media && el.closest('[aria-hidden="true"]')) continue;
+      const av = it.media && el.tagName !== "IMG";
+      if (!it.heading && !av && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+      if (!av && el.closest('[aria-hidden="true"]')) continue;
       const ax = r.left + it.off.x, ay = r.top + it.off.y;
       const pos = where(ax, ay, r.width, r.height);
       const inView = pos === "in";
@@ -390,7 +396,8 @@
         continue;
       }
       if (it.media && el.tagName === "VIDEO" && (r.width < 120 || r.height < 60)) continue;
-      if (inView && !it.media && hitMs < HIT_BUDGET_MS && mayBeCovered(el, ax, ay, r.width, r.height, layers)) {
+      if (it.media && el.tagName === "IMG" && (r.width < 48 || r.height < 48)) continue;
+      if (inView && !av && hitMs < HIT_BUDGET_MS && mayBeCovered(el, ax, ay, r.width, r.height, layers)) {
         const t0 = performance.now();
         const hit = covered(el, r);
         hitMs += performance.now() - t0;
@@ -484,7 +491,7 @@
 
   function snap(opts) {
     opts = opts || {};
-    const sig = JSON.stringify([opts.all, opts.scope, opts.filter]);
+    const sig = JSON.stringify([opts.all, opts.scope, opts.filter, opts.media]);
     if (!opts.force && S.muts === S.lastMuts && location.href === S.lastHref && Math.round(scrollY) === S.lastY && sig === S.sig) {
       return { unchanged: true, title: document.title, url: location.href };
     }
@@ -541,6 +548,7 @@
       h: Math.round(b.height),
       name: nameOf(el),
       role: roleOf(el),
+      media: el.tagName === "VIDEO" || el.tagName === "AUDIO" ? mediaState(el).trim() : "",
       covered: hit ? describe(hit) : null,
       dpr: devicePixelRatio,
       href: el.tagName === "A" ? el.href : "",

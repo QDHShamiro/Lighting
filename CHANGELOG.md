@@ -16,6 +16,10 @@ a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in t
 - Unit tests (`tests/test_units.py`, `cargo test`), CI on every push and pull request, releases with
   SHA-256 checksums from a tag.
 - `bench --real` compares `text` with the page's own text and prints the saving.
+- The "Lighting" tab group is a status light: orange while Lighting works, red when a step failed or
+  was stopped, green after `done`.
+- Images and video: `snap --media` lists images (caption as name), `frames <video>` turns a playing
+  video into one contact sheet with timestamps, `read <image url|file>` saves an image to look at.
 
 ### Fixed
 - The first `rtk lighting ...` of a session hung until the daemon stopped: the daemon inherited a pipe

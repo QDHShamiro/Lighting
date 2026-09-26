@@ -15,6 +15,11 @@ Full command list: `lighting help`.
 3. `open <url>` gives a compact snapshot. Then `snap -f "a|b"`, `snap -s e40`, `snap --diff`, `snap --all`.
 4. `text [-f word] [--links]` page text. `shot [e5|w2] [--marks]` JPEG, Read only when visuals matter.
 
+## Images and videos
+`snap --media` also lists images (`e57 img "caption" 500x281`); `shot e57` saves just that image to look at.
+`frames e40 [--count 6] [--every 1500]` turns a playing video into one contact sheet with timestamps (one Read, ~500 tokens). "did not move" means paused: `click e40` or `press k`, then again.
+`read <image url|file>` saves an image as JPEG to look at.
+
 ## Web
 ```
 click <e5|"text"|#hint> [--yes]   fill "Email=a@b.c" "Remember me=on" [--submit]

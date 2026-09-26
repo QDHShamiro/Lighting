@@ -7,8 +7,9 @@ from lighting import defaults as D
 from lighting.common import Fail, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
-          "body", "method", "button", "region", "delta", "file", "role", "last", "on"}
-ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone"}
+          "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every"}
+ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
+         "-m": "media"}
 
 
 class Context:
@@ -117,7 +118,7 @@ def route(ctx, name, pos, flags):
     if name in SYSTEM:
         return SYSTEM[name](ctx, pos, flags)
     if name == "read":
-        if pos and (is_url(pos[0]) or pos[0].lower().endswith(".pdf")):
+        if pos and (is_url(pos[0]) or pos[0].lower().endswith((".pdf",) + web().IMAGE_EXT)):
             return web().read_url(ctx, pos, flags)
         return app().cmd_read(ctx, pos, flags)
     if name == "close" and pos and (ref_kind(pos[0]) == "w" or pos[0].lower().startswith("app:")):
@@ -248,6 +249,7 @@ def browsers(ctx, cmd, args=None):
 def cmd_done(ctx, pos, flags):
     quiet = flags.get("quiet")
     if not ctx.cfg.get("cleanup"):
+        browsers(ctx, "cleanup", {"close": False})
         return "" if quiet else "left everything open (cleanup is off: lighting config cleanup on)"
     replies = browsers(ctx, "cleanup")
     tabs = sum(r.get("closed") or 0 for r in replies)
@@ -424,11 +426,12 @@ SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
           "done": cmd_done, "keep": cmd_keep}
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
-         "console", "expect", "wait", "clip", "help", "version", "config", "routines"}
+         "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames"}
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}
 APP_ONLY = {"windows", "focus", "clip", "launch"}
 WEB_ONLY = {"open", "text", "fill", "select", "check", "wait", "expect", "table", "fetch", "js", "dismiss",
-            "upload", "tabs", "tab", "close", "back", "forward", "reload", "dialog", "downloads", "console", "viewport"}
+            "upload", "tabs", "tab", "close", "back", "forward", "reload", "dialog", "downloads", "console", "viewport",
+            "frames"}
 
 
 def cap_lines(text, name, ctx=None):

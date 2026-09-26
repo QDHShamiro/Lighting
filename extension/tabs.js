@@ -1,6 +1,7 @@
 const GROUP = "Lighting";
 let target = null;
 let groupId = null;
+let color = null;
 const alias = { seq: 0, fwd: {}, back: {} };
 let mru = [];
 
@@ -69,9 +70,16 @@ export async function addToGroup(tabId) {
       await chrome.tabs.group({ tabIds: [tabId], groupId: gid });
     } else {
       groupId = await chrome.tabs.group({ tabIds: [tabId], createProperties: { windowId: tab.windowId } });
-      await chrome.tabGroups.update(groupId, { title: GROUP, color: "orange", collapsed: false });
+      await chrome.tabGroups.update(groupId, { title: GROUP, color: color || "orange", collapsed: false });
     }
   } catch (e) {}
+}
+
+export async function paint(c) {
+  if (c === color) return;
+  color = c;
+  const groups = await chrome.tabGroups.query({ title: GROUP }).catch(() => []);
+  for (const g of groups) await chrome.tabGroups.update(g.id, { color: c }).catch(() => {});
 }
 
 export async function inGroup(tabId) {

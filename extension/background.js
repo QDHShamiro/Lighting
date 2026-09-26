@@ -61,10 +61,13 @@ async function onMessage(msg) {
   backoff = 300;
   if (!msg || !msg.cmd) return;
   const id = msg.id;
+  const busy = !NO_TAB.has(msg.cmd) && !msg.cmd.startsWith("record") && msg.cmd !== "where";
   try {
+    if (busy) await T.paint("orange");
     const res = await run(msg.cmd, msg.args || {}, msg.tab);
     if (id) post(Object.assign({ id, ok: true }, typeof res === "string" ? { out: res } : res));
   } catch (e) {
+    if (busy) T.paint("red");
     if (id) post({ id, ok: false, error: String((e && e.message) || e) });
   }
 }
@@ -104,14 +107,14 @@ async function frameId(tabId, host) {
 
 async function snap(a, tab) {
   const tabId = await tabOf(tab);
-  const opts = { all: !!a.all, scope: a.scope || null, filter: a.filter || null, diff: !!a.diff, force: !!a.force };
+  const opts = { all: !!a.all, scope: a.scope || null, filter: a.filter || null, diff: !!a.diff, force: !!a.force, media: !!a.media };
   if (a.frame) {
     const fid = await frameId(tabId, a.frame);
     const res = await page(tabId, "snap", [Object.assign(opts, { force: true })], fid);
     return formatSnap(tabId, res, 0, true).replace(/^e(\d+) /gm, "f" + fid + ".e$1 ").replace(/^\[t\d+\]/, "[t" + T.sid(tabId) + " frame " + a.frame + "]");
   }
   const res = await page(tabId, "snap", [opts]);
-  return formatSnap(tabId, res, 0, opts.all || !!opts.scope || !!opts.filter || opts.force || opts.diff);
+  return formatSnap(tabId, res, 0, opts.all || !!opts.scope || !!opts.filter || opts.force || opts.diff || opts.media);
 }
 
 async function text(a, tab) {
@@ -245,6 +248,27 @@ async function shot(a, tab) {
     } finally {
       if (a.marks) await page(tabId, "act.marks", [false]).catch(() => {});
     }
+  });
+}
+
+async function frames(a, tab) {
+  const tabId = await tabOf(tab);
+  const t = await chrome.tabs.get(tabId);
+  const win = await chrome.windows.get(t.windowId);
+  if (win.state === "minimized") throw new Error("browser window is minimized -> restore it");
+  return T.showBriefly(tabId, async () => {
+    await C.attach(tabId);
+    const out = [];
+    for (let i = 0; i < a.count; i++) {
+      if (i) await T.sleep(a.every);
+      const r = await page(tabId, "rect", [a.ref]);
+      if (r.gone) throw new Error(a.ref + " is gone -> try: lighting snap");
+      const m = await C.send(tabId, "Page.getLayoutMetrics");
+      const vp = m.cssVisualViewport || m.visualViewport || {};
+      const img = await C.send(tabId, "Page.captureScreenshot", { format: "jpeg", quality: 70 });
+      out.push({ image: img.data, crop: { x: r.x - r.w / 2, y: r.y - r.h / 2, w: r.w, h: r.h }, vw: vp.clientWidth, media: r.media || "" });
+    }
+    return { frames: out };
   });
 }
 
@@ -474,6 +498,7 @@ async function route(cmd, a, tab) {
     case "abort":
       cfg.abort = true;
       setTimeout(() => (cfg.abort = false), 800);
+      T.paint("red");
       return {};
     case "reload-extension":
       setTimeout(() => chrome.runtime.reload(), 100);
@@ -489,8 +514,9 @@ async function route(cmd, a, tab) {
       return { out: "closed " + n };
     }
     case "cleanup": {
+      await T.paint("green");
       const tabs = await T.groupTabs();
-      const shut = tabs.filter((t) => !t.active).map((t) => t.id);
+      const shut = a.close === false ? [] : tabs.filter((t) => !t.active).map((t) => t.id);
       if (shut.length) await chrome.tabs.remove(shut).catch(() => {});
       if (shut.includes(T.getTarget())) T.setTarget(null);
       return { out: "", closed: shut.length, kept: tabs.length - shut.length };
@@ -547,6 +573,8 @@ async function route(cmd, a, tab) {
       return fetchJson(a, tab);
     case "shot":
       return shot(a, tab);
+    case "frames":
+      return frames(a, tab);
     case "upload":
       return upload(a, tab);
     case "dialog":

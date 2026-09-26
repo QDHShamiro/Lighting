@@ -69,6 +69,9 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - Store (UWP) apps: the window belongs to `ApplicationFrameHost.exe`, the focused element to the app (`CalculatorApp.exe`). `type focused` accepts a focused element from another process when the target window is in the foreground.
 - `launch` order: exact Start menu name, then Win+R names (`calc`, `notepad`: an .exe in System32/Windows or an App Paths entry), then the fuzzy Start menu match. "calc" is the Start menu name of OpenOffice Calc; the Windows calculator is "Rechner" on German Windows.
 - Cleanup: `done` asks every connected extension to close the non-active tabs of the Lighting group (a tab the user made active is being looked at and stays), and closes the windows `launch` created (hwnd not in the window list before the launch; apps that were open stay) with WM_CLOSE, then gives the foreground back to the window that had it before the first launch. `keep` ungroups tabs and forgets windows. The Stop hook runs `done --quiet`; for `done` the client never sets anything up and never starts the daemon.
+- Status light: `paint()` in tabs.js sets the Lighting group color, orange before every command that works on a tab, red on an error or `abort`, green on `cleanup` (also with `cleanup off`, then nothing closes). New groups take the current color.
+- Images are listed only with `snap --media` (image-heavy pages would cost tokens otherwise); they keep the visibility and aria-hidden checks that video skips, icons under 48 px are left out, and an image without alt takes its `figcaption`. `frames` keeps the tab in front for the whole capture because background tabs stop decoding video; "did not move" comes from equal timestamps or equal thumbnails (JPEG noise alone breaks exact comparisons).
+- After a desktop command, shared verbs (`snap`, `click`, ...) go to the desktop. Test the web side with web-only commands (`open`, `text`) or `--on web`.
 - Bionic (LM Studio's agent app) reads global skills from `~/.lmstudio/skills/<name>/SKILL.md` (folder name = skill name) and LM Studio reads MCP servers from `~/.lmstudio/mcp.json`.
 
 - Codex does not put a plugin's `bin/` on PATH. `refresh()` copies the exe to `~/.lighting/bin` (rename-then-write, a running exe can be renamed but not overwritten) and `setup` adds that folder to the user `Path`. The copied exe has no plugin root next to it, so the client falls back to `client-root` when `../lighting/__init__.py` is missing.
@@ -106,7 +109,7 @@ claude plugin validate skills
 claude plugin validate commands
 python tests/test_units.py     # 8/8
 cd client && cargo test && cargo clippy --release --all-targets
-lighting selftest              # must print 87/87 passed (86/86 with a SKIP line when other Lighting tabs are open or you used the mouse)
+lighting selftest              # must print 90/90 passed (89/89 with a SKIP line when other Lighting tabs are open or you used the mouse)
 lighting bench
 lighting bench --real          # compare tokens with the last run
 ```
