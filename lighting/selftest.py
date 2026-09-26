@@ -131,6 +131,14 @@ def browser(r, base):
     r.step("toggle click", ["click", "Dark mode"], ok)
     r.step("toggle shows [x]", ["snap", "-f", "Dark mode"], lambda o, e: not e and '"Dark mode" [x]' in o)
     r.step("filter a|b", ["snap", "-f", "Sign in|Open modal"], lambda o, e: not e and "Sign in" in o and "Open modal" in o)
+    r.step("nameless button hint", ["snap", "--all"], lambda o, e: not e and "button #nameless-save" in o)
+    r.step("click by #hint", ["click", "#nameless-save"], ok)
+    r.step("hint click worked", ["expect", "Saved via hint"], ok)
+    r.step("video line", ["snap", "-f", "video"], lambda o, e: not e and 'video "demo clip" 0:00' in o and "paused" in o)
+    r.step("page changes by itself", ["js", "setTimeout(() => history.pushState({}, '', '?moved=1'), 50); 1"],
+           lambda o, e: (time.sleep(0.5) or True) and not e)
+    r.step("stale text click refused", ["click", "#nameless-save"], lambda o, e: e and "page changed" in o)
+    r.step("next click works", ["click", "#nameless-save"], ok)
     script = D.OUT / "selftest.js"
     script.write_text("return document.title", "utf-8")
     r.step("js --file", ["js", "--file", str(script)], lambda o, e: o.strip() == "Lighting Fixture")
@@ -172,6 +180,14 @@ def browser(r, base):
     r.step("leak guard --yes passes", ["read", leak, "--yes"], lambda o, e: e and "read failed" in o)
     r.step("unchanged snap", ["snap"], ok)
     r.step("blocklist enforced", ["_blocked"], lambda o, e: e and "blocked" in o)
+    r.step("record start (web)", ["record", "start", "selftest-rec", "--web"], lambda o, e: not e and "recording" in o)
+    r.step("recorded fill", ["fill", "Email=rec@example.com"], ok)
+    r.step("recorded click", ["click", "Dark mode"], ok)
+    r.step("record stop (web)", ["record", "stop", "email=rec@example.com"],
+           lambda o, e: not e and "fill Email={email}" in o and 'click "Dark mode"' in o)
+    r.step("run recorded routine", ["run", "selftest-rec", "email=run@example.com"], lambda o, e: not e and o.startswith("ok selftest-rec"))
+    r.step("routine filled field", ["js", "document.getElementById('email').value"], lambda o, e: o.strip() == "run@example.com")
+    r.step("remove web routine", ["routine", "rm", "selftest-rec"], ok)
     r.step("close fixture tab", ["close"], ok)
     r.step("target back to decoy", ["snap"], lambda o, e: not e and "Second" in o)
     r.step("close decoy tab", ["close"], ok)
@@ -204,7 +220,7 @@ def desktop(r):
             bits = line.split(" ", 2)
             if len(bits) >= 2 and bits[0].startswith("d"):
                 refs.setdefault(bits[1], bits[0])
-        r.step("type (background)", ["type", refs.get("edit", "d0"), "Claude"], lambda o, e: not e and "background" in o)
+        r.step("type by field name", ["type", "Name:", "Claude"], lambda o, e: not e and "background" in o)
         r.step("toggle checkbox", ["click", refs.get("checkbox", "d0")], lambda o, e: not e)
         r.step("click button by name", ["click", "Go"], lambda o, e: not e)
         r.step("read status via uia", ["snap", "app:Lighting Test App", "--text", "-f", "status"], lambda o, e: "clicked 1 with Claude" in o)
@@ -212,11 +228,34 @@ def desktop(r):
         r.fn("ocr via PrintWindow", printwindow_ocr)
         after = win.cursor()
         r.step("mouse untouched", ["ping"], lambda o, e: before == after)
+        r.step("record start (app)", ["record", "start", "selftest-app", "--desktop", "--injected"], lambda o, e: not e)
+        r.step("recorded app click", ["click", "Go", "--mouse"], lambda o, e: not e)
+        r.step("record stop (app)", ["record", "stop"], lambda o, e: not e and "click Go" in o)
+        r.step("remove app routine", ["routine", "rm", "selftest-app"], lambda o, e: not e)
         r.step("window shot", ["shot", "app:Lighting Test App"], lambda o, e: not e and ".jpg" in o)
+        wref = re.match(r"\[(w\d+)\]", out)
+        r.step("close app window", ["close", wref.group(1) if wref else "w0"], lambda o, e: not e and "closed" in o)
     finally:
         close_apps(win)
         dk.state(r.ctx).hwnd = None
         r.ctx.target = None
+
+
+def tiers_check():
+    from lighting.common import best_only, terms, tiers
+    names = ["SOS", "Sosa La M", "SOS wiedergeben", "commits", "MIT license"]
+    kept = best_only([(t, n) for t, n in ((tiers(terms("sos|mit"), n), n) for n in names) if any(t)])
+    return kept == ["SOS", "SOS wiedergeben", "MIT license"], kept
+
+
+def learn_check():
+    from lighting import routines as R
+    st = lambda c, *a: {"cmd": c, "args": list(a), "flags": {}, "where": None}
+    A = [st("launch", "spotify:search:SOS"), st("click", "SOS wiedergeben")]
+    B = [st("launch", "spotify:search:Numb"), st("click", "Numb wiedergeben")]
+    body = R.build(A, {"steps": B, "start": None}, R.align(A, B))
+    lines = [R.step_line(s) for s in body["steps"]]
+    return body["params"] == {"search": "Numb"} and lines == ["launch spotify:search:{search}", 'click "{search} wiedergeben"'], lines
 
 
 def run(ctx, pos, flags):
@@ -238,6 +277,10 @@ def run(ctx, pos, flags):
             web.push_config(c)
 
     commands.SYSTEM["_blocked"] = blocked
+    r.fn("filter tiers", tiers_check)
+    r.fn("routine learning", learn_check)
+    learn = ctx.no_learn
+    ctx.no_learn = True
     try:
         if only in ("all", "web") and web.any_browser(ctx):
             srv = serve()
@@ -247,6 +290,7 @@ def run(ctx, pos, flags):
         if only in ("all", "app"):
             desktop(r)
     finally:
+        ctx.no_learn = learn
         if original is None:
             commands.SYSTEM.pop("_blocked", None)
         if srv:
@@ -255,13 +299,62 @@ def run(ctx, pos, flags):
     return "\n".join(r.rows)
 
 
+REAL_SITES = ["github.com/QDHShamiro/Lighting", "en.wikipedia.org/wiki/Minecraft", "www.youtube.com",
+              "modrinth.com/plugins", "huggingface.co/models", "www.tiktok.com/foryou"]
+
+
+def bench_real(ctx, pos, flags):
+    import json
+    from lighting import commands
+    sites = [p for p in pos if p != "real"] or REAL_SITES
+    path = D.HOME / "bench-real.json"
+    try:
+        before = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        before = {}
+    now, rows = {}, ["site                          open ms  tok   snap ms  tok   text ms   tok  vs last"]
+    learn = ctx.no_learn
+    ctx.no_learn = True
+    try:
+        for i, site in enumerate(sites):
+            res = {}
+            for key, argv in (("open", ["open", site] + (["--new"] if i == 0 else [])), ("snap", ["snap", "--force"]), ("text", ["text"])):
+                t = time.perf_counter()
+                try:
+                    out, _, _ = commands.run_one(ctx, argv)
+                except Fail as e:
+                    out = e.text()
+                res[key] = [int((time.perf_counter() - t) * 1000), len(out) // 4 + 1]
+            now[site] = res
+            old = before.get(site)
+            delta = ""
+            if old:
+                a = sum(v[1] for v in old.values())
+                b = sum(v[1] for v in res.values())
+                delta = "%+d%% tok" % round((b - a) * 100.0 / max(1, a))
+            rows.append("%-29s %6d %5d %8d %5d %8d %6d  %s" % (site[:29], res["open"][0], res["open"][1], res["snap"][0],
+                                                            res["snap"][1], res["text"][0], res["text"][1], delta))
+        try:
+            commands.run_one(ctx, ["close"])
+        except Fail:
+            pass
+    finally:
+        ctx.no_learn = learn
+    path.write_text(json.dumps(now, indent=1), "utf-8")
+    return "\n".join(rows)
+
+
 def bench(ctx, pos, flags):
     from lighting import commands
+    if flags.get("real") or (pos and pos[0] == "real"):
+        return bench_real(ctx, pos, flags)
     srv = serve()
     base = "http://127.0.0.1:%d/" % srv.server_address[1]
     rows = ["command                     ms   chars  ~tokens"]
     plan = [["open", base, "--new"], ["snap", "--force"], ["snap", "-f", "email"], ["click", "Open modal"], ["click", "Close modal"],
             ["text"], ["read", base], ["tabs"], ["close"]]
+    learn = ctx.no_learn
+    ctx.no_learn = True
     try:
         for argv in plan:
             t = time.perf_counter()
@@ -272,5 +365,6 @@ def bench(ctx, pos, flags):
             ms = (time.perf_counter() - t) * 1000
             rows.append("%-26s %5d %6d %7d" % (" ".join(argv).replace(base, "<fixture>")[:26], ms, len(out), len(out) // 4 + 1))
     finally:
+        ctx.no_learn = learn
         srv.shutdown()
     return "\n".join(rows)

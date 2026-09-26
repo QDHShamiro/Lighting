@@ -46,7 +46,19 @@
     return { ref: ref(b.el), name: b.name, role: b.role };
   }
 
+  function byHint(h) {
+    const v = CSS.escape(h);
+    const sel = ["data-e2e", "data-testid", "data-test", "data-qa", "data-cy", "name"].map((a) => "[" + a + '="' + v + '"]').concat("#" + v).join(",");
+    let list = [];
+    try {
+      list = [...document.querySelectorAll(sel)].filter(visible);
+    } catch (e) {}
+    const el = list.find((x) => x.getBoundingClientRect().top < innerHeight && x.getBoundingClientRect().bottom > 0) || list[0];
+    return el ? { ref: ref(el), name: clean(nameOf(el)), role: L.roleOf(el) } : { none: true };
+  }
+
   function find(query, opts) {
+    if (/^#[\w:.-]+$/.test(query.trim())) return byHint(query.trim().slice(1));
     const ql = clean(query).toLowerCase();
     if (!ql) return { none: true };
     const needle = ql.replace(/\s+/g, "");
@@ -440,7 +452,7 @@
   function info(r) {
     const el = get(r);
     if (!el) return { gone: true };
-    return { name: nameOf(el), role: L.roleOf(el), tag: el.tagName, desc: describe(el) };
+    return { name: clean(nameOf(el)), role: L.roleOf(el), tag: el.tagName, desc: describe(el), hint: L.hintOf(el) };
   }
 
   L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, lineOf, info };

@@ -1,7 +1,7 @@
 {
   "name": "lighting",
-  "version": "0.3.1",
-  "description": "Drive your real browser and any Windows app from Codex with compact text snapshots instead of screenshots.",
+  "version": "0.4.0",
+  "description": "Drive your real browser and any Windows app from Codex with compact text snapshots, and replay tasks it has learned in one call.",
   "author": {
     "name": "QDHShamiro",
     "url": "https://github.com/QDHShamiro"
@@ -9,17 +9,30 @@
   "homepage": "https://github.com/QDHShamiro/Lighting#readme",
   "repository": "https://github.com/QDHShamiro/Lighting",
   "license": "MIT",
-  "keywords": ["browser", "automation", "desktop", "windows", "ocr", "tokens", "mcp"],
+  "keywords": [
+    "browser",
+    "automation",
+    "desktop",
+    "windows",
+    "ocr",
+    "tokens",
+    "mcp"
+  ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Lighting",
     "shortDescription": "Your real browser and Windows apps, as a few lines of text",
-    "longDescription": "The lighting command drives your open Brave, Chrome or Edge through a small extension and any Windows app through UI Automation and OCR. Every action answers in one short line, snapshots list only what you can see.",
+    "longDescription": "The lighting command drives your open Brave, Chrome or Edge through a small extension and any Windows app through UI Automation and OCR. Every action answers in one short line. Tasks that repeat become routines that run in one call.",
     "developerName": "QDHShamiro",
     "category": "Productivity",
-    "capabilities": ["Read", "Write"],
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
     "websiteURL": "https://github.com/QDHShamiro/Lighting",
-    "defaultPrompt": ["Use Lighting to open example.com and tell me what is on the page."],
+    "defaultPrompt": [
+      "Use Lighting to open example.com and tell me what is on the page."
+    ],
     "brandColor": "#FF8A00"
   }
 }

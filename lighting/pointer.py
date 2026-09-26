@@ -27,12 +27,33 @@ def _loop():
     hwnd = ctypes.windll.user32.GetParent(root.winfo_id()) or root.winfo_id()
     style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
     ctypes.windll.user32.SetWindowLongW(hwnd, -20, style | 0x20 | 0x80000 | 0x80 | 0x08000000 | 0x8)
-    state = {"hide": None}
+    state = {"hide": None, "badge": None}
+
+    def badge(on):
+        if on and state["badge"] is None:
+            top = tk.Toplevel(root)
+            top.overrideredirect(True)
+            top.attributes("-topmost", True)
+            top.attributes("-alpha", 0.92)
+            tk.Label(top, text="● REC Lighting", fg="white", bg="#d00000", font=("Segoe UI", 10, "bold"),
+                     padx=10, pady=3).pack()
+            top.update_idletasks()
+            top.geometry("+%d+%d" % (top.winfo_screenwidth() - top.winfo_reqwidth() - 18, 14))
+            h = ctypes.windll.user32.GetParent(top.winfo_id()) or top.winfo_id()
+            ex = ctypes.windll.user32.GetWindowLongW(h, -20)
+            ctypes.windll.user32.SetWindowLongW(h, -20, ex | 0x20 | 0x80 | 0x08000000 | 0x8)
+            state["badge"] = top
+        elif not on and state["badge"] is not None:
+            state["badge"].destroy()
+            state["badge"] = None
 
     def poll():
         try:
             while True:
                 item = _q.get_nowait()
+                if isinstance(item, tuple) and item and item[0] == "rec":
+                    badge(item[1])
+                    continue
                 if item is None:
                     if state["hide"]:
                         root.after_cancel(state["hide"])
@@ -62,6 +83,13 @@ def show(x, y):
         _started.append(True)
         threading.Thread(target=_loop, daemon=True).start()
     _q.put((int(x), int(y)))
+
+
+def recording(on):
+    if not _started:
+        _started.append(True)
+        threading.Thread(target=_loop, daemon=True).start()
+    _q.put(("rec", bool(on)))
 
 
 def hide():

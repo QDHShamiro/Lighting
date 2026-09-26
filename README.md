@@ -8,7 +8,8 @@
   <img src="https://img.shields.io/badge/claude%20code-plugin-111111?style=flat-square" alt="Claude Code plugin">
   <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
-  <img src="https://img.shields.io/badge/selftest-61%2F61-111111?style=flat-square" alt="61/61 selftest">
+  <img src="https://img.shields.io/badge/routines-self--learning-111111?style=flat-square" alt="Self-learning routines">
+  <img src="https://img.shields.io/badge/selftest-82%2F82-111111?style=flat-square" alt="82/82 selftest">
   <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
 </p>
@@ -50,8 +51,38 @@ ok e16 -> github.com/QDHShamiro/Context-Engine/issues
 ```
 
 Only visible, usable elements are listed. Hidden text never reaches the model, links under the
-current page are shown as `./path`, tracking parameters are dropped, and a 60-link footer collapses
-to one line. You pay for what you can act on.
+current page are shown as `./path`, tracking parameters are dropped, a header that repeats from the
+last page collapses to one line, and so does a 60-link footer. You pay for what you can act on.
+
+## The second time is one call
+
+An AI that does a task twice pays twice: every snapshot, every click, every thought. Lighting keeps a
+trace of each task with stable targets (`click "Sign in"`, not `e12`). When a task ends, it aligns it
+with earlier ones like DNA sequences; the parts that differ become parameters.
+
+```
+  run 1   launch spotify:search:SOS    → snap → click "SOS wiedergeben"
+  run 2   launch spotify:search:Numb   → snap → click "Numb wiedergeben"
+          ! learned routine spotify-wiedergeben from 2 runs
+  run 3   lighting run spotify-wiedergeben search=SOS
+          ok spotify-wiedergeben: 2 steps in 1.4 s, verified -> yukan archive - SOS - Spotify.exe
+```
+
+- **Learns by itself.** Seen twice, a routine exists. No prompt, no naming, no setup.
+- **Speaks up.** Start a known task and the first output says `! routine X can finish this in one call`.
+- **Checks its work.** A run passes only when the result shows up (the song in the window title, the repo in the URL).
+- **Repairs itself.** A step breaks, the AI finishes by hand, Lighting rebuilds the routine from what worked (`v2`).
+- **Keeps score.** Runs, success rate, time and tokens saved per routine; three failures in five runs mark it `FLAKY`.
+- **Or just show it.** `lighting record start`, do it yourself in the browser or any app, `lighting record stop song=SOS`.
+
+```
+$ lighting routines
+github-issues page= | 2/3 ok, 3.4 s, saved ~1.7k tokens | open github.com/QDHShamiro/{page} > click Issues
+spotify-wiedergeben search= | 2/2 ok, 1.4 s, saved ~181 tokens | launch spotify:search:{search} > click "{search} wiedergeben"
+```
+
+(The failed `github-issues` run was a repo that does not exist: it clicked the global Issues link, the
+check caught it.)
 
 ---
 
@@ -66,8 +97,10 @@ Same GitHub page, Brave 154, Windows 11. Tokens are characters / 4.
 | Whole page | **~13,500 tokens**, cut off at 50,000 of 64,787 chars | **~990 tokens** |
 | Find one thing | `find` | `snap -f repositories`, **~50 tokens** |
 | Screenshot | ~2,350 image tokens | only when you ask for one, ~700 |
+| Do a known task again (open a repo's issues) | every step again | `run github-issues`: **1 call, ~40 tokens**, 3.5 s (by hand: ~916 tokens) |
 
-- `lighting selftest`: **61/61 in 5.2 s** (browser + desktop).
+- `lighting selftest`: **82/82 in 8.4 s** (browser + desktop, cold start included).
+- `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok and compares with the last run.
 - Click with navigation check and change report: ~140 ms. Filling and submitting a form: ~160 ms.
 - GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
 - `snap` on SpigotMC, Modrinth, Hugging Face, GitHub, YouTube, Wikipedia: 17-49 ms.
@@ -154,8 +187,17 @@ args = ["mcp"]
 
 | | |
 |---|---|
+| Start | `launch spotify` · `launch "spotify:search:SOS"` · `launch rechner` (Store apps too) · `close w4` |
 | Look | `windows` · `snap w2` (UI Automation) · `read w2` (OCR) · `shot w2` (even when covered) |
-| Act | `click d5` · `click o3` (OCR text, real click, cursor goes back) · `type d5 text` · `press ctrl+s` · `clip get\|set` |
+| Act | `click d5` · `click "Save"` · `click o3` (OCR text, real click, cursor goes back) · `type "Search" text` · `type focused text` · `press ctrl+s` · `clip get\|set` |
+
+**Routines**
+
+| | |
+|---|---|
+| Use | `routines [-f word]` · `run <name> param=value` · `routine show <name>` |
+| Teach | learned by itself on repeat · `routine save <name> [param=value]` · `record start <name>` … `record stop [param=value]` |
+| Tidy | `routine rm\|rename <name>` · `routine forget` (task history) · `config learn off` |
 
 Clicks and typing go through UI Automation in the background, your mouse stays where it is.
 `do "fill Email=a@b.c; click Continue; expect Welcome"` runs several steps in one call.
@@ -177,8 +219,10 @@ Clicks and typing go through UI Automation in the background, your mouse stays w
 
 Everything lives in `%USERPROFILE%\.lighting\`: the Python venv, the extension copy, the native host,
 `bin\lighting.exe`, the pipe key, the blocklist, a 24 h output cache and the action log (typed text
-and secrets are never logged). Registry: the native messaging host keys for Brave, Chrome, Edge and
-Chromium, and `.lighting\bin` in your user `Path`.
+and secrets are never logged). Routines live in `routines\`, the last 300 tasks they are learned from
+in `episodes.jsonl` (typed text included so routines can replay it; `--env` secrets are stored as
+`@secret`; `lighting routine forget` clears it, `lighting config learn off` stops it). Registry: the
+native messaging host keys for Brave, Chrome, Edge and Chromium, and `.lighting\bin` in your user `Path`.
 
 ```
 lighting uninstall          # registry keys off, daemon stopped

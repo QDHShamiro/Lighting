@@ -7,7 +7,7 @@ from lighting import defaults as D
 from lighting.common import Fail, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
-          "body", "method", "button", "region", "delta", "file"}
+          "body", "method", "button", "region", "delta", "file", "role", "last", "on"}
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone"}
 
 
@@ -21,6 +21,9 @@ class Context:
         self.image = None
         self.windows = {}
         self.last_shot = {}
+        self.last_target = None
+        self.where = None
+        self.no_learn = False
 
     def kind(self):
         return self.target[0] if self.target else None
@@ -88,7 +91,12 @@ def app():
     return desktop
 
 
-def side(ctx, pos, verb):
+def side(ctx, pos, verb, flags=None):
+    on = (flags or {}).get("on")
+    if on == "web":
+        return web()
+    if on == "app":
+        return app()
     kind = ref_kind(pos[0]) if pos else None
     if kind in ("e", "t"):
         return web()
@@ -112,20 +120,32 @@ def route(ctx, name, pos, flags):
         if pos and (is_url(pos[0]) or pos[0].lower().endswith(".pdf")):
             return web().read_url(ctx, pos, flags)
         return app().cmd_read(ctx, pos, flags)
+    if name == "close" and pos and ref_kind(pos[0]) == "w":
+        return app().cmd_close(ctx, pos, flags)
     if name in APP_ONLY:
         return getattr(app(), "cmd_" + name)(ctx, pos, flags)
     if name in SHARED:
-        return getattr(side(ctx, pos, name), "cmd_" + name)(ctx, pos, flags)
+        return getattr(side(ctx, pos, name, flags), "cmd_" + name)(ctx, pos, flags)
     if name in WEB_ONLY:
         return getattr(web(), "cmd_" + name)(ctx, pos, flags)
     raise Fail("unknown command '%s'" % name, "lighting help")
 
 
 def run_one(ctx, argv):
+    from lighting import routines
     name, pos, flags = parse(argv)
     if not name:
         raise Fail("no command", "lighting help")
-    return route(ctx, name, pos, flags), name, pos
+    ctx.last_target = None
+    if name in SYSTEM:
+        return route(ctx, name, pos, flags), name, pos
+    try:
+        out = route(ctx, name, pos, flags)
+    except Fail as e:
+        routines.observe(ctx, name, pos, flags, e.text(), False)
+        raise
+    routines.observe(ctx, name, pos, flags, out if isinstance(out, str) else "", True)
+    return out, name, pos
 
 
 def run(ctx, msg):
@@ -206,6 +226,8 @@ def cmd_ping(ctx, pos, flags):
 
 
 def cmd_stop(ctx, pos, flags):
+    from lighting import routines
+    routines.close(ctx)
     return {"out": "lighting daemon stopped", "code": 0, "shutdown": True}
 
 
@@ -329,12 +351,33 @@ def cmd_bench(ctx, pos, flags):
     return selftest.bench(ctx, pos, flags)
 
 
+def cmd_run(ctx, pos, flags):
+    from lighting import routines
+    return routines.cmd_run(ctx, pos, flags)
+
+
+def cmd_routine(ctx, pos, flags):
+    from lighting import routines
+    return routines.cmd_routine(ctx, pos, flags)
+
+
+def cmd_routines(ctx, pos, flags):
+    from lighting import routines
+    return routines.cmd_routines(ctx, pos, flags)
+
+
+def cmd_record(ctx, pos, flags):
+    from lighting import record
+    return record.cmd_record(ctx, pos, flags)
+
+
 SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status, "config": cmd_config,
-          "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload}
+          "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload,
+          "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record}
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
-         "console", "expect", "wait", "clip", "help", "version", "config"}
+         "console", "expect", "wait", "clip", "help", "version", "config", "routines"}
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}
-APP_ONLY = {"windows", "focus", "clip"}
+APP_ONLY = {"windows", "focus", "clip", "launch"}
 WEB_ONLY = {"open", "text", "fill", "select", "check", "wait", "expect", "table", "fetch", "js", "dismiss",
             "upload", "tabs", "tab", "close", "back", "forward", "reload", "dialog", "downloads", "console", "viewport"}
 

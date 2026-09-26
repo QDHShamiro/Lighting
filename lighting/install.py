@@ -160,6 +160,14 @@ def mcp_entry():
     return {"command": str(D.BIN / "lighting.exe"), "args": ["mcp"]}
 
 
+def eol_of(path):
+    crlf = chr(13) + chr(10)
+    try:
+        return crlf if crlf.encode() in path.read_bytes() else chr(10)
+    except OSError:
+        return chr(10)
+
+
 def merge_json(path, key, entry):
     try:
         data = json.loads(path.read_text("utf-8"))
@@ -169,7 +177,7 @@ def merge_json(path, key, entry):
         raise SystemExit("%s is not valid JSON, fix it or add the server by hand" % path)
     data.setdefault(key, {})["lighting"] = entry
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2), "utf-8")
+    path.write_text(json.dumps(data, indent=2), "utf-8", newline=eol_of(path))
 
 
 def merge_toml(path):
@@ -179,9 +187,10 @@ def merge_toml(path):
         text = path.read_text("utf-8")
     except FileNotFoundError:
         text = ""
+    eol = eol_of(path)
     text = re.sub(r"(?ms)^\[mcp_servers\.lighting\]\n.*?(?=^\[|\Z)", "", text).rstrip()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text((text + "\n\n" if text else "") + block, "utf-8")
+    path.write_text((text + "\n\n" if text else "") + block, "utf-8", newline=eol)
 
 
 def agents():
@@ -289,9 +298,10 @@ def uninstall(purge):
     boot.stop_daemon()
     unregister()
     if purge:
-        for p in (D.OUT, D.EXT, D.BIN):
+        for p in (D.OUT, D.EXT, D.BIN, D.HOME / "routines"):
             shutil.rmtree(p, ignore_errors=True)
-        for p in (D.HOST_BAT, D.HOST_PY, D.HOST_JSON, D.KEY, D.LOG, D.CONFIG, D.PIDFILE, D.STAMP, D.HOME / "client-root"):
+        for p in (D.HOST_BAT, D.HOST_PY, D.HOST_JSON, D.KEY, D.LOG, D.CONFIG, D.PIDFILE, D.STAMP, D.HOME / "client-root",
+                  D.HOME / "episodes.jsonl", D.HOME / "apps.json", D.HOME / "bench-real.json"):
             try:
                 p.unlink()
             except OSError:

@@ -108,10 +108,10 @@ async function snap(a, tab) {
   if (a.frame) {
     const fid = await frameId(tabId, a.frame);
     const res = await page(tabId, "snap", [Object.assign(opts, { force: true })], fid);
-    return formatSnap(tabId, res).replace(/^e(\d+) /gm, "f" + fid + ".e$1 ").replace(/^\[t\d+\]/, "[t" + T.sid(tabId) + " frame " + a.frame + "]");
+    return formatSnap(tabId, res, 0, true).replace(/^e(\d+) /gm, "f" + fid + ".e$1 ").replace(/^\[t\d+\]/, "[t" + T.sid(tabId) + " frame " + a.frame + "]");
   }
   const res = await page(tabId, "snap", [opts]);
-  return formatSnap(tabId, res);
+  return formatSnap(tabId, res, 0, opts.all || !!opts.scope || !!opts.filter || opts.force || opts.diff);
 }
 
 async function text(a, tab) {
@@ -350,8 +350,121 @@ async function close(a, tab) {
   return "closed t" + T.sid(id) + (next ? ", target now t" + T.sid(next) : "");
 }
 
+const seen = new Map();
+const NO_TAB = new Set(["config", "abort", "reload-extension", "ping", "close-url", "tabs", "downloads"]);
+const BY_TEXT = new Set(["click", "type", "select", "check", "hover", "fill"]);
+
+function pageKey(url) {
+  try {
+    const u = new URL(url);
+    return u.origin + u.pathname + u.search;
+  } catch (e) {
+    return String(url || "");
+  }
+}
+
+async function stale(cmd, a, tab) {
+  if (!BY_TEXT.has(cmd) || (cmd !== "fill" && !a.text)) return;
+  const id = await tabOf(tab, false).catch(() => null);
+  if (id === null || !seen.has(id)) return;
+  const t = await chrome.tabs.get(id).catch(() => null);
+  if (!t || pageKey(t.url) === seen.get(id)) return;
+  seen.set(id, pageKey(t.url));
+  throw new Error("the page changed since the last command (now " + T.short(t.url, 70) + "), nothing done -> try: lighting snap, then repeat");
+}
+
+const BY_REF = new Set(["click", "type", "select", "check", "hover"]);
+
+async function remember(tab) {
+  const id = await tabOf(tab, false).catch(() => null);
+  if (id === null) return null;
+  const t = await chrome.tabs.get(id).catch(() => null);
+  if (!t) return null;
+  seen.set(id, pageKey(t.url));
+  return { url: t.url, title: t.title, tab: "t" + T.sid(id) };
+}
+
+async function describeRef(ref, tab) {
+  const id = await tabOf(tab, false).catch(() => null);
+  if (id === null) return null;
+  const info = await page(id, "act.info", [ref]).catch(() => null);
+  return info && !info.gone ? { name: info.name, role: info.role, hint: info.hint } : null;
+}
+
 async function run(cmd, a, tab) {
+  if (NO_TAB.has(cmd) || cmd.startsWith("record")) return route(cmd, a, tab);
+  await stale(cmd, a, tab);
+  const target = BY_REF.has(cmd) && a.ref ? await describeRef(a.ref, tab) : null;
+  let res, where = null;
+  try {
+    res = await route(cmd, a, tab);
+  } finally {
+    where = await remember(tab);
+  }
+  const out = typeof res === "string" ? { out: res } : res || {};
+  if (target) out.target = target;
+  if (where) out.where = where;
+  return out;
+}
+
+const rec = { on: false, tabs: new Set(), steps: [], started: 0 };
+
+function recPush(step) {
+  if (rec.on) rec.steps.push(Object.assign({ t: Date.now() }, step));
+}
+
+async function recInject(tabId) {
+  await chrome.scripting.executeScript({ target: { tabId }, files: ["page.js", "page-act.js", "page-rec.js"] }).catch(() => {});
+}
+
+async function recStart(a, tab) {
+  const tabId = await tabOf(tab);
+  const t = await chrome.tabs.get(tabId);
+  Object.assign(rec, { on: true, tabs: new Set([tabId]), steps: [], started: Date.now() });
+  recPush({ cmd: "open", args: [t.url] });
+  await recInject(tabId);
+  return { out: "t" + T.sid(tabId) + " " + trunc(t.title, 50) + " - " + T.short(t.url, 60) };
+}
+
+async function recStop() {
+  const was = rec.on;
+  for (const id of rec.tabs) {
+    await chrome.scripting.executeScript({ target: { tabId: id }, func: () => globalThis.__lt && globalThis.__lt.rec && globalThis.__lt.rec.stop() }).catch(() => {});
+  }
+  await T.sleep(80);
+  rec.on = false;
+  const steps = rec.steps;
+  rec.steps = [];
+  rec.tabs = new Set();
+  return { out: was ? steps.length + " browser steps" : "not recording", steps };
+}
+
+chrome.runtime.onMessage.addListener((m, sender) => {
+  if (!m || m.lt !== "rec" || !rec.on || !sender.tab || !rec.tabs.has(sender.tab.id) || sender.frameId) return;
+  recPush(m.step);
+});
+
+chrome.webNavigation.onCommitted.addListener((d) => {
+  if (!rec.on || d.frameId !== 0 || !rec.tabs.has(d.tabId)) return;
+  const q = d.transitionQualifiers || [];
+  if (d.transitionType === "reload") recPush({ cmd: "reload", args: [] });
+  else if (q.includes("forward_back") || ["typed", "auto_bookmark", "generated", "keyword", "start_page"].includes(d.transitionType)) recPush({ cmd: "open", args: [d.url] });
+});
+
+chrome.webNavigation.onDOMContentLoaded.addListener((d) => {
+  if (rec.on && d.frameId === 0 && rec.tabs.has(d.tabId)) recInject(d.tabId);
+});
+
+async function route(cmd, a, tab) {
   switch (cmd) {
+    case "where":
+      return { out: "" };
+    case "record-start":
+      return recStart(a, tab);
+    case "record-stop":
+      return recStop();
+    case "record-status":
+      return { out: rec.on ? rec.steps.length + " browser steps" : "not recording" };
     case "config":
       cfg.blocklist = a.blocklist || [];
       cfg.risk = a.risk || [];
@@ -445,6 +558,7 @@ C.onEvent((kind, tabId, params) => {
 chrome.webNavigation.onCreatedNavigationTarget.addListener(async (d) => {
   const src = d.sourceTabId;
   if (src !== T.getTarget() && !(await T.inGroup(src))) return;
+  if (rec.on && rec.tabs.has(src)) rec.tabs.add(d.tabId);
   await T.addToGroup(d.tabId);
   chrome.tabs.update(d.tabId, { autoDiscardable: false }).catch(() => {});
   T.setTarget(d.tabId);

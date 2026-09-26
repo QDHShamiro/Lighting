@@ -68,6 +68,7 @@ CONFIG_DEFAULTS = {
     "pointer": True,
     "ocr_lang": "auto",
     "shot_width": SHOT_WIDTH,
+    "learn": True,
 }
 
 RISK_WORDS = [

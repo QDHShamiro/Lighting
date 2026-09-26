@@ -54,7 +54,33 @@
     if (t === "INPUT") return ROLE_INPUT[(el.type || "text").toLowerCase()] || "textbox";
     if (el.isContentEditable) return "textbox";
     if (/^H[1-6]$/.test(t)) return "heading";
+    if (t === "VIDEO") return "video";
+    if (t === "AUDIO") return "audio";
     return "clickable";
+  }
+
+  const GENERIC_HINT = /^(tux-web-)?(icon-?)?(button|btn|icon|wrapper|container|item|link)$/i;
+
+  function hintOf(el) {
+    for (const a of ["data-e2e", "data-testid", "data-test", "data-qa", "data-cy", "id", "name"]) {
+      const v = el.getAttribute(a);
+      if (v && v.length <= 40 && /[a-z]{3}/i.test(v) && !GENERIC_HINT.test(v) && !/\d{4,}|[a-f0-9]{10,}|^:r/i.test(v)) return v;
+    }
+    return "";
+  }
+
+  function clock(s) {
+    if (!isFinite(s)) return "live";
+    s = Math.max(0, Math.floor(s));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = String(s % 60).padStart(2, "0");
+    return h ? h + ":" + String(m).padStart(2, "0") + ":" + sec : m + ":" + sec;
+  }
+
+  function mediaState(el) {
+    const d = el.duration;
+    let s = " " + clock(el.currentTime) + (isNaN(d) ? "" : "/" + clock(d)) + (el.paused ? " paused" : " playing");
+    if (el.muted || el.volume === 0) s += " muted";
+    return s;
   }
 
   function nameOf(el) {
@@ -129,6 +155,7 @@
         s += ' ="' + q(trunc(clean(el.value), 40)) + '"';
       }
     }
+    if (role === "video" || role === "audio") return mediaState(el);
     if (el.disabled || el.getAttribute("aria-disabled") === "true") s += " (disabled)";
     if (el.getAttribute("aria-selected") === "true" || (el.getAttribute("aria-current") && el.getAttribute("aria-current") !== "false")) s += " *";
     const ex = el.getAttribute("aria-expanded");
@@ -142,7 +169,8 @@
   }
 
   function line(el, role, name) {
-    return ref(el) + " " + role + (name ? ' "' + q(trunc(name, 60)) + '"' : "") + state(el, role);
+    const hint = name || role === "video" || role === "audio" ? "" : hintOf(el);
+    return ref(el) + " " + role + (name ? ' "' + q(trunc(name, 60)) + '"' : hint ? " #" + hint : "") + state(el, role);
   }
 
   function frameOffset(doc) {
@@ -221,8 +249,9 @@
       }
       if (cut && cs && (cs.position === "fixed" || cs.position === "sticky" || cs.position === "absolute")) cut.layers.push({ el: n, off });
       const head = !isInt && (/^H[1-3]$/.test(t) || n.getAttribute("role") === "heading");
-      if (isInt || head || (cs && pointerish(n, cs) && !n.closest(CONTROL) && !n.querySelector(INTERACTIVE))) {
-        out.push({ el: n, off, heading: head });
+      const media = (t === "VIDEO" || (t === "AUDIO" && n.controls)) && !isInt;
+      if (isInt || head || media || (cs && pointerish(n, cs) && !n.closest(CONTROL) && !n.querySelector(INTERACTIVE))) {
+        out.push({ el: n, off, heading: head, media });
       }
       if (n.shadowRoot) walk(n.shadowRoot, off, out, frames, cut);
       if (t === "IFRAME" || t === "FRAME") {
@@ -325,7 +354,9 @@
     const layers = overlays(cut);
     let hitMs = 0;
     const filter = opts.filter ? opts.filter.toLowerCase().split("|").map((s) => s.trim()).filter(Boolean) : null;
-    const matches = (s) => filter.some((f) => s.includes(f));
+    const esc = (f) => f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const tiers = filter ? filter.map((f) => [new RegExp("(^|[^\\p{L}\\p{N}])" + esc(f) + "($|[^\\p{L}\\p{N}])", "u"), new RegExp("(^|[^\\p{L}\\p{N}])" + esc(f), "u"), f]) : null;
+    const tierOf = (texts) => tiers.map(([w, s, f]) => Math.max(...texts.map((t) => (w.test(t) ? 3 : s.test(t) ? 2 : t.includes(f) ? 1 : 0))));
     const lines = [], seen = new Set();
     let below = 0, above = 0;
     const land = new Map();
@@ -335,8 +366,8 @@
       const el = it.el;
       const r = el.getBoundingClientRect();
       if (r.width <= 1 || r.height <= 1) continue;
-      if (!it.heading && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
-      if (el.closest('[aria-hidden="true"]')) continue;
+      if (!it.heading && !it.media && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+      if (!it.media && el.closest('[aria-hidden="true"]')) continue;
       const ax = r.left + it.off.x, ay = r.top + it.off.y;
       const pos = where(ax, ay, r.width, r.height);
       const inView = pos === "in";
@@ -358,7 +389,8 @@
         }
         continue;
       }
-      if (inView && hitMs < HIT_BUDGET_MS && mayBeCovered(el, ax, ay, r.width, r.height, layers)) {
+      if (it.media && el.tagName === "VIDEO" && (r.width < 120 || r.height < 60)) continue;
+      if (inView && !it.media && hitMs < HIT_BUDGET_MS && mayBeCovered(el, ax, ay, r.width, r.height, layers)) {
         const t0 = performance.now();
         const hit = covered(el, r);
         hitMs += performance.now() - t0;
@@ -367,8 +399,9 @@
       const role = roleOf(el);
       const name = nameOf(el);
       if (role === "clickable" && !name) continue;
-      if (filter && !(matches(name.toLowerCase()) || matches(role) || matches(String(el.value || "").toLowerCase()))) continue;
-      const entry = { el, role, name };
+      const ft = filter ? tierOf([name.toLowerCase(), role, String(el.value || "").toLowerCase()]) : null;
+      if (filter && !ft.some((x) => x)) continue;
+      const entry = { el, role, name, ft };
       if (collapseOk) {
         const lm = el.closest(LANDMARK);
         if (lm) {
@@ -389,6 +422,10 @@
         }
       }
       lines.push(entry);
+    }
+    if (filter) {
+      const best = filter.map((_, i) => lines.reduce((m, e) => Math.max(m, e.ft ? e.ft[i] : 0), 0));
+      for (const e of lines) if (e.ft && !e.ft.some((x, i) => x && x === best[i])) e.drop = true;
     }
     const hrefOf = (e) => (e && !e.heading && e.role === "link" ? e.el.href || "" : null);
     for (let i = 0; i < lines.length; i++) {
@@ -451,15 +488,20 @@
     if (!opts.force && S.muts === S.lastMuts && location.href === S.lastHref && Math.round(scrollY) === S.lastY && sig === S.sig) {
       return { unchanged: true, title: document.title, url: location.href };
     }
-    const res = collectLines(opts);
+    let res = collectLines(opts);
     if (res.error) return res;
+    if (opts.filter && !opts.all && !res.lines.some((l) => /^e\d+ /.test(l))) {
+      res = collectLines(Object.assign({}, opts, { all: true }));
+      res.notes = res.notes.concat(res.lines.some((l) => /^e\d+ /.test(l)) ? "(no match in view, matches from the whole page; click scrolls to them)" : '(no match for "' + opts.filter + '" on the whole page)');
+      res.searched = true;
+    }
     const prev = S.last;
     S.last = res.ids;
     S.lastMuts = S.muts;
     S.lastHref = location.href;
     S.lastY = Math.round(scrollY);
     S.sig = sig;
-    const out = { title: document.title, url: location.href, lines: res.lines, notes: res.notes, below: res.below, above: res.above };
+    const out = { title: document.title, url: location.href, lines: res.lines, notes: res.notes, searched: res.searched, below: res.below, above: res.above };
     if (opts.diff) {
       out.lines = res.lines.filter((l) => /^e\d+ /.test(l) && !prev.has(l.split(" ")[0]));
       out.removed = [...prev].filter((r) => !res.ids.has(r)).length;
@@ -544,5 +586,5 @@
     return out;
   }
 
-  globalThis.__lt = { S, get, ref, roleOf, nameOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, INTERACTIVE, CONTROL };
+  globalThis.__lt = { S, get, ref, roleOf, nameOf, hintOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, INTERACTIVE, CONTROL };
 })();

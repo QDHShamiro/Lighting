@@ -4,6 +4,11 @@
 - `lighting windows` lists top-level windows: `w3 Discord - Discord.exe *` (`*` = in front, `(min)` = minimized).
 - Target a window by ref (`snap w3`) or by name (`snap app:Discord`, matches title or exe). Later commands without a ref use that window.
 
+## Start and close apps
+- `lighting launch spotify` starts an app from the start menu (Store apps too, names as in the start menu: `launch rechner`), waits for its window and answers `ok (Spotify) -> [w1] Spotify Premium - Spotify.exe`. That window becomes the target.
+- URIs open the app that handles them: `launch "spotify:search:SOS"`, `launch ms-settings:display`. A path opens the file; programs (`.exe`, `.bat`, ...) need `--yes`.
+- `lighting close w4` asks the window to close (like the X button); a save dialog may appear.
+
 ## Read it
 - `lighting snap w3` gives the controls from UI Automation: `d5 button "Save"`, `d6 edit "Search" ="abc"`, `d7 checkbox "Wrap" [x]`, `d8 tab "Home" *`, `(disabled)`, `(collapsed)`.
 - `--text` also lists static text (labels, status lines). `-f word` filters the output.
@@ -13,7 +18,7 @@
 
 ## Act
 - `click d5` uses the control's own action (Invoke, Toggle, Select, Expand) in the background. The user's mouse and focus stay where they are.
-- `type d6 hello` sets the value in the background. Without a value pattern it pastes via the clipboard (the window comes to the front for a moment, the clipboard is restored).
+- `type d6 hello`, `type "Search" hello` (field by name) or `type focused hello` sets the value in the background. Without a value pattern it pastes via the clipboard (the window comes to the front for a moment, the clipboard is restored).
 - `press ctrl+s` brings the window to the front for the key press, then gives focus back. `--stay` keeps the window in front. `--game` sends scan codes (DirectInput games).
 - `click o4` or `click "Play"` (OCR text) does a real mouse click: it waits until the user has not moved the mouse for 0.3 s, clicks and puts the cursor back exactly.
 - `scroll d9` / `scroll up` scroll a list or the window. `drag d3 d9` drags with the real mouse (cursor restored).

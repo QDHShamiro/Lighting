@@ -100,19 +100,38 @@ function header(tabId, res) {
   return h;
 }
 
-function formatSnap(tabId, res, limit) {
+const heads = new Map();
+
+function sameHead(tabId, res, lines) {
+  const bare = lines.map((l) => (/^e\d+ /.test(l) ? l.replace(/^e\d+ /, "").replace(/ ->\S*$/, "").replace(/ \*$/, "") : null));
+  let origin = "";
+  try {
+    origin = new URL(res.url).origin;
+  } catch (e) {}
+  const prev = heads.get(tabId);
+  heads.set(tabId, { origin, bare: bare.slice(0, 60), url: res.url });
+  if (!prev || prev.origin !== origin || prev.url === res.url) return lines;
+  let n = 0;
+  while (n < lines.length && bare[n] !== null && bare[n] === prev.bare[n]) n++;
+  if (n < 6) return lines;
+  const first = lines[0].split(" ")[0], last = lines[n - 1].split(" ")[0];
+  return [first + "-" + last + " same header as the last page (" + n + " items, lighting snap --all)"].concat(lines.slice(n));
+}
+
+function formatSnap(tabId, res, limit, whole) {
   if (res.error) throw new Error(res.error);
   if (res.unchanged) return header(tabId, res) + "\nunchanged since last snap (refs still valid)";
   const out = [header(tabId, res)];
   for (const n of res.notes || []) out.push(n);
   let lines = res.lines || [];
+  if (!whole && res.removed === undefined) lines = sameHead(tabId, res, lines);
   let cut = 0;
   if (limit && lines.length > limit) {
     cut = lines.length - limit;
     lines = lines.slice(0, limit);
   }
   out.push(...lines);
-  if (!lines.length) out.push(res.removed !== undefined ? "(nothing new)" : "(no interactive elements in view)");
+  if (!lines.length && !res.searched) out.push(res.removed !== undefined ? "(nothing new)" : "(no interactive elements in view)");
   if (res.removed) out.push("-" + res.removed + " gone");
   if (cut) out.push("... +" + cut + " more (lighting snap)");
   const more = [];

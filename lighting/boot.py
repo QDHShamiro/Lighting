@@ -8,7 +8,7 @@ import time
 from lighting import defaults as D
 from lighting import ipc
 
-DETACHED = 0x00000008 | 0x00000200 | 0x08000000
+DETACHED = 0x00000200 | 0x08000000
 BREAKAWAY = 0x01000000
 
 

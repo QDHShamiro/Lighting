@@ -41,6 +41,8 @@ body { font-family: Segoe UI, sans-serif; margin: 20px; }
 <p><a href="/second" target="_blank">Open in new tab</a></p>
 <div contenteditable="true" aria-label="Notes" style="border:1px solid #999;min-height:30px;width:320px"></div>
 <button id="late">Appears later</button>
+<button id="hintbtn" data-testid="nameless-save" style="width:24px;height:24px"></button> <span id="hintres"></span>
+<video id="clip" aria-label="demo clip" width="200" height="120" style="background:#000"></video>
 <table id="prices"><tr><th>Name</th><th>Price</th></tr><tr><td>Alpha</td><td>1.00</td></tr><tr><td>Beta</td><td>2.50</td></tr><tr><td>Gamma</td><td>9.99</td></tr></table>
 <iframe src="/frame" title="same origin frame" width="320" height="70"></iframe>
 <ul id="items"></ul>
@@ -56,6 +58,7 @@ $("om").onclick = () => { $("modal").style.display = "block"; };
 $("cm").onclick = () => { $("modal").style.display = "none"; };
 $("card").onclick = () => { $("card").textContent = "Card clicked"; };
 $("rej").onclick = () => $("cookie-banner").remove();
+$("hintbtn").onclick = () => { $("hintres").textContent = "Saved via hint"; };
 $("tg").onclick = () => $("tg").setAttribute("aria-pressed", String($("tg").getAttribute("aria-pressed") !== "true"));
 for (let i = 1; i <= 40; i++) {
   const li = document.createElement("li");

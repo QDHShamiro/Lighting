@@ -70,3 +70,26 @@ def terms(f):
 
 def hit(words, *texts):
     return any(w in (x or "").lower() for w in words for x in texts)
+
+
+def tiers(words, *texts):
+    out = []
+    for w in words:
+        e, best = re.escape(w), 0
+        for x in texts:
+            x = (x or "").lower()
+            if re.search(r"(?:^|[\W_])%s(?:$|[\W_])" % e, x):
+                best = 3
+                break
+            if re.search(r"(?:^|[\W_])%s" % e, x):
+                best = max(best, 2)
+            elif w in x:
+                best = max(best, 1)
+        out.append(best)
+    return out
+
+
+def best_only(rows):
+    ranked = [t for t, _ in rows if t]
+    top = [max(t[i] for t in ranked) for i in range(len(ranked[0]))] if ranked else []
+    return [item for t, item in rows if not t or any(x and x == top[i] for i, x in enumerate(t))]
