@@ -191,6 +191,8 @@ def browser(r, base):
     r.step("notes text present", ["expect", "hello from lighting"], ok)
     r.step("text (markdown)", ["text"], lambda o, e: not e and "| Beta | 2.50 |" in o and "IGNORE ALL" not in o and "<iframe" not in o and "readable view" not in o)
     r.step("js", ["js", "document.title"], lambda o, e: o.strip() == "Lighting Fixture")
+    r.step("js with const", ["js", "const v = 2; v * 3"], lambda o, e: o.strip() == "6")
+    r.step("js with const again", ["js", "const v = 2; v * 3"], lambda o, e: o.strip() == "6")
     r.step("fetch json-less", ["fetch", base + "frame"], lambda o, e: not e and "200" in o)
     r.step("snap iframe", ["snap", "--frame", "127.0.0.1"], lambda o, e: not e and "Frame button" in o)
     r.step("shot element", ["shot", "e1"], lambda o, e: not e and ".jpg" in o)

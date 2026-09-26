@@ -76,6 +76,7 @@ CONFIG_DEFAULTS = {
 RISK_WORDS = [
     "buy", "purchase", "pay", "checkout", "place order", "order now", "subscribe",
     "delete", "remove account", "close account", "transfer", "wire",
+    "merge pull request", "confirm merge", "squash and merge", "rebase and merge",
     "kaufen", "bezahlen", "zahlungspflichtig", "jetzt bestellen", "abonnieren",
     "löschen", "konto schließen", "überweisen",
 ]

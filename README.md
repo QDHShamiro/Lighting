@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-111111?style=flat-square" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-95%2F95-111111?style=flat-square" alt="95/95 selftest">
+  <img src="https://img.shields.io/badge/selftest-97%2F97-111111?style=flat-square" alt="97/97 selftest">
   <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
   <br>
@@ -48,7 +48,36 @@ One call. Everything clickable has a ref. A click answers in one line (**13-53**
 
 <p align="center"><b>A 10-step task: ~37,000 tokens with screenshots, ~890 with Lighting. That is ~36,000 tokens saved, every time.</b><br><sub>Computed from the measured rows below: 1 page look + 9 clicks with a screenshot each, against 1 <code>open</code> + 9 one-line clicks.</sub></p>
 
+<p align="center">
+  <img src="docs/demo.gif" alt="Lighting demo: a filtered GitHub page, a click, a video as one image, the Windows calculator, then everything closes again" width="820">
+  <br><sub>A real run rendered from the terminal output (only the home folder is shortened to ~): 8 commands, 6.7 s, ~713 tokens of output, everything closed again.</sub>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#what-it-does">What it does</a> ·
+  <a href="#built-for-claude">Built for Claude</a> ·
+  <a href="#-the-numbers">The numbers</a> ·
+  <a href="#how-it-compares">How it compares</a> ·
+  <a href="#commands">Commands</a> ·
+  <a href="#safety">Safety</a>
+</p>
+
 ---
+
+## Quick start
+
+Windows 10/11, [uv](https://docs.astral.sh/uv/getting-started/installation/) and Brave, Chrome or Edge. In Claude Code:
+
+```
+/plugin marketplace add QDHShamiro/Lighting
+/plugin install lighting@lighting
+/lighting:setup
+```
+
+`/lighting:setup` loads the extension into your browser by itself, runs the self-test and tells Claude Code to use
+Lighting for browser and desktop work. Then just ask, for example *"open my GitHub notifications and summarize them"*.
+Codex, Cursor, Gemini CLI, VS Code, Claude Desktop, LM Studio / Bionic, Cline, Roo Code, Zed: see [Install](#install).
 
 ## The problem
 
@@ -62,46 +91,60 @@ None of that is what the AI needs. It needs to know what it can click, and wheth
 
 ## What it does
 
-Lighting drives **your** browser (Brave, Chrome, Edge, with all your logins) through a small
-extension, and any Windows app through UI Automation and OCR. Every answer is short text with refs:
+| | |
+|---|---|
+| 🌐 **Your real browser** | Brave, Chrome or Edge with all your logins, through a small extension. Lighting's tabs live in their own orange "Lighting" group, in the background. |
+| 🪟 **Every Windows app** | UI Automation for normal apps, OCR for games and canvas UIs. Clicks and typing go through in the background; your mouse stays where it is. |
+| 🧠 **Learns your tasks** | Do something twice and it becomes a routine that runs in one call ([how](#the-second-time-is-one-call)). |
+| 🎞️ **Sees images and video** | `snap --media` lists images, `shot e57` shows one, `frames e40` turns a whole video into one contact sheet. |
+| 🧹 **Cleans up after itself** | When the AI finishes its reply, what it opened closes again. The tab group's color is a status light: orange working, red stopped, green done. |
+| 🔒 **Safe by default** | Banking sites are read-only, buy/pay/delete/merge buttons need `--yes`, hidden text never reaches the model, secrets never reach the log. |
+
+Every answer is short text with refs:
 
 ```
-$ lighting open github.com/QDHShamiro/Context-Engine
-[t1] QDHShamiro/Context-Engine - github.com/QDHShamiro/Context-Engine (scroll 0%)
-e15 link "Code" * ->.
-e16 link "Issues" ->./issues
-e17 link "Pull requests" ->./pulls
-e27 button "Star QDHShamiro/Context-Engine"
-...
+$ lighting open github.com/QDHShamiro/Lighting -f "Issues|Pull requests"
+[t1] QDHShamiro/Lighting: Claude Code plugin: control your real browser ... - github.com/QDHShamiro/Lighting
+e1 link "All issues" ->/issues
+e2 link "All pull requests" ->/pulls
+e3 link "Issues" ->./issues
+e4 link "Pull requests" ->./pulls
+more: 74 below (scroll or snap --all)
+! routine github-issues can finish this in one call: lighting run github-issues page=Lighting
 $ lighting click "Issues"
-ok e16 -> github.com/QDHShamiro/Context-Engine/issues
+ok e3 -> github.com/QDHShamiro/Lighting/issues
 ```
 
 ```
-  your AI ──Bash──→ lighting.exe (Rust, ~50 ms) ──┐
-  your AI ──MCP───→ lighting mcp ─────────────────┴─→ daemon ──┬─→ extension ──→ your open browser
-                                                               ├─→ UI Automation ──→ Windows apps
-                                                               └─→ Windows OCR ──→ games, canvas UIs
+  your AI ──Bash──→ lighting.exe (Rust) ──┐
+  your AI ──MCP───→ lighting mcp ─────────┴─→ daemon ──┬─→ extension ──→ your open browser
+                                                       ├─→ UI Automation ──→ Windows apps
+                                                       └─→ Windows OCR ──→ games, canvas UIs
 ```
 
 Only visible, usable elements are listed. Hidden text never reaches the model, links under the
-current page are shown as `./path`, tracking parameters are dropped, a header that repeats from the
-last page collapses to one line, and so does a 60-link footer. You pay for what you can act on.
+current page are shown as `./path`, tracking parameters are dropped, and a page header, a 60-link
+footer or a header that repeats from the last page collapse to one line. You pay for what you can act on.
 
-**It cleans up after itself.** Lighting works in its own orange "Lighting" tab group in the
-background. When the AI finishes its reply, the tabs and apps it opened close again and the window
-you were in comes back to the front (`lighting done`, run by a Claude Code hook). A tab you are
-looking at stays, an app that was open before stays, an app with unsaved work is only asked to close.
-`lighting keep` hands a tab or app over to you; `lighting config cleanup off` keeps everything open.
-The group's color is the status light: **orange** while Lighting works, **red** when a step failed or
-you stopped it, **green** when it is done.
+### Images and video
 
-**It sees images and video.** `snap --media` gives every image a ref (with its caption as name),
-`shot e57` saves just that image for the AI to look at (~112 tokens for a Wikipedia photo), and
-`frames e40` turns a whole video into one contact sheet: it jumps to 6 moments spread over the full length
-(a 14-minute talk in 2.1 s instead of 14 minutes), with timestamps and the captions at each moment, muted,
-and puts the video back where it was. `--scenes` picks the 6 most different scenes out of 24, `--from 1:30 --to 2:00`
-looks at one part, `--live` watches in real time (streams).
+<p align="center">
+  <img src="docs/frames-example.jpg" alt="frames: a flower opening, 6 moments with timestamps in one image" width="760">
+  <br><sub><code>lighting frames e1</code> on a 5-second CC0 clip: 6 moments in one image, ~518 tokens, 0.9 s.</sub>
+</p>
+
+`frames e40` jumps to 6 moments spread over the full length of a video (a 14-minute talk in 2.1 s instead of
+14 minutes), with timestamps and the captions at each moment, muted, and puts the video back where it was.
+`--scenes` picks the 6 most different scenes out of 24, `--from 1:30 --to 2:00` looks at one part, `--live`
+watches in real time (streams). `snap --media` gives every image a ref with its caption as name, and
+`shot e57` saves just that image (~112 tokens for a Wikipedia photo).
+
+### It cleans up after itself
+
+When the AI finishes its reply, the tabs and apps it opened close again and the window you were in
+comes back to the front (`lighting done`, run by a Claude Code hook). A tab you are looking at stays,
+an app that was open before stays, an app with unsaved work is only asked to close. `lighting keep`
+hands a tab or app over to you; `lighting config cleanup off` keeps everything open.
 
 ## The second time is one call
 
@@ -133,12 +176,38 @@ spotify-wiedergeben search= | 2/2 ok, 1.4 s, saved ~181 tokens | launch spotify:
 (The failed `github-issues` run was a repo that does not exist: it clicked the global Issues link, the
 check caught it.)
 
+## Built for Claude
+
+Every step of an AI agent costs a model round of 1-5 seconds, and everything a tool prints stays in the
+context. So Lighting saves steps first and tokens second:
+
+- **One call instead of two.** `open <url> -f "Issues|Pull"` returns only the matching lines,
+  `do "fill Email=a@b.c; click Continue; expect Welcome"` runs a whole sequence, a known task is `run <name> k=v`.
+- **Answers you can act on.** Everything clickable has a ref (`e12` web, `d5` app, `t4` tab, `w2` window).
+  An action answers with one line and what changed; the header says where you are (`[t4]` tab, `[w2]` window).
+- **Errors name the next step.** `err: nothing matches "Log in" -> try: lighting snap -f "log in"`.
+- **Small by construction.** Headers, navs and repeated lists collapse to one line, the first look at a page
+  stops at 1,600 characters, big results go to a file and only the path is printed.
+- **Knows the cheapest way.** The skill teaches the ladder: an API or `read <url>` (no browser) → `open -f` →
+  `snap -f` → `text` → `shot`, and says when a learned routine can finish the task.
+- **Leaves no mess.** A plugin hook closes what the agent opened after every reply; `keep t3` hands a tab to you.
+- **Fast on both paths.** A Bash call costs ~55 ms, almost all of it Git Bash starting a process. Through MCP a
+  call costs 1.2 ms and a browser command 2.9 ms.
+
+Want every agent on your PC to prefer it? Put this in `CLAUDE.md` or `AGENTS.md`:
+
+```markdown
+- Browser and desktop: use the `lighting` command (skill "lighting") for all web and Windows UI work.
+  Cheapest first: `lighting read <url>` for public pages, `open <url> -f "words"` when you know what you
+  need, `do "a; b; c"` for sequences, `run <routine>` for known tasks. Screenshots only when looks matter.
+```
+
 ---
 
 ## 📊 The numbers
 
 Every number here comes from a run you can repeat: `lighting bench`, `lighting bench --real`, `lighting selftest`.
-Brave 154, Windows 11, Lighting 0.7.0. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
+Brave 154, Windows 11, Lighting 0.7.1. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
 
 ### Per action
 
@@ -177,11 +246,38 @@ Brave 154, Windows 11, Lighting 0.7.0. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **95/95** (browser + desktop, cold start included). Unit tests: `python tests/test_units.py` (9/9), `cargo test` in `client/`.
+- `lighting selftest`: **97/97** (browser + desktop, cold start included). Unit tests: `python tests/test_units.py` (9/9), `cargo test` in `client/`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
-- Click with navigation check and change report: ~140 ms. Filling and submitting a form: ~160 ms.
+- Filling and submitting a form: ~160 ms.
 - GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
-- `snap` on SpigotMC, Modrinth, Hugging Face, GitHub, YouTube, Wikipedia: 17-49 ms.
+
+## How it compares
+
+| | Lighting | Claude in Chrome | Playwright MCP | agent-browser |
+|---|---|---|---|---|
+| Your real browser profile and logins | ✅ | ✅ | fresh profile | own browser |
+| Windows apps (UI Automation + OCR) | ✅ | – | – | – |
+| Tokens for a first look at a page | **~440** (measured) | ~15,850: screenshot + page text (measured) | 15,000-30,000 on dense pages ([1]) | ~1,400 ([2]) |
+| Repeated tasks | learned routines, one call | saved shortcuts | – | – |
+| A whole video as one image | ✅ `frames` | – | – | – |
+| Headless, CI, Linux, macOS | ❌ Windows, real browser | desktop Chrome, no headless | ✅ | ✅ |
+
+`–` means not built in as far as the public docs say. Lighting is the wrong tool for headless tests, CI or
+Linux/macOS: take Playwright there. It is built for the other case: an agent on your Windows PC that has to use
+your logged-in browser and your apps, cheaply.
+
+[1]: https://lite.ego.app/article/playwright-mcp-token-problem
+[2]: https://github.com/vercel-labs/agent-browser
+
+## What's new
+
+- **0.7.1** Claude uses it better: `js` with `const` no longer clashes between calls, `type focused` right after
+  `launch` works, merge buttons need `--yes`, the skill has the rules agents tripped over and is 9% shorter.
+- **0.7.0** Speed pass: a browser command through MCP 17.5 → 2.9 ms, screenshots 37-54% faster, `open -f`.
+- **0.6.0** Video analysis over the whole video with captions and scenes; leaner snapshots.
+- **0.5.0** Cleans up after itself, status light, images, CI and releases with SHA-256 checksums.
+
+All changes: [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -292,7 +388,7 @@ Clicks and typing go through UI Automation in the background, your mouse stays w
 ## Safety
 
 - Banking and payment sites are read-only (`~/.lighting/blocklist.txt`).
-- Buttons that look irreversible (buy, pay, delete, ...) need `--yes`.
+- Buttons that look irreversible (buy, pay, delete, merge a pull request, ...) need `--yes`.
 - Hidden text is never shown to the model, which blocks a common prompt-injection trick.
 - A URL with a long query to a site not opened yet needs `--yes`, so injected instructions cannot quietly send data out.
 - Secrets come from environment variables (`--env VAR`) and are never logged.

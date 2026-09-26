@@ -3,6 +3,24 @@
 Versions follow semver. Every release on GitHub carries `lighting.exe` built from the tag by CI,
 a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in the repo at that tag).
 
+## [0.7.1] - 2026-09-26
+
+Made for how Claude actually uses it (each fix comes from a real stumble in a session).
+
+### Fixed
+- `js "const v = ...; v"` failed on the second call ("Identifier 'v' has already been declared"): code with
+  its own `const`/`let`/`class` now runs in a block, the value of the last expression still comes back.
+- `type focused` right after `launch` failed while Windows had not handed the new window the focus yet: it now
+  brings the window forward once (only after you stopped typing) and asks again.
+
+### Changed
+- Merge buttons (`Merge pull request`, `Confirm merge`, squash/rebase) need `--yes` like buy/pay/delete:
+  a routine learned from merging had been offered on every pull request page.
+- The skill tells agents the three things they tripped over: refs belong to the page as it was, after an app
+  command `snap/click` go to the app, big results sit in a file. It is 9% shorter anyway (~910 -> ~827 tokens).
+- README: demo GIF of a real run, quick start at the top, "Built for Claude" with a snippet for `CLAUDE.md`,
+  an honest comparison, what's new.
+
 ## [0.7.0] - 2026-09-26
 
 Speed pass, every number measured before and after (details: HOW-TO-SETUP.md).

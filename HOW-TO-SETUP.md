@@ -15,6 +15,7 @@ skills/lighting/                               SKILL.md + references/, loaded on
 commands/                                      /lighting:setup, :status, :bench
 hooks/hooks.json                               Stop hook: `lighting done --quiet` after every Claude reply
 tests/test_units.py                            unit tests, plain asserts (python tests/test_units.py or pytest)
+docs/                                          demo.gif (rendered from a real run's output) + frames-example.jpg (CC0 clip), used by the README
 .github/workflows/                             ci.yml (every push/PR), release.yml (tag v* -> release + SHA256)
 lighting/                                      Python package: daemon, CLI fallback, host, desktop, OCR, MCP, selftest
 lighting/routines.py                           task trace, repetition learning (alignment), run, repair, stats
@@ -119,7 +120,7 @@ claude plugin validate skills
 claude plugin validate commands
 python tests/test_units.py     # 9/9
 cd client && cargo test && cargo clippy --release --all-targets
-lighting selftest              # must print 95/95 passed (94/94 with a SKIP line when other Lighting tabs are open or you used the mouse)
+lighting selftest              # must print 97/97 passed (96/96 with a SKIP line when other Lighting tabs are open or you used the mouse)
 lighting bench
 lighting bench --real          # compare tokens with the last run
 ```
@@ -148,6 +149,8 @@ For routines: do one task twice with different values, `lighting routine learn`,
 - **The `text` selftest only checked the page title**, which the plain-text fallback also contains, so the broken Defuddle bundle went unnoticed. It now requires a Markdown table from the fixture.
 - **The first `rtk lighting ...` of every session hung for minutes** (0.4.0): cold-start tests used a plain pipe, and after `lighting stop` the browser's host restarted the daemon before the client could, so the client never spawned it. Test with a private pipe (`USERNAME=ltest`) and through `rtk`.
 - **Tests of a rebuilt client ran the old one**: `lighting` resolved to the stale `~/.lighting/bin` copy. Compare `md5sum bin/lighting.exe ~/.lighting/bin/lighting.exe`.
+- **Testing through Lighting leaves learned routines behind**: repeated test flows became routines (`github-confirm-merge` clicked "Merge pull request" and was offered on every PR page, `calc-focused` typed a fixed sum). After a test session run `lighting routines` and `routine rm` what the tests made. Merge buttons now need `--yes`.
+- **A focus fix stole the keyboard**: bringing a window forward for `type focused` without `pointer.wait_idle()` would have sent the user's own keystrokes into it. Everything that changes the foreground waits for 300 ms of user idle first.
 - **Only the fixture was tested.** A sweep over real sites (GitHub, YouTube, Wikipedia, SpigotMC, Modrinth, Hugging Face, PaperMC docs) found six output and timing problems in one hour. Repeat that sweep after bigger changes.
 
 ## 6. Failure modes
