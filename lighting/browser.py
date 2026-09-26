@@ -32,7 +32,7 @@ def blocklist():
 
 def config_payload(ctx_cfg):
     return {"blocklist": blocklist(), "risk": D.RISK_WORDS, "pointer": bool(ctx_cfg.get("pointer", True)),
-            "navLines": D.NAV_LINES}
+            "navLines": D.NAV_LINES, "navChars": D.NAV_CHARS}
 
 
 def on_connect(daemon, host):
@@ -446,6 +446,30 @@ def cmd_shot(ctx, pos, flags):
     return res
 
 
+def seconds(text):
+    if text in (None, "", True):
+        return None
+    total = 0.0
+    for part in str(text).split(":"):
+        total = total * 60 + float(part)
+    return total
+
+
+def clock(s):
+    s = int(max(0, s))
+    return "%d:%02d:%02d" % (s // 3600, s // 60 % 60, s % 60) if s >= 3600 else "%d:%02d" % (s // 60, s % 60)
+
+
+def distinct(tiles, n):
+    from PIL import ImageChops, ImageStat
+    thumbs = [t.convert("L").resize((32, 18)) for t in tiles]
+    gap = lambda a, b: ImageStat.Stat(ImageChops.difference(thumbs[a], thumbs[b])).mean[0]
+    chosen = [0]
+    while len(chosen) < min(n, len(tiles)):
+        chosen.append(max((i for i in range(len(tiles)) if i not in chosen), key=lambda i: min(gap(i, j) for j in chosen)))
+    return sorted(chosen)
+
+
 def cmd_frames(ctx, pos, flags):
     from PIL import Image, ImageDraw
     import base64
@@ -455,17 +479,22 @@ def cmd_frames(ctx, pos, flags):
         raise Fail("frames needs the ref of a video", "lighting snap -f video, then lighting frames e40")
     count = max(2, min(int(flags.get("count") or 6), 12))
     every = max(200, min(int(flags.get("every") or 1500), 10000))
-    msg = call(ctx, "frames", {"ref": pos[0], "count": count, "every": every}, 20 + count * every // 1000)
-    tiles, stamps = [], []
-    for f in msg.get("frames") or []:
-        img = Image.open(io.BytesIO(base64.b64decode(f["image"])))
-        c, s = f["crop"], img.width / float(f.get("vw") or img.width)
-        box = (max(0, int(c["x"] * s)), max(0, int(c["y"] * s)),
-               min(img.width, int((c["x"] + c["w"]) * s)), min(img.height, int((c["y"] + c["h"]) * s)))
-        tiles.append((img.crop(box) if box[2] > box[0] and box[3] > box[1] else img).convert("RGB"))
-        stamps.append((f.get("media") or "").split("/")[0].split(" ")[0] or "%.1fs" % (len(stamps) * every / 1000.0))
-    if not tiles:
+    scenes, live = bool(flags.get("scenes")), bool(flags.get("live"))
+    try:
+        lo, hi = seconds(flags.get("from")), seconds(flags.get("to"))
+    except ValueError:
+        raise Fail("--from and --to take seconds or m:ss", "lighting frames e40 --from 1:30 --to 2:00")
+    samples = count * 4 if scenes else count
+    msg = call(ctx, "frames", {"ref": pos[0], "count": count, "every": every, "live": live, "from": lo, "to": hi,
+                               "samples": samples}, 30 + (count * every // 1000 if live else samples * 8))
+    frames = msg.get("frames") or []
+    if not frames:
         raise Fail("no frames captured", "lighting shot " + pos[0])
+    tiles = [Image.open(io.BytesIO(base64.b64decode(f["image"]))).convert("RGB") for f in frames]
+    if scenes and not msg.get("live"):
+        keep = distinct(tiles, count)
+        tiles, frames = [tiles[i] for i in keep], [frames[i] for i in keep]
+    stamps = [(f.get("media") or "").split("/")[0].split(" ")[0] or "?" for f in frames]
     cols = 3 if len(tiles) > 4 else 2
     tw = 400
     th = max(1, round(tiles[0].height * tw / tiles[0].width))
@@ -479,9 +508,20 @@ def cmd_frames(ctx, pos, flags):
     res = save_image(ctx, sheet, "frames-" + pos[0], False, int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
     looks = {hashlib.md5(t.convert("L").resize((32, 18)).point(lambda v: v // 24 * 24).tobytes()).hexdigest() for t in tiles}
     still = len(looks) == 1 or (len(set(stamps)) == 1 and ":" in stamps[0])
-    note = (" | the video did not move (paused or not playing) -> try: click %s or press k, then frames again" % pos[0]
-            if still else "")
-    return res.replace("shot ", "frames ", 1) + "\n%d frames at %s%s" % (len(tiles), " ".join(stamps), note)
+    note = ""
+    if still:
+        note = (" | the video did not move (paused or not playing) -> try: click %s or press k, then frames again" % pos[0]
+                if msg.get("live") else " | all frames look the same (black or not decoding) -> try: lighting frames %s --live" % pos[0])
+    if msg.get("live"):
+        mode = "live, every %.1f s" % (every / 1000.0) + ("" if live else ", video not seekable")
+    else:
+        span = "%s-%s of %s" % (clock(lo or 0), clock(hi or msg.get("duration") or 0), clock(msg.get("duration") or 0))
+        mode = ("%d distinct scenes from %d samples, " % (len(tiles), samples) if scenes else "spread over ") + span
+    lines = [res.replace("shot ", "frames ", 1), "%d frames (%s) at %s%s" % (len(tiles), mode, " ".join(stamps), note)]
+    caps = ["%s %s" % (s, f["cap"][:140]) for s, f in zip(stamps, frames) if f.get("cap")]
+    if caps:
+        lines += ["captions:"] + caps
+    return "\n".join(lines)
 
 
 def image_note(ctx, raw):

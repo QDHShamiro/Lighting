@@ -9,7 +9,8 @@ web     open <url> [-n]   snap [-f "a|b"] [-s css|ref] [--all] [--diff]   text [
         fetch <url> [--pick a.b]   read <url|file.pdf> [url ...] [--links]   js <code|--file f>   dismiss
         upload <ref> <file>   tabs   tab <id>   close [id]   back   forward   reload
         shot [ref] [--marks] [--if-changed]   viewport <WxH|reset>   snap --media (images too)
-        frames <video ref> [--count 6] [--every 1500]   read <image url|file> (saved as JPEG to look at)
+        frames <video ref> [--count 6] [--scenes] [--from m:ss --to m:ss] [--live --every ms]
+        read <image url|file> (saved as JPEG to look at)
         dialog accept|dismiss [text]   downloads   console
 desktop windows [-f x]   launch <app|uri|path>   focus <w>   close <w>   snap <w> [--web]
         click <d|o|"text">   type <d|"Field"|focused> <text>   press <keys>   read [w|screen]

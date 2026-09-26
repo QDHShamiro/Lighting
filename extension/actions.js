@@ -2,7 +2,7 @@ import * as C from "./cdp.js";
 import * as T from "./tabs.js";
 import * as I from "./input.js";
 
-export const cfg = { blocklist: [], risk: [], pointer: true, navLines: 40, abort: false };
+export const cfg = { blocklist: [], risk: [], pointer: true, navLines: 40, navChars: 1600, abort: false };
 
 const LOAD_MS = 20000;
 
@@ -126,9 +126,12 @@ function formatSnap(tabId, res, limit, whole) {
   let lines = res.lines || [];
   if (!whole && res.removed === undefined) lines = sameHead(tabId, res, lines);
   let cut = 0;
-  if (limit && lines.length > limit) {
-    cut = lines.length - limit;
-    lines = lines.slice(0, limit);
+  if (limit) {
+    let n = 0;
+    for (let chars = 0; n < lines.length && n < limit && chars + lines[n].length <= cfg.navChars; n++) chars += lines[n].length + 1;
+    n = Math.max(n, Math.min(lines.length, 1));
+    cut = lines.length - n;
+    lines = lines.slice(0, n);
   }
   out.push(...lines);
   if (!lines.length && !res.searched) out.push(res.removed !== undefined ? "(nothing new)" : "(no interactive elements in view)");

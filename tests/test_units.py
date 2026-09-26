@@ -85,6 +85,16 @@ def test_config_merge_keeps_line_endings():
     assert set(data["mcpServers"]) == {"other", "lighting"}
 
 
+def test_video_times_and_scenes():
+    from PIL import Image
+    from lighting import browser
+    assert browser.seconds("1:30") == 90 and browser.seconds("1:02:03") == 3723 and browser.seconds(None) is None
+    assert browser.clock(65) == "1:05" and browser.clock(3723) == "1:02:03"
+    black, white, grey = (Image.new("RGB", (64, 36), c) for c in ("black", "white", (120, 120, 120)))
+    assert browser.distinct([black, black.copy(), white, black.copy()], 2) == [0, 2]
+    assert browser.distinct([black, grey, white], 3) == [0, 1, 2]
+
+
 def test_sources_have_no_hidden_bytes():
     bad = {chr(0), chr(0xFFFE), chr(0xFFFF), chr(0xFEFF)}
     files = list((ROOT / "lighting").glob("*.py")) + list((ROOT / "extension").glob("*.js")) + list((ROOT / "tests").glob("*.py"))

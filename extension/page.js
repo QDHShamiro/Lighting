@@ -6,7 +6,8 @@
     'a[href],button,input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="combobox"],[role="textbox"],[role="searchbox"],[role="slider"],[role="spinbutton"],[role="treeitem"],[contenteditable=""],[contenteditable="true"],[tabindex]:not([tabindex="-1"]),[onclick]';
   const CONTROL =
     'a[href],button,input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="combobox"],[role="textbox"],[role="searchbox"],[role="slider"],[role="spinbutton"],[role="treeitem"],[contenteditable=""],[contenteditable="true"]';
-  const LANDMARK = 'nav,aside,footer,[role="navigation"],[role="complementary"],[role="contentinfo"]';
+  const LANDMARK = 'nav,aside,footer,header,[role="navigation"],[role="complementary"],[role="contentinfo"],[role="banner"]';
+  const KEYHINT = /\s*\((?:[a-z0-9] then [a-z0-9]|(?:alt|ctrl|shift|meta|cmd|option|strg|umschalt)(?:[ +-]+(?:alt|ctrl|shift|meta|cmd|option|strg|umschalt|[a-z0-9]))+)\)\s*$/i;
   const ITEM = 'li,tr,article,[role="listitem"],[role="row"],[role="article"]';
   const ROLE_INPUT = { checkbox: "checkbox", radio: "radio", range: "slider", number: "spinbutton", search: "searchbox", button: "button", submit: "button", reset: "button", image: "button", file: "file", color: "color", date: "date", "datetime-local": "date", time: "time", month: "date", week: "date" };
   const TEXTISH = new Set(["textbox", "searchbox", "spinbutton", "combobox", "date", "time", "color"]);
@@ -84,6 +85,79 @@
     return s;
   }
 
+  function captionAt(el, t) {
+    const parts = [];
+    for (const x of el.textTracks || []) {
+      if (x.mode === "disabled" || !x.cues) continue;
+      for (const c of x.cues) if (c.startTime <= t && t < c.endTime) parts.push(c.text);
+    }
+    if (!parts.length) for (const d of document.querySelectorAll(".ytp-caption-segment")) parts.push(d.innerText);
+    return clean(parts.join(" ").replace(/<[^>]+>/g, " "));
+  }
+
+  const painted = () => new Promise((res) => {
+    const t = setTimeout(res, 150);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      clearTimeout(t);
+      res();
+    }));
+  });
+
+  async function media(r, op, t) {
+    const el = get(r);
+    if (!el) return { gone: true };
+    if (el.tagName !== "VIDEO" && el.tagName !== "AUDIO") return { notMedia: true };
+    if (op === "info") {
+      S.media = { el, time: el.currentTime, paused: el.paused || el.readyState < 2, controls: el.controls, tracks: [...el.textTracks].map((x) => x.mode) };
+      el.controls = false;
+      for (const x of el.textTracks) if (x.mode === "disabled" && (x.kind === "subtitles" || x.kind === "captions")) x.mode = "hidden";
+      const d = el.duration;
+      return { duration: isFinite(d) ? d : 0, time: el.currentTime, paused: el.paused, seekable: isFinite(d) && d > 1 && el.seekable.length > 0 };
+    }
+    if (op === "wait") {
+      const t0 = Date.now();
+      while (el.readyState < 1 && Date.now() - t0 < 4000) await new Promise((res) => setTimeout(res, 100));
+      const d = el.duration;
+      return { duration: isFinite(d) ? d : 0, seekable: isFinite(d) && d > 1 && el.seekable.length > 0 };
+    }
+    if (op === "prime" && el.played.length === 0) {
+      const at = el.currentTime;
+      el.play().catch(() => {});
+      const t0 = Date.now();
+      while (el.currentTime === at && Date.now() - t0 < 3000) await new Promise((res) => setTimeout(res, 100));
+      el.pause();
+    }
+    if (op === "seek") {
+      if (!el.paused) el.pause();
+      if (Math.abs(el.currentTime - t) > 0.05) {
+        await new Promise((res) => {
+          const done = () => {
+            el.removeEventListener("seeked", done);
+            res();
+          };
+          el.addEventListener("seeked", done);
+          setTimeout(done, 4000);
+          el.currentTime = t;
+        });
+      }
+      const t0 = Date.now();
+      while (el.readyState < 2 && Date.now() - t0 < 3000) await new Promise((res) => setTimeout(res, 50));
+      await painted();
+    }
+    if (op === "restore" && S.media && S.media.el === el) {
+      const m = S.media;
+      S.media = null;
+      if (t !== -1) el.currentTime = m.time;
+      el.controls = m.controls;
+      [...el.textTracks].forEach((x, i) => {
+        if (m.tracks[i] !== undefined) x.mode = m.tracks[i];
+      });
+      if (m.paused && !el.paused) el.pause();
+      if (!m.paused && el.paused) el.play().catch(() => {});
+    }
+    return { media: mediaState(el).trim(), cap: captionAt(el, el.currentTime) };
+  }
+
   function nameOf(el) {
     let s = el.getAttribute("aria-label");
     if (!s) {
@@ -116,7 +190,7 @@
       const titled = p.querySelector('h1,h2,h3,h4,[class*="title" i],[class*="name" i]');
       s = titled ? titled.innerText : (p.innerText || "").trim().split("\n")[0];
     }
-    return clean(s);
+    return clean(s).replace(KEYHINT, "");
   }
 
   function short(href) {
@@ -128,13 +202,14 @@
         if (/^(utm_|fbclid|gclid|dclid|msclkid|yclid|twclid|ttclid|mc_|igshid|_hsenc|_hsmi|mkt_tok)/i.test(k) || (yt && /^(pp|si|feature)$/.test(k))) u.searchParams.delete(k);
       }
       const qs = u.search.length > 40 ? "?…" : u.search;
+      const hex = (s) => s.replace(/[0-9a-f]{12,}/g, (m) => m.slice(0, 7) + "…");
       if (u.origin === location.origin) {
         if (u.pathname === location.pathname && u.search === location.search) return u.hash || ".";
         const here = location.pathname.replace(/\/$/, "");
         const p = here && u.pathname.startsWith(here + "/") ? "." + u.pathname.slice(here.length) : u.pathname;
-        return trunc(p + qs + (u.hash.length > 30 ? "" : u.hash), 60);
+        return trunc(hex(p + qs + (u.hash.length > 30 ? "" : u.hash)), 60);
       }
-      return trunc(u.host.replace(/^www\./, "") + u.pathname.replace(/\/$/, "") + qs, 60);
+      return trunc(hex(u.host.replace(/^www\./, "") + u.pathname.replace(/\/$/, "") + qs), 60);
     } catch (e) {
       return "";
     }
@@ -406,11 +481,13 @@
       const role = roleOf(el);
       const name = nameOf(el);
       if (role === "clickable" && !name) continue;
+      if (role === "link" && /^\[[\w\s]{1,5}\]$/.test(name) && (el.getAttribute("href") || "").startsWith("#")) continue;
       const ft = filter ? tierOf([name.toLowerCase(), role, String(el.value || "").toLowerCase()]) : null;
       if (filter && !ft.some((x) => x)) continue;
       const entry = { el, role, name, ft };
       if (collapseOk) {
-        const lm = el.closest(LANDMARK);
+        let lm = el.closest(LANDMARK);
+        if (lm && (lm.tagName === "HEADER" || lm.getAttribute("role") === "banner") && lm.parentElement && lm.parentElement.closest("article,aside,main,nav,section")) lm = null;
         if (lm) {
           const box = land.get(lm) || { count: 0, entries: [] };
           box.count++;
@@ -449,7 +526,8 @@
         }
       } else if (hrefOf(pv) === h && !pv.drop && pv.name === e.name) e.drop = true;
     }
-    const bigLand = new Set([...land.entries()].filter(([, b]) => b.count > 12).map(([lm]) => lm));
+    const banner = (lm) => lm.tagName === "HEADER" || lm.getAttribute("role") === "banner";
+    const bigLand = new Set([...land.entries()].filter(([lm, b]) => b.count > (banner(lm) ? 7 : 12)).map(([lm]) => lm));
     const bigList = new Map();
     for (const [list, g] of groups) if (g.items.size > 8) bigList.set(list, [...g.items].slice(0, 5));
     const out = [], landDone = new Set(), listDone = new Set();
@@ -464,10 +542,22 @@
         if (!landDone.has(e.landmark)) {
           landDone.add(e.landmark);
           const lm = e.landmark;
-          const kind = lm.tagName === "NAV" || lm.getAttribute("role") === "navigation" ? "nav" : lm.tagName === "FOOTER" || lm.getAttribute("role") === "contentinfo" ? "footer" : "aside";
+          const kind = lm.tagName === "NAV" || lm.getAttribute("role") === "navigation" ? "nav" : lm.tagName === "FOOTER" || lm.getAttribute("role") === "contentinfo" ? "footer" : lm.tagName === "HEADER" || lm.getAttribute("role") === "banner" ? "header" : "aside";
           const nm = trunc(clean(lm.getAttribute("aria-label") || ""), 30);
           ids.add(ref(lm));
-          out.push(ref(lm) + " " + kind + (nm ? ' "' + q(nm) + '"' : "") + ": " + land.get(lm).count + " items (lighting snap -s " + ref(lm) + ")");
+          let names = "";
+          if (kind === "header") {
+            for (const x of land.get(lm).entries) {
+              const n = trunc(x.name, 22);
+              if (!n) continue;
+              if (names.length + n.length > 150) {
+                names += " | …";
+                break;
+              }
+              names += (names ? " | " : ": ") + n;
+            }
+          }
+          out.push(ref(lm) + " " + kind + (nm ? ' "' + q(nm) + '"' : "") + ": " + land.get(lm).count + " items (lighting snap -s " + ref(lm) + ")" + names);
         }
         continue;
       }
@@ -594,5 +684,5 @@
     return out;
   }
 
-  globalThis.__lt = { S, get, ref, roleOf, nameOf, hintOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, INTERACTIVE, CONTROL };
+  globalThis.__lt = { S, get, ref, roleOf, nameOf, hintOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, media, INTERACTIVE, CONTROL };
 })();
