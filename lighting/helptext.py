@@ -1,7 +1,7 @@
 HELP = """lighting <command> [args]   browser + Windows desktop for AI agents
 refs: e12 web element | d5 app control | o3 screen text | w2 window | t77 tab
 
-web     open <url> [-n]   snap [-f "a|b"] [-s css|ref] [--all] [--diff]   text [-f txt] [--links]
+web     open <url> [-n] [-f "a|b"]   snap [-f "a|b"] [-s css|ref] [--all] [--diff]   text [-f txt] [--links]
         click <ref|"text"|#hint> [--yes] [--force]   fill "Label=value" ... [--submit]
         type <ref> <text> [--env VAR] [--append]   press <keys>   select <ref> <option>
         check <ref> [off]   hover <ref>   drag <ref> <ref>   scroll [ref|up|down] [--until "text"]

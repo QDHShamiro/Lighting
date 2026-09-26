@@ -1,6 +1,7 @@
 import json
 import os
 import shlex
+import sys
 import time
 
 from lighting import defaults as D
@@ -8,6 +9,7 @@ from lighting.common import Fail, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to"}
+TRACE = (D.HOME / "trace").exists()
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
          "-m": "media"}
 
@@ -141,11 +143,16 @@ def run_one(ctx, argv):
     if name in SYSTEM:
         return route(ctx, name, pos, flags), name, pos
     try:
+        t0 = time.perf_counter()
         out = route(ctx, name, pos, flags)
+        t1 = time.perf_counter()
     except Fail as e:
         routines.observe(ctx, name, pos, flags, e.text(), False)
         raise
     routines.observe(ctx, name, pos, flags, out if isinstance(out, str) else "", True)
+    if TRACE:
+        print("trace %s: route %.2f ms, observe %.2f ms" % (name, (t1 - t0) * 1000, (time.perf_counter() - t1) * 1000),
+              file=sys.stderr, flush=True)
     return out, name, pos
 
 
@@ -176,25 +183,37 @@ def run(ctx, msg):
         events.append("! " + ev)
     if events:
         out = (out + "\n" if out else "") + "\n".join(events)
+    t_log = time.perf_counter()
     log(name, argv, code, (time.perf_counter() - t) * 1000)
+    if TRACE:
+        print("trace %s: total %.2f ms, log %.2f ms" % (name, (time.perf_counter() - t) * 1000, (time.perf_counter() - t_log) * 1000),
+              file=sys.stderr, flush=True)
     res = {"out": out, "code": code}
     if ctx.image:
         res["image"] = ctx.image
     return res
 
 
+_log = {"f": None, "n": 0}
+
+
 def log(name, argv, code, ms):
     if name in ("ping", "status", "log"):
         return
     try:
-        if D.LOG.exists() and D.LOG.stat().st_size > D.LOG_MAX_BYTES:
-            D.LOG.replace(D.LOG.with_suffix(".old.jsonl"))
+        if _log["f"] is None or _log["n"] >= 500:
+            if _log["f"]:
+                _log["f"].close()
+                _log["f"] = None
+            if D.LOG.exists() and D.LOG.stat().st_size > D.LOG_MAX_BYTES:
+                D.LOG.replace(D.LOG.with_suffix(".old.jsonl"))
+            _log["f"], _log["n"] = open(D.LOG, "a", encoding="utf-8", buffering=1), 0
+        _log["n"] += 1
         ref = next((a for a in argv[1:2] if ref_kind(a)), "")
-        with open(D.LOG, "a", encoding="utf-8") as f:
-            f.write(json.dumps({"t": time.strftime("%Y-%m-%d %H:%M:%S"), "cmd": name, "ref": ref,
-                                "ok": code == 0, "ms": int(ms)}) + "\n")
+        _log["f"].write(json.dumps({"t": time.strftime("%Y-%m-%d %H:%M:%S"), "cmd": name, "ref": ref,
+                                    "ok": code == 0, "ms": int(ms)}) + "\n")
     except OSError:
-        pass
+        _log["f"] = None
 
 
 def cmd_do(ctx, pos, flags):

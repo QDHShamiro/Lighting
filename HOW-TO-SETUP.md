@@ -76,6 +76,11 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - YouTube `/embed/` URLs opened directly show "Error 153" (the player needs a referrer). Test with watch pages.
 - Captions: text tracks with mode `disabled` are set to `hidden` so their cues load (restored afterwards); YouTube captions are read from `.ytp-caption-segment` when CC is on.
 - Header collapse: `<header>`/`banner` outside article/aside/main/nav/section is a landmark; it collapses at 8+ own controls (navs inside it keep their own lines) and lists names up to 150 characters. The first-look cap is 40 lines and `navChars` 1,600 characters: with only a line cap, collapsing the header just pulled more lines in and `open` got bigger.
+- Where the time goes (0.7.0, measured): a Bash call costs 51-57 ms of Git Bash process start alone (`/usr/bin/true` 51 ms), Lighting adds ~5 ms. Through MCP a call is 1.2 ms (`ping`) and a browser command 2.9 ms; the daemon -> extension -> daemon trip is 1.7 ms. For an agent the model round per step (1-5 s) dominates, so fewer steps (`do`, `open -f`, routines) beat shaving milliseconds.
+- Opening and closing a file per command cost 14.3 ms because the virus scanner checks it on close. `log.jsonl` stays open (line buffered) and is rotated every 500 lines. Same trap for any per-command file write.
+- Profiling switch: create `~/.lighting/trace`, then `lighting stop`; `daemon.log` gets `trace <cmd>: route / observe / total / log` and `trace browser <cmd>: reply / inside extension` lines. Delete the file and stop again to turn it off (read once at start, no cost when off).
+- Tried and dropped (no measurable effect): `timeBeginPeriod(1)` in daemon and host, CDP `optimizeForSpeed` for JPEG screenshots (272 vs 278 ms). Pillow `optimize=True` only made files smaller (tokens depend on pixels), dropping it saved ~5 ms.
+- `showBriefly` waits for two animation frames in the tab (executeScript, max 300 ms; 120 ms if the page cannot be scripted) instead of a fixed sleep: faster on a 144 Hz screen and safe on slow pages.
 - After a desktop command, shared verbs (`snap`, `click`, ...) go to the desktop. Test the web side with web-only commands (`open`, `text`) or `--on web`.
 - Bionic (LM Studio's agent app) reads global skills from `~/.lmstudio/skills/<name>/SKILL.md` (folder name = skill name) and LM Studio reads MCP servers from `~/.lmstudio/mcp.json`.
 
@@ -114,7 +119,7 @@ claude plugin validate skills
 claude plugin validate commands
 python tests/test_units.py     # 9/9
 cd client && cargo test && cargo clippy --release --all-targets
-lighting selftest              # must print 93/93 passed (92/92 with a SKIP line when other Lighting tabs are open or you used the mouse)
+lighting selftest              # must print 95/95 passed (94/94 with a SKIP line when other Lighting tabs are open or you used the mouse)
 lighting bench
 lighting bench --real          # compare tokens with the last run
 ```

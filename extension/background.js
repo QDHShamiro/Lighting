@@ -62,10 +62,11 @@ async function onMessage(msg) {
   if (!msg || !msg.cmd) return;
   const id = msg.id;
   const busy = !NO_TAB.has(msg.cmd) && !msg.cmd.startsWith("record") && msg.cmd !== "where";
+  const t0 = performance.now();
   try {
     if (busy) await T.paint("orange");
     const res = await run(msg.cmd, msg.args || {}, msg.tab);
-    if (id) post(Object.assign({ id, ok: true }, typeof res === "string" ? { out: res } : res));
+    if (id) post(Object.assign({ id, ok: true, extMs: performance.now() - t0 }, typeof res === "string" ? { out: res } : res));
   } catch (e) {
     if (busy) T.paint("red");
     if (id) post({ id, ok: false, error: String((e && e.message) || e) });
@@ -78,12 +79,14 @@ async function open(a, tab) {
   else T.setTarget(tabId);
   await C.attach(tabId).catch(() => {});
   const nav = await T.navigate(tabId, a.url, LOAD_MS);
-  await page(tabId, "act.settle", [300, 3000], 0, 8000).catch(() => {});
+  await page(tabId, "act.settle", [300, 3000, 0, 150], 0, 8000).catch(() => {});
   const t = await chrome.tabs.get(tabId);
   if (nav.error && nav.error !== "net::ERR_ABORTED") throw new Error("load failed: " + nav.error + " (" + T.short(a.url, 60) + ")");
-  const res = await page(tabId, "snap", [{ force: true }]).catch((e) => ({ error: e.message }));
+  const narrow = !!(a.filter || a.scope);
+  const opts = { force: true, filter: a.filter || null, scope: a.scope || null, media: !!a.media };
+  const res = await page(tabId, "snap", [opts]).catch((e) => ({ error: e.message }));
   if (res.error) return header(tabId, { title: t.title, url: t.url }) + "\n" + res.error;
-  return formatSnap(tabId, res, cfg.navLines);
+  return formatSnap(tabId, res, narrow ? 0 : cfg.navLines, narrow);
 }
 
 async function history(kind, tab) {
@@ -93,7 +96,7 @@ async function history(kind, tab) {
   else if (kind === "forward") await chrome.tabs.goForward(tabId).catch(() => {});
   else await chrome.tabs.reload(tabId);
   await nav.wait(1500, LOAD_MS);
-  await page(tabId, "act.settle", [300, 3000], 0, 8000).catch(() => {});
+  await page(tabId, "act.settle", [300, 3000, 0, 150], 0, 8000).catch(() => {});
   const res = await page(tabId, "snap", [{ force: true }]);
   return formatSnap(tabId, res, cfg.navLines);
 }
