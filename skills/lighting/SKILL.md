@@ -17,7 +17,7 @@ Full command list: `lighting help`.
 
 ## Images and videos
 `snap --media` also lists images (`e57 img "caption" 500x281`); `shot e57` saves just that image to look at.
-`frames e40 [--count 6] [--every 1500]` turns a playing video into one contact sheet with timestamps (one Read, ~500 tokens). "did not move" means paused: `click e40` or `press k`, then again.
+`frames e40` = the whole video as one contact sheet: 6 moments spread over its length (seeks, ~2 s, muted, video put back), timestamps + captions. `--scenes` 6 most different scenes of 24, `--from 1:30 --to 2:00` one part, `--count 9`, `--live [--every 1500]` real time (streams). One Read, ~500 tokens.
 `read <image url|file>` saves an image as JPEG to look at.
 
 ## Web

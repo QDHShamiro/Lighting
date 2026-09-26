@@ -3,6 +3,27 @@
 Versions follow semver. Every release on GitHub carries `lighting.exe` built from the tag by CI,
 a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in the repo at that tag).
 
+## [0.6.0] - 2026-09-26
+
+### Added
+- Video analysis: `frames <video>` jumps to moments spread over the whole video instead of watching in
+  real time (a 14-minute talk: 6 frames in 2.1 s), prints the captions at each moment, mutes the tab
+  while it captures and puts the video back where it was (time, paused or playing, controls).
+  `--scenes` keeps the most different frames of 4x as many samples, `--from`/`--to` pick a part,
+  `--live` keeps the real-time mode for streams.
+- A video that never played (YouTube shows a cover image over it) is started muted for a moment
+  first; a video in a background tab waits for its metadata.
+
+### Changed
+- Page headers with 8 or more controls collapse to one line that still lists their names
+  (GitHub, YouTube), so they stay clickable by text.
+- The first look at a page (`open`, navigating clicks) stops at 1,600 characters as well as 40 lines:
+  GitHub -7%, Wikipedia -11% tokens.
+- Snapshots drop footnote links (`[1]`), keyboard hints in names (`(g then d)`) and cut long hashes
+  in links to 7 characters: `snap` on GitHub -9%, Wikipedia -4%.
+- Element screenshots (`shot e5`, `frames`) capture only the element through CDP instead of the whole
+  viewport.
+
 ## [0.5.0] - 2026-09-26
 
 ### Added

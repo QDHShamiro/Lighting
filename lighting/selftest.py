@@ -129,6 +129,10 @@ def browser(r, base):
     r.step("open fixture", ["open", base, "--new"], lambda o, e: not e and "Lighting Fixture" in o)
     r.step("hidden text not shown", ["snap", "--all"], lambda o, e: not e and "IGNORE ALL" not in o and "HIDDEN INJECTION" not in o)
     r.step("nav collapsed", ["snap", "--force"], lambda o, e: not e and "nav " in o and "items (lighting snap -s" in o)
+    r.step("header collapsed, names kept", ["snap", "--force"],
+           lambda o, e: not e and re.search(r"header: 13 items \(lighting snap -s e\d+\): Top 1 \| Top 2", o) and 'link "Top 5"' not in o)
+    r.step("footnotes, key hints, hashes", ["snap", "--all"],
+           lambda o, e: not e and '"[1]"' not in o and 'link "Keyboard help" ->' in o and "commit/0123456…" in o)
     r.step("long list collapsed", ["snap", "--force"], lambda o, e: "similar items" in o or "more:" in o)
     r.step("cookie banner noticed", ["snap", "--force"], lambda o, e: "cookie banner" in o)
     r.step("dismiss cookie banner", ["dismiss"], lambda o, e: not e and "rejected" in o)
@@ -144,8 +148,10 @@ def browser(r, base):
     vref = found.group(1) if found else "e0"
     r.step("images with --media", ["snap", "--media", "-f", "orange test square"],
            lambda o, e: not e and 'img "orange test square" 64x64' in o)
-    r.step("frames of a paused video", ["frames", vref, "--count", "2", "--every", "200"],
-           lambda o, e: not e and ".jpg" in o and "did not move" in o)
+    r.step("frames of a paused video", ["frames", vref, "--count", "2", "--every", "400"],
+           lambda o, e: not e and ".jpg" in o and "did not move" in o and "not seekable" in o)
+    r.step("frames read captions", ["frames", vref, "--count", "2", "--every", "300"],
+           lambda o, e: not e and "captions:" in o and "Hello from the caption track" in o)
     from PIL import Image
     pic = D.OUT / "selftest.png"
     Image.new("RGB", (40, 20), "orange").save(pic)

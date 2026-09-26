@@ -7,7 +7,7 @@ from lighting import defaults as D
 from lighting.common import Fail, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
-          "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every"}
+          "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to"}
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
          "-m": "media"}
 

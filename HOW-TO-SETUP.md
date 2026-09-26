@@ -71,6 +71,11 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - Cleanup: `done` asks every connected extension to close the non-active tabs of the Lighting group (a tab the user made active is being looked at and stays), and closes the windows `launch` created (hwnd not in the window list before the launch; apps that were open stay) with WM_CLOSE, then gives the foreground back to the window that had it before the first launch. `keep` ungroups tabs and forgets windows. The Stop hook runs `done --quiet`; for `done` the client never sets anything up and never starts the daemon.
 - Status light: `paint()` in tabs.js sets the Lighting group color, orange before every command that works on a tab, red on an error or `abort`, green on `cleanup` (also with `cleanup off`, then nothing closes). New groups take the current color.
 - Images are listed only with `snap --media` (image-heavy pages would cost tokens otherwise); they keep the visibility and aria-hidden checks that video skips, icons under 48 px are left out, and an image without alt takes its `figcaption`. `frames` keeps the tab in front for the whole capture because background tabs stop decoding video; "did not move" comes from equal timestamps or equal thumbnails (JPEG noise alone breaks exact comparisons).
+- Video analysis: `frames` seeks by default (sample i at from + (i + 0.5) * span / n), waits for `seeked` and `readyState >= 2`, then two animation frames (or 150 ms), and captures with `Page.captureScreenshot` + `clip` (rect center - size/2 + `cssVisualViewport.pageX/pageY`; rect first, it may scroll). It mutes the tab during capture and restores time, paused state and `controls` afterwards. A video counts as paused when it was paused or never loaded (`readyState < 2`): YouTube reports a deferred background video as playing, and restoring that once started it with sound.
+- Chrome defers media in background tabs until they are shown: `frames` waits up to 4 s for metadata while the tab is in front. A video that never played (`played.length === 0`) shows YouTube's cover image over the element, so every seek captured the same picture; it is started muted until `currentTime` moves, then paused.
+- YouTube `/embed/` URLs opened directly show "Error 153" (the player needs a referrer). Test with watch pages.
+- Captions: text tracks with mode `disabled` are set to `hidden` so their cues load (restored afterwards); YouTube captions are read from `.ytp-caption-segment` when CC is on.
+- Header collapse: `<header>`/`banner` outside article/aside/main/nav/section is a landmark; it collapses at 8+ own controls (navs inside it keep their own lines) and lists names up to 150 characters. The first-look cap is 40 lines and `navChars` 1,600 characters: with only a line cap, collapsing the header just pulled more lines in and `open` got bigger.
 - After a desktop command, shared verbs (`snap`, `click`, ...) go to the desktop. Test the web side with web-only commands (`open`, `text`) or `--on web`.
 - Bionic (LM Studio's agent app) reads global skills from `~/.lmstudio/skills/<name>/SKILL.md` (folder name = skill name) and LM Studio reads MCP servers from `~/.lmstudio/mcp.json`.
 
@@ -107,9 +112,9 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-python tests/test_units.py     # 8/8
+python tests/test_units.py     # 9/9
 cd client && cargo test && cargo clippy --release --all-targets
-lighting selftest              # must print 90/90 passed (89/89 with a SKIP line when other Lighting tabs are open or you used the mouse)
+lighting selftest              # must print 93/93 passed (92/92 with a SKIP line when other Lighting tabs are open or you used the mouse)
 lighting bench
 lighting bench --real          # compare tokens with the last run
 ```

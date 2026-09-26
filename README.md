@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-111111?style=flat-square" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-90%2F90-111111?style=flat-square" alt="90/90 selftest">
+  <img src="https://img.shields.io/badge/selftest-93%2F93-111111?style=flat-square" alt="93/93 selftest">
   <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
   <br>
@@ -18,12 +18,12 @@
   <img src="https://img.shields.io/badge/known%20task-%E2%88%9296%25%20tokens-FF8A00?style=flat-square" alt="-96% tokens per known task">
 </p>
 
-<h3 align="center">An AI that looks at a page with screenshots pays ~15,850 tokens. Lighting pays ~470.</h3>
+<h3 align="center">An AI that looks at a page with screenshots pays ~15,850 tokens. Lighting pays ~440.</h3>
 
 <table>
 <tr>
 <th width="50%">📸 Screenshot agent · ~15,850 tokens</th>
-<th width="50%">🔦 Lighting · ~470 tokens</th>
+<th width="50%">🔦 Lighting · ~440 tokens</th>
 </tr>
 <tr>
 <td valign="top">
@@ -46,7 +46,7 @@ One call. Everything clickable has a ref. A click answers in one line (**13-53**
 </tr>
 </table>
 
-<p align="center"><b>A 10-step task: ~37,000 tokens with screenshots, ~920 with Lighting. That is ~36,000 tokens saved, every time.</b><br><sub>Computed from the measured rows below: 1 page look + 9 clicks with a screenshot each, against 1 <code>open</code> + 9 one-line clicks.</sub></p>
+<p align="center"><b>A 10-step task: ~37,000 tokens with screenshots, ~890 with Lighting. That is ~36,000 tokens saved, every time.</b><br><sub>Computed from the measured rows below: 1 page look + 9 clicks with a screenshot each, against 1 <code>open</code> + 9 one-line clicks.</sub></p>
 
 ---
 
@@ -98,7 +98,10 @@ you stopped it, **green** when it is done.
 
 **It sees images and video.** `snap --media` gives every image a ref (with its caption as name),
 `shot e57` saves just that image for the AI to look at (~112 tokens for a Wikipedia photo), and
-`frames e40` turns a playing video into one contact sheet: 6 frames with timestamps, ~500 tokens.
+`frames e40` turns a whole video into one contact sheet: it jumps to 6 moments spread over the full length
+(a 14-minute talk in 2.1 s instead of 14 minutes), with timestamps and the captions at each moment, muted,
+and puts the video back where it was. `--scenes` picks the 6 most different scenes out of 24, `--from 1:30 --to 2:00`
+looks at one part, `--live` watches in real time (streams).
 
 ## The second time is one call
 
@@ -135,13 +138,14 @@ check caught it.)
 ## 📊 The numbers
 
 Every number here comes from a run you can repeat: `lighting bench`, `lighting bench --real`, `lighting selftest`.
-Brave 154, Windows 11, Lighting 0.5.0. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
+Brave 154, Windows 11, Lighting 0.6.0. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
 
 ### Per action
 
 | Action | Without Lighting | With Lighting | Saved |
 |---|---:|---:|---:|
-| Look at a page (GitHub repo) | ~15,850 (screenshot + page text) | **~470** (`open`) | **−97%** |
+| Look at a page (GitHub repo) | ~15,850 (screenshot + page text) | **~440** (`open`) | **−97%** |
+| See a 14-minute video (6 moments) | ~14,100 (6 screenshots, waiting while it plays) | **~518** (`frames`, one image, 2.1 s) | **−96%** |
 | See what a click did | ~2,350 (new screenshot) | **13-53** (one-line change report) | **−98%** |
 | Find one thing on a page | ~2,350 (screenshot) | **~36-50** (`snap -f`) | **−98%** |
 | Do a known task again (a repo's issues) | ~916 (every step by hand) | **~40** (`run github-issues`, 1 call) | **−96%** |
@@ -170,7 +174,7 @@ Brave 154, Windows 11, Lighting 0.5.0. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **90/90** (browser + desktop, cold start included). Unit tests: `python tests/test_units.py` (8/8), `cargo test` in `client/`.
+- `lighting selftest`: **93/93** (browser + desktop, cold start included). Unit tests: `python tests/test_units.py` (9/9), `cargo test` in `client/`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - Click with navigation check and change report: ~140 ms. Filling and submitting a form: ~160 ms.
 - GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
@@ -258,7 +262,7 @@ args = ["mcp"]
 | Data | `table e8` · `fetch /api/me --pick login` (with your cookies) · `js` |
 | Tabs | `tabs` · `tab t3` · `close` · `back` · `reload` · `dialog accept\|dismiss` · `dismiss` (cookie banners) · `viewport 390x844` |
 | Clean up | `done` (close what Lighting opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) |
-| Images, video | `snap --media` (images get refs, captions as names) · `shot e57` (look at one image) · `frames e40` (a playing video as one contact sheet with timestamps) · `read <image url>` |
+| Images, video | `snap --media` (images get refs, captions as names) · `shot e57` (look at one image) · `frames e40 [--scenes] [--from 1:30 --to 2:00] [--live]` (the whole video as one contact sheet, captions included) · `read <image url>` |
 
 **Windows desktop**
 

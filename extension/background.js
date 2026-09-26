@@ -229,6 +229,7 @@ async function shot(a, tab) {
   if (win.state === "minimized") throw new Error("browser window is minimized -> restore it, or use: lighting shot screen");
   return T.showBriefly(tabId, async () => {
     await C.attach(tabId);
+    if (a.ref && !a.marks) return { image: await clipShot(tabId, a.ref, a.quality || 70) };
     let crop = null;
     if (a.ref) {
       const r = await page(tabId, "rect", [a.ref]);
@@ -256,20 +257,49 @@ async function frames(a, tab) {
   const t = await chrome.tabs.get(tabId);
   const win = await chrome.windows.get(t.windowId);
   if (win.state === "minimized") throw new Error("browser window is minimized -> restore it");
+  const muted = !!(t.mutedInfo && t.mutedInfo.muted);
+  if (!muted) await chrome.tabs.update(tabId, { muted: true }).catch(() => {});
   return T.showBriefly(tabId, async () => {
     await C.attach(tabId);
+    const info = await page(tabId, "media", [a.ref, "info"]);
+    if (info.gone) throw new Error(a.ref + " is gone -> try: lighting snap");
+    if (info.notMedia) throw new Error(a.ref + " is not a video -> try: lighting snap -f video");
+    if (!info.seekable && !a.live) Object.assign(info, await page(tabId, "media", [a.ref, "wait"], 0, 8000));
+    const live = a.live || !info.seekable;
     const out = [];
-    for (let i = 0; i < a.count; i++) {
-      if (i) await T.sleep(a.every);
-      const r = await page(tabId, "rect", [a.ref]);
-      if (r.gone) throw new Error(a.ref + " is gone -> try: lighting snap");
-      const m = await C.send(tabId, "Page.getLayoutMetrics");
-      const vp = m.cssVisualViewport || m.visualViewport || {};
-      const img = await C.send(tabId, "Page.captureScreenshot", { format: "jpeg", quality: 70 });
-      out.push({ image: img.data, crop: { x: r.x - r.w / 2, y: r.y - r.h / 2, w: r.w, h: r.h }, vw: vp.clientWidth, media: r.media || "" });
+    try {
+      if (live) {
+        for (let i = 0; i < a.count; i++) {
+          if (i) await T.sleep(a.every);
+          const st = await page(tabId, "media", [a.ref, "state"]);
+          out.push({ image: await clipShot(tabId, a.ref, 70), media: st.media, cap: st.cap });
+        }
+      } else {
+        const from = Math.max(0, Math.min(a.from || 0, info.duration - 0.5));
+        const to = Math.max(from + 0.5, Math.min(a.to || info.duration, info.duration));
+        const n = a.samples || a.count;
+        await page(tabId, "media", [a.ref, "prime"], 0, 8000);
+        for (let i = 0; i < n; i++) {
+          const st = await page(tabId, "media", [a.ref, "seek", from + ((i + 0.5) * (to - from)) / n], 0, 12000);
+          out.push({ image: await clipShot(tabId, a.ref, 70), media: st.media, cap: st.cap });
+        }
+      }
+    } finally {
+      await page(tabId, "media", [a.ref, "restore", live ? -1 : 0]).catch(() => {});
+      if (!muted) await chrome.tabs.update(tabId, { muted: false }).catch(() => {});
     }
-    return { frames: out };
+    return { frames: out, live, duration: info.duration };
   });
+}
+
+async function clipShot(tabId, ref, quality) {
+  const r = await page(tabId, "rect", [ref]);
+  if (r.gone) throw new Error(ref + " is gone -> try: lighting snap");
+  const m = await C.send(tabId, "Page.getLayoutMetrics");
+  const vp = m.cssVisualViewport || m.visualViewport || {};
+  const clip = { x: r.x - r.w / 2 + (vp.pageX || 0), y: r.y - r.h / 2 + (vp.pageY || 0), width: Math.max(1, r.w), height: Math.max(1, r.h), scale: 1 };
+  const img = await C.send(tabId, "Page.captureScreenshot", { format: "jpeg", quality, clip });
+  return img.data;
 }
 
 async function upload(a, tab) {
@@ -494,6 +524,7 @@ async function route(cmd, a, tab) {
       cfg.risk = a.risk || [];
       cfg.pointer = a.pointer !== false;
       if (a.navLines) cfg.navLines = a.navLines;
+      if (a.navChars) cfg.navChars = a.navChars;
       return {};
     case "abort":
       cfg.abort = true;
