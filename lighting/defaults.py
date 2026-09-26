@@ -69,6 +69,7 @@ CONFIG_DEFAULTS = {
     "ocr_lang": "auto",
     "shot_width": SHOT_WIDTH,
     "learn": True,
+    "cleanup": True,
 }
 
 RISK_WORDS = [

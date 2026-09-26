@@ -1,0 +1,16 @@
+{
+  "description": "Closes the tabs and apps Lighting opened when Claude finishes a reply (lighting config cleanup off keeps them)",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/lighting.exe\" done --quiet",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -15,10 +15,12 @@ desktop windows [-f x]   launch <app|uri|path>   focus <w>   close <w>   snap <w
         shot [w|screen]   clip [get|set <text>]
 routine routines [-f x]   run <name> [param=value ...] [--yes]   routine show|save|rm|rename|forget <name>
         record start [name] [--web|--desktop]   record stop [name] [param=value ...]   record cancel|status
+cleanup done [--quiet]   keep [t|w]   config cleanup on|off
 system  do "cmd; cmd; ..."   status   stop   config [key value]   log   version
         setup [--manual]   install <ai>   selftest [web|app]   bench [--real]   ext-reload   uninstall [--purge]
 
 Output is plain text, one line per action. Big results go to a file (path printed).
 Tasks that repeat become routines by themselves (config learn off to stop learning).
+Tabs and apps Lighting opened close on done (Claude Code runs it after every reply); keep hands one to the user.
 Safety: banking/payment sites are read-only, risky clicks and long URL data to new sites need --yes,
 Ctrl+Alt+End stops everything."""

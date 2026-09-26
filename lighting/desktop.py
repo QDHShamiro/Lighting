@@ -20,6 +20,8 @@ class AppState:
         self.ocr = {}
         self.hwnd = None
         self.snap_t = 0.0
+        self.launched = {}
+        self.front0 = None
 
 
 def state(ctx):
@@ -241,6 +243,23 @@ def find_app(name):
     return None
 
 
+def run_name(name):
+    if not re.fullmatch(r"[\w.-]+", name):
+        return None
+    exe = name if name.lower().endswith(".exe") else name + ".exe"
+    root = os.environ.get("SystemRoot") or r"C:\Windows"
+    if any(os.path.isfile(os.path.join(d, exe)) for d in (os.path.join(root, "System32"), root)):
+        return exe
+    import winreg
+    for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+        try:
+            winreg.CloseKey(winreg.OpenKey(hive, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\" + exe))
+            return exe
+        except OSError:
+            pass
+    return None
+
+
 def owner_of(wins, hint):
     words = [w for w in re.split(r"[^a-z0-9]+", (hint or "").lower()) if len(w) > 2]
     for w in sorted(wins, key=lambda x: not x["fg"]):
@@ -293,17 +312,54 @@ def cmd_launch(ctx, pos, flags):
         what, hint = spec, spec.split(":", 1)[0]
     else:
         app = find_app(spec)
-        if not app:
+        exe = None if app and app[0].lower() == spec.lower() else run_name(spec)
+        if exe:
+            os.startfile(exe)
+            what = hint = spec
+        elif app:
+            os.startfile("shell:AppsFolder\\" + app[1])
+            what = hint = app[0]
+        else:
             raise Fail('no app named "%s" in the start menu' % spec, "lighting launch <name as in the start menu>, a URI or a path")
-        os.startfile("shell:AppsFolder\\" + app[1])
-        what = hint = app[0]
     hwnd = wait_window(before, fg0, int(flags.get("timeout") or 10000), hint, owner_of(wins0, hint) is not None)
     if not hwnd:
         return "ok (started %s, no window yet) -> try: lighting windows" % what
     st = state(ctx)
+    if hwnd not in before:
+        if not st.launched:
+            st.front0 = fg0
+        st.launched[hwnd] = win.text_of(hwnd) or what
     st.hwnd = hwnd
     ctx.target = ("app", hwnd)
     return "ok (%s) -> %s" % (what, header(ctx, hwnd))
+
+
+def cleanup(ctx):
+    st = state(ctx)
+    wins = {h: name for h, name in st.launched.items() if win.alive(h)}
+    front0, st.launched, st.front0 = st.front0, {}, None
+    for h in wins:
+        win.close(h)
+    deadline = time.time() + 1.5
+    while time.time() < deadline and any(win.alive(h) and win.visible(h) for h in wins):
+        time.sleep(0.1)
+    left = [h for h in wins if win.alive(h) and win.visible(h)]
+    closed = [wins[h] for h in wins if h not in left]
+    if st.hwnd in wins and st.hwnd not in left:
+        st.hwnd = None
+        if ctx.target and ctx.target[0] == "app":
+            ctx.target = None
+    if closed and front0 and win.alive(front0):
+        win.set_foreground(front0)
+    return closed, [wins[h] for h in left]
+
+
+def keep(ctx, spec=None):
+    st = state(ctx)
+    if spec:
+        return 1 if st.launched.pop(find_window(ctx, spec), None) else 0
+    n, st.launched = len(st.launched), {}
+    return n
 
 
 def cmd_close(ctx, pos, flags):
@@ -440,7 +496,7 @@ def focused_in(hwnd):
         el = uia.api()[0].GetFocusedElement()
     except Exception:
         el = None
-    if el is None or el.CurrentProcessId != win.pid_of(hwnd):
+    if el is None or (el.CurrentProcessId != win.pid_of(hwnd) and win.foreground() != hwnd):
         raise Fail("nothing focused in %s" % win.text_of(hwnd)[:40], "lighting click the field first, or type d<N> text")
     return el
 

@@ -9,10 +9,44 @@
   <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-111111?style=flat-square" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-82%2F82-111111?style=flat-square" alt="82/82 selftest">
+  <img src="https://img.shields.io/badge/selftest-87%2F87-111111?style=flat-square" alt="87/87 selftest">
   <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
+  <br>
+  <img src="https://img.shields.io/badge/first%20look%20at%20a%20page-%E2%88%9297%25%20tokens-FF8A00?style=flat-square" alt="-97% tokens per page">
+  <img src="https://img.shields.io/badge/click%20result-%E2%88%9298%25%20tokens-FF8A00?style=flat-square" alt="-98% tokens per click">
+  <img src="https://img.shields.io/badge/known%20task-%E2%88%9296%25%20tokens-FF8A00?style=flat-square" alt="-96% tokens per known task">
 </p>
+
+<h3 align="center">An AI that looks at a page with screenshots pays ~15,850 tokens. Lighting pays ~470.</h3>
+
+<table>
+<tr>
+<th width="50%">📸 Screenshot agent · ~15,850 tokens</th>
+<th width="50%">🔦 Lighting · ~470 tokens</th>
+</tr>
+<tr>
+<td valign="top">
+
+One screenshot (**~2,350** image tokens), then the page as text (**~13,500** tokens, cut off at 50,000 of 64,787 characters). After every click: another screenshot, another **~2,350**. And it is logged out, because it drives a fresh browser.
+
+</td>
+<td valign="top">
+
+```
+[t17] QDHShamiro/Lighting: Claude Code plugin ... - github.com/QDHShamiro/Lighting
+e16 link "Issues" ->./issues
+e17 link "Pull requests" ->./pulls
+e27 button "Star QDHShamiro/Lighting"
+...
+```
+One call. Everything clickable has a ref. A click answers in one line (**13-53** tokens). Your real browser, your logins.
+
+</td>
+</tr>
+</table>
+
+<p align="center"><b>A 10-step task: ~37,000 tokens with screenshots, ~920 with Lighting. That is ~36,000 tokens saved, every time.</b><br><sub>Computed from the measured rows below: 1 page look + 9 clicks with a screenshot each, against 1 <code>open</code> + 9 one-line clicks.</sub></p>
 
 ---
 
@@ -54,6 +88,12 @@ Only visible, usable elements are listed. Hidden text never reaches the model, l
 current page are shown as `./path`, tracking parameters are dropped, a header that repeats from the
 last page collapses to one line, and so does a 60-link footer. You pay for what you can act on.
 
+**It cleans up after itself.** Lighting works in its own orange "Lighting" tab group in the
+background. When the AI finishes its reply, the tabs and apps it opened close again and the window
+you were in comes back to the front (`lighting done`, run by a Claude Code hook). A tab you are
+looking at stays, an app that was open before stays, an app with unsaved work is only asked to close.
+`lighting keep` hands a tab or app over to you; `lighting config cleanup off` keeps everything open.
+
 ## The second time is one call
 
 An AI that does a task twice pays twice: every snapshot, every click, every thought. Lighting keeps a
@@ -86,21 +126,46 @@ check caught it.)
 
 ---
 
-## Measured
+## 📊 The numbers
 
-Same GitHub page, Brave 154, Windows 11. Tokens are characters / 4.
+Every number here comes from a run you can repeat: `lighting bench`, `lighting bench --real`, `lighting selftest`.
+Brave 154, Windows 11, Lighting 0.5.0. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
 
-| Task | Claude in Chrome | Lighting |
-|---|---|---|
-| Open a page and get something to act on | 2 calls, 2.7 s | 1 call, **~480 tokens** |
-| Snapshot again | 0.9 s, many elements without names | **0.12 s**, names + states |
-| Whole page | **~13,500 tokens**, cut off at 50,000 of 64,787 chars | **~990 tokens** |
-| Find one thing | `find` | `snap -f repositories`, **~50 tokens** |
-| Screenshot | ~2,350 image tokens | only when you ask for one, ~700 |
-| Do a known task again (open a repo's issues) | every step again | `run github-issues`: **1 call, ~40 tokens**, 3.5 s (by hand: ~916 tokens) |
+### Per action
 
-- `lighting selftest`: **82/82 in 8.4 s** (browser + desktop, cold start included).
-- `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok and compares with the last run.
+| Action | Without Lighting | With Lighting | Saved |
+|---|---:|---:|---:|
+| Look at a page (GitHub repo) | ~15,850 (screenshot + page text) | **~470** (`open`) | **−97%** |
+| See what a click did | ~2,350 (new screenshot) | **13-53** (one-line change report) | **−98%** |
+| Find one thing on a page | ~2,350 (screenshot) | **~36-50** (`snap -f`) | **−98%** |
+| Do a known task again (a repo's issues) | ~916 (every step by hand) | **~40** (`run github-issues`, 1 call) | **−96%** |
+| Screenshot, when you really need one | ~2,350 | ~700 (1024 px JPEG) | **−70%** |
+
+### Whole page text, 6 real sites
+
+`lighting text` against the page's own rendered text (`document.body.innerText`), which is already much smaller than what screenshot agents read. `text` keeps the first 6,000 characters in the answer and writes the rest to a file, so long pages save the most.
+
+| Site | Page text | `lighting text` | Saved |
+|---|---:|---:|---:|
+| Wikipedia, Minecraft | 38,789 | 1,509 | **−96%** |
+| GitHub repo | 2,713 | 1,503 | −45% |
+| YouTube home | 908 | 682 | −25% |
+| Hugging Face models | 993 | 866 | −13% |
+| Modrinth plugins | 1,303 | 1,203 | −8% |
+| TikTok For You | (no DOM text, video only) | 24 | n/a |
+| **Total** | **44,706** | **5,763** | **−87%** |
+
+### Speed
+
+| | |
+|---|---|
+| `snap` on GitHub, YouTube, Modrinth, Hugging Face, TikTok | 4-24 ms |
+| Click with navigation check and change report | ~135 ms |
+| `open` a real site (includes the page load) | 1.3-4.7 s |
+| Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
+
+- `lighting selftest`: **87/87** (browser + desktop, cold start included). Unit tests: `python tests/test_units.py` (8/8), `cargo test` in `client/`.
+- `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - Click with navigation check and change report: ~140 ms. Filling and submitting a form: ~160 ms.
 - GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
 - `snap` on SpigotMC, Modrinth, Hugging Face, GitHub, YouTube, Wikipedia: 17-49 ms.
@@ -132,13 +197,17 @@ Then install `lighting` from `/plugins`, and run once in a terminal:
 lighting install codex
 ```
 
-**Cursor, Gemini CLI, VS Code (Copilot), Windsurf, Claude Desktop, any MCP client**
+**Cursor, Gemini CLI, VS Code (Copilot), Windsurf, Claude Desktop, LM Studio / Bionic, Cline, Roo Code, Zed, any MCP client**
 
 ```bash
 git clone https://github.com/QDHShamiro/Lighting.git
 Lighting\bin\lighting.exe setup
 lighting install cursor        # or: gemini | vscode | windsurf | claude-desktop | codex
+                               #     bionic | lmstudio | cline | roo | zed
 ```
+
+`install bionic` (same as `lmstudio`) also copies the Lighting skill into `~/.lmstudio/skills/lighting`,
+where Bionic picks up global skills; later updates refresh that copy.
 
 `setup` installs the Python side into `~/.lighting`, registers the native messaging host,
 **loads the extension into your browser by itself** (it opens the extensions page, switches on
@@ -182,12 +251,13 @@ args = ["mcp"]
 | Wait | `wait "text" \| url:/x \| 1500 [--gone]` · `expect "text"` |
 | Data | `table e8` · `fetch /api/me --pick login` (with your cookies) · `js` |
 | Tabs | `tabs` · `tab t3` · `close` · `back` · `reload` · `dialog accept\|dismiss` · `dismiss` (cookie banners) · `viewport 390x844` |
+| Clean up | `done` (close what Lighting opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) |
 
 **Windows desktop**
 
 | | |
 |---|---|
-| Start | `launch spotify` · `launch "spotify:search:SOS"` · `launch rechner` (Store apps too) · `close w4` |
+| Start | `launch spotify` · `launch "spotify:search:SOS"` · `launch calc` (Win+R names and Store apps too) · `close w4` · `close "app:Rechner"` |
 | Look | `windows` · `snap w2` (UI Automation) · `read w2` (OCR) · `shot w2` (even when covered) |
 | Act | `click d5` · `click "Save"` · `click o3` (OCR text, real click, cursor goes back) · `type "Search" text` · `type focused text` · `press ctrl+s` · `clip get\|set` |
 
@@ -213,6 +283,7 @@ Clicks and typing go through UI Automation in the background, your mouse stays w
 - A URL with a long query to a site not opened yet needs `--yes`, so injected instructions cannot quietly send data out.
 - Secrets come from environment variables (`--env VAR`) and are never logged.
 - **Ctrl+Alt+End** stops everything immediately.
+- Every push runs CI (unit tests, all modules compile, extension parses, client builds with clippy clean). Every release carries `lighting.exe` built by CI from the tag and `SHA256SUMS.txt`, which also lists the hash of `bin/lighting.exe` in the repo: check yours with `certutil -hashfile bin\lighting.exe SHA256`, or build it yourself with `cd client && cargo build --release`.
 
 <details>
 <summary><b>Files it creates, and how to remove it</b></summary>
