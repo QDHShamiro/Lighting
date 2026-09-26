@@ -3,6 +3,13 @@
 Versions follow semver. Every release on GitHub carries `lighting.exe` built from the tag by CI,
 a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in the repo at that tag).
 
+## [0.7.2] - 2026-09-26
+
+### Fixed
+- Tasks with a confirmed step (`--yes`: merge, buy, delete) are no longer learned as routines by themselves:
+  `run` stops before such steps anyway, so the offer "can finish this in one call" was wrong. Saving one on
+  purpose with `routine save` still works.
+
 ## [0.7.1] - 2026-09-26
 
 Made for how Claude actually uses it (each fix comes from a real stumble in a session).

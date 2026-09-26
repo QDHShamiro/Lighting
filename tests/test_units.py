@@ -59,6 +59,27 @@ def test_learn_from_two_runs():
     assert routines.align(a["steps"][:1], b["steps"][:1]) is None
 
 
+def test_confirmed_steps_are_not_learned():
+    class Ctx:
+        class d:
+            events = []
+
+    def pair(yes):
+        a, b = issue_episode("Bug in snap"), issue_episode("Crash on launch")
+        for ep in (a, b):
+            ep.update(via=None, cost=100)
+            if yes:
+                ep["steps"][-1]["flags"] = {"yes": True}
+        return a, b
+
+    a, b = pair(True)
+    assert routines.learn(Ctx(), b, [a]) is None
+    a, b = pair(False)
+    learned = routines.learn(Ctx(), b, [a])
+    assert learned is not None and learned["params"] == {"title": "Crash on launch"}
+    routines.path(learned["name"]).unlink()
+
+
 def test_param_names():
     used = set()
     fill = {"cmd": "fill", "args": ["Search query=cats"]}
