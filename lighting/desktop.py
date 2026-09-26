@@ -492,13 +492,19 @@ FIELD_ROLES = ("edit", "combobox", "document", "spinner")
 
 def focused_in(hwnd):
     from lighting import uia
-    try:
-        el = uia.api()[0].GetFocusedElement()
-    except Exception:
-        el = None
-    if el is None or (el.CurrentProcessId != win.pid_of(hwnd) and win.foreground() != hwnd):
-        raise Fail("nothing focused in %s" % win.text_of(hwnd)[:40], "lighting click the field first, or type d<N> text")
-    return el
+    for attempt in (1, 2):
+        try:
+            el = uia.api()[0].GetFocusedElement()
+        except Exception:
+            el = None
+        if el is not None and (el.CurrentProcessId == win.pid_of(hwnd) or win.foreground() == hwnd):
+            return el
+        if attempt == 1:
+            if not pointer.wait_idle():
+                raise Fail("you are using mouse or keyboard right now", "retry in a moment")
+            if pointer.front(hwnd):
+                time.sleep(0.15)
+    raise Fail("nothing focused in %s" % win.text_of(hwnd)[:40], "lighting click the field first, or type d<N> text")
 
 
 def cmd_type(ctx, pos, flags):

@@ -192,6 +192,7 @@ async function expect(a, tab) {
 function wrap(code) {
   if (/\breturn\b/.test(code)) return "(async()=>{" + code + "\n})()";
   if (/\bawait\b/.test(code) && !/;\s*\S/.test(code.trim().replace(/;\s*$/, ""))) return "(async()=>{return (" + code.trim().replace(/;\s*$/, "") + ")\n})()";
+  if (/(^|[;{}\n])\s*(const|let|class)\s/.test(code)) return "{" + code + "\n}";
   return code;
 }
 

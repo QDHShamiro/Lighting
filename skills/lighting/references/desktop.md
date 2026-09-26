@@ -5,7 +5,8 @@
 - Target a window by ref (`snap w3`) or by name (`snap app:Discord`, matches title or exe). Later commands without a ref use that window.
 
 ## Start and close apps
-- `lighting launch spotify` starts an app from the start menu (Store apps too, names as in the start menu: `launch rechner`), waits for its window and answers `ok (Spotify) -> [w1] Spotify Premium - Spotify.exe`. That window becomes the target.
+- `lighting launch spotify` starts an app: an exact Start menu name first, then Win+R names (`calc`, `notepad`, `mspaint`), then the closest Start menu name (Store apps too). It waits for the window and answers `ok (Spotify) -> [w1] Spotify Premium - Spotify.exe`. That window becomes the target; `lighting done` closes it again at the end of the task (apps that were already open stay).
+- `close w2` or `close "app:Rechner"` closes a window (it may ask to save).
 - URIs open the app that handles them: `launch "spotify:search:SOS"`, `launch ms-settings:display`. A path opens the file; programs (`.exe`, `.bat`, ...) need `--yes`.
 - `lighting close w4` asks the window to close (like the X button); a save dialog may appear.
 
