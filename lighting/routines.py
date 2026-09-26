@@ -458,6 +458,8 @@ def learn(ctx, ep, past):
     rs = load_all()
     if ep["via"]:
         return repair(ctx, ep, rs)
+    if any((s.get("flags") or {}).get("yes") for s in ep["steps"]):
+        return None
     for r in rs:
         if covers(r, ep["steps"]) is not None:
             r["stats"]["seen"] = r["stats"].get("seen", 0) + 1
