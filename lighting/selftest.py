@@ -139,7 +139,17 @@ def browser(r, base):
     r.step("nameless button hint", ["snap", "--all"], lambda o, e: not e and "button #nameless-save" in o)
     r.step("click by #hint", ["click", "#nameless-save"], ok)
     r.step("hint click worked", ["expect", "Saved via hint"], ok)
-    r.step("video line", ["snap", "-f", "video"], lambda o, e: not e and 'video "demo clip" 0:00' in o and "paused" in o)
+    vout = r.step("video line", ["snap", "-f", "video"], lambda o, e: not e and 'video "demo clip" 0:00' in o and "paused" in o)
+    found = re.search(r"^(e\d+) video", vout, re.M)
+    vref = found.group(1) if found else "e0"
+    r.step("images with --media", ["snap", "--media", "-f", "orange test square"],
+           lambda o, e: not e and 'img "orange test square" 64x64' in o)
+    r.step("frames of a paused video", ["frames", vref, "--count", "2", "--every", "200"],
+           lambda o, e: not e and ".jpg" in o and "did not move" in o)
+    from PIL import Image
+    pic = D.OUT / "selftest.png"
+    Image.new("RGB", (40, 20), "orange").save(pic)
+    r.step("read an image file", ["read", str(pic)], lambda o, e: not e and "(image)" in o and "40x20" in o)
     r.step("page changes by itself", ["js", "setTimeout(() => history.pushState({}, '', '?moved=1'), 50); 1"],
            lambda o, e: (time.sleep(0.5) or True) and not e)
     r.step("stale text click refused", ["click", "#nameless-save"], lambda o, e: e and "page changed" in o)

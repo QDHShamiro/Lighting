@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-111111?style=flat-square" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-87%2F87-111111?style=flat-square" alt="87/87 selftest">
+  <img src="https://img.shields.io/badge/selftest-90%2F90-111111?style=flat-square" alt="90/90 selftest">
   <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
   <br>
@@ -93,6 +93,12 @@ background. When the AI finishes its reply, the tabs and apps it opened close ag
 you were in comes back to the front (`lighting done`, run by a Claude Code hook). A tab you are
 looking at stays, an app that was open before stays, an app with unsaved work is only asked to close.
 `lighting keep` hands a tab or app over to you; `lighting config cleanup off` keeps everything open.
+The group's color is the status light: **orange** while Lighting works, **red** when a step failed or
+you stopped it, **green** when it is done.
+
+**It sees images and video.** `snap --media` gives every image a ref (with its caption as name),
+`shot e57` saves just that image for the AI to look at (~112 tokens for a Wikipedia photo), and
+`frames e40` turns a playing video into one contact sheet: 6 frames with timestamps, ~500 tokens.
 
 ## The second time is one call
 
@@ -164,7 +170,7 @@ Brave 154, Windows 11, Lighting 0.5.0. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **87/87** (browser + desktop, cold start included). Unit tests: `python tests/test_units.py` (8/8), `cargo test` in `client/`.
+- `lighting selftest`: **90/90** (browser + desktop, cold start included). Unit tests: `python tests/test_units.py` (8/8), `cargo test` in `client/`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - Click with navigation check and change report: ~140 ms. Filling and submitting a form: ~160 ms.
 - GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
@@ -252,6 +258,7 @@ args = ["mcp"]
 | Data | `table e8` · `fetch /api/me --pick login` (with your cookies) · `js` |
 | Tabs | `tabs` · `tab t3` · `close` · `back` · `reload` · `dialog accept\|dismiss` · `dismiss` (cookie banners) · `viewport 390x844` |
 | Clean up | `done` (close what Lighting opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) |
+| Images, video | `snap --media` (images get refs, captions as names) · `shot e57` (look at one image) · `frames e40` (a playing video as one contact sheet with timestamps) · `read <image url>` |
 
 **Windows desktop**
 

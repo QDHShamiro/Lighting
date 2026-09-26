@@ -9,6 +9,7 @@ from lighting import defaults as D
 from lighting.common import Fail, cap, hit, is_url, outfile, plain_links, ref_kind, terms, win_path
 
 REF_RE = re.compile(r"^(?:f\d+\.)?e\d+$")
+IMAGE_EXT = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp")
 _reloaded = set()
 
 
@@ -164,7 +165,8 @@ def cmd_open(ctx, pos, flags):
 
 
 def cmd_snap(ctx, pos, flags):
-    args = {"all": bool(flags.get("all")), "diff": bool(flags.get("diff")), "force": bool(flags.get("force"))}
+    args = {"all": bool(flags.get("all")), "diff": bool(flags.get("diff")), "force": bool(flags.get("force")),
+            "media": bool(flags.get("media"))}
     if flags.get("f"):
         args["filter"] = flags["f"]
     scope = flags.get("s") or (pos[0] if pos and REF_RE.match(pos[0]) else None)
@@ -444,6 +446,55 @@ def cmd_shot(ctx, pos, flags):
     return res
 
 
+def cmd_frames(ctx, pos, flags):
+    from PIL import Image, ImageDraw
+    import base64
+    import hashlib
+    import io
+    if not pos or not REF_RE.match(pos[0]):
+        raise Fail("frames needs the ref of a video", "lighting snap -f video, then lighting frames e40")
+    count = max(2, min(int(flags.get("count") or 6), 12))
+    every = max(200, min(int(flags.get("every") or 1500), 10000))
+    msg = call(ctx, "frames", {"ref": pos[0], "count": count, "every": every}, 20 + count * every // 1000)
+    tiles, stamps = [], []
+    for f in msg.get("frames") or []:
+        img = Image.open(io.BytesIO(base64.b64decode(f["image"])))
+        c, s = f["crop"], img.width / float(f.get("vw") or img.width)
+        box = (max(0, int(c["x"] * s)), max(0, int(c["y"] * s)),
+               min(img.width, int((c["x"] + c["w"]) * s)), min(img.height, int((c["y"] + c["h"]) * s)))
+        tiles.append((img.crop(box) if box[2] > box[0] and box[3] > box[1] else img).convert("RGB"))
+        stamps.append((f.get("media") or "").split("/")[0].split(" ")[0] or "%.1fs" % (len(stamps) * every / 1000.0))
+    if not tiles:
+        raise Fail("no frames captured", "lighting shot " + pos[0])
+    cols = 3 if len(tiles) > 4 else 2
+    tw = 400
+    th = max(1, round(tiles[0].height * tw / tiles[0].width))
+    sheet = Image.new("RGB", (cols * tw, -(-len(tiles) // cols) * th), "black")
+    draw = ImageDraw.Draw(sheet)
+    for i, (tile, stamp) in enumerate(zip(tiles, stamps)):
+        x, y = i % cols * tw, i // cols * th
+        sheet.paste(tile.resize((tw, th)), (x, y))
+        draw.rectangle((x, y, x + 8 + 7 * len(stamp), y + 16), fill="black")
+        draw.text((x + 4, y + 2), stamp, fill="white")
+    res = save_image(ctx, sheet, "frames-" + pos[0], False, int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
+    looks = {hashlib.md5(t.convert("L").resize((32, 18)).point(lambda v: v // 24 * 24).tobytes()).hexdigest() for t in tiles}
+    still = len(looks) == 1 or (len(set(stamps)) == 1 and ":" in stamps[0])
+    note = (" | the video did not move (paused or not playing) -> try: click %s or press k, then frames again" % pos[0]
+            if still else "")
+    return res.replace("shot ", "frames ", 1) + "\n%d frames at %s%s" % (len(tiles), " ".join(stamps), note)
+
+
+def image_note(ctx, raw):
+    from PIL import Image
+    import io
+    try:
+        img = Image.open(io.BytesIO(raw))
+        img.load()
+    except Exception as e:
+        raise Fail("not a readable image (%s)" % str(e)[:80])
+    return save_image(ctx, img, "image", False, int(ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
+
+
 def save_image(ctx, img, key, if_changed, width):
     from PIL import Image
     import hashlib
@@ -494,6 +545,8 @@ def fetch_page(ctx, url):
                 raw = f.read(D.PDF_BYTES)
         except OSError as e:
             raise Fail("cannot read %s: %s" % (path, e.strerror))
+        if path.lower().endswith(IMAGE_EXT):
+            return "", image_note(ctx, raw), path, "image"
         text, n = pdf_text(raw)
         return "", text, path, "pdf, %d pages" % n
     req = urllib.request.Request(url, headers={
@@ -512,6 +565,8 @@ def fetch_page(ctx, url):
     if pdf or raw[:5] == b"%PDF-":
         text, n = pdf_text(raw)
         return "", text, final, "pdf, %d pages" % n
+    if ctype.startswith("image/"):
+        return "", image_note(ctx, raw), final, "image"
     body = raw.decode(charset, errors="replace")
     if "markdown" in ctype or "text/plain" in ctype:
         return "", body.strip(), final, "markdown from server"
