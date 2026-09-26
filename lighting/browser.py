@@ -161,7 +161,8 @@ def cmd_open(ctx, pos, flags):
         raise Fail("open needs a url", "lighting open github.com")
     url = normalize_url(pos[0])
     leak_check(ctx, url, flags)
-    return out(ctx, "open", {"url": url, "new": bool(flags.get("new"))}, D.LOAD_TIMEOUT + 10)
+    return out(ctx, "open", {"url": url, "new": bool(flags.get("new")), "filter": flags.get("f"), "scope": flags.get("s"),
+                             "media": bool(flags.get("media"))}, D.LOAD_TIMEOUT + 10)
 
 
 def cmd_snap(ctx, pos, flags):
@@ -546,7 +547,7 @@ def save_image(ctx, img, key, if_changed, width):
         return "unchanged since the last shot of %s (no new image)" % key
     ctx.last_shot[key] = digest
     path = outfile("shot-" + key, "jpg")
-    img.convert("RGB").save(path, "JPEG", quality=D.JPEG_QUALITY, optimize=True)
+    img.convert("RGB").save(path, "JPEG", quality=D.JPEG_QUALITY)
     ctx.image = str(path)
     cost = math.ceil(img.width / 28) * math.ceil(img.height / 28)
     return "shot %s (%dx%d, ~%d image tokens; open it with the Read tool)" % (path.as_posix(), img.width, img.height, cost)

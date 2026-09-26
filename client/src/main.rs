@@ -18,7 +18,7 @@ const USE_STD_HANDLES: u32 = 0x0000_0100;
 const HANDLE_LIST: usize = 0x0002_0002;
 const ERROR_PIPE_BUSY: i32 = 231;
 const LOCAL: &[&str] = &[
-    "", "help", "-h", "--help", "version", "--version", "daemon", "host", "mcp", "setup", "uninstall", "install",
+    "", "help", "-h", "--help", "--version", "daemon", "host", "mcp", "setup", "uninstall", "install",
 ];
 
 fn home() -> PathBuf {

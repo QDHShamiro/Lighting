@@ -282,7 +282,8 @@
     });
   }
 
-  function settle(quiet, max, waitFirst) {
+  function settle(quiet, max, waitFirst, loaded) {
+    if (loaded && document.readyState === "complete") quiet = Math.min(quiet, loaded);
     return new Promise((resolve) => {
       const t0 = Date.now(), start = S.muts;
       let last = S.muts, changed = t0, seen = false;

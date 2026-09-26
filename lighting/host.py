@@ -1,3 +1,4 @@
+import ctypes
 import json
 import msvcrt
 import os
@@ -28,6 +29,10 @@ def write(stream, lock, obj):
 
 
 def main():
+    try:
+        ctypes.windll.winmm.timeBeginPeriod(1)
+    except (AttributeError, OSError):
+        pass
     msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
     msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
     inp, out, lock = sys.stdin.buffer, sys.stdout.buffer, threading.Lock()

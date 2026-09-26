@@ -14,6 +14,9 @@ from lighting import defaults as D
 from lighting import ipc
 
 
+TRACE = (D.HOME / "trace").exists()
+
+
 class Aborted(Exception):
     pass
 
@@ -38,11 +41,17 @@ class Host:
             box = queue.Queue(1)
             self.pending[i] = box
         try:
+            t0 = time.perf_counter()
             ipc.send(self.conn, {"id": i, "cmd": cmd, "args": args or {}, "tab": tab})
+            t1 = time.perf_counter()
             try:
                 msg = box.get(timeout=timeout)
             except queue.Empty:
                 raise TimeoutError("browser did not answer '%s' within %ds" % (cmd, timeout))
+            t2 = time.perf_counter()
+            if TRACE:
+                print("trace browser %s: send %.2f ms, reply %.2f ms, inside extension %.2f ms" % (
+                    cmd, (t1 - t0) * 1000, (t2 - t0) * 1000, msg.get("extMs", -1)), file=sys.stderr, flush=True)
         finally:
             self.pending.pop(i, None)
         if msg.get("abort"):
@@ -205,12 +214,21 @@ class Daemon:
             pass
         threading.Thread(target=self.worker, daemon=True).start()
         threading.Thread(target=self.hotkey_loop, daemon=True).start()
+        threading.Thread(target=warm_apps, daemon=True).start()
         while True:
             try:
                 conn = listener.accept()
             except Exception:
                 continue
             threading.Thread(target=self.handle, args=(conn,), daemon=True).start()
+
+
+def warm_apps():
+    try:
+        from lighting import desktop
+        desktop.start_apps()
+    except Exception:
+        pass
 
 
 def cleanup_out():
@@ -227,6 +245,10 @@ def cleanup_out():
 def main():
     try:
         ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
+    except (AttributeError, OSError):
+        pass
+    try:
+        ctypes.windll.winmm.timeBeginPeriod(1)
     except (AttributeError, OSError):
         pass
     Daemon().serve()

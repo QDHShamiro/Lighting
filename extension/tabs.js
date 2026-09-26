@@ -191,12 +191,20 @@ export async function list() {
   return lines.join("\n");
 }
 
+async function painted(tabId) {
+  try {
+    await chrome.scripting.executeScript({ target: { tabId }, func: () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))) });
+  } catch (e) {
+    await sleep(120);
+  }
+}
+
 export async function showBriefly(tabId, fn) {
   const tab = await chrome.tabs.get(tabId);
   if (tab.active) return fn();
   const [prev] = await chrome.tabs.query({ active: true, windowId: tab.windowId });
   await chrome.tabs.update(tabId, { active: true });
-  await sleep(120);
+  await Promise.race([sleep(300), painted(tabId)]);
   try {
     return await fn();
   } finally {

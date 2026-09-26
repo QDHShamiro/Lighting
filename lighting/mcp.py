@@ -6,14 +6,11 @@ from lighting import defaults as D
 
 VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"]
 DESCRIPTION = (
-    "Drive the user's real browser (Brave/Chrome/Edge through the Lighting extension, logged-in profile) and any "
-    "Windows app. Pass ONE lighting command line, for example: open github.com | snap | snap -f login | "
-    "click e12 | click \"Sign in\" | fill \"Email=a@b.c\" \"Password=x\" --submit | type e3 hello | press Enter | "
-    "text | read https://docs.site/page | do \"click e3; type e4 hi; press Enter\" | windows | snap w2 | "
-    "click d5 | read w2 (screen text via OCR) | shot e5. Output is compact text with refs "
-    "(e = web element, d = app control, o = screen text, w = window, t = tab). Cheapest first: read/text/snap -f, "
-    "screenshots last. Tasks done before: routines, then run <name> param=value (one call). Task finished: done "
-    "(closes the tabs and apps Lighting opened; keep first if the user should see or use one). Run: help"
+    "The user's real logged-in browser and any Windows app, as short text. One lighting command line per call: "
+    "open <url> [-f a|b] | snap [-f a|b] | click e12|\"Sign in\" | fill \"Email=a@b.c\" --submit | type e3 hi | "
+    "press Enter | text | read <url> | do \"a; b\" | windows | snap w2 | click d5 | read w2 (OCR) | frames e40. "
+    "Refs: e web, d app, o screen text, w window, t tab. Cheapest first, screenshots last. Repeated task: "
+    "routines, run <name>. Finished: done (keep t3 first if the user needs it). More: help"
 )
 TOOL = {
     "name": "lighting",

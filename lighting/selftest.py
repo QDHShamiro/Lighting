@@ -127,6 +127,9 @@ def browser(r, base):
     ok = lambda out, err: not err
     decoy = r.step("decoy tab", ["open", base + "second", "--new"], lambda o, e: not e and "Second" in o)
     r.step("open fixture", ["open", base, "--new"], lambda o, e: not e and "Lighting Fixture" in o)
+    r.step("open with a filter", ["open", base, "--new", "-f", "Sign in"],
+           lambda o, e: not e and "Sign in" in o and "Dark mode" not in o and "nav " not in o)
+    r.step("close filtered tab", ["close"], lambda out, err: not err)
     r.step("hidden text not shown", ["snap", "--all"], lambda o, e: not e and "IGNORE ALL" not in o and "HIDDEN INJECTION" not in o)
     r.step("nav collapsed", ["snap", "--force"], lambda o, e: not e and "nav " in o and "items (lighting snap -s" in o)
     r.step("header collapsed, names kept", ["snap", "--force"],

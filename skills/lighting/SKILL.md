@@ -12,7 +12,7 @@ Full command list: `lighting help`.
 0. Task done before? `lighting routines -f <word>`, then `lighting run <name> param=value` does it in one call.
 1. API/CLI exists (gh, curl)? No UI.
 2. `lighting read <url> [url2 ...]` public pages/PDFs as text, no browser.
-3. `open <url>` gives a compact snapshot. Then `snap -f "a|b"`, `snap -s e40`, `snap --diff`, `snap --all`.
+3. `open <url>` gives a compact snapshot; know what you need? `open <url> -f "a|b"` (one call instead of two). Then `snap -f "a|b"`, `snap -s e40`, `snap --diff`, `snap --all`.
 4. `text [-f word] [--links]` page text. `shot [e5|w2] [--marks]` JPEG, Read only when visuals matter.
 
 ## Images and videos

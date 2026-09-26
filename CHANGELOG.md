@@ -3,6 +3,28 @@
 Versions follow semver. Every release on GitHub carries `lighting.exe` built from the tag by CI,
 a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in the repo at that tag).
 
+## [0.7.0] - 2026-09-26
+
+Speed pass, every number measured before and after (details: HOW-TO-SETUP.md).
+
+### Changed
+- Every command appended to `log.jsonl` by opening and closing the file, and the virus scanner checked
+  it on each close: 14.3 ms per command. The file now stays open. A browser command through MCP went
+  from 17.5 ms to 2.9 ms.
+- Screenshots wait for two painted frames after bringing the tab forward instead of a fixed 120 ms:
+  `shot` 272 -> 172 ms, `shot e5` 219 -> 100 ms.
+- `open`, `back`, `reload` wait for 150 ms of DOM quiet instead of 300 ms once the page is fully
+  loaded: a light page opens in 330 ms instead of 442 ms.
+- `lighting version` no longer starts Python: 157 -> 58 ms.
+- The MCP tool description is shorter: 296 -> 219 tokens on every request of an MCP client.
+- The Start menu list for `launch` is refreshed in the background when the daemon starts.
+
+### Added
+- `open <url> -f "a|b"` (also `-s`, `--media`) returns the filtered view right away: one call
+  instead of `open` + `snap -f`.
+- `~/.lighting/trace` (then `lighting stop`) writes per-command and per-browser-call timings to
+  `daemon.log`.
+
 ## [0.6.0] - 2026-09-26
 
 ### Added

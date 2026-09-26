@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-111111?style=flat-square" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-93%2F93-111111?style=flat-square" alt="93/93 selftest">
+  <img src="https://img.shields.io/badge/selftest-95%2F95-111111?style=flat-square" alt="95/95 selftest">
   <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
   <br>
@@ -138,7 +138,7 @@ check caught it.)
 ## 📊 The numbers
 
 Every number here comes from a run you can repeat: `lighting bench`, `lighting bench --real`, `lighting selftest`.
-Brave 154, Windows 11, Lighting 0.6.0. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
+Brave 154, Windows 11, Lighting 0.7.0. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
 
 ### Per action
 
@@ -170,11 +170,14 @@ Brave 154, Windows 11, Lighting 0.6.0. Tokens are characters / 4. Small numbers 
 | | |
 |---|---|
 | `snap` on GitHub, YouTube, Modrinth, Hugging Face, TikTok | 4-24 ms |
+| Browser command through MCP (`snap`, `js`, `tabs`) | 2.9 ms (was 17.5 ms before 0.7.0) |
+| Browser command through Bash | ~70 ms, of which ~55 ms is Git Bash starting a process |
 | Click with navigation check and change report | ~135 ms |
-| `open` a real site (includes the page load) | 1.3-4.7 s |
+| `shot` / `shot e5` | 172 ms / 100 ms |
+| `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **93/93** (browser + desktop, cold start included). Unit tests: `python tests/test_units.py` (9/9), `cargo test` in `client/`.
+- `lighting selftest`: **95/95** (browser + desktop, cold start included). Unit tests: `python tests/test_units.py` (9/9), `cargo test` in `client/`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - Click with navigation check and change report: ~140 ms. Filling and submitting a form: ~160 ms.
 - GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
