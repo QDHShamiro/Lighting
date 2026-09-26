@@ -8,7 +8,7 @@ use std::process::{self, Command, Stdio};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-const DETACHED: u32 = 0x0000_0008 | 0x0000_0200 | 0x0800_0000;
+const DETACHED: u32 = 0x0000_0200 | 0x0800_0000;
 const BREAKAWAY: u32 = 0x0100_0000;
 const ERROR_PIPE_BUSY: i32 = 231;
 const LOCAL: &[&str] = &[
