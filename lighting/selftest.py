@@ -118,9 +118,14 @@ def printwindow_ocr():
     return "Remember" in text, text
 
 
+def tab_ref(out):
+    m = re.match(r"\[(t\d+)\]", out)
+    return m.group(1) if m else "t0"
+
+
 def browser(r, base):
     ok = lambda out, err: not err
-    r.step("decoy tab", ["open", base + "second", "--new"], lambda o, e: not e and "Second" in o)
+    decoy = r.step("decoy tab", ["open", base + "second", "--new"], lambda o, e: not e and "Second" in o)
     r.step("open fixture", ["open", base, "--new"], lambda o, e: not e and "Lighting Fixture" in o)
     r.step("hidden text not shown", ["snap", "--all"], lambda o, e: not e and "IGNORE ALL" not in o and "HIDDEN INJECTION" not in o)
     r.step("nav collapsed", ["snap", "--force"], lambda o, e: not e and "nav " in o and "items (lighting snap -s" in o)
@@ -190,7 +195,21 @@ def browser(r, base):
     r.step("remove web routine", ["routine", "rm", "selftest-rec"], ok)
     r.step("close fixture tab", ["close"], ok)
     r.step("target back to decoy", ["snap"], lambda o, e: not e and "Second" in o)
-    r.step("close decoy tab", ["close"], ok)
+    dref = tab_ref(decoy)
+    listed = lambda o, ref, lit: re.search(r"^%s %s" % (ref, "L[*a]* " if lit else "(?!L[*a]* )"), o, re.M)
+    r.step("keep hands tab over", ["keep", dref], lambda o, e: not e and "kept 1 tab" in o)
+    r.step("kept tab left the group", ["tabs"], lambda o, e: listed(o, dref, False))
+    tref = tab_ref(r.step("throwaway tab", ["open", base + "second", "--new"], lambda o, e: not e and "Second" in o))
+    from lighting import commands
+    from lighting import desktop as dk
+    lit = re.findall(r"^(t\d+) L[*a]* ", commands.run(r.ctx, {"argv": ["tabs"]}).get("out", ""), re.M)
+    if [t for t in lit if t != tref] or dk.state(r.ctx).launched:
+        r.rows.append("SKIP done closes tabs (other Lighting tabs or launched apps are open)")
+        r.step("close throwaway tab", ["close", tref], ok)
+    else:
+        r.step("done closes tabs", ["done"], lambda o, e: not e and o.startswith("closed 1 tab"))
+        r.step("done kept the kept tab", ["tabs"], lambda o, e: not listed(o, tref, True) and listed(o, dref, False))
+    r.step("close kept tab", ["close", dref, "--force"], ok)
 
 
 def close_apps(win):
@@ -213,7 +232,7 @@ def desktop(r):
         deadline = time.time() + 8
         while time.time() < deadline and not any(w["title"] == "Lighting Test App" for w in win.windows()):
             time.sleep(0.1)
-        before = win.cursor()
+        before, t_before = win.cursor(), time.time()
         out = r.step("snap test app", ["snap", "app:Lighting Test App"], lambda o, e: not e and "edit" in o and "checkbox" in o)
         refs = {}
         for line in out.splitlines():
@@ -227,7 +246,10 @@ def desktop(r):
         r.step("ocr read", ["read", "app:Lighting Test App"], lambda o, e: not e and "Remember" in o)
         r.fn("ocr via PrintWindow", printwindow_ocr)
         after = win.cursor()
-        r.step("mouse untouched", ["ping"], lambda o, e: before == after)
+        if before != after and win.idle_ms() < (time.time() - t_before) * 1000:
+            r.rows.append("SKIP mouse untouched (you used mouse or keyboard during the test)")
+        else:
+            r.step("mouse untouched", ["ping"], lambda o, e: before == after)
         r.step("record start (app)", ["record", "start", "selftest-app", "--desktop", "--injected"], lambda o, e: not e)
         r.step("recorded app click", ["click", "Go", "--mouse"], lambda o, e: not e)
         r.step("record stop (app)", ["record", "stop"], lambda o, e: not e and "click Go" in o)
@@ -312,7 +334,8 @@ def bench_real(ctx, pos, flags):
         before = json.loads(path.read_text("utf-8"))
     except (OSError, ValueError):
         before = {}
-    now, rows = {}, ["site                          open ms  tok   snap ms  tok   text ms   tok  vs last"]
+    now, rows = {}, ["site                          open ms  tok   snap ms  tok   text ms   tok  raw page tok  saved  vs last"]
+    total = [0, 0]
     learn = ctx.no_learn
     ctx.no_learn = True
     try:
@@ -325,15 +348,27 @@ def bench_real(ctx, pos, flags):
                 except Fail as e:
                     out = e.text()
                 res[key] = [int((time.perf_counter() - t) * 1000), len(out) // 4 + 1]
-            now[site] = res
+            try:
+                raw = int(commands.run_one(ctx, ["js", "document.body.innerText.length"])[0].strip()) // 4 + 1
+            except (Fail, ValueError):
+                raw = 0
+            now[site] = dict(res, raw=[0, raw])
+            if raw >= 50:
+                total[0] += res["text"][1]
+                total[1] += raw
             old = before.get(site)
             delta = ""
             if old:
-                a = sum(v[1] for v in old.values())
-                b = sum(v[1] for v in res.values())
+                a = sum(old[k][1] for k in ("open", "snap", "text") if k in old)
+                b = sum(res[k][1] for k in ("open", "snap", "text"))
                 delta = "%+d%% tok" % round((b - a) * 100.0 / max(1, a))
-            rows.append("%-29s %6d %5d %8d %5d %8d %6d  %s" % (site[:29], res["open"][0], res["open"][1], res["snap"][0],
-                                                            res["snap"][1], res["text"][0], res["text"][1], delta))
+            saved = "%d%%" % round(100 - res["text"][1] * 100.0 / raw) if raw >= 50 else "-"
+            rows.append("%-29s %6d %5d %8d %5d %8d %6d %13d %6s  %s" % (
+                site[:29], res["open"][0], res["open"][1], res["snap"][0], res["snap"][1], res["text"][0], res["text"][1],
+                raw, saved, delta))
+        if total[1]:
+            rows.append("total: text %d tokens vs raw page text %d tokens = %d%% saved" % (
+                total[0], total[1], round(100 - total[0] * 100.0 / total[1])))
         try:
             commands.run_one(ctx, ["close"])
         except Fail:

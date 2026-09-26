@@ -1,0 +1,44 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag matches the plugin version
+        shell: bash
+        run: |
+          v=$(python -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME but plugin.json says $v"; exit 1; }
+      - name: Build the client from this tag
+        working-directory: client
+        run: cargo build --release --locked
+      - name: Assets and checksums
+        shell: bash
+        run: |
+          mkdir dist
+          cp client/target/release/lighting.exe dist/lighting.exe
+          git archive --format=zip -o "dist/lighting-$GITHUB_REF_NAME.zip" HEAD
+          cd dist
+          sha256sum lighting.exe "lighting-$GITHUB_REF_NAME.zip" > SHA256SUMS.txt
+          echo "$(sha256sum ../bin/lighting.exe | cut -d' ' -f1)  bin/lighting.exe (the file in the repo at this tag)" >> SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Release notes from CHANGELOG.md
+        shell: bash
+        run: |
+          awk -v v="${GITHUB_REF_NAME#v}" 'index($0, "## [" v "]") == 1 {on=1; next} on && index($0, "## [") == 1 {exit} on' CHANGELOG.md > notes.md
+          printf '\n### Checksums (SHA-256)\n```\n' >> notes.md
+          cat dist/SHA256SUMS.txt >> notes.md
+          printf '```\nVerify on Windows: `certutil -hashfile bin\\lighting.exe SHA256`\n' >> notes.md
+      - name: Publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "Lighting $GITHUB_REF_NAME" --notes-file notes.md

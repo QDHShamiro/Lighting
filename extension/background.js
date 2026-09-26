@@ -351,7 +351,7 @@ async function close(a, tab) {
 }
 
 const seen = new Map();
-const NO_TAB = new Set(["config", "abort", "reload-extension", "ping", "close-url", "tabs", "downloads"]);
+const NO_TAB = new Set(["config", "abort", "reload-extension", "ping", "close-url", "tabs", "downloads", "cleanup", "keep"]);
 const BY_TEXT = new Set(["click", "type", "select", "check", "hover", "fill"]);
 
 function pageKey(url) {
@@ -487,6 +487,19 @@ async function route(cmd, a, tab) {
       const n = a.all ? hits.length : Math.min(1, hits.length);
       for (const t of hits.slice(0, n)) await chrome.tabs.remove(t.id).catch(() => {});
       return { out: "closed " + n };
+    }
+    case "cleanup": {
+      const tabs = await T.groupTabs();
+      const shut = tabs.filter((t) => !t.active).map((t) => t.id);
+      if (shut.length) await chrome.tabs.remove(shut).catch(() => {});
+      if (shut.includes(T.getTarget())) T.setTarget(null);
+      return { out: "", closed: shut.length, kept: tabs.length - shut.length };
+    }
+    case "keep": {
+      const ids = a.id ? [T.rid(a.id)].filter((x) => x !== null) : (await T.groupTabs()).map((t) => t.id);
+      if (ids.length) await chrome.tabs.ungroup(ids).catch(() => {});
+      if (ids.includes(T.getTarget())) T.setTarget(null);
+      return { out: "", kept: ids.length };
     }
     case "tabs":
       return T.list();

@@ -120,7 +120,7 @@ def route(ctx, name, pos, flags):
         if pos and (is_url(pos[0]) or pos[0].lower().endswith(".pdf")):
             return web().read_url(ctx, pos, flags)
         return app().cmd_read(ctx, pos, flags)
-    if name == "close" and pos and ref_kind(pos[0]) == "w":
+    if name == "close" and pos and (ref_kind(pos[0]) == "w" or pos[0].lower().startswith("app:")):
         return app().cmd_close(ctx, pos, flags)
     if name in APP_ONLY:
         return getattr(app(), "cmd_" + name)(ctx, pos, flags)
@@ -231,6 +231,54 @@ def cmd_stop(ctx, pos, flags):
     return {"out": "lighting daemon stopped", "code": 0, "shutdown": True}
 
 
+def plural(n, word):
+    return "%d %s%s" % (n, word, "" if n == 1 else "s")
+
+
+def browsers(ctx, cmd, args=None):
+    replies = []
+    for h in [h for h in ctx.d.hosts if h.alive]:
+        try:
+            replies.append(h.call(cmd, args or {}, timeout=5))
+        except TimeoutError:
+            pass
+    return replies
+
+
+def cmd_done(ctx, pos, flags):
+    quiet = flags.get("quiet")
+    if not ctx.cfg.get("cleanup"):
+        return "" if quiet else "left everything open (cleanup is off: lighting config cleanup on)"
+    replies = browsers(ctx, "cleanup")
+    tabs = sum(r.get("closed") or 0 for r in replies)
+    viewed = sum(r.get("kept") or 0 for r in replies)
+    closed, left = app().cleanup(ctx)
+    if quiet:
+        return ""
+    parts = ([plural(tabs, "tab")] if tabs else []) + (
+        ["%s (%s)" % (plural(len(closed), "app"), ", ".join(closed))] if closed else [])
+    lines = ["closed " + ", ".join(parts) if parts else "nothing to close"]
+    if viewed:
+        lines.append("left %s open that the user is looking at" % plural(viewed, "tab"))
+    if left:
+        lines.append("still open, it may ask to save: " + ", ".join(left))
+    return "\n".join(lines)
+
+
+def cmd_keep(ctx, pos, flags):
+    spec = pos[0] if pos else None
+    kind = ref_kind(spec) if spec else None
+    tabs = apps = 0
+    if not spec or kind == "t":
+        tabs = sum(r.get("kept") or 0 for r in browsers(ctx, "keep", {"id": spec}))
+    if not spec or kind == "w" or spec.lower().startswith("app:"):
+        apps = app().keep(ctx, spec)
+    parts = [plural(n, w) for n, w in ((tabs, "tab"), (apps, "app")) if n]
+    if not parts:
+        return "nothing to keep"
+    return "kept %s: stays open after the task" % " and ".join(parts)
+
+
 def ago(seconds):
     seconds = int(seconds)
     if seconds < 90:
@@ -260,8 +308,8 @@ def cmd_status(ctx, pos, flags):
     if ctx.target:
         lines.append("target %s %s" % (ctx.target[0], ctx.target[1]))
     cfg = ctx.cfg
-    lines.append("pointer %s | browser pref %s | out %s" % (
-        "on" if cfg.get("pointer") else "off", cfg.get("browser"), D.OUT.as_posix()))
+    lines.append("pointer %s | cleanup %s | browser pref %s | out %s" % (
+        "on" if cfg.get("pointer") else "off", "on" if cfg.get("cleanup") else "off", cfg.get("browser"), D.OUT.as_posix()))
     return "\n".join(lines)
 
 
@@ -373,7 +421,8 @@ def cmd_record(ctx, pos, flags):
 
 SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status, "config": cmd_config,
           "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload,
-          "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record}
+          "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
+          "done": cmd_done, "keep": cmd_keep}
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
          "console", "expect", "wait", "clip", "help", "version", "config", "routines"}
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}

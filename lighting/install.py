@@ -193,16 +193,36 @@ def merge_toml(path):
     path.write_text((text + "\n\n" if text else "") + block, "utf-8", newline=eol)
 
 
+def bionic_skill():
+    return Path.home() / ".lmstudio" / "skills" / "lighting"
+
+
+def copy_skill(dst):
+    shutil.copytree(D.ROOT / "skills" / "lighting", dst, dirs_exist_ok=True)
+
+
+def lmstudio():
+    merge_json(Path.home() / ".lmstudio" / "mcp.json", "mcpServers", mcp_entry())
+    copy_skill(bionic_skill())
+
+
 def agents():
     home = Path.home()
     appdata = Path(os.environ.get("APPDATA") or home / "AppData" / "Roaming")
+    vsext = appdata / "Code" / "User" / "globalStorage"
     return {
+        "bionic": lmstudio,
         "claude-desktop": lambda: merge_json(appdata / "Claude" / "claude_desktop_config.json", "mcpServers", mcp_entry()),
+        "cline": lambda: merge_json(vsext / "saoudrizwan.claude-dev" / "settings" / "cline_mcp_settings.json", "mcpServers",
+                                    dict(mcp_entry(), disabled=False)),
         "codex": lambda: merge_toml(home / ".codex" / "config.toml"),
         "cursor": lambda: merge_json(home / ".cursor" / "mcp.json", "mcpServers", mcp_entry()),
         "gemini": lambda: merge_json(home / ".gemini" / "settings.json", "mcpServers", mcp_entry()),
-        "windsurf": lambda: merge_json(home / ".codeium" / "windsurf" / "mcp_config.json", "mcpServers", mcp_entry()),
+        "lmstudio": lmstudio,
+        "roo": lambda: merge_json(vsext / "rooveterinaryinc.roo-cline" / "settings" / "mcp_settings.json", "mcpServers", mcp_entry()),
         "vscode": lambda: merge_json(appdata / "Code" / "User" / "mcp.json", "servers", dict(mcp_entry(), type="stdio")),
+        "windsurf": lambda: merge_json(home / ".codeium" / "windsurf" / "mcp_config.json", "mcpServers", mcp_entry()),
+        "zed": lambda: merge_json(appdata / "Zed" / "settings.json", "context_servers", dict(mcp_entry(), source="custom")),
     }
 
 
@@ -228,6 +248,8 @@ def refresh():
     register()
     try:
         copy_exe()
+        if bionic_skill().exists():
+            copy_skill(bionic_skill())
     except OSError:
         pass
     return ext_id

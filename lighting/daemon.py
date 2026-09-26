@@ -198,6 +198,11 @@ class Daemon:
         ipc.token()
         D.PIDFILE.write_text(str(os.getpid()), "utf-8")
         cleanup_out()
+        try:
+            from lighting import install
+            install.copy_exe()
+        except OSError:
+            pass
         threading.Thread(target=self.worker, daemon=True).start()
         threading.Thread(target=self.hotkey_loop, daemon=True).start()
         while True:

@@ -13,6 +13,9 @@ bin/lighting.exe                               Rust client (client/), on Claude'
 .mcp.json                                      MCP server: lighting.exe mcp (1 tool)
 skills/lighting/                               SKILL.md + references/, loaded on description match
 commands/                                      /lighting:setup, :status, :bench
+hooks/hooks.json                               Stop hook: `lighting done --quiet` after every Claude reply
+tests/test_units.py                            unit tests, plain asserts (python tests/test_units.py or pytest)
+.github/workflows/                             ci.yml (every push/PR), release.yml (tag v* -> release + SHA256)
 lighting/                                      Python package: daemon, CLI fallback, host, desktop, OCR, MCP, selftest
 lighting/routines.py                           task trace, repetition learning (alignment), run, repair, stats
 lighting/record.py, deskrec.py                 record start/stop; low-level mouse/keyboard hooks + own UIA worker
@@ -60,7 +63,13 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - GitHub hydrates `react-partial` islands on first interaction; the click's effect arrives ~300-400 ms later. When the diff after a click is empty and the clicked element did not change state, `after()` waits up to 500 ms for a mutation and diffs again. A changed element state is reported directly (`ok -> e5 checkbox "x" [x]`).
 - SPA navigation (GitHub Turbo/React) changes the URL first and renders later. Clicks on links to another URL wait up to 3 s for the navigation to start, then for the title to change, then for quiet.
 - `[tabindex]` alone does not make a control: focusable scroll containers and tooltip triggers (`tabindex=0`, no pointer cursor) are skipped; empty "stretched" links take the card's title as name.
-- Rust's `Command` on Windows passes every inheritable handle to the child. A daemon started by the client inherited the caller's stdout pipe and kept it open, so `lighting ... | cat` (and the Bash tool) hung until timeout on every cold start. The client clears `HANDLE_FLAG_INHERIT` on its std handles before spawning. Python's `Popen(close_fds=True)` passes a handle list and is safe.
+- Rust's `Command` on Windows passes every inheritable handle to the child, including handles the client itself inherited from its parent. `rtk` hands its own pipe down that way, so clearing `HANDLE_FLAG_INHERIT` on the client's three std handles was not enough: the daemon kept rtk's pipe open and the first `rtk lighting ...` of every session hung until the daemon stopped. The client now starts the daemon with `CreateProcessW` and `PROC_THREAD_ATTRIBUTE_HANDLE_LIST` (only the log handle). Python's `Popen(close_fds=True)` passes a handle list and is safe.
+- `DETACHED_PROCESS` makes Windows ignore `CREATE_NO_WINDOW`. The uv `pythonw.exe` launcher starts a console `python.exe`, which then got a new, visible console window. Spawn with `CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP` only (`HIDDEN`); the child shares the hidden console.
+- `~/.lighting/bin/lighting.exe` comes first on PATH for bash, rtk and other AIs. It used to be refreshed only on a version bump, so a rebuilt client was never used from the shell. The daemon copies it on every start.
+- Store (UWP) apps: the window belongs to `ApplicationFrameHost.exe`, the focused element to the app (`CalculatorApp.exe`). `type focused` accepts a focused element from another process when the target window is in the foreground.
+- `launch` order: exact Start menu name, then Win+R names (`calc`, `notepad`: an .exe in System32/Windows or an App Paths entry), then the fuzzy Start menu match. "calc" is the Start menu name of OpenOffice Calc; the Windows calculator is "Rechner" on German Windows.
+- Cleanup: `done` asks every connected extension to close the non-active tabs of the Lighting group (a tab the user made active is being looked at and stays), and closes the windows `launch` created (hwnd not in the window list before the launch; apps that were open stay) with WM_CLOSE, then gives the foreground back to the window that had it before the first launch. `keep` ungroups tabs and forgets windows. The Stop hook runs `done --quiet`; for `done` the client never sets anything up and never starts the daemon.
+- Bionic (LM Studio's agent app) reads global skills from `~/.lmstudio/skills/<name>/SKILL.md` (folder name = skill name) and LM Studio reads MCP servers from `~/.lmstudio/mcp.json`.
 
 - Codex does not put a plugin's `bin/` on PATH. `refresh()` copies the exe to `~/.lighting/bin` (rename-then-write, a running exe can be renamed but not overwritten) and `setup` adds that folder to the user `Path`. The copied exe has no plugin root next to it, so the client falls back to `client-root` when `../lighting/__init__.py` is missing.
 - `lighting install <ai>` writes absolute paths to `~/.lighting/bin/lighting.exe`: plugin roots change on every update, that path does not. It is blocked through MCP because it prints to stdout.
@@ -85,7 +94,7 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 
 1. Python: edit `lighting/*.py`, `py_compile`, then `lighting stop` (next call starts the new daemon).
 2. Extension: edit `extension/*.js`, check the modules load (copy to `.mjs`, `node --check`, import with a mocked `chrome`), then `lighting ext-reload`. If the service worker is broken it cannot reload itself: run `lighting setup`, which reloads it through the extensions page.
-3. Client: `cd client && cargo build --release`, copy `target/release/lighting.exe` to `bin/`. It links the CRT statically (no VC++ runtime needed).
+3. Client: `cd client && cargo build --release`, copy `target/release/lighting.exe` to `bin/` (rename the old one to `bin/lighting.old` if it is running). It links the CRT statically (no VC++ runtime needed). `lighting stop`: the next daemon copies it to `~/.lighting/bin`, which is the one on PATH.
 4. Versions: bump `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together; the runtime reads the Claude one. The extension manifest version is rewritten from it when the extension is copied; a mismatch makes the daemon reload the extension once.
 
 ## 4. Verification protocol (do not report done before all pass)
@@ -95,10 +104,13 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-lighting selftest              # must print 82/82 passed
+python tests/test_units.py     # 8/8
+cd client && cargo test && cargo clippy --release --all-targets
+lighting selftest              # must print 87/87 passed (86/86 with a SKIP line when other Lighting tabs are open or you used the mouse)
 lighting bench
 lighting bench --real          # compare tokens with the last run
 ```
+Cold start through a pipe, isolated from the browser's own daemon restart: `USERNAME=ltest lighting stop; rtk lighting status | cat` must return at once (`USERNAME` picks the pipe name).
 Then one real page by hand (`open`, `snap`, `click`, `text`) and one real app (`windows`, `snap w<N>`, `click d<N>`).
 For routines: do one task twice with different values, `lighting routine learn`, then `lighting run <name> param=...`.
 
@@ -121,6 +133,8 @@ For routines: do one task twice with different values, `lighting routine learn`,
 - **The first routine learner treated flags as data**: `open x -n` vs `open y` split "Context-Engine" into two parameters. Slots are computed from arguments only; flags only affect similarity.
 - **`routine learn` "worked" while nothing was verified**: a run that clicked the wrong "Issues" link reported ok. Verification failures now fail the run and count in the stats.
 - **The `text` selftest only checked the page title**, which the plain-text fallback also contains, so the broken Defuddle bundle went unnoticed. It now requires a Markdown table from the fixture.
+- **The first `rtk lighting ...` of every session hung for minutes** (0.4.0): cold-start tests used a plain pipe, and after `lighting stop` the browser's host restarted the daemon before the client could, so the client never spawned it. Test with a private pipe (`USERNAME=ltest`) and through `rtk`.
+- **Tests of a rebuilt client ran the old one**: `lighting` resolved to the stale `~/.lighting/bin` copy. Compare `md5sum bin/lighting.exe ~/.lighting/bin/lighting.exe`.
 - **Only the fixture was tested.** A sweep over real sites (GitHub, YouTube, Wikipedia, SpigotMC, Modrinth, Hugging Face, PaperMC docs) found six output and timing problems in one hour. Repeat that sweep after bigger changes.
 
 ## 6. Failure modes
@@ -134,7 +148,9 @@ For routines: do one task twice with different values, `lighting routine learn`,
 | `lighting` runs slow (~200 ms) | bash script shadowing the exe | keep only `bin/lighting.exe` |
 | Host never connects after update | old multi-line `host.bat` rewritten under a running cmd.exe | static one-line `host.bat` + `host.py` reading `client-root`; kill the stuck `host.py` python once |
 | Daemon restarts on every call | two open Claude sessions run different plugin versions, each call switches `client-root` | expected until the old session ends; same version = no restart |
-| `lighting` hangs until timeout in a pipe | daemon inherited the caller's stdout pipe | client clears `HANDLE_FLAG_INHERIT` before spawning |
+| `lighting` hangs until timeout in a pipe | daemon inherited a pipe handle (the caller's, or one the caller inherited, e.g. from rtk) | client spawns the daemon with an explicit handle list |
+| A console window pops up when the daemon starts | `DETACHED_PROCESS` voids `CREATE_NO_WINDOW` for the launcher's child | spawn with `HIDDEN` flags only |
+| `launch calc` opens OpenOffice Calc | fuzzy Start menu match won | Win+R names come before the fuzzy match |
 
 ## 7. Hard rules
 

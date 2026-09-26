@@ -8,7 +8,7 @@ import time
 from lighting import defaults as D
 from lighting import ipc
 
-DETACHED = 0x00000200 | 0x08000000
+HIDDEN = 0x00000200 | 0x08000000
 BREAKAWAY = 0x01000000
 
 
@@ -76,9 +76,9 @@ def start_daemon():
     args = [str(exe), "-X", "utf8", "-m", "lighting", "daemon"]
     kw = dict(env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log, cwd=str(D.HOME), close_fds=True)
     try:
-        subprocess.Popen(args, creationflags=DETACHED | BREAKAWAY, **kw)
+        subprocess.Popen(args, creationflags=HIDDEN | BREAKAWAY, **kw)
     except OSError:
-        subprocess.Popen(args, creationflags=DETACHED, **kw)
+        subprocess.Popen(args, creationflags=HIDDEN, **kw)
     finally:
         log.close()
 
