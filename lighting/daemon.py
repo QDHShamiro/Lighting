@@ -99,6 +99,7 @@ class Daemon:
         self.hotkey = False
         self.hosts_seen = set()
         self.lock = threading.Lock()
+        self.abort_gen = 0
 
     def add_host(self, conn, hello):
         host = Host(self, conn, hello)
@@ -127,6 +128,7 @@ class Daemon:
 
     def abort_all(self):
         self.abort.set()
+        self.abort_gen += 1
         for host in list(self.hosts):
             host.fail_all({"ok": False, "abort": True})
             host.post("abort")
@@ -135,7 +137,9 @@ class Daemon:
                 _, reply = self.jobs.get_nowait()
             except queue.Empty:
                 break
-            reply.put({"out": "stopped (Ctrl+Alt+End or lighting abort)", "code": 1})
+            if reply is not None:
+                reply.put({"out": "stopped (Ctrl+Alt+End or lighting abort)", "code": 1})
+        self.jobs.put((None, None))
 
     def handle(self, conn):
         try:
@@ -175,18 +179,36 @@ class Daemon:
     def worker(self):
         from lighting import commands
         ctx = commands.Context(self)
+        waits = []
         while True:
-            msg, reply = self.jobs.get()
-            self.abort.clear()
+            left = max(0.0, min(p.due for p, _ in waits) - time.time()) if waits else None
             try:
-                res = commands.run(ctx, msg)
-            except Aborted:
-                res = {"out": "stopped (Ctrl+Alt+End or lighting abort)", "code": 1}
-            except Exception as e:
-                traceback.print_exc(file=sys.stderr)
-                sys.stderr.flush()
-                res = {"out": "err: %s: %s" % (type(e).__name__, str(e)[:300]), "code": 1}
-            reply.put(res)
+                msg, reply = self.jobs.get(timeout=left)
+            except queue.Empty:
+                msg = reply = None
+            if msg is not None:
+                self.abort.clear()
+                res = self.guarded(lambda: commands.run(ctx, msg))
+                if res.get("pending"):
+                    waits.append((res["pending"], reply))
+                else:
+                    reply.put(res)
+            now = time.time()
+            for w in [w for w in waits if w[0].due <= now or w[0].gen != self.abort_gen]:
+                res = self.guarded(lambda: commands.poll_pending(ctx, w[0]))
+                if res is not None:
+                    waits.remove(w)
+                    w[1].put(res)
+
+    def guarded(self, fn):
+        try:
+            return fn()
+        except Aborted:
+            return {"out": "stopped (Ctrl+Alt+End or lighting abort)", "code": 1}
+        except Exception as e:
+            traceback.print_exc(file=sys.stderr)
+            sys.stderr.flush()
+            return {"out": "err: %s: %s" % (type(e).__name__, str(e)[:300]), "code": 1}
 
     def hotkey_loop(self):
         user32 = ctypes.windll.user32

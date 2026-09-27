@@ -1,6 +1,6 @@
 import { attach, send } from "./cdp.js";
 
-const MODS = { alt: 1, ctrl: 2, control: 2, meta: 4, cmd: 4, win: 4, super: 4, shift: 8 };
+const MODS = { alt: 1, option: 1, ctrl: 2, control: 2, strg: 2, meta: 4, cmd: 4, win: 4, super: 4, shift: 8, umschalt: 8, altgr: 3 };
 const MOD_KEYS = { 1: ["Alt", "AltLeft", 18], 2: ["Control", "ControlLeft", 17], 4: ["Meta", "MetaLeft", 91], 8: ["Shift", "ShiftLeft", 16] };
 const NAMED = {
   enter: ["Enter", "Enter", 13, "\r"],
@@ -24,13 +24,23 @@ const NAMED = {
   end: ["End", "End", 35],
   pageup: ["PageUp", "PageUp", 33],
   pagedown: ["PageDown", "PageDown", 34],
+  pgup: ["PageUp", "PageUp", 33],
+  pgdn: ["PageDown", "PageDown", 34],
   insert: ["Insert", "Insert", 45],
+  ins: ["Insert", "Insert", 45],
+  bksp: ["Backspace", "Backspace", 8],
+  entf: ["Delete", "Delete", 46],
+  pos1: ["Home", "Home", 36],
+  plus: ["+", "Equal", 187, "+"],
+  minus: ["-", "Minus", 189, "-"],
+  comma: [",", "Comma", 188, ","],
+  period: [".", "Period", 190, "."],
 };
 
 function keyDef(name) {
   const low = name.toLowerCase();
   if (NAMED[low]) return NAMED[low];
-  const f = /^f([1-9]|1[0-2])$/.exec(low);
+  const f = /^f([1-9]|1[0-9]|2[0-4])$/.exec(low);
   if (f) return ["F" + f[1], "F" + f[1], 111 + Number(f[1])];
   if (name.length === 1) {
     const c = name;
@@ -42,7 +52,8 @@ function keyDef(name) {
 }
 
 export function parseCombo(combo) {
-  const parts = combo.split("+").map((p) => p.trim()).filter(Boolean);
+  const c = combo.replace(/\s+/g, "");
+  const parts = c === "+" || c.endsWith("++") ? c.slice(0, -2).split("+").filter(Boolean).concat(["+"]) : c.split("+").filter(Boolean);
   let mods = 0;
   const keys = [];
   for (const p of parts) {

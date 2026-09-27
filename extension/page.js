@@ -1,6 +1,6 @@
 (() => {
   if (globalThis.__lt) return;
-  const S = { seq: 0, refs: new Map(), ids: new WeakMap(), last: new Set(), muts: 0, lastMuts: -1, lastHref: "", lastY: -1, sig: "" };
+  const S = { seq: 0, refs: new Map(), ids: new WeakMap(), last: new Set(), muts: 0, lastMuts: -1, lastHref: "", lastY: -1, sig: "", keys: new Map() };
   const OURS = "LT-POINTER";
   const INTERACTIVE =
     'a[href],button,input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="combobox"],[role="textbox"],[role="searchbox"],[role="slider"],[role="spinbutton"],[role="treeitem"],[contenteditable=""],[contenteditable="true"],[tabindex]:not([tabindex="-1"]),[onclick]';
@@ -190,7 +190,15 @@
       const titled = p.querySelector('h1,h2,h3,h4,[class*="title" i],[class*="name" i]');
       s = titled ? titled.innerText : (p.innerText || "").trim().split("\n")[0];
     }
-    return clean(s).replace(KEYHINT, "");
+    const full = clean(s);
+    const name = full.replace(KEYHINT, "");
+    if (name && S.keys.size < 40) {
+      const hint = KEYHINT.exec(full);
+      const ks = el.getAttribute("aria-keyshortcuts") || (el.getAttribute("accesskey") ? "alt+" + el.getAttribute("accesskey") : "");
+      if (hint) S.keys.set(hint[0].trim().replace(/^\(|\)$/g, ""), name);
+      if (ks) S.keys.set(ks, name);
+    }
+    return name;
   }
 
   function short(href) {
@@ -599,6 +607,7 @@
     S.lastY = Math.round(scrollY);
     S.sig = sig;
     const out = { title: document.title, url: location.href, lines: res.lines, notes: res.notes, searched: res.searched, below: res.below, above: res.above };
+    if (S.keys.size) out.keys = [...S.keys].slice(0, 40);
     if (opts.diff) {
       out.lines = res.lines.filter((l) => /^e\d+ /.test(l) && !prev.has(l.split(" ")[0]));
       out.removed = [...prev].filter((r) => !res.ids.has(r)).length;

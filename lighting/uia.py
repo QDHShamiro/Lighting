@@ -32,7 +32,8 @@ def api():
              U.UIA_ExpandCollapseExpandCollapseStatePropertyId, U.UIA_IsPasswordPropertyId,
              U.UIA_HasKeyboardFocusPropertyId, U.UIA_ClassNamePropertyId, U.UIA_NativeWindowHandlePropertyId,
              U.UIA_IsValuePatternAvailablePropertyId, U.UIA_IsTogglePatternAvailablePropertyId,
-             U.UIA_IsSelectionItemPatternAvailablePropertyId, U.UIA_IsExpandCollapsePatternAvailablePropertyId]
+             U.UIA_IsSelectionItemPatternAvailablePropertyId, U.UIA_IsExpandCollapsePatternAvailablePropertyId,
+             U.UIA_AcceleratorKeyPropertyId, U.UIA_AccessKeyPropertyId]
     for p in props:
         cr.AddProperty(p)
     _state["cache"] = cr

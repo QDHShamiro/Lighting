@@ -80,13 +80,28 @@ async function open(a, tab) {
   await C.attach(tabId).catch(() => {});
   const nav = await T.navigate(tabId, a.url, LOAD_MS);
   await page(tabId, "act.settle", [300, 3000, 0, 150], 0, 8000).catch(() => {});
-  const t = await chrome.tabs.get(tabId);
+  let t = await chrome.tabs.get(tabId);
   if (nav.error && nav.error !== "net::ERR_ABORTED") throw new Error("load failed: " + nav.error + " (" + T.short(a.url, 60) + ")");
+  if (a.quiet) return header(tabId, { title: t.title, url: t.url });
   const narrow = !!(a.filter || a.scope);
   const opts = { force: true, filter: a.filter || null, scope: a.scope || null, media: !!a.media };
-  const res = await page(tabId, "snap", [opts]).catch((e) => ({ error: e.message }));
+  let res = await page(tabId, "snap", [opts]).catch((e) => ({ error: e.message }));
+  if (!narrow && !res.error && !(res.lines || []).length) {
+    const peek = await page(tabId, "act.peek", [300]).catch(() => "");
+    if (peek) res.peek = peek;
+    else {
+      await page(tabId, "act.settle", [400, 2500, 2500], 0, 8000).catch(() => {});
+      res = await page(tabId, "snap", [opts]).catch((e) => ({ error: e.message }));
+      t = await chrome.tabs.get(tabId);
+      if (!res.error && !(res.lines || []).length) res.peek = await page(tabId, "act.peek", [300]).catch(() => "");
+    }
+  }
   if (res.error) return header(tabId, { title: t.title, url: t.url }) + "\n" + res.error;
-  return formatSnap(tabId, res, narrow ? 0 : cfg.navLines, narrow);
+  return withKeys(formatSnap(tabId, res, narrow ? 0 : cfg.navLines, narrow), res);
+}
+
+function withKeys(out, res) {
+  return res && res.keys && res.keys.length ? { out, keys: res.keys } : out;
 }
 
 async function history(kind, tab) {
@@ -117,7 +132,7 @@ async function snap(a, tab) {
     return formatSnap(tabId, res, 0, true).replace(/^e(\d+) /gm, "f" + fid + ".e$1 ").replace(/^\[t\d+\]/, "[t" + T.sid(tabId) + " frame " + a.frame + "]");
   }
   const res = await page(tabId, "snap", [opts]);
-  return formatSnap(tabId, res, 0, opts.all || !!opts.scope || !!opts.filter || opts.force || opts.diff || opts.media);
+  return withKeys(formatSnap(tabId, res, 0, opts.all || !!opts.scope || !!opts.filter || opts.force || opts.diff || opts.media), res);
 }
 
 async function text(a, tab) {
@@ -600,6 +615,8 @@ async function route(cmd, a, tab) {
       return A.scroll(a, tab);
     case "wait":
       return wait(a, tab);
+    case "search-field":
+      return page(await tabOf(tab), "act.searchField", []);
     case "expect":
       return expect(a, tab);
     case "js":

@@ -99,9 +99,23 @@ VK = {
     "left": 0x25, "up": 0x26, "right": 0x27, "down": 0x28, "ctrl": 0x11, "control": 0x11, "shift": 0x10,
     "alt": 0x12, "win": 0x5B, "meta": 0x5B, "capslock": 0x14, "printscreen": 0x2C, "menu": 0x5D, "apps": 0x5D,
     "pause": 0x13, "numlock": 0x90, "scrolllock": 0x91,
+    "arrowleft": 0x25, "arrowup": 0x26, "arrowright": 0x27, "arrowdown": 0x28, "pgup": 0x21, "pgdn": 0x22,
+    "ins": 0x2D, "prtsc": 0x2C, "bksp": 0x08, "plus": 0xBB, "minus": 0xBD, "comma": 0xBC, "period": 0xBE,
+    "playpause": 0xB3, "play": 0xB3, "nexttrack": 0xB0, "prevtrack": 0xB1, "previoustrack": 0xB1, "stop": 0xB2,
+    "mediastop": 0xB2, "volumeup": 0xAF, "volup": 0xAF, "volumedown": 0xAE, "voldown": 0xAE, "mute": 0xAD,
+    "volumemute": 0xAD, "browserback": 0xA6, "browserforward": 0xA7, "browserrefresh": 0xA8, "browsersearch": 0xAA,
+    "browserhome": 0xAC, "numpadmultiply": 0x6A, "numpadadd": 0x6B, "numpadsubtract": 0x6D, "numpaddecimal": 0x6E,
+    "numpaddivide": 0x6F, "lctrl": 0xA2, "rctrl": 0xA3, "lshift": 0xA0, "rshift": 0xA1, "lalt": 0xA4, "ralt": 0xA5,
+    "altgr": 0xA5, "lwin": 0x5B, "rwin": 0x5C, "super": 0x5B, "cmd": 0x5B, "windows": 0x5B, "option": 0x12,
+    "strg": 0x11, "umschalt": 0x10, "entf": 0x2E, "einfg": 0x2D, "pos1": 0x24, "bildauf": 0x21, "bildab": 0x22,
+    **{"numpad%d" % i: 0x60 + i for i in range(10)},
 }
-EXTENDED = {0x2E, 0x2D, 0x24, 0x23, 0x21, 0x22, 0x25, 0x26, 0x27, 0x28, 0x5B, 0x5D, 0x90, 0x2C}
-MODS = {"ctrl": 0x11, "control": 0x11, "shift": 0x10, "alt": 0x12, "win": 0x5B, "meta": 0x5B}
+EXTENDED = {0x2E, 0x2D, 0x24, 0x23, 0x21, 0x22, 0x25, 0x26, 0x27, 0x28, 0x5B, 0x5C, 0x5D, 0x90, 0x2C, 0xA3, 0xA5, 0x6F}
+MODS = {"ctrl": 0x11, "control": 0x11, "shift": 0x10, "alt": 0x12, "win": 0x5B, "meta": 0x5B, "strg": 0x11,
+        "umschalt": 0x10, "super": 0x5B, "cmd": 0x5B, "windows": 0x5B, "option": 0x12, "altgr": 0xA5, "lctrl": 0xA2,
+        "rctrl": 0xA3, "lshift": 0xA0, "rshift": 0xA1, "lalt": 0xA4, "ralt": 0xA5, "lwin": 0x5B, "rwin": 0x5C}
+MEDIA = {"playpause", "play", "nexttrack", "prevtrack", "previoustrack", "stop", "mediastop", "volumeup", "volup",
+         "volumedown", "voldown", "mute", "volumemute"}
 
 
 def text_of(hwnd):
@@ -314,8 +328,15 @@ def vk_of(name):
     return None, 0
 
 
+def combo_parts(combo):
+    c = combo.replace(" ", "")
+    if c == "+" or c.endswith("++"):
+        return [p for p in c[:-2].split("+") if p] + ["+"]
+    return [p for p in c.split("+") if p] or [combo]
+
+
 def press(combo, scancode=False):
-    parts = [p for p in combo.replace(" ", "").split("+") if p] or [combo]
+    parts = combo_parts(combo)
     mods, main = [], parts[-1]
     for p in parts[:-1]:
         if p.lower() not in MODS:

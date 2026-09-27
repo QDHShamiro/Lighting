@@ -313,17 +313,23 @@ fn main() {
     let root = root(&home);
     let first = args.first().map(String::as_str).unwrap_or("");
     let quiet = args.iter().any(|a| a == "--quiet");
+    let silent = first == "done" || first == "suggest";
     let idle = match first {
         "stop" => Some("lighting daemon not running"),
         "done" if quiet => Some(""),
         "done" => Some("nothing to close"),
+        "suggest" => Some(""),
         _ => None,
     };
     if LOCAL.contains(&first) || !ready(&home, &root) {
-        if first == "done" {
+        if silent {
             process::exit(0);
         }
         python(&home, &root, &args);
+    }
+    let mut hook_input = String::new();
+    if first == "suggest" && args.len() == 1 {
+        let _ = io::stdin().take(64 * 1024).read_to_string(&mut hook_input);
     }
     let started = Instant::now();
     let mut stats = false;
@@ -350,7 +356,7 @@ fn main() {
     }
     let token = match fs::read(home.join("key")) {
         Ok(k) if k.len() >= 32 => hex(&k[..32]),
-        _ if first == "done" => process::exit(0),
+        _ if silent => process::exit(0),
         _ => python(&home, &root, &args),
     };
     let cwd = env::current_dir().map(|p| p.display().to_string()).unwrap_or_default();
@@ -370,6 +376,10 @@ fn main() {
     for a in &argv {
         req.push('\0');
         req.push_str(a);
+    }
+    if !hook_input.is_empty() {
+        req.push('\0');
+        req.push_str(&hook_input.replace('\0', " "));
     }
     let reply = exchange(&home, &root, req.as_bytes(), idle);
     let text = String::from_utf8_lossy(&reply);

@@ -6,7 +6,7 @@ import subprocess
 import time
 
 from lighting import defaults as D
-from lighting.common import Fail, cap, hit, is_url, outfile, plain_links, ref_kind, terms, win_path
+from lighting.common import Fail, Pending, cap, hit, is_url, outfile, parse_ms, plain_links, ref_kind, terms, win_path
 
 REF_RE = re.compile(r"^(?:f\d+\.)?e\d+$")
 IMAGE_EXT = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp")
@@ -104,9 +104,9 @@ def ensure_host(ctx, want=None):
     raise Fail("no browser with the Lighting extension is connected", "lighting setup")
 
 
-def call(ctx, cmd, args=None, timeout=D.CALL_TIMEOUT, want=None):
+def call(ctx, cmd, args=None, timeout=D.CALL_TIMEOUT, want=None, tab=None):
     host = ensure_host(ctx, want)
-    msg = host.call(cmd, args or {}, timeout=timeout)
+    msg = host.call(cmd, args or {}, tab=tab, timeout=timeout)
     ctx.target = ("web", host.brand)
     if not msg.get("ok"):
         raise Fail(str(msg.get("error") or "browser error"))
@@ -114,6 +114,9 @@ def call(ctx, cmd, args=None, timeout=D.CALL_TIMEOUT, want=None):
         ctx.last_target = msg["target"]
     if msg.get("where"):
         ctx.where = dict(msg["where"], kind="web")
+    if msg.get("keys"):
+        from lighting import keys
+        keys.harvest(keys.app_of(ctx), msg["keys"])
     return msg
 
 
@@ -136,6 +139,8 @@ def target_args(pos, flags=None):
 
 
 def normalize_url(u):
+    if re.match(r"^[\w.-]+:\d+(?:[/?#]|$)", u):
+        return "http://" + u
     if re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", u):
         return u
     if re.match(r"^([a-zA-Z]:[\\/]|\\\\|/[a-zA-Z]/)", u):
@@ -160,9 +165,18 @@ def cmd_open(ctx, pos, flags):
     if not pos:
         raise Fail("open needs a url", "lighting open github.com")
     url = normalize_url(pos[0])
+    if url.split(":", 1)[0].lower() not in D.WEB_SCHEMES:
+        from lighting import desktop
+        return desktop.cmd_launch(ctx, [url], flags)
     leak_check(ctx, url, flags)
-    return out(ctx, "open", {"url": url, "new": bool(flags.get("new")), "filter": flags.get("f"), "scope": flags.get("s"),
-                             "media": bool(flags.get("media"))}, D.LOAD_TIMEOUT + 10)
+    if flags.get("text"):
+        head = out(ctx, "open", {"url": url, "new": bool(flags.get("new")), "quiet": True}, D.LOAD_TIMEOUT + 10)
+        return head.split("\n", 1)[0] + "\n" + cmd_text(ctx, [], flags)
+    res = out(ctx, "open", {"url": url, "new": bool(flags.get("new")), "filter": flags.get("f"), "scope": flags.get("s"),
+                            "media": bool(flags.get("media"))}, D.LOAD_TIMEOUT + 10)
+    from lighting import keys
+    head, nl, rest = res.partition("\n")
+    return head + keys.hint(keys.app_of(ctx)) + nl + rest
 
 
 def cmd_snap(ctx, pos, flags):
@@ -208,6 +222,18 @@ def cmd_type(ctx, pos, flags):
     return out(ctx, "type", args, D.LOAD_TIMEOUT + 10, lines=D.NAV_LINES + 8)
 
 
+def cmd_search(ctx, pos, flags):
+    if not pos:
+        raise Fail("search needs words", 'lighting search "paper plugin"')
+    found = call(ctx, "search-field", {})
+    if found.get("button"):
+        call(ctx, "click", {"ref": found["button"]}, D.LOAD_TIMEOUT + 10)
+        found = call(ctx, "search-field", {})
+    if not found.get("ref"):
+        raise Fail("no search field on this page", "lighting snap -f search, then type e<N> words --enter")
+    return cmd_type(ctx, [found["ref"]] + list(pos), dict(flags, enter=True))
+
+
 def cmd_fill(ctx, pos, flags):
     pairs = []
     for p in pos:
@@ -228,7 +254,11 @@ def cmd_fill(ctx, pos, flags):
 def cmd_press(ctx, pos, flags):
     if not pos:
         raise Fail("press needs keys", "lighting press Enter | ctrl+a | Escape")
-    return out(ctx, "press", {"keys": pos}, D.LOAD_TIMEOUT + 10, lines=D.NAV_LINES + 8)
+    res = out(ctx, "press", {"keys": pos}, D.LOAD_TIMEOUT + 10, lines=D.NAV_LINES + 8)
+    if len(pos) == 1 and " new" in res.split("\n", 1)[0] and "\n" in res:
+        from lighting import keys
+        keys.learn(keys.app_of(ctx), pos[0], res.split("\n", 2)[1])
+    return res
 
 
 def cmd_select(ctx, pos, flags):
@@ -292,8 +322,45 @@ def spec(pos, flags):
 
 def cmd_wait(ctx, pos, flags):
     s = spec(pos, flags)
-    s["timeout"] = int(flags.get("timeout") or 10000)
+    if flags.get("reload"):
+        return wait_reload(ctx, s, flags)
+    s["timeout"] = parse_ms(flags.get("timeout"), 10000)
     return out(ctx, "wait", s, s["timeout"] / 1000 + 10)
+
+
+def wait_reload(ctx, s, flags):
+    if "ms" in s:
+        raise Fail('--reload waits for "text", url:, css: or a ref', 'lighting wait "All checks have passed" --reload 15s')
+    every = max(parse_ms(flags.get("reload"), 15000) / 1000.0, 3.0)
+    total = parse_ms(flags.get("timeout"), 600000) / 1000.0
+    tab = (call(ctx, "where").get("where") or {}).get("tab")
+    t0 = time.time()
+    st = {"reloads": 0, "next": t0 + every}
+
+    def found():
+        try:
+            call(ctx, "expect", s, tab=tab)
+            return True
+        except Fail as e:
+            if str(e).startswith("fail:"):
+                return False
+            raise
+
+    def poll(last):
+        if found():
+            return "ok after %d reload%s (%d s)" % (st["reloads"], "" if st["reloads"] == 1 else "s", time.time() - t0)
+        if last:
+            raise Fail("not there after %d s (%d reloads)" % (total, st["reloads"]),
+                       "lighting wait ... --reload %ds --timeout %dm" % (every, total // 30 or 1))
+        if time.time() >= st["next"]:
+            call(ctx, "reload", {}, D.LOAD_TIMEOUT + 10, tab=tab)
+            st["reloads"] += 1
+            st["next"] = time.time() + every
+        return None
+
+    if found():
+        return "ok (already there)"
+    return Pending(poll, total, 1.0)
 
 
 def cmd_expect(ctx, pos, flags):

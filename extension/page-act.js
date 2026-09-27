@@ -445,6 +445,47 @@
     return { ok: false };
   }
 
+  function searchField() {
+    const SEARCH = /search|such|find|finde|recherche|buscar|cerca|zoek/i;
+    let best = null, top = 0;
+    for (const el of document.querySelectorAll('input:not([type]),input[type="search"],input[type="text"],[role="searchbox"],[role="combobox"],textarea')) {
+      if (!visible(el) || el.disabled || el.readOnly) continue;
+      const hay = [el.name, el.id, el.getAttribute("placeholder"), el.getAttribute("aria-label"), el.getAttribute("title"), nameOf(el)].join(" ");
+      let s = 0;
+      if (el.type === "search" || el.getAttribute("role") === "searchbox") s += 5;
+      if (/^(q|query|search|s|k|keyword|search_query)$/i.test(el.name || "")) s += 3;
+      if (SEARCH.test(hay)) s += 4;
+      if (el.closest('form[role="search"],[role="search"]')) s += 3;
+      if (s > top) {
+        best = el;
+        top = s;
+      }
+    }
+    if (best) return { ref: ref(best) };
+    for (const el of document.querySelectorAll('button,[role="button"],a[href]')) {
+      if (visible(el) && SEARCH.test(nameOf(el) || "")) return { button: ref(el) };
+    }
+    return { none: true };
+  }
+
+  function peek(max) {
+    const tw = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_TEXT);
+    const out = [];
+    let n, len = 0;
+    while ((n = tw.nextNode()) && len < max) {
+      const s = n.data.replace(/\s+/g, " ").trim();
+      if (!s) continue;
+      const p = n.parentElement;
+      if (!p || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(p.tagName) || !visible(p)) continue;
+      const r = p.getBoundingClientRect();
+      if (r.width <= 1 || r.height <= 1 || r.bottom <= 0 || r.top >= innerHeight) continue;
+      out.push(s);
+      len += s.length + 1;
+    }
+    const t = out.join(" ");
+    return t.length > max ? t.slice(0, max - 3) + "..." : t;
+  }
+
   function lineOf(r) {
     const el = get(r);
     return el ? L.line(el, L.roleOf(el), nameOf(el)) : null;
@@ -456,5 +497,5 @@
     return { name: clean(nameOf(el)), role: L.roleOf(el), tag: el.tagName, desc: describe(el), hint: L.hintOf(el) };
   }
 
-  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, lineOf, info };
+  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info };
 })();

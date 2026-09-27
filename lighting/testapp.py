@@ -71,5 +71,59 @@ def main():
             user32.DispatchMessageW(ctypes.byref(msg))
 
 
+def chat():
+    inst = kernel32.GetModuleHandleW(None)
+    box = {}
+
+    def add(text):
+        buf = ctypes.create_unicode_buffer(text)
+        user32.SendMessageW(box["list"], 0x0180, 0, ctypes.addressof(buf))
+
+    def proc(hwnd, msg, wp, lp):
+        if msg == 0x0111 and (wp & 0xFFFF) == 1:
+            buf = ctypes.create_unicode_buffer(512)
+            user32.GetWindowTextW(box["edit"], buf, 512)
+            if buf.value.strip():
+                add("me: " + buf.value)
+                box["n"] = len(buf.value)
+                user32.SetWindowTextW(box["edit"], "")
+                user32.SetTimer(hwnd, 7, 300, None)
+            return 0
+        if msg == 0x0113:
+            user32.KillTimer(hwnd, 7)
+            add("peer: ok, %d chars" % box.get("n", 0))
+            return 0
+        if msg == 0x0002:
+            user32.PostQuitMessage(0)
+            return 0
+        return user32.DefWindowProcW(hwnd, msg, wp, lp)
+
+    wndproc = WNDPROC(proc)
+    wc = WNDCLASSW(0, wndproc, 0, 0, inst, None, user32.LoadCursorW(None, 32512), 16, None, "LightingTestChat")
+    user32.RegisterClassW(ctypes.byref(wc))
+    hwnd = user32.CreateWindowExW(0, "LightingTestChat", "Lighting Test Chat", 0x10CF0000, 260, 240, 420, 360,
+                                  None, None, inst, None)
+    font = gdi32.GetStockObject(17)
+
+    def make(cls, text, style, x, y, w, h, cid):
+        c = user32.CreateWindowExW(0x200 if cls in ("EDIT", "LISTBOX") else 0, cls, text, 0x50000000 | style, x, y, w, h,
+                                   hwnd, cid, inst, None)
+        user32.SendMessageW(c, 0x0030, font, 1)
+        return c
+
+    make("STATIC", "Nachrichten in Test", 0, 16, 10, 300, 20, 0)
+    box["list"] = make("LISTBOX", "", 0x00200001 | 0x00010000, 16, 32, 370, 200, 200)
+    make("STATIC", "Nachricht an Test:", 0, 16, 244, 300, 20, 0)
+    box["edit"] = make("EDIT", "", 0x00010080, 16, 266, 370, 26, 201)
+    add("peer: hi, welcome")
+    user32.ShowWindow(hwnd, 5)
+    msg = W.MSG()
+    while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
+        if not user32.IsDialogMessageW(hwnd, ctypes.byref(msg)):
+            user32.TranslateMessage(ctypes.byref(msg))
+            user32.DispatchMessageW(ctypes.byref(msg))
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    chat() if sys.argv[1:] == ["chat"] else main()

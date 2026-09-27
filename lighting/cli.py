@@ -20,6 +20,17 @@ def pull_secret(argv):
     return out, secret
 
 
+def wait_seconds(argv):
+    from lighting.common import Fail, parse_ms
+    if not argv or argv[0] not in D.LONG_WAITS:
+        return 0
+    val = next((argv[i + 1] for i, a in enumerate(argv[:-1]) if a == "--timeout"), None)
+    try:
+        return parse_ms(val, D.LONG_WAITS[argv[0]]) / 1000.0
+    except Fail:
+        return 0
+
+
 def execute(argv):
     from lighting import boot
     argv, secret = pull_secret(argv)
@@ -27,7 +38,7 @@ def execute(argv):
     payload = {"argv": argv, "cwd": os.getcwd()}
     if secret is not None:
         payload["secret"] = secret
-    return boot.request(payload)
+    return boot.request(payload, max(D.CLIENT_TIMEOUT, wait_seconds(argv) + 30))
 
 
 def main():

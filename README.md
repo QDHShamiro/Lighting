@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-111111?style=flat-square" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-97%2F97-111111?style=flat-square" alt="97/97 selftest">
+  <img src="https://img.shields.io/badge/selftest-113%2F113-111111?style=flat-square" alt="113/113 selftest">
   <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
   <br>
@@ -246,7 +246,7 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **97/97** (browser + desktop, cold start included). Unit tests: `python tests/test_units.py` (10/10), `cargo test` in `client/`.
+- `lighting selftest`: **113/113** (browser, desktop and chat, cold start included). Unit tests: `python tests/test_units.py` (16/16), `cargo test` in `client/`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - Filling and submitting a form: ~160 ms.
 - GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
@@ -271,6 +271,10 @@ your logged-in browser and your apps, cheaply.
 
 ## What's new
 
+- **0.8.0** Chats and fewer rounds: `reply "@Name" "hi" --wait` sends in Discord and waits for the answer in one
+  call, `inbox` reads new messages in full; `-f` after any action shows its result; `wait --reload` instead of
+  sleep loops; `search`, `open --text`, app links (`obsidian://`); desktop actions report what changed;
+  shortcuts learned per app (`lighting keys`); routines found from the request itself. The skill got smaller.
 - **0.7.1** Claude uses it better: `js` with `const` no longer clashes between calls, `type focused` right after
   `launch` works, merge buttons need `--yes`, the skill has the rules agents tripped over and is 9% shorter.
 - **0.7.0** Speed pass: a browser command through MCP 17.5 → 2.9 ms, screenshots 37-54% faster, `open -f`.
