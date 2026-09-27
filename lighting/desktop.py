@@ -9,6 +9,7 @@ from lighting.common import Fail, best_only, cap, ref_kind, terms, tiers
 
 BROWSER_EXES = {"brave.exe", "chrome.exe", "msedge.exe", "opera.exe", "vivaldi.exe"}
 CHROMIUM_CLASS = "Chrome_WidgetWin_1"
+TERMINALS = {"CASCADIA_HOSTING_WINDOW_CLASS", "ConsoleWindowClass", "mintty", "VirtualConsoleClass", "PuTTY"}
 
 
 class AppState:
@@ -183,14 +184,38 @@ def snapshot(ctx, hwnd, flags):
     st.snap_hwnd = hwnd
     if pairs:
         keys.harvest(win.exe_of(win.pid_of(hwnd)).lower(), pairs)
+    folded = 0
     if filt:
         lines = best_only([(ft.get(i), l) for i, l in enumerate(lines)])
-    elif not flags.get("text"):
-        st.full = (hwnd, time.time(), list(lines))
+    else:
+        if not flags.get("text"):
+            st.full = (hwnd, time.time(), list(lines))
+        if not flags.get("all"):
+            lines, folded = fold(lines)
     head = header(ctx, hwnd, " (%d controls%s)" % (len(refs), ", browser page hidden: use lighting snap for the page" if skip else ""))
     if not lines:
         lines.append("(no controls found: try lighting read %s for screen text)" % wref(ctx, hwnd))
+    if folded:
+        lines.append("(%d repeated lines folded: lighting snap %s --all)" % (folded, wref(ctx, hwnd)))
     return head + "\n" + "\n".join(lines)
+
+
+def fold(lines, least=4):
+    keys = [re.sub(r"^d\d+ ", "", l) if re.match(r"^d\d+ ", l) else None for l in lines]
+    count = {}
+    for k in keys:
+        if k:
+            count[k] = count.get(k, 0) + 1
+    out, seen, folded = [], set(), 0
+    for line, k in zip(lines, keys):
+        if k and count[k] >= least:
+            if k in seen:
+                folded += 1
+                continue
+            seen.add(k)
+            line = "%s (x%d, same in each item)" % (line, count[k])
+        out.append(line)
+    return out, folded
 
 
 def cmd_windows(ctx, pos, flags):
@@ -660,12 +685,14 @@ def put_text(ctx, hwnd, el, label, text, flags):
             return "ok %s (typed %s in background)" % (label, shown)
     saved = win.clip_get()
 
+    terminal = win.class_of(hwnd) in TERMINALS
+
     def paste():
         try:
             el.SetFocus()
         except Exception:
             pass
-        if not flags.get("append"):
+        if not flags.get("append") and not terminal:
             win.press("ctrl+a")
         win.clip_set(text)
         win.press("ctrl+v")

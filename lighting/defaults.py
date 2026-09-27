@@ -69,6 +69,11 @@ KEYS = HOME / "keys.json"
 KEY_HINT_EVERY_S = 7200
 SUGGEST_EVERY_S = 600
 PRUNE_DAYS = 14
+SESSION_IDLE_S = 12 * 3600
+SITES = HOME / "sites.json"
+LISTEN_MAX_S = 300
+LISTEN_TIMEOUT_S = 900
+LISTEN_CHARS = 1800
 
 IDLE_MS = 300
 BLITZ_WAIT_MS = 3000
@@ -86,6 +91,7 @@ CONFIG_DEFAULTS = {
     "shot_width": SHOT_WIDTH,
     "learn": True,
     "cleanup": True,
+    "audio": "auto",
 }
 
 RISK_WORDS = [

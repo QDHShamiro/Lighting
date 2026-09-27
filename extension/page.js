@@ -144,6 +144,50 @@
       while (el.readyState < 2 && Date.now() - t0 < 3000) await new Promise((res) => setTimeout(res, 50));
       await painted();
     }
+    if (op === "cues") {
+      for (const x of el.textTracks) if (x.mode === "disabled" && (x.kind === "subtitles" || x.kind === "captions")) x.mode = "hidden";
+      const t0 = Date.now();
+      let track = null;
+      while (!track && Date.now() - t0 < 1500) {
+        track = [...el.textTracks].find((x) => x.cues && x.cues.length);
+        if (!track) await new Promise((res) => setTimeout(res, 100));
+      }
+      return { cues: track ? [...track.cues].map((c) => [c.startTime, clean(String(c.text || "").replace(/<[^>]+>/g, " "))]) : [], lang: track ? track.language : "", duration: isFinite(el.duration) ? el.duration : 0 };
+    }
+    if (op === "record") {
+      const cap = el.captureStream ? el.captureStream() : null;
+      const tracks = cap ? cap.getAudioTracks() : [];
+      if (!tracks.length) return { error: "no audio track to record (no sound, or the site blocks capturing)" };
+      const rec = new MediaRecorder(new MediaStream(tracks), { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 32000 });
+      const chunks = [];
+      rec.ondataavailable = (e) => {
+        if (e.data && e.data.size) chunks.push(e.data);
+      };
+      const was = { muted: el.muted, volume: el.volume, paused: el.paused };
+      el.muted = false;
+      if (el.volume === 0) el.volume = 1;
+      const start = el.currentTime;
+      rec.start(1000);
+      let blocked = false;
+      if (el.paused) await el.play().catch(() => (blocked = true));
+      if (blocked) {
+        el.muted = true;
+        await el.play().catch(() => {});
+      }
+      const t0 = Date.now();
+      while (Date.now() - t0 < t && !el.ended && !el.paused) await new Promise((res) => setTimeout(res, 200));
+      await new Promise((res) => {
+        rec.onstop = res;
+        rec.stop();
+      });
+      el.muted = was.muted;
+      el.volume = was.volume;
+      if (was.paused && !el.paused) el.pause();
+      const buf = new Uint8Array(await new Blob(chunks, { type: "audio/webm" }).arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
+      return { audio: btoa(bin), start, seconds: (Date.now() - t0) / 1000, blocked };
+    }
     if (op === "restore" && S.media && S.media.el === el) {
       const m = S.media;
       S.media = null;
@@ -693,5 +737,11 @@
     return out;
   }
 
-  globalThis.__lt = { S, get, ref, roleOf, nameOf, hintOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, media, INTERACTIVE, CONTROL };
+  function firstMedia() {
+    const all = [...document.querySelectorAll("video,audio")];
+    const el = all.find((e) => !e.paused) || all.find((e) => e.readyState > 0) || all[0];
+    return el ? { ref: ref(el), duration: isFinite(el.duration) ? el.duration : 0 } : { none: true };
+  }
+
+  globalThis.__lt = { S, get, ref, roleOf, nameOf, hintOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, media, firstMedia, INTERACTIVE, CONTROL };
 })();

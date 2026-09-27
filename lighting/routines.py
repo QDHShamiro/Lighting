@@ -19,22 +19,27 @@ KEEP_FLAGS = {"new", "yes", "enter", "append", "submit", "first", "right", "doub
 SHARED = {"click", "type", "press", "scroll", "hover"}
 IDLE_S = 45
 KEEP_EPISODES = 300
+MAX_NEST = 3
 TRANSIENT = re.compile(r"nothing matches|nothing called|no field|is gone|no window matches|page changed|no tab yet|"
                        r"did not react|did not answer|not found|older snapshot|no match|nothing focused|"
                        r"still loading|navigated during", re.I)
 TOKEN = re.compile(r"\w+|[^\w\s]", re.U)
 
 _lock = threading.RLock()
-_ep = {}
 
 
-def _reset():
-    _ep.clear()
-    _ep.update({"steps": [], "cost": 0, "start": None, "t0": 0.0, "last": 0.0, "via": None, "lossy": False,
-                "hinted": set(), "failed": None})
+def reset(ctx):
+    ep = getattr(ctx, "ep", None)
+    if ep is None:
+        ep = ctx.ep = {}
+    ep.clear()
+    ep.update({"steps": [], "cost": 0, "start": None, "t0": 0.0, "last": 0.0, "via": None, "lossy": False,
+               "hinted": set(), "failed": None})
+    return ep
 
 
-_reset()
+def ep_of(ctx):
+    return getattr(ctx, "ep", None) or reset(ctx)
 
 
 def slug(text, n=3):
@@ -93,9 +98,10 @@ def stable(ctx, name, pos, flags):
 
 
 def observe(ctx, name, pos, flags, out, ok):
-    if not enabled(ctx):
+    if not enabled(ctx) or getattr(ctx, "quiet_steps", 0):
         return
     now = time.time()
+    _ep = ep_of(ctx)
     with _lock:
         if _ep["steps"] and now - _ep["last"] > IDLE_S and not (_ep["via"] and _ep["failed"] is None):
             close(ctx)
@@ -125,10 +131,11 @@ def observe(ctx, name, pos, flags, out, ok):
 
 
 def close(ctx):
+    _ep = ep_of(ctx)
     with _lock:
         ep = {"t0": _ep["t0"], "t1": _ep["last"], "start": _ep["start"], "steps": _ep["steps"], "cost": _ep["cost"],
               "via": _ep["via"], "failed": _ep["failed"], "lossy": _ep["lossy"], "params": _ep.get("params")}
-        _reset()
+        reset(ctx)
     if len(ep["steps"]) < 2 or ep["lossy"]:
         return None
     past = episodes()
@@ -505,15 +512,31 @@ def learn(ctx, ep, past):
     if not best:
         return None
     body = build(best_old["steps"], ep, best)
+    body["steps"] = compact(body["steps"], rs)
     if any(signature(body["steps"]) == signature(r["steps"]) for r in rs):
         return None
     r = new_routine(body, "learned", (best_old.get("cost", 0) + ep["cost"]) // 2)
-    r["tags"] = recall.tags_for(ep.get("t0") or time.time(), r["params"])
+    r["tags"] = recall.tags_for(getattr(ctx, "prompts", None) or [], ep.get("t0") or time.time(), r["params"])
     r["name"] = auto_name(r)
     save(r)
     prune()
     ctx.d.events.append("learned routine %s from 2 runs -> next time: %s" % (r["name"], usage(r)))
     return r
+
+
+def compact(steps, rs):
+    for r in rs:
+        need = [s for s in r["steps"] if not s.get("optional")]
+        n = len(need)
+        if n < 2 or n >= len(steps) or r.get("flaky") or any(s["cmd"] == "run" for s in need):
+            continue
+        for i in range(len(steps) - n + 1):
+            got = covers(r, steps[i:i + n])
+            if got is not None and all(p in got for p in r["params"]):
+                call = {"cmd": "run", "args": [r["name"]] + [kv(p, got[p]) for p in r["params"]], "flags": {},
+                        "where": steps[i + n - 1].get("where")}
+                return compact(steps[:i] + [call] + steps[i + n:], rs)
+    return steps
 
 
 def prune():
@@ -600,6 +623,7 @@ def load(name):
 
 
 def hint(ctx):
+    _ep = ep_of(ctx)
     with _lock:
         steps = list(_ep["steps"])
         hinted = _ep["hinted"]
@@ -715,51 +739,72 @@ def cmd_run(ctx, pos, flags):
         raise Fail("%s needs %s" % (r["name"], ", ".join(missing)), usage(r))
     if any("@secret" in a for s in r["steps"] for a in s["args"]) and ctx.secret is None:
         raise Fail("%s types a secret" % r["name"], "lighting run %s ... --env VAR" % r["name"])
-    with _lock:
-        if _ep["steps"]:
-            close(ctx)
-        _ep["via"] = r["name"]
-        _ep["params"] = params
+    stack = list(getattr(ctx, "run_stack", None) or [])
+    if r["name"] in stack:
+        raise Fail("routine %s calls itself (%s)" % (r["name"], " > ".join(stack + [r["name"]])))
+    if len(stack) >= MAX_NEST:
+        raise Fail("routines nest deeper than %d (%s)" % (MAX_NEST, " > ".join(stack)), "flatten one of them")
+    _ep = ep_of(ctx)
+    nested = bool(stack) or (bool(_ep["steps"]) and not _ep["via"])
+    quiet = getattr(ctx, "quiet_steps", 0)
+    if not nested:
+        with _lock:
+            _ep["via"] = r["name"]
+            _ep["params"] = params
+    ctx.run_stack = stack + [r["name"]]
+    ctx.quiet_steps = quiet + (1 if nested else 0)
     t0 = time.time()
     n = len(r["steps"])
     skipped = 0
-    for i, s in enumerate(r["steps"], 1):
-        if ctx.d.abort.is_set():
-            raise Fail("%s stopped by hotkey at step %d/%d" % (r["name"], i, n))
-        if s.get("flags", {}).get("yes") and not flags.get("yes"):
-            record_result(r, False, (time.time() - t0) * 1000, 0, "needs --yes")
-            raise Fail("%s step %d/%d (%s) needs a confirmation" % (r["name"], i, n, step_line(s, params)),
-                       "rerun with --yes if the user wants this")
-        argv = [s["cmd"]] + [fill(a, params) for a in s["args"]] + flag_argv(s.get("flags") or {})
-        try:
-            limit = parse_ms((s.get("flags") or {}).get("timeout"), 0) / 1000 or 6.0
-        except Fail:
-            limit = 6.0
-        deadline = time.time() + min(max(limit, 4.0), 30.0)
-        while True:
+    try:
+        for i, s in enumerate(r["steps"], 1):
+            if ctx.d.abort.is_set():
+                raise Fail("%s stopped by hotkey at step %d/%d" % (r["name"], i, n))
+            if s.get("flags", {}).get("yes") and not flags.get("yes"):
+                record_result(r, False, (time.time() - t0) * 1000, 0, "needs --yes")
+                raise Fail("%s step %d/%d (%s) needs a confirmation" % (r["name"], i, n, step_line(s, params)),
+                           "rerun with --yes if the user wants this")
+            argv = [s["cmd"]] + [fill(a, params) for a in s["args"]] + flag_argv(s.get("flags") or {})
+            if s["cmd"] == "run" and flags.get("yes"):
+                argv.append("--yes")
             try:
-                drain(ctx, run_one(ctx, argv)[0])
-                break
-            except Fail as e:
-                msg = str(e)
-                if "matches several" in msg and "--first" not in argv:
-                    argv.append("--first")
-                    continue
-                if s.get("optional"):
-                    skipped += 1
+                limit = parse_ms((s.get("flags") or {}).get("timeout"), 0) / 1000 or 6.0
+            except Fail:
+                limit = 6.0
+            deadline = time.time() + min(max(limit, 4.0), 30.0)
+            while True:
+                try:
+                    drain(ctx, run_one(ctx, argv)[0])
                     break
-                if TRANSIENT.search(msg) and time.time() < deadline:
-                    time.sleep(0.3)
-                    continue
-                ms = (time.time() - t0) * 1000
-                msg = re.sub(r" -> try: .*$", "", msg)
-                record_result(r, False, ms, 0, "step %d: %s" % (i, msg[:120]))
-                raise Fail("%s stopped at step %d/%d (%s): %s" % (r["name"], i, n, step_line(s, params), msg),
-                           "the steps before are done; finish by hand (lighting snap), Lighting learns the fix")
+                except Fail as e:
+                    msg = str(e)
+                    if "matches several" in msg and "--first" not in argv and s["cmd"] != "run":
+                        argv.append("--first")
+                        continue
+                    if s.get("optional"):
+                        skipped += 1
+                        break
+                    if TRANSIENT.search(msg) and time.time() < deadline and s["cmd"] != "run":
+                        time.sleep(0.3)
+                        continue
+                    ms = (time.time() - t0) * 1000
+                    msg = re.sub(r" -> try: .*$", "", msg)
+                    record_result(r, False, ms, 0, "step %d: %s" % (i, msg[:120]))
+                    raise Fail("%s stopped at step %d/%d (%s): %s" % (r["name"], i, n, step_line(s, params), msg),
+                               "the steps before are done; finish by hand (lighting snap), Lighting learns the fix")
+    finally:
+        ctx.run_stack = stack
+        ctx.quiet_steps = quiet
     ms = (time.time() - t0) * 1000
     status, w = verify(ctx, r, params)
-    with _lock:
-        close(ctx)
+    if not nested:
+        with _lock:
+            close(ctx)
+    elif not quiet and status != "not verified":
+        with _lock:
+            _ep["steps"].append({"cmd": "run", "args": [r["name"]] + [kv(p, v) for p, v in params.items()],
+                                 "flags": {}, "where": w, "t": round(time.time(), 2)})
+            _ep["last"] = time.time()
     if status == "not verified":
         record_result(r, False, ms, 0, "result not verified")
         raise Fail("%s ran all %d steps, but the result does not look right: %s" % (r["name"], n - skipped, place(w)),
@@ -834,7 +879,7 @@ def cmd_routine(ctx, pos, flags):
         except OSError:
             pass
         with _lock:
-            _reset()
+            reset(ctx)
         return "task history cleared (routines stay)"
     if sub == "learn":
         r = close(ctx)
@@ -848,7 +893,7 @@ def need(rest, what):
     return rest[0]
 
 
-def from_steps(name, raw, kv, cost, source, start=None):
+def from_steps(name, raw, kv, cost, source, start=None, prompts=None):
     steps = [clean_step(s) for s in raw]
     if steps and steps[0]["cmd"] not in ENTRY:
         e = entry_for(start)
@@ -861,13 +906,14 @@ def from_steps(name, raw, kv, cost, source, start=None):
             values[v] = re.sub(r"[^a-z0-9_]", "", k.lower()) or "text"
     r = new_routine({"steps": templatize(steps, values), "params": {p: v for v, p in values.items()},
                      "check": check_of(raw[-1].get("where") if raw else None, values)}, source, cost)
-    r["tags"] = recall.tags_for((raw[0].get("t") if raw else None) or time.time(), r["params"])
+    r["tags"] = recall.tags_for(prompts or [], (raw[0].get("t") if raw else None) or time.time(), r["params"])
     r["name"] = slug(name, 6) or name
     save(r)
     return r
 
 
 def save_current(ctx, name, kv, flags):
+    _ep = ep_of(ctx)
     with _lock:
         steps = list(_ep["steps"])
         cost = _ep["cost"]
@@ -879,7 +925,7 @@ def save_current(ctx, name, kv, flags):
         steps, cost, start = past[-1]["steps"], past[-1]["cost"], past[-1]["start"]
     if flags.get("last"):
         steps = steps[-int(flags["last"]):]
-    r = from_steps(name, steps, kv, cost, "saved", start)
+    r = from_steps(name, steps, kv, cost, "saved", start, getattr(ctx, "prompts", None))
     with _lock:
-        _reset()
+        reset(ctx)
     return "saved routine %s (%d steps) -> %s" % (r["name"], len(r["steps"]), usage(r))

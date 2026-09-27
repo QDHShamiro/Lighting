@@ -6,6 +6,7 @@ from multiprocessing.connection import Client
 from lighting import defaults as D
 
 FAST = b"L1\x00"
+FAST2 = b"L2\x00"
 
 
 def key():
@@ -44,10 +45,17 @@ def recv(conn, timeout=None):
     return json.loads(conn.recv_bytes().decode("utf-8"))
 
 
+def is_fast(raw):
+    return raw.startswith(FAST) or raw.startswith(FAST2)
+
+
 def decode_fast(raw):
     parts = raw[len(FAST):].decode("utf-8").split("\x00")
+    sid = ""
+    if raw.startswith(FAST2):
+        sid = parts.pop(2)
     tok, cwd, secret, argv = parts[0], parts[1], parts[2], parts[3:]
-    msg = {"token": tok, "cwd": cwd, "argv": argv}
+    msg = {"token": tok, "cwd": cwd, "argv": argv, "sid": sid}
     if secret.startswith("+"):
         msg["secret"] = secret[1:]
     return msg

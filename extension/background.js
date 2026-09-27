@@ -74,9 +74,18 @@ async function onMessage(msg) {
 }
 
 async function open(a, tab) {
+  const res = await openTab(a, tab);
+  const extras = a.quiet || !a.tabId ? {} : await pageExtras(a.tabId).catch(() => ({}));
+  return Object.assign(typeof res === "string" ? { out: res } : res, extras, { created: a.created });
+}
+
+async function openTab(a, tab) {
   let tabId = a.new ? null : await tabOf(tab, false);
-  if (tabId === null) tabId = await T.create();
-  else T.setTarget(tabId);
+  if (tabId === null) {
+    tabId = await T.create();
+    a.created = true;
+  } else T.setTarget(tabId);
+  a.tabId = tabId;
   await C.attach(tabId).catch(() => {});
   const nav = await T.navigate(tabId, a.url, LOAD_MS);
   await page(tabId, "act.settle", [300, 3000, 0, 150], 0, 8000).catch(() => {});
@@ -102,6 +111,56 @@ async function open(a, tab) {
 
 function withKeys(out, res) {
   return res && res.keys && res.keys.length ? { out, keys: res.keys } : out;
+}
+
+async function net(a, tab) {
+  const tabId = await tabOf(tab);
+  const list = C.netList(tabId);
+  if (a.op !== "body") return { calls: list.map((x) => ({ id: x.id, url: x.url, status: x.status, size: x.size })) };
+  const hit = list.find((x) => x.id === a.id);
+  if (!hit) throw new Error("that call is gone -> try: lighting net");
+  const b = await C.netBody(tabId, hit.id).catch((e) => {
+    throw new Error("the browser no longer has that answer (" + String(e.message || e).slice(0, 60) + ") -> reload and try again");
+  });
+  const text = b.base64Encoded ? new TextDecoder().decode(Uint8Array.from(atob(b.body), (c) => c.charCodeAt(0))) : b.body;
+  return { url: hit.url, size: hit.size, body: text.slice(0, 200000) };
+}
+
+const TOOL_LIST = "JSON.stringify({ api: !!(document.modelContext || navigator.modelContext), tools: [...(window.__ltWebMCP || new Map()).values()].map((t) => ({ name: t.name, description: String(t.description || '').slice(0, 200), readOnly: !!(t.annotations && t.annotations.readOnlyHint), schema: t.inputSchema || null })) })";
+
+async function webmcp(a, tab) {
+  const tabId = await tabOf(tab);
+  if (a.op === "list") return JSON.parse(await C.evaluate(tabId, TOOL_LIST));
+  const name = JSON.stringify(String(a.name || ""));
+  const args = JSON.stringify(a.args || {});
+  const code = "(async () => { const t = (window.__ltWebMCP || new Map()).get(" + name + "); if (!t) throw new Error('no tool ' + " + name + "); const r = await t.execute(" + args + ", { requestUserInteraction: async (cb) => cb() }); return JSON.stringify(r === undefined ? null : r); })()";
+  return { result: await C.evaluate(tabId, code) };
+}
+
+async function pageExtras(tabId) {
+  const bigJson = C.netList(tabId).filter((x) => x.size > 1024).length;
+  const tools = await C.evaluate(tabId, "window.__ltWebMCP ? window.__ltWebMCP.size : 0").catch(() => 0);
+  return { net: bigJson, webmcp: tools || 0 };
+}
+
+async function mediaAudio(a, tab) {
+  const tabId = await tabOf(tab);
+  let ref = a.ref;
+  if (!ref) {
+    const found = await page(tabId, "firstMedia", []);
+    if (found.none) throw new Error("no video or audio on this page -> try: lighting listen <url>");
+    ref = found.ref;
+  }
+  if (a.op === "cues") return Object.assign({ ref }, await page(tabId, "media", [ref, "cues"], 0, 8000));
+  const t = await chrome.tabs.get(tabId);
+  const muted = !!(t.mutedInfo && t.mutedInfo.muted);
+  if (!muted) await chrome.tabs.update(tabId, { muted: true }).catch(() => {});
+  try {
+    if (typeof a.from === "number") await page(tabId, "media", [ref, "seek", a.from], 0, 12000);
+    return Object.assign({ ref }, await page(tabId, "media", [ref, "record", a.ms], 0, a.ms + 20000));
+  } finally {
+    if (!muted) await chrome.tabs.update(tabId, { muted: false }).catch(() => {});
+  }
 }
 
 async function history(kind, tab) {
@@ -565,7 +624,8 @@ async function route(cmd, a, tab) {
     }
     case "cleanup": {
       await T.paint("green");
-      const tabs = await T.groupTabs();
+      const only = Array.isArray(a.only) ? new Set(a.only.map((x) => T.rid(x)).filter((x) => x !== null)) : null;
+      const tabs = (await T.groupTabs()).filter((t) => !only || only.has(t.id));
       const shut = a.close === false ? [] : tabs.filter((t) => !t.active).map((t) => t.id);
       if (shut.length) await chrome.tabs.remove(shut).catch(() => {});
       if (shut.includes(T.getTarget())) T.setTarget(null);
@@ -617,6 +677,12 @@ async function route(cmd, a, tab) {
       return wait(a, tab);
     case "search-field":
       return page(await tabOf(tab), "act.searchField", []);
+    case "media-audio":
+      return mediaAudio(a, tab);
+    case "net":
+      return net(a, tab);
+    case "webmcp":
+      return webmcp(a, tab);
     case "expect":
       return expect(a, tab);
     case "js":

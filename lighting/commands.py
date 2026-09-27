@@ -16,8 +16,10 @@ ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes",
 
 
 class Context:
-    def __init__(self, daemon):
+    def __init__(self, daemon, sid=""):
         self.d = daemon
+        self.sid = sid
+        self.used = time.time()
         self.cfg = D.config()
         self.target = None
         self.secret = None
@@ -28,6 +30,13 @@ class Context:
         self.last_target = None
         self.where = None
         self.no_learn = False
+        self.tabs = []
+        self.owned = set()
+        self.prompts = []
+        self.told = {}
+        self.ep = None
+        self.run_stack = []
+        self.quiet_steps = 0
 
     def kind(self):
         return self.target[0] if self.target else None
@@ -133,6 +142,9 @@ def route(ctx, name, pos, flags):
     if name in CHAT:
         from lighting import chat
         return getattr(chat, "cmd_" + name)(ctx, pos, flags)
+    if name == "listen":
+        from lighting import audio
+        return audio.cmd_listen(ctx, pos, flags)
     if name in APP_ONLY:
         return getattr(app(), "cmd_" + name)(ctx, pos, flags)
     if name in SHARED:
@@ -345,13 +357,22 @@ def browsers(ctx, cmd, args=None):
 
 def cmd_done(ctx, pos, flags):
     quiet = flags.get("quiet")
+    scope = {"only": sorted(ctx.owned)} if ctx.sid else {}
     if not ctx.cfg.get("cleanup"):
-        browsers(ctx, "cleanup", {"close": False})
+        browsers(ctx, "cleanup", dict(scope, close=False))
         return "" if quiet else "left everything open (cleanup is off: lighting config cleanup on)"
-    replies = browsers(ctx, "cleanup")
+    if ctx.sid and not ctx.owned and not app().state(ctx).launched:
+        return "" if quiet else "nothing to close"
+    replies = browsers(ctx, "cleanup", scope)
     tabs = sum(r.get("closed") or 0 for r in replies)
     viewed = sum(r.get("kept") or 0 for r in replies)
-    closed, left = app().cleanup(ctx)
+    closed, left = [], []
+    for c in [ctx] if ctx.sid else list(ctx.d.ctxs.values()) or [ctx]:
+        got = app().cleanup(c)
+        closed += got[0]
+        left += got[1]
+    if ctx.sid:
+        ctx.owned = set()
     if quiet:
         return ""
     parts = ([plural(tabs, "tab")] if tabs else []) + (
@@ -578,11 +599,13 @@ SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
           "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest}
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
-         "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys"}
+         "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys",
+         "listen", "unread", "net", "tools"}
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}
 APP_ONLY = {"windows", "focus", "clip", "launch"}
-CHAT = {"inbox", "reply"}
+CHAT = {"inbox", "reply", "unread"}
 WEB_ONLY = {"open", "text", "fill", "select", "check", "wait", "expect", "table", "fetch", "js", "dismiss", "search",
+            "net", "tools", "call",
             "upload", "tabs", "tab", "close", "back", "forward", "reload", "dialog", "downloads", "console", "viewport",
             "frames"}
 

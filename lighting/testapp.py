@@ -101,7 +101,7 @@ def chat():
     wndproc = WNDPROC(proc)
     wc = WNDCLASSW(0, wndproc, 0, 0, inst, None, user32.LoadCursorW(None, 32512), 16, None, "LightingTestChat")
     user32.RegisterClassW(ctypes.byref(wc))
-    hwnd = user32.CreateWindowExW(0, "LightingTestChat", "Lighting Test Chat", 0x10CF0000, 260, 240, 420, 360,
+    hwnd = user32.CreateWindowExW(0, "LightingTestChat", "Lighting Test Chat", 0x10CF0000, 260, 240, 640, 360,
                                   None, None, inst, None)
     font = gdi32.GetStockObject(17)
 
@@ -116,6 +116,11 @@ def chat():
     make("STATIC", "Nachricht an Test:", 0, 16, 244, 300, 20, 0)
     box["edit"] = make("EDIT", "", 0x00010080, 16, 266, 370, 26, 201)
     add("peer: hi, welcome")
+    make("STATIC", "Kanaele", 0, 400, 10, 200, 20, 0)
+    rooms = make("LISTBOX", "", 0x00200001, 400, 32, 200, 200, 210)
+    for room in ("Friends, 3 unread messages", "2 mentions General", "Unread messages, News", "Quiet room"):
+        buf = ctypes.create_unicode_buffer(room)
+        user32.SendMessageW(rooms, 0x0180, 0, ctypes.addressof(buf))
     user32.ShowWindow(hwnd, 5)
     msg = W.MSG()
     while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:

@@ -9,7 +9,8 @@ DESCRIPTION = (
     "The user's real logged-in browser and any Windows app, as short text. One lighting command line per call: "
     "open <url> [-f a|b] | snap [-f a|b] | click e12|\"Sign in\" | fill \"Email=a@b.c\" --submit | type e3 hi | "
     "press Enter | text | read <url> | do \"a; b\" | windows | snap w2 | click d5 | read w2 (OCR) | frames e40 | "
-    "reply \"@Name\" \"hi\" --wait | inbox \"@Name\" | keys. Refs: e web, d app, o screen text, w window, t tab. "
+    "reply \"@Name\" \"hi\" --wait | inbox \"@Name\" | listen (video sound) | keys. Refs: e web, d app, o screen text, "
+    "w window, t tab. "
     "-f after an action shows its result. Repeated task: run <name or words>. More: help"
 )
 TOOL = {

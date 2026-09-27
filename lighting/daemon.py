@@ -100,6 +100,7 @@ class Daemon:
         self.hosts_seen = set()
         self.lock = threading.Lock()
         self.abort_gen = 0
+        self.ctxs = {}
 
     def add_host(self, conn, hello):
         host = Host(self, conn, hello)
@@ -146,7 +147,7 @@ class Daemon:
             if not conn.poll(10):
                 raise TimeoutError()
             raw = conn.recv_bytes()
-            fast = raw.startswith(ipc.FAST)
+            fast = ipc.is_fast(raw)
             msg = ipc.decode_fast(raw) if fast else json.loads(raw.decode("utf-8"))
         except (EOFError, OSError, ValueError, TimeoutError, IndexError):
             conn.close()
@@ -176,26 +177,36 @@ class Daemon:
         if res.get("shutdown"):
             os._exit(0)
 
+    def context(self, commands, sid):
+        now = time.time()
+        for key in [k for k, c in self.ctxs.items() if k and now - c.used > D.SESSION_IDLE_S]:
+            del self.ctxs[key]
+        ctx = self.ctxs.get(sid)
+        if ctx is None:
+            ctx = self.ctxs[sid] = commands.Context(self, sid)
+        ctx.used = now
+        return ctx
+
     def worker(self):
         from lighting import commands
-        ctx = commands.Context(self)
         waits = []
         while True:
-            left = max(0.0, min(p.due for p, _ in waits) - time.time()) if waits else None
+            left = max(0.0, min(p.due for p, _, _ in waits) - time.time()) if waits else None
             try:
                 msg, reply = self.jobs.get(timeout=left)
             except queue.Empty:
                 msg = reply = None
             if msg is not None:
                 self.abort.clear()
+                ctx = self.context(commands, msg.get("sid") or "")
                 res = self.guarded(lambda: commands.run(ctx, msg))
                 if res.get("pending"):
-                    waits.append((res["pending"], reply))
+                    waits.append((res["pending"], reply, ctx))
                 else:
                     reply.put(res)
             now = time.time()
             for w in [w for w in waits if w[0].due <= now or w[0].gen != self.abort_gen]:
-                res = self.guarded(lambda: commands.poll_pending(ctx, w[0]))
+                res = self.guarded(lambda: commands.poll_pending(w[2], w[0]))
                 if res is not None:
                     waits.remove(w)
                     w[1].put(res)

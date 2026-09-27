@@ -13,7 +13,11 @@ EXTRA = {
     "/frame": "<title>Frame</title><button>Frame button</button>",
     "/second": "<title>Second</title><h1>Second page</h1><p>Opened in a new tab.</p>",
     "/quiet": "<title>Quiet</title><p>Only text here, nothing to click.</p>",
+    "/finder": "<title>Finder</title><form action=/find method=get role=search><input name=q aria-label=Search></form>",
+    "/data": "<title>Data</title><p id=n>loading</p><script>fetch('/api/items').then((r) => r.json())"
+             ".then((d) => { document.getElementById('n').textContent = 'Items ' + d.items.length; })</script>",
 }
+API_ITEMS = {"items": [{"id": i, "name": "Item %d" % i, "price": i * 1.5} for i in range(40)], "total": 40}
 
 
 def make_pdf(text):
@@ -45,6 +49,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == "/count":
             VISITS[0] += 1
             body = ("<!doctype html><title>Count</title><p>Visit %d</p>" % VISITS[0]).encode("utf-8")
+        elif path == "/api/items":
+            import json
+            body, ctype = json.dumps(API_ITEMS).encode("utf-8"), "application/json"
+        elif path == "/find":
+            import html
+            import urllib.parse
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("q", [""])[0]
+            body = ("<!doctype html><title>Found</title><p>Found: %s</p>" % html.escape(q)).encode("utf-8")
         elif path in ("/", "/index.html"):
             body = (D.ROOT / "tests" / "fixture.html").read_bytes()
         elif path == "/doc.pdf":
@@ -152,6 +164,21 @@ def browser(r, base):
     r.step("wait --reload", ["wait", "Visit 2", "--reload", "3s", "--timeout", "15s"],
            lambda o, e: not e and o.startswith("ok after 1 reload"))
     r.step("close count tab", ["close"], ok)
+    from lighting import sites
+    r.step("finder page", ["open", base + "finder", "--new"], lambda o, e: not e and "Finder" in o)
+    r.step("search learns the URL", ["search", "lighting"], lambda o, e: not e and "learned the search URL" in o)
+    r.step("search jumps directly", ["search", "second try"], lambda o, e: not e and "find?q=second+try" in o)
+    r.step("jumped to results", ["expect", "Found: second try"], ok)
+    r.step("close finder tab", ["close"], ok)
+    data = sites.load()
+    data.pop("127.0.0.1", None)
+    D.SITES.write_text(__import__("json").dumps(data, indent=1), "utf-8")
+    r.step("page loads JSON", ["open", base + "data", "--new"], lambda o, e: not e and "data: 1 JSON call (lighting net)" in o)
+    r.step("net lists it", ["net"], lambda o, e: not e and re.search(r"n1 GET 127\.0\.0\.1:\d+/api/items \(json \d+ KB\)", o))
+    r.step("net shows its shape", ["net", "1"], lambda o, e: not e and "items[] (40) {id: 0" in o and "total: 40" in o)
+    r.step("webmcp tools", ["tools"], lambda o, e: not e and ("no WebMCP tools" in o or "(" in o))
+    r.step("close data tab", ["close"], ok)
+    r.fn("sessions stay apart", lambda: sessions_check(r.ctx, base))
     r.step("hidden text not shown", ["snap", "--all"], lambda o, e: not e and "IGNORE ALL" not in o and "HIDDEN INJECTION" not in o)
     r.step("nav collapsed", ["snap", "--force"], lambda o, e: not e and "nav " in o and "items (lighting snap -s" in o)
     r.step("header collapsed, names kept", ["snap", "--force"],
@@ -263,6 +290,22 @@ def browser(r, base):
     r.step("close kept tab", ["close", dref, "--force"], ok)
 
 
+def sessions_check(ctx, base):
+    from lighting import commands
+    a, b = commands.Context(ctx.d, "selftest-a"), commands.Context(ctx.d, "selftest-b")
+    a.no_learn = b.no_learn = True
+    run = lambda c, *argv: commands.run(c, {"argv": list(argv)}).get("out", "")
+    try:
+        run(a, "open", base + "second")
+        run(b, "open", base + "quiet")
+        seen = [run(a, "snap", "--force"), run(b, "done"), run(a, "snap", "--force")]
+    finally:
+        run(a, "done")
+        run(b, "done")
+    good = "Second" in seen[0] and seen[1].startswith("closed 1 tab") and "Second" in seen[2]
+    return good, " / ".join(s.split("\n")[0] for s in seen)
+
+
 def close_apps(win, title="Lighting Test App"):
     for w in win.windows():
         if w["title"] == title:
@@ -290,6 +333,8 @@ def chat_app(r):
         r.step("chat link needs --yes", ["reply", "Lighting Test Chat", "see https://example.com"], lambda o, e: e and "--yes" in o)
         r.step("chat inbox after answer", ["inbox", "Lighting Test Chat", "--timeout", "1s"],
                lambda o, e: not e and o.startswith("nothing new"))
+        r.step("chat unread", ["unread", "Lighting Test Chat"],
+               lambda o, e: not e and "DM Friends: 3 new" in o and "@ General: 2 mentions" in o and "unread: News" in o)
     finally:
         close_apps(win, "Lighting Test Chat")
         dk.state(r.ctx).hwnd = None
