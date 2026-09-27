@@ -36,6 +36,9 @@ search URLs that are learned, data behind pages, routines that use routines, Web
 ### Fixed
 - Tab aliases (`t14`) were never resolved when passed as the target, so `wait --reload` could reload the wrong tab.
 - `type` into a terminal sent Ctrl+A first, which arrived as `^A`.
+- Review round: `listen` through MCP gave up after 180 s (now waits as long as the listen may take); `wait 3000`
+  needed a tab; a task with the same steps as a saved routine was learned again as `-2`; one-letter key hints like
+  YouTube's `Pause (k)` stayed in names and were not remembered as shortcuts; smaller network buffers per tab.
 
 ## [0.8.0] - 2026-09-27
 

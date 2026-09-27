@@ -348,6 +348,26 @@ def test_learned_steps_reuse_routines():
     assert routines.compact(steps[1:], [inner]) == steps[1:]
 
 
+def test_same_steps_as_a_saved_routine_are_not_learned_again():
+    import time
+
+    class C:
+        class d:
+            events = []
+
+    step = lambda c, a: {"cmd": c, "args": [a], "flags": {}, "where": {"kind": "web", "url": "https://x.com/a", "title": "A"}}
+    saved = routines.new_routine({"params": {}, "steps": [step("open", "x.com/a"), step("click", "Go")], "check": None},
+                                 "saved", 10)
+    saved["name"] = "x-go"
+    routines.save(saved)
+    try:
+        ep = {"steps": [step("open", "x.com/b"), step("click", "Stop")], "via": None, "start": step("open", "")["where"],
+              "cost": 10, "t0": time.time()}
+        assert routines.learn(C(), ep, [ep]) is None
+    finally:
+        routines.path("x-go").unlink()
+
+
 def test_json_shape():
     from lighting.browser import shape
     s = shape({"items": [{"id": 1, "name": "a"}], "total": 2, "meta": {"q": "x"}})

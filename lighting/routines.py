@@ -498,7 +498,7 @@ def learn(ctx, ep, past):
     if all(s["cmd"] in NAV_ONLY for s in ep["steps"]):
         return None
     for r in rs:
-        if covers(r, ep["steps"]) is not None or (r.get("source") == "learned" and same_shape(r, ep["steps"], ep["start"])):
+        if covers(r, ep["steps"]) is not None or same_shape(r, ep["steps"], ep["start"]):
             r["stats"]["seen"] = r["stats"].get("seen", 0) + 1
             save(r)
             return None

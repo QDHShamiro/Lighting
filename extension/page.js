@@ -8,6 +8,7 @@
     'a[href],button,input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="combobox"],[role="textbox"],[role="searchbox"],[role="slider"],[role="spinbutton"],[role="treeitem"],[contenteditable=""],[contenteditable="true"]';
   const LANDMARK = 'nav,aside,footer,header,[role="navigation"],[role="complementary"],[role="contentinfo"],[role="banner"]';
   const KEYHINT = /\s*\((?:[a-z0-9] then [a-z0-9]|(?:alt|ctrl|shift|meta|cmd|option|strg|umschalt)(?:[ +-]+(?:alt|ctrl|shift|meta|cmd|option|strg|umschalt|[a-z0-9]))+)\)\s*$/i;
+  const KEYHINT1 = /\s*\(([a-z])\)\s*$/;
   const ITEM = 'li,tr,article,[role="listitem"],[role="row"],[role="article"]';
   const ROLE_INPUT = { checkbox: "checkbox", radio: "radio", range: "slider", number: "spinbutton", search: "searchbox", button: "button", submit: "button", reset: "button", image: "button", file: "file", color: "color", date: "date", "datetime-local": "date", time: "time", month: "date", week: "date" };
   const TEXTISH = new Set(["textbox", "searchbox", "spinbutton", "combobox", "date", "time", "color"]);
@@ -235,9 +236,9 @@
       s = titled ? titled.innerText : (p.innerText || "").trim().split("\n")[0];
     }
     const full = clean(s);
-    const name = full.replace(KEYHINT, "");
+    const name = full.replace(KEYHINT, "").replace(KEYHINT1, "");
     if (name && S.keys.size < 40) {
-      const hint = KEYHINT.exec(full);
+      const hint = KEYHINT.exec(full) || KEYHINT1.exec(full);
       const ks = el.getAttribute("aria-keyshortcuts") || (el.getAttribute("accesskey") ? "alt+" + el.getAttribute("accesskey") : "");
       if (hint) S.keys.set(hint[0].trim().replace(/^\(|\)$/g, ""), name);
       if (ks) S.keys.set(ks, name);

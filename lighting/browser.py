@@ -469,6 +469,9 @@ def spec(pos, flags):
 
 def cmd_wait(ctx, pos, flags):
     s = spec(pos, flags)
+    if "ms" in s and not flags.get("reload"):
+        time.sleep(min(s["ms"], 60000) / 1000.0)
+        return "ok (%d ms)" % min(s["ms"], 60000)
     if flags.get("reload"):
         return wait_reload(ctx, s, flags)
     s["timeout"] = parse_ms(flags.get("timeout"), 10000)

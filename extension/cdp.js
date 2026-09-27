@@ -55,7 +55,7 @@ export async function attach(tabId) {
   attached.set(tabId, { last: now, runtime: false });
   await send(tabId, "Page.enable").catch(() => {});
   await send(tabId, "Emulation.setFocusEmulationEnabled", { enabled: true }).catch(() => {});
-  await send(tabId, "Network.enable", { maxTotalBufferSize: 20000000, maxResourceBufferSize: 5000000 }).catch(() => {});
+  await send(tabId, "Network.enable", { maxTotalBufferSize: 8000000, maxResourceBufferSize: 2000000 }).catch(() => {});
   await send(tabId, "Page.addScriptToEvaluateOnNewDocument", { source: WEBMCP_HOOK }).catch(() => {});
 }
 

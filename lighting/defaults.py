@@ -55,7 +55,7 @@ JPEG_QUALITY = 70
 OUT_KEEP_HOURS = 24
 LOG_MAX_BYTES = 5_000_000
 
-LONG_WAITS = {"inbox": 300_000, "reply": 300_000, "wait": 10_000}
+LONG_WAITS = {"inbox": 300_000, "reply": 300_000, "wait": 10_000, "listen": 900_000}
 WEB_SCHEMES = {"http", "https", "file", "about", "chrome", "brave", "edge", "view-source", "data", "blob",
                "chrome-extension"}
 RISKY_SCHEMES = {"file", "ms-msdt", "search-ms", "search", "ms-officecmd", "ms-word", "ms-excel", "ms-powerpoint",
