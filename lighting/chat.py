@@ -14,6 +14,13 @@ FIELD_NAME = re.compile(r"(nachricht|message|schreib|write|antwort|reply|mensaje
 TIME_RE = re.compile(r"\b(\d{1,2}:\d{2})(?:\s*[ap]\.?m\.?)?\b", re.I)
 DAY_RE = re.compile(r"\d{4}|heute|gestern|today|yesterday", re.I)
 LINK_RE = re.compile(r"https?://|www\.|discord\.gg/|\b[\w-]+\.(com|de|net|org|gg|io|me|ly|to)/", re.I)
+TREEITEM = 50024
+CHAT_EXES = ("discord.exe", "slack.exe", "whatsapp.exe", "ms-teams.exe", "telegram.exe", "signal.exe")
+UNREAD_DM = re.compile(r"^(.*?)[\s,]*\b(\d+)\s+(?:ungelesene nachricht(?:en)?|unread messages?)\b", re.I)
+UNREAD_AT = re.compile(r"^(\d+)\s+(?:erwähnung(?:en)?|mentions?)\W*\s*(.+)$", re.I)
+UNREAD_ANY = re.compile(r"^(?:ungelesene nachrichten|unread messages?),\s*(.+)$", re.I)
+STATUS = re.compile(r",\s*(?:sprachanruf aktiv|bildschirmübertragung aktiv|voice call active|screen share active|"
+                    r"live|streamt).*$", re.I)
 MEMO = D.HOME / "chat.json"
 _chats = {}
 _conds = {}
@@ -267,6 +274,52 @@ def cmd_inbox(ctx, pos, flags):
     check = watch(ctx, hwnd, base, (flags.get("from") or "").lower(), total)
     res = check(total <= 0)
     return res if res is not None else Pending(check, total, D.CHAT_POLL_S)
+
+
+def unread_of(names):
+    dms, mentions, others = [], [], []
+    for name in names:
+        name = " ".join((name or "").split())
+        m = UNREAD_AT.match(name)
+        if m:
+            mentions.append((int(m.group(1)), STATUS.sub("", m.group(2)).strip(" ,")))
+            continue
+        m = UNREAD_DM.match(name)
+        if m and m.group(1).strip(" ,"):
+            dms.append((int(m.group(2)), STATUS.sub("", m.group(1)).strip(" ,")))
+            continue
+        m = UNREAD_ANY.match(name)
+        if m:
+            others.append(STATUS.sub("", m.group(1)).strip(" ,"))
+    return sorted(set(dms), key=lambda x: -x[0]), sorted(set(mentions), key=lambda x: -x[0]), list(dict.fromkeys(others))
+
+
+def chat_window(ctx, spec):
+    if spec:
+        return resolve(ctx, spec)
+    from lighting import desktop
+    for w in win.windows():
+        if (w["exe"] or "").lower() in CHAT_EXES:
+            desktop.state(ctx).hwnd = w["hwnd"]
+            ctx.target = ("app", w["hwnd"])
+            return w["hwnd"]
+    return desktop.target(ctx)
+
+
+def cmd_unread(ctx, pos, flags):
+    from lighting import desktop
+    hwnd = chat_window(ctx, pos[0] if pos else None)
+    root = api()[0].ElementFromHandle(hwnd)
+    names = [props(el)[1] for el in find_all(root, 4, TREEITEM) + find_all(root, 4, ITEM)]
+    dms, mentions, others = unread_of(names)
+    head = "unread [%s] %s" % (desktop.wref(ctx, hwnd), win.text_of(hwnd)[:50])
+    if not (dms or mentions or others):
+        return head + "\nnothing unread"
+    lines = [head] + ["DM %s: %d new" % (n, c) for c, n in dms[:8]] + ["@ %s: %d mention%s" % (n, c, "" if c == 1 else "s")
+                                                                        for c, n in mentions[:8]]
+    if others:
+        lines.append("unread: " + ", ".join(others[:15]) + (" (+%d)" % (len(others) - 15) if len(others) > 15 else ""))
+    return "\n".join(lines)
 
 
 def composer(hwnd):

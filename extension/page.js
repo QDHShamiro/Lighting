@@ -8,6 +8,7 @@
     'a[href],button,input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="combobox"],[role="textbox"],[role="searchbox"],[role="slider"],[role="spinbutton"],[role="treeitem"],[contenteditable=""],[contenteditable="true"]';
   const LANDMARK = 'nav,aside,footer,header,[role="navigation"],[role="complementary"],[role="contentinfo"],[role="banner"]';
   const KEYHINT = /\s*\((?:[a-z0-9] then [a-z0-9]|(?:alt|ctrl|shift|meta|cmd|option|strg|umschalt)(?:[ +-]+(?:alt|ctrl|shift|meta|cmd|option|strg|umschalt|[a-z0-9]))+)\)\s*$/i;
+  const KEYHINT1 = /\s*\(([a-z])\)\s*$/;
   const ITEM = 'li,tr,article,[role="listitem"],[role="row"],[role="article"]';
   const ROLE_INPUT = { checkbox: "checkbox", radio: "radio", range: "slider", number: "spinbutton", search: "searchbox", button: "button", submit: "button", reset: "button", image: "button", file: "file", color: "color", date: "date", "datetime-local": "date", time: "time", month: "date", week: "date" };
   const TEXTISH = new Set(["textbox", "searchbox", "spinbutton", "combobox", "date", "time", "color"]);
@@ -144,6 +145,50 @@
       while (el.readyState < 2 && Date.now() - t0 < 3000) await new Promise((res) => setTimeout(res, 50));
       await painted();
     }
+    if (op === "cues") {
+      for (const x of el.textTracks) if (x.mode === "disabled" && (x.kind === "subtitles" || x.kind === "captions")) x.mode = "hidden";
+      const t0 = Date.now();
+      let track = null;
+      while (!track && Date.now() - t0 < 1500) {
+        track = [...el.textTracks].find((x) => x.cues && x.cues.length);
+        if (!track) await new Promise((res) => setTimeout(res, 100));
+      }
+      return { cues: track ? [...track.cues].map((c) => [c.startTime, clean(String(c.text || "").replace(/<[^>]+>/g, " "))]) : [], lang: track ? track.language : "", duration: isFinite(el.duration) ? el.duration : 0 };
+    }
+    if (op === "record") {
+      const cap = el.captureStream ? el.captureStream() : null;
+      const tracks = cap ? cap.getAudioTracks() : [];
+      if (!tracks.length) return { error: "no audio track to record (no sound, or the site blocks capturing)" };
+      const rec = new MediaRecorder(new MediaStream(tracks), { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 32000 });
+      const chunks = [];
+      rec.ondataavailable = (e) => {
+        if (e.data && e.data.size) chunks.push(e.data);
+      };
+      const was = { muted: el.muted, volume: el.volume, paused: el.paused };
+      el.muted = false;
+      if (el.volume === 0) el.volume = 1;
+      const start = el.currentTime;
+      rec.start(1000);
+      let blocked = false;
+      if (el.paused) await el.play().catch(() => (blocked = true));
+      if (blocked) {
+        el.muted = true;
+        await el.play().catch(() => {});
+      }
+      const t0 = Date.now();
+      while (Date.now() - t0 < t && !el.ended && !el.paused) await new Promise((res) => setTimeout(res, 200));
+      await new Promise((res) => {
+        rec.onstop = res;
+        rec.stop();
+      });
+      el.muted = was.muted;
+      el.volume = was.volume;
+      if (was.paused && !el.paused) el.pause();
+      const buf = new Uint8Array(await new Blob(chunks, { type: "audio/webm" }).arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
+      return { audio: btoa(bin), start, seconds: (Date.now() - t0) / 1000, blocked };
+    }
     if (op === "restore" && S.media && S.media.el === el) {
       const m = S.media;
       S.media = null;
@@ -191,9 +236,9 @@
       s = titled ? titled.innerText : (p.innerText || "").trim().split("\n")[0];
     }
     const full = clean(s);
-    const name = full.replace(KEYHINT, "");
+    const name = full.replace(KEYHINT, "").replace(KEYHINT1, "");
     if (name && S.keys.size < 40) {
-      const hint = KEYHINT.exec(full);
+      const hint = KEYHINT.exec(full) || KEYHINT1.exec(full);
       const ks = el.getAttribute("aria-keyshortcuts") || (el.getAttribute("accesskey") ? "alt+" + el.getAttribute("accesskey") : "");
       if (hint) S.keys.set(hint[0].trim().replace(/^\(|\)$/g, ""), name);
       if (ks) S.keys.set(ks, name);
@@ -693,5 +738,11 @@
     return out;
   }
 
-  globalThis.__lt = { S, get, ref, roleOf, nameOf, hintOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, media, INTERACTIVE, CONTROL };
+  function firstMedia() {
+    const all = [...document.querySelectorAll("video,audio")];
+    const el = all.find((e) => !e.paused) || all.find((e) => e.readyState > 0) || all[0];
+    return el ? { ref: ref(el), duration: isFinite(el.duration) ? el.duration : 0 } : { none: true };
+  }
+
+  globalThis.__lt = { S, get, ref, roleOf, nameOf, hintOf, clean, trunc, q, describe, covered, frameOffset, snap, diff, rect, candidates, line, media, firstMedia, INTERACTIVE, CONTROL };
 })();

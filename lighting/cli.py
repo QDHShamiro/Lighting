@@ -35,7 +35,7 @@ def execute(argv):
     from lighting import boot
     argv, secret = pull_secret(argv)
     boot.ensure_venv()
-    payload = {"argv": argv, "cwd": os.getcwd()}
+    payload = {"argv": argv, "cwd": os.getcwd(), "sid": os.environ.get("CLAUDE_CODE_SESSION_ID", "")}
     if secret is not None:
         payload["secret"] = secret
     return boot.request(payload, max(D.CLIENT_TIMEOUT, wait_seconds(argv) + 30))

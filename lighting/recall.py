@@ -12,8 +12,6 @@ machen mal me mein meine mich mir mit my nach nicht noch nur oder of on or pleas
 unter vom von vor was we wie will wir with wo you zu zum zur über lighting claude okay ok jetzt schnell einfach
 """.split())
 TOKEN = re.compile(r"[@#]|[^\W\d_][\w-]*", re.U)
-_prompts = []
-_told = {}
 
 
 def words(text):
@@ -59,17 +57,17 @@ def fits(prompt_stems, r):
     return (app_hit and other >= 1) or other >= 2
 
 
-def note_prompt(text):
+def note_prompt(prompts, text):
     ws = words(text)
     if ws:
-        _prompts.append((time.time(), ws))
-        del _prompts[:-5]
+        prompts.append((time.time(), ws))
+        del prompts[:-5]
 
 
-def tags_for(t0, params):
+def tags_for(prompts, t0, params):
     vals = {w for v in (params or {}).values() for w in words(str(v))}
     best = None
-    for t, ws in _prompts:
+    for t, ws in prompts:
         if t <= t0 + 5 and t0 - t < 1800:
             best = ws
     if not best:
@@ -89,14 +87,14 @@ def cmd_suggest(ctx, pos, flags):
         prompt = json.loads(raw).get("prompt") or ""
     except (ValueError, AttributeError):
         prompt = raw
-    note_prompt(prompt)
+    note_prompt(ctx.prompts, prompt)
     stems = {stem(w) for w in words(prompt)}
     if len(stems) < 2:
         return ""
     now = time.time()
     hits = []
     for r in routines.load_all():
-        if r.get("flaky") or now - _told.get(r["name"], 0) < D.SUGGEST_EVERY_S or not fits(stems, r):
+        if r.get("flaky") or now - ctx.told.get(r["name"], 0) < D.SUGGEST_EVERY_S or not fits(stems, r):
             continue
         app_hit, other = score(stems, r)
         hits.append((app_hit, other, r.get("stats", {}).get("ok", 0), r))
@@ -105,7 +103,7 @@ def cmd_suggest(ctx, pos, flags):
     hits.sort(key=lambda h: (h[0], h[1], h[2]), reverse=True)
     lines = []
     for *_, r in hits[:2]:
-        _told[r["name"]] = now
+        ctx.told[r["name"]] = now
         lines.append("Lighting routine fits this request (one call, swap the values): %s" % routines.usage(r))
     return "\n".join(lines)
 

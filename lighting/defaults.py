@@ -55,7 +55,7 @@ JPEG_QUALITY = 70
 OUT_KEEP_HOURS = 24
 LOG_MAX_BYTES = 5_000_000
 
-LONG_WAITS = {"inbox": 300_000, "reply": 300_000, "wait": 10_000}
+LONG_WAITS = {"inbox": 300_000, "reply": 300_000, "wait": 10_000, "listen": 900_000}
 WEB_SCHEMES = {"http", "https", "file", "about", "chrome", "brave", "edge", "view-source", "data", "blob",
                "chrome-extension"}
 RISKY_SCHEMES = {"file", "ms-msdt", "search-ms", "search", "ms-officecmd", "ms-word", "ms-excel", "ms-powerpoint",
@@ -69,6 +69,11 @@ KEYS = HOME / "keys.json"
 KEY_HINT_EVERY_S = 7200
 SUGGEST_EVERY_S = 600
 PRUNE_DAYS = 14
+SESSION_IDLE_S = 12 * 3600
+SITES = HOME / "sites.json"
+LISTEN_MAX_S = 300
+LISTEN_TIMEOUT_S = 900
+LISTEN_CHARS = 1800
 
 IDLE_MS = 300
 BLITZ_WAIT_MS = 3000
@@ -86,6 +91,7 @@ CONFIG_DEFAULTS = {
     "shot_width": SHOT_WIDTH,
     "learn": True,
     "cleanup": True,
+    "audio": "auto",
 }
 
 RISK_WORDS = [

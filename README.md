@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-111111?style=flat-square" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-113%2F113-111111?style=flat-square" alt="113/113 selftest">
+  <img src="https://img.shields.io/badge/selftest-125%2F125-111111?style=flat-square" alt="125/125 selftest">
   <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
   <br>
@@ -246,7 +246,7 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **113/113** (browser, desktop and chat, cold start included). Unit tests: `python tests/test_units.py` (16/16), `cargo test` in `client/`.
+- `lighting selftest`: **125/125** (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (24/24), `cargo test` in `client/`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - Filling and submitting a form: ~160 ms.
 - GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
@@ -271,6 +271,10 @@ your logged-in browser and your apps, cheaply.
 
 ## What's new
 
+- **0.9.0** Hears videos: `listen` says what a TikTok or YouTube video says (captions, else speech-to-text), also
+  for logged-in videos by recording the tab. Every Claude session keeps its own tabs and cleans up only those;
+  `unread` shows waiting Discord messages; `search youtube "x"` jumps to results and learns new sites; `net` shows
+  the JSON behind a page; Discord snapshots are 36% smaller; routines call routines; WebMCP tools.
 - **0.8.0** Chats and fewer rounds: `reply "@Name" "hi" --wait` sends in Discord and waits for the answer in one
   call, `inbox` reads new messages in full; `-f` after any action shows its result; `wait --reload` instead of
   sleep loops; `search`, `open --text`, app links (`obsidian://`); desktop actions report what changed;

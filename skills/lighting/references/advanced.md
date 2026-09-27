@@ -16,9 +16,13 @@
 - `lighting fetch /api/me --pick login` runs fetch() inside the page with the user's cookies and returns compact JSON. `--pick data.items[].name` selects fields. `--method POST --body '{"a":1}'` for writes (not on blocked sites).
 - `lighting table e8` or `table #prices` returns a table as tab-separated rows.
 - `lighting read <url>` asks the server for markdown (Accept: text/markdown) and falls back to cleaned HTML. It sees no JavaScript content and no login: use `open` + `text` for those.
+- The data behind a page: Lighting keeps the JSON answers (GET) of its tabs. `open` says `data: 3 JSON calls (lighting net)`; `lighting net [-f word]` lists them, `net 2` shows their shape (`items[] (40) {id, name, price}, total: 40`), then `fetch <url> --pick items[].name` gets exactly that, often instead of reading the page. Nothing is sent again by itself.
+- `search youtube "lofi"` (or `search "words"` on the current site) opens the result page directly when the search URL is known (seeds for YouTube, GitHub, Google, Wikipedia, Amazon, Modrinth, SpigotMC, TikTok, Reddit, DuckDuckGo). Otherwise it uses the search field once and learns the URL (`! learned the search URL of ...`), kept in `~/.lighting/sites.json`.
+- WebMCP (pages that offer tools to AI, Chrome origin trial): `open` says `webmcp: 2 tools (lighting tools)`; `lighting tools` lists them, `lighting call <tool> '{"q": "x"}'` runs one. Tools that can change something need `--yes`.
 
 ## Tabs and browsers
 - Lighting works in its own orange tab group "Lighting". `open -n` opens another tab.
+- Every Claude session has its own tabs (it sends `CLAUDE_CODE_SESSION_ID`): its commands go to its own last tab, a session without a tab gets `this session has no tab yet` instead of touching another session's tab, and `done` at the end of a reply closes only that session's tabs and apps. `lighting tabs` + `tab t3` borrows any tab. Calls without a session (a plain terminal) share one context as before.
 - `lighting tabs` lists all tabs (`L` = Lighting group, `*` = current target, `a` = active). `lighting tab t3` works in any tab, including the user's own.
 - Links that open a new tab switch the target automatically (`! new tab t9 opened from t4`).
 - `close` only closes Lighting tabs unless you add `--force`.
@@ -47,7 +51,7 @@
 - `cannot script this page` (brave://, chrome://, Web Store, PDF viewer) -> use desktop control on the browser window: `lighting snap w1 --web`.
 - `dialog open: confirm "..."` -> `lighting dialog accept` or `dismiss`.
 - Something hangs: `lighting stop` restarts the background process on the next call.
-- `lighting selftest` runs 113 checks (browser, desktop, chat). `lighting bench --real` times six real sites and compares with the last run.
+- `lighting selftest` runs 125 checks (browser, desktop, chat, sessions). `lighting bench --real` times six real sites and compares with the last run.
 
 ## Routines (learned tasks)
 - Every successful action is kept with a stable target (`click e12` is stored as `click "Sign in"`, desktop `d5` by its name). Reads (snap, text, shot) only count as cost.
@@ -55,6 +59,7 @@
 - Starting a known task prints `! routine X can finish this in one call: lighting run X search=...` after the first matching step.
 - Even earlier: a hook reads the user's message and, when a routine fits (its app plus a word, or two words of its name and tags), adds one line to the prompt: `Lighting routine fits this request (one call, swap the values): lighting run discord-markieren user=Luis text='hi'`. Nothing fits: nothing is added (0 tokens). The same routine is named at most every 10 minutes.
 - Routines keep the words of the request they were learned from as tags (`markiere`, `discord`, `@`; parameter values left out), so the next request in other words still finds them. Name saved routines by intent in the user's words: `routine save discord-markieren user=Tom text=hi`.
+- Routines can use routines: a step `run gh-open page=Tools` runs another one (at most 3 deep, no loops). A `run` in the middle of a task is kept as one step, and a newly learned routine that contains a whole existing routine uses `run` for that part.
 - `lighting run discord markieren user=Tom text=hi` also works without the exact name: words before the `k=v` pairs pick the routine (name, then tags); several fit equally: the error names them.
 - Clean-up: tasks that only navigate (open, launch, scroll, wait) are not learned, the same steps on the same site update the existing routine instead of adding `-2`, and learned routines never run within 14 days are deleted (saved and recorded ones stay).
 - `lighting run X param=value` replays with fresh lookups: elements that are not there yet are retried for up to 6 s, `matches several` is retried with the first match, steps seen in only one run are optional. Steps that needed `--yes` stop the run unless the run itself gets `--yes`.

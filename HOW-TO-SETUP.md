@@ -115,6 +115,15 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - `suggest` (UserPromptSubmit hook) is on the client's silent path like `done`: never starts the daemon, reads the hook JSON from stdin and passes it as an argument. The daemon answers it without logging and without attaching pending `!` events (they would land in the user's prompt). Matching: stems (first 5 letters) of the prompt against routine name words, tags and its app/site; app + 1 word or 2 words.
 - `routines.persist` keeps `episodes.jsonl` open (line buffered) and trims every 50 writes; `routine forget` closes it first (Windows cannot delete an open file).
 
+- Sessions: the client sends protocol `L2` (`token, cwd, sid, secret, argv`); `sid` is `CLAUDE_CODE_SESSION_ID` (set in every Bash of a Claude session), for `done --quiet`/`suggest` the `session_id` of the hook JSON on stdin when the variable is missing (stdin is read only when it is not a terminal). The daemon keeps one `Context` per sid (`daemon.context`, idle ones dropped after 12 h); routines keep the episode in `ctx.ep`, `recall` the prompts in `ctx.prompts`. Web: `browser.session_tab` passes the session's own tab (`ctx.tabs` MRU, `ctx.owned` = tabs it created or that opened from them); `done` sends `cleanup {only: owned}`. An empty sid means the shared legacy context.
+- `tabs.js resolve()` ignored alias strings (`"t14"`), so every `tab=` passed from Python fell back to the global target. Aliases are resolved through `rid()` now; without that, sessions and `wait --reload` hit whatever tab was the target.
+- Opening a terminal from Git Bash: `wt ... cmd /k claude ...` turned `/k` into a drive path (MSYS conversion) and `cmd` started empty; `claude` is an npm shim only on Bash's PATH (`%APPDATA%\npm\claude.cmd` for cmd). Use `MSYS_NO_PATHCONV=1` or `//k`, and the full `.cmd` path.
+- Pasting into terminals: `put_text` pressed Ctrl+A to select the field first, which a console receives as `^A`. Terminal window classes (`CASCADIA_HOSTING_WINDOW_CLASS`, `ConsoleWindowClass`, mintty, ConEmu, PuTTY) get no Ctrl+A.
+- Sound: `HTMLMediaElement.captureStream()` gives the audio track of MSE videos (YouTube, TikTok) in a background tab; the tab is muted, the element unmuted for the capture (a blocked `play()` falls back to muted playback and says so). `listen` runs yt-dlp/ASR in a thread behind a `Pending`, so the daemon stays free. yt-dlp may skip one caption language silently (YouTube 429 behind `--quiet`); the picker prefers `-orig`, then en, then de. Whisper invents text on music: segments with `no_speech_prob >= 0.6`, low `avg_logprob` with some no-speech probability, or `compression_ratio >= 2.4` are dropped; tags like `[Music]`/`Outro Music` are filtered.
+- Desktop snapshots fold lines that repeat 4+ times without their ref (`desktop.fold`); `st.full` keeps the unfolded lines so `after_action` diffs stay exact.
+- `net`: `Network.enable` on every attached Lighting tab; only XHR/Fetch GET answers with a JSON mime type and status < 400 are kept (30 per tab); the body is fetched with `Network.getResponseBody` only when shown (it can be gone after a reload).
+- WebMCP: `Page.addScriptToEvaluateOnNewDocument` wraps `registerTool`/`unregisterTool`/`provideContext` of `document.modelContext` and `navigator.modelContext` in the main world (`window.__ltWebMCP`); pages attached before the hook need a reload. Brave 154 has no WebMCP without an origin-trial token, so the selftest only checks that `tools` answers.
+
 ## 3. Build order when changing things
 
 1. Python: edit `lighting/*.py`, `py_compile`, then `lighting stop` (next call starts the new daemon).
@@ -129,9 +138,9 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-python tests/test_units.py     # 16/16
+python tests/test_units.py     # 24/24
 cd client && cargo test && cargo clippy --release --all-targets
-lighting selftest              # must print 113/113 passed (112/112 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
+lighting selftest              # must print 125/125 passed (124/124 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
 lighting bench
 lighting bench --real          # compare tokens with the last run
 ```

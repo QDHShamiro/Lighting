@@ -75,7 +75,8 @@ def harvest(app, pairs):
     changed = False
     for combo, what in pairs[:40]:
         k, what = norm(combo), " ".join(str(what).split())[:60]
-        if not k or not what or (k in keys and RANK.get(keys[k].get("src"), 0) >= RANK["ui"]):
+        cur = keys.get(k) or {}
+        if not k or not what or RANK.get(cur.get("src"), 0) > RANK["ui"] or cur.get("what") == what:
             continue
         keys[k] = {"what": what, "src": "ui", "n": 0}
         changed = True

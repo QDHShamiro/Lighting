@@ -104,12 +104,54 @@ def ensure_host(ctx, want=None):
     raise Fail("no browser with the Lighting extension is connected", "lighting setup")
 
 
+NEW_TAB = re.compile(r"new tab (t\d+) opened from (t\d+)")
+SESSION_FREE = {"config", "abort", "reload-extension", "ping", "close-url", "tabs", "downloads", "cleanup", "keep",
+                "tab", "record-start", "record-stop", "record-status"}
+
+
+def session_tab(ctx, cmd, args):
+    if not getattr(ctx, "sid", "") or cmd in SESSION_FREE or (cmd == "close" and args.get("id")):
+        return None
+    if cmd == "open":
+        if args.get("new"):
+            return None
+        if not ctx.tabs:
+            args["new"] = True
+        return ctx.tabs[0] if ctx.tabs else None
+    if not ctx.tabs:
+        raise Fail("this session has no tab yet", "lighting open <url>, or lighting tabs + lighting tab t3 to use one")
+    return ctx.tabs[0]
+
+
+def track(ctx, cmd, msg):
+    if not getattr(ctx, "sid", ""):
+        return
+    t = (msg.get("where") or {}).get("tab")
+    if cmd == "open" and msg.get("created") and t:
+        ctx.owned.add(t)
+    if t and (cmd in ("open", "tab") or t in ctx.owned or (ctx.tabs and ctx.tabs[0] == t)):
+        ctx.tabs = [t] + [x for x in ctx.tabs if x != t]
+    for ev in list(ctx.d.events):
+        m = NEW_TAB.search(ev)
+        if m and m.group(2) in ctx.owned and m.group(1) not in ctx.owned:
+            ctx.owned.add(m.group(1))
+            ctx.tabs = [m.group(1)] + [x for x in ctx.tabs if x != m.group(1)]
+
+
 def call(ctx, cmd, args=None, timeout=D.CALL_TIMEOUT, want=None, tab=None):
     host = ensure_host(ctx, want)
-    msg = host.call(cmd, args or {}, tab=tab, timeout=timeout)
+    args = args if args is not None else {}
+    own = session_tab(ctx, cmd, args) if tab is None else tab
+    msg = host.call(cmd, args, tab=own, timeout=timeout)
     ctx.target = ("web", host.brand)
     if not msg.get("ok"):
-        raise Fail(str(msg.get("error") or "browser error"))
+        err = str(msg.get("error") or "browser error")
+        if tab is None and own and "no tab yet" in err:
+            ctx.tabs = [x for x in ctx.tabs if x != own]
+            ctx.owned.discard(own)
+            return call(ctx, cmd, args, timeout, want)
+        raise Fail(err)
+    track(ctx, cmd, msg)
     if msg.get("target"):
         ctx.last_target = msg["target"]
     if msg.get("where"):
@@ -172,11 +214,97 @@ def cmd_open(ctx, pos, flags):
     if flags.get("text"):
         head = out(ctx, "open", {"url": url, "new": bool(flags.get("new")), "quiet": True}, D.LOAD_TIMEOUT + 10)
         return head.split("\n", 1)[0] + "\n" + cmd_text(ctx, [], flags)
-    res = out(ctx, "open", {"url": url, "new": bool(flags.get("new")), "filter": flags.get("f"), "scope": flags.get("s"),
-                            "media": bool(flags.get("media"))}, D.LOAD_TIMEOUT + 10)
+    msg = call(ctx, "open", {"url": url, "new": bool(flags.get("new")), "filter": flags.get("f"), "scope": flags.get("s"),
+                             "media": bool(flags.get("media"))}, D.LOAD_TIMEOUT + 10)
+    res = cap(msg.get("out", ""), "open", lines=D.SNAP_LINES)
     from lighting import keys
+    extra = keys.hint(keys.app_of(ctx))
+    if msg.get("net"):
+        extra += "\ndata: %d JSON call%s (lighting net)" % (msg["net"], "" if msg["net"] == 1 else "s")
+    if msg.get("webmcp"):
+        extra += "\nwebmcp: %d tool%s (lighting tools)" % (msg["webmcp"], "" if msg["webmcp"] == 1 else "s")
     head, nl, rest = res.partition("\n")
-    return head + keys.hint(keys.app_of(ctx)) + nl + rest
+    return head + extra + nl + rest
+
+
+def shape(data, depth=0):
+    if isinstance(data, list):
+        return "[] (%d)%s" % (len(data), ": " + shape(data[0], depth + 1) if data and depth < 2 else "")
+    if isinstance(data, dict):
+        parts = []
+        for k, v in list(data.items())[:12]:
+            if isinstance(v, list):
+                parts.append("%s[] (%d)%s" % (k, len(v), " {%s}" % shape(v[0], depth + 1) if v and isinstance(v[0], dict) and depth < 2 else ""))
+            elif isinstance(v, dict):
+                parts.append("%s{%s}" % (k, ", ".join(list(v)[:6])) if depth >= 1 else "%s{%s}" % (k, shape(v, depth + 1)))
+            else:
+                s = json.dumps(v, ensure_ascii=False)
+                parts.append("%s: %s" % (k, s if len(s) <= 40 else s[:37] + "..."))
+        more = len(data) - 12
+        return ", ".join(parts) + (", +%d more" % more if more > 0 else "")
+    s = json.dumps(data, ensure_ascii=False)
+    return s if len(s) <= 60 else s[:57] + "..."
+
+
+def cmd_net(ctx, pos, flags):
+    calls = call(ctx, "net", {"op": "list"}).get("calls") or []
+    if not calls:
+        return "no JSON answers seen in this tab yet (only GET calls after Lighting attached; reload to capture)"
+    rows = list(reversed(calls))
+    if pos and pos[0].lstrip("n").isdigit():
+        n = int(pos[0].lstrip("n"))
+        if not 1 <= n <= len(rows):
+            raise Fail("no call n%d" % n, "lighting net")
+        got = call(ctx, "net", {"op": "body", "id": rows[n - 1]["id"]})
+        try:
+            data = json.loads(got.get("body") or "")
+        except ValueError:
+            return "n%d %s: not JSON" % (n, got.get("url"))
+        return "n%d GET %s (%s)\n%s\n-> lighting fetch \"%s\" --pick <path>" % (
+            n, short_url(got.get("url")), kb(got.get("size")), shape(data), got.get("url"))
+    words = terms(flags.get("f"))
+    lines = ["n%d GET %s (json %s)" % (i, short_url(c["url"]), kb(c["size"])) for i, c in enumerate(rows, 1)
+             if not words or hit(words, c["url"])]
+    return "\n".join(lines or ["no call matches"]) + "\n-> lighting net <n> shows the data"
+
+
+def kb(size):
+    size = int(size or 0)
+    return "%d B" % size if size < 1024 else "%.0f KB" % (size / 1024.0)
+
+
+def short_url(url):
+    u = re.sub(r"^https?://(www\.)?", "", url or "")
+    return u if len(u) <= 110 else u[:107] + "..."
+
+
+def cmd_tools(ctx, pos, flags):
+    got = call(ctx, "webmcp", {"op": "list"})
+    tools = got.get("tools") or []
+    if not tools:
+        return "this page offers no WebMCP tools%s" % ("" if got.get("api") else " (the browser has no WebMCP here)")
+    lines = []
+    for t in tools:
+        args = ", ".join(sorted(((t.get("schema") or {}).get("properties") or {}).keys()))
+        lines.append("%s(%s)%s - %s" % (t["name"], args, " read-only" if t.get("readOnly") else "", t.get("description") or ""))
+    return "\n".join(lines) + "\n-> lighting call <tool> '{\"arg\": 1}'"
+
+
+def cmd_call(ctx, pos, flags):
+    if not pos:
+        raise Fail("call needs a tool name", "lighting tools")
+    try:
+        args = json.loads(" ".join(pos[1:]) or "{}")
+    except ValueError:
+        raise Fail("the arguments must be JSON", "lighting call %s '{\"q\": \"x\"}'" % pos[0])
+    tools = {t["name"]: t for t in call(ctx, "webmcp", {"op": "list"}).get("tools") or []}
+    tool = tools.get(pos[0])
+    if not tool:
+        raise Fail("no tool %s on this page" % pos[0], "lighting tools")
+    if not tool.get("readOnly") and not flags.get("yes"):
+        raise Fail("%s can change things on the site" % pos[0], "only if the user agreed: lighting call %s ... --yes" % pos[0])
+    res = call(ctx, "webmcp", {"op": "call", "name": pos[0], "args": args}, 60).get("result")
+    return cap("ok %s -> %s" % (pos[0], res), "call", chars=D.OUT_CHARS)
 
 
 def cmd_snap(ctx, pos, flags):
@@ -219,19 +347,38 @@ def cmd_type(ctx, pos, flags):
             raise Fail("type needs text", 'lighting type e3 "hello"')
         args["value"] = " ".join(rest)
     args.update({"append": bool(flags.get("append")), "enter": bool(flags.get("enter"))})
-    return out(ctx, "type", args, D.LOAD_TIMEOUT + 10, lines=D.NAV_LINES + 8)
+    res = out(ctx, "type", args, D.LOAD_TIMEOUT + 10, lines=D.NAV_LINES + 8)
+    t = ctx.last_target or {}
+    searchy = t.get("role") in ("searchbox", "combobox") or re.search(r"such|search", t.get("name") or "", re.I)
+    if flags.get("enter") and not flags.get("nolearn") and ctx.secret is None and searchy:
+        from lighting import sites
+        sites.learn((ctx.where or {}).get("url"), args.get("value"))
+    return res
 
 
 def cmd_search(ctx, pos, flags):
+    from lighting import sites
     if not pos:
-        raise Fail("search needs words", 'lighting search "paper plugin"')
+        raise Fail("search needs words", 'lighting search "paper plugin" | search youtube "lofi"')
+    site = sites.named(pos[0]) if len(pos) > 1 else None
+    words = " ".join(pos[1:] if site else pos)
+    host = site or sites.host_of((ctx.where or {}).get("url"))
+    tpl = sites.template(host) if host else None
+    view = {k: v for k, v in flags.items() if k in ("f", "new", "text")}
+    if tpl:
+        return cmd_open(ctx, [sites.build(tpl, words)], view)
+    if site:
+        cmd_open(ctx, ["https://" + site], {"new": flags.get("new")})
     found = call(ctx, "search-field", {})
     if found.get("button"):
         call(ctx, "click", {"ref": found["button"]}, D.LOAD_TIMEOUT + 10)
         found = call(ctx, "search-field", {})
     if not found.get("ref"):
         raise Fail("no search field on this page", "lighting snap -f search, then type e<N> words --enter")
-    return cmd_type(ctx, [found["ref"]] + list(pos), dict(flags, enter=True))
+    res = cmd_type(ctx, [found["ref"], words], dict(flags, enter=True, nolearn=True))
+    learned = sites.learn((ctx.where or {}).get("url"), words)
+    return res + ("\n! learned the search URL of %s: next time search jumps there directly" % sites.host_of(learned)
+                  if learned else "")
 
 
 def cmd_fill(ctx, pos, flags):
@@ -322,6 +469,9 @@ def spec(pos, flags):
 
 def cmd_wait(ctx, pos, flags):
     s = spec(pos, flags)
+    if "ms" in s and not flags.get("reload"):
+        time.sleep(min(s["ms"], 60000) / 1000.0)
+        return "ok (%d ms)" % min(s["ms"], 60000)
     if flags.get("reload"):
         return wait_reload(ctx, s, flags)
     s["timeout"] = parse_ms(flags.get("timeout"), 10000)
@@ -461,7 +611,14 @@ def cmd_tab(ctx, pos, flags):
 
 
 def cmd_close(ctx, pos, flags):
-    return out(ctx, "close", {"id": pos[0] if pos else None, "force": bool(flags.get("force"))}, 15)
+    res = out(ctx, "close", {"id": pos[0] if pos else None, "force": bool(flags.get("force"))}, 15)
+    m = re.match(r"closed (t\d+)", res)
+    if m and getattr(ctx, "sid", ""):
+        gone = m.group(1)
+        ctx.tabs = [x for x in ctx.tabs if x != gone]
+        ctx.owned.discard(gone)
+        res = "closed %s, %s" % (gone, "target now " + ctx.tabs[0] if ctx.tabs else "no tab left in this session")
+    return res
 
 
 def cmd_back(ctx, pos, flags):
@@ -589,6 +746,14 @@ def cmd_frames(ctx, pos, flags):
     caps = ["%s %s" % (s, f["cap"][:140]) for s, f in zip(stamps, frames) if f.get("cap")]
     if caps:
         lines += ["captions:"] + caps
+    if flags.get("audio"):
+        from lighting import audio
+        from lighting.commands import drain
+        try:
+            heard = drain(ctx, audio.cmd_listen(ctx, [pos[0]], {k: flags.get(k) for k in ("from", "to", "lang", "local")}))
+            lines += heard.split("\n", 1)[1:]
+        except Fail as e:
+            lines.append("audio: " + e.text())
     return "\n".join(lines)
 
 

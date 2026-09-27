@@ -108,6 +108,10 @@ export async function create() {
 }
 
 export async function resolve(requested) {
+  if (typeof requested === "string" && /^t\d+$/.test(requested)) {
+    const id = rid(requested);
+    return id === null ? null : chrome.tabs.get(id).then(() => id, () => null);
+  }
   if (typeof requested === "number") {
     return chrome.tabs.get(requested).then(() => requested, () => null);
   }

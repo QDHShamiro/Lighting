@@ -1,7 +1,7 @@
 use std::env;
 use std::ffi::{c_void, OsStr};
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Read, Write};
+use std::io::{self, IsTerminal, Read, Write};
 use std::mem::{size_of, zeroed};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::io::{AsRawHandle, RawHandle};
@@ -293,6 +293,15 @@ fn unmangle(arg: &str, root: &str) -> String {
     arg.to_string()
 }
 
+fn json_str(text: &str, key: &str) -> String {
+    let pat = format!("\"{key}\"");
+    let Some(at) = text.find(&pat) else { return String::new() };
+    let rest = text[at + pat.len()..].trim_start();
+    let Some(rest) = rest.strip_prefix(':') else { return String::new() };
+    let Some(rest) = rest.trim_start().strip_prefix('"') else { return String::new() };
+    rest.split('"').next().unwrap_or("").to_string()
+}
+
 fn hex(bytes: &[u8]) -> String {
     const H: &[u8; 16] = b"0123456789abcdef";
     let mut s = String::with_capacity(bytes.len() * 2);
@@ -328,8 +337,12 @@ fn main() {
         python(&home, &root, &args);
     }
     let mut hook_input = String::new();
-    if first == "suggest" && args.len() == 1 {
+    if ((first == "suggest" && args.len() == 1) || (first == "done" && quiet)) && !io::stdin().is_terminal() {
         let _ = io::stdin().take(64 * 1024).read_to_string(&mut hook_input);
+    }
+    let mut sid = env::var("CLAUDE_CODE_SESSION_ID").unwrap_or_default();
+    if sid.is_empty() {
+        sid = json_str(&hook_input, "session_id");
     }
     let started = Instant::now();
     let mut stats = false;
@@ -361,10 +374,12 @@ fn main() {
     };
     let cwd = env::current_dir().map(|p| p.display().to_string()).unwrap_or_default();
     let mut req = String::with_capacity(256);
-    req.push_str("L1\0");
+    req.push_str("L2\0");
     req.push_str(&token);
     req.push('\0');
     req.push_str(&cwd);
+    req.push('\0');
+    req.push_str(&sid.replace('\0', ""));
     req.push('\0');
     match &secret {
         Some(s) => {
@@ -377,7 +392,7 @@ fn main() {
         req.push('\0');
         req.push_str(a);
     }
-    if !hook_input.is_empty() {
+    if first == "suggest" && !hook_input.is_empty() {
         req.push('\0');
         req.push_str(&hook_input.replace('\0', " "));
     }
@@ -411,5 +426,14 @@ mod tests {
         assert_eq!(unmangle("a=C:/Program Files/Git/b", root), "a=/b");
         assert_eq!(unmangle("C:/Users/x", root), "C:/Users/x");
         assert_eq!(hex(&[0, 171, 255]), "00abff");
+    }
+
+    #[test]
+    fn reads_the_session_from_hook_json() {
+        let hook = r#"{"session_id": "4717b1cc-c49d", "prompt": "hi \"x\""}"#;
+        assert_eq!(json_str(hook, "session_id"), "4717b1cc-c49d");
+        assert_eq!(json_str(r#"{"session_id":"abc"}"#, "session_id"), "abc");
+        assert_eq!(json_str("{}", "session_id"), "");
+        assert_eq!(json_str("", "session_id"), "");
     }
 }

@@ -3,6 +3,43 @@
 Versions follow semver. Every release on GitHub carries `lighting.exe` built from the tag by CI,
 a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in the repo at that tag).
 
+## [0.9.0] - 2026-09-27
+
+From a research round (Katalog v3): sound in videos, sessions that stay apart, fewer tokens for chat apps,
+search URLs that are learned, data behind pages, routines that use routines, WebMCP.
+
+### Added
+- `listen [ref|url|file]`: what a video says, TikTok and YouTube included. Captions first (page, then yt-dlp), then
+  the audio via yt-dlp, then a live recording in the tab (`captureStream` + `MediaRecorder`, tab muted, time and
+  pause restored). Speech-to-text with the Groq or OpenAI key (`GROQ_API_KEY`/`OPENAI_API_KEY` or
+  `~/.config/watch/.env`), or on this PC with faster-whisper (`--local`, `config audio local`, installed once).
+  Segments Whisper marks as non-speech are dropped; music-heavy clips say so. `frames e40 --audio` adds the words.
+- Sessions stay apart: the client sends `CLAUDE_CODE_SESSION_ID` (protocol L2; the Stop hook's `session_id` from
+  stdin as a fallback). Each session has its own tabs, window refs and routine recording; a session without a tab
+  gets an error instead of using another session's tab; `done` closes only that session's tabs and apps, and
+  returns at once when the session opened nothing.
+- `unread`: unread DMs, mentions and channels of Discord (and other chat apps) in one call.
+- `search youtube "lofi"` and learned search URLs: known sites (seeds + learned in `~/.lighting/sites.json`) jump
+  straight to the result page; an unknown site is searched once through its field and remembered.
+- `net [n] [-f x]`: the JSON answers (GET) a Lighting tab loaded, with a compact shape (`items[] (40) {id, name}`),
+  then `fetch --pick`. `open` says `data: 3 JSON calls (lighting net)`.
+- WebMCP: `tools` lists the tools a page offers, `call <tool> '{json}'` runs one (`--yes` unless read-only);
+  `open` says `webmcp: N tools`.
+- Routines use routines: `run X k=v` as a step (3 deep, no loops), a `run` inside a task is one step, and a newly
+  learned routine that contains an existing one calls it.
+
+### Changed
+- Desktop snapshots fold controls that repeat in every item into one line (`(x13, same in each item)`): the
+  Discord window went from 10,235 to 6,582 characters. `--all` shows everything.
+- A unit test keeps SKILL.md at 3,300 bytes or less and the MCP description at 700 characters or less.
+
+### Fixed
+- Tab aliases (`t14`) were never resolved when passed as the target, so `wait --reload` could reload the wrong tab.
+- `type` into a terminal sent Ctrl+A first, which arrived as `^A`.
+- Review round: `listen` through MCP gave up after 180 s (now waits as long as the listen may take); `wait 3000`
+  needed a tab; a task with the same steps as a saved routine was learned again as `-2`; one-letter key hints like
+  YouTube's `Pause (k)` stayed in names and were not remembered as shortcuts; smaller network buffers per tab.
+
 ## [0.8.0] - 2026-09-27
 
 Built from what went wrong in real sessions: fewer rounds per task, fewer wrong turns, chats, shortcuts and

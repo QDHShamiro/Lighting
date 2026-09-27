@@ -241,8 +241,9 @@ def test_recall_finds_routines_by_words():
     stems = lambda text: {recall.stem(w) for w in recall.words(text)}
     assert recall.fits(stems("markiere Tom auf Discord"), r)
     assert not recall.fits(stems("fix the minecraft plugin"), r)
-    recall.note_prompt("markiere Luis auf Discord bitte")
-    assert recall.tags_for(time.time(), {"user": "Luis"}) == ["markiere", "discord"]
+    prompts = []
+    recall.note_prompt(prompts, "markiere Luis auf Discord bitte")
+    assert recall.tags_for(prompts, time.time(), {"user": "Luis"}) == ["markiere", "discord"]
 
 
 def test_routines_cleanup():
@@ -264,6 +265,120 @@ def test_routines_cleanup():
 
     assert routines.learn(C(), nav, [nav]) is None
     assert routines.slug("Öffne Spotify") == "oeffne-spotify"
+
+
+def test_repeated_app_lines_fold():
+    if not WINDOWS:
+        return
+    from lighting import desktop
+    lines = ['d1 listitem "a"'] + ['d%d button "Reply"' % i for i in range(2, 7)] + ['d9 button "Send"']
+    out, folded = desktop.fold(lines)
+    assert folded == 4 and out[1] == 'd2 button "Reply" (x5, same in each item)' and out[-1] == 'd9 button "Send"'
+    assert desktop.fold(lines[:3])[1] == 0
+
+
+def test_search_url_templates():
+    from lighting import sites
+    assert sites.derive("https://www.youtube.com/results?search_query=lofi+beats&sp=x", "lofi beats") == \
+        "https://www.youtube.com/results?search_query={q}"
+    assert sites.derive("https://example.com/find/lighting%20docs", "lighting docs") == "https://example.com/find/{q}"
+    assert sites.derive("https://example.com/?q=a&x=a", "a") is None
+    assert sites.build("https://x.com/s?q={q}", "a b") == "https://x.com/s?q=a+b"
+    assert sites.named("youtube") == "youtube.com" and sites.named("paper") is None
+    assert sites.template("m.youtube.com").startswith("https://www.youtube.com/results")
+
+
+def test_unread_patterns():
+    from lighting import chat
+    dms, at, rest = chat.unread_of(["DEV arbteit , 10 ungelesene Nachrichten", "2 Erwähnungen • NOVASMP | S2",
+                                    "1 Erwähnung CrystalBox", "Ungelesene Nachrichten, Stellar, Sprachanruf aktiv",
+                                    "Friends, 3 unread messages", "2 mentions General", "Quiet room"])
+    assert dms == [(10, "DEV arbteit"), (3, "Friends")]
+    assert sorted(at) == [(1, "CrystalBox"), (2, "General"), (2, "NOVASMP | S2")] and at[-1] == (1, "CrystalBox")
+    assert rest == ["Stellar"]
+
+
+def test_captions_and_noise():
+    from lighting import audio
+    vtt = "WEBVTT\n\n00:00:00.000 --> 00:00:02.000 align:start\nHello there\n\n00:00:02.000 --> 00:00:04.000\n" \
+          "Hello there\n<c>general</c> Kenobi\n\n1\n00:01:05.500 --> 00:01:07.000\n[Music]\n"
+    segs = audio.vtt_segments(vtt)
+    assert audio.lines_of(segs) == ["0:00 Hello there", "0:02 general Kenobi"]
+    assert audio.spoken({"no_speech_prob": 0.1, "avg_logprob": -0.3}) and not audio.spoken({"no_speech_prob": 0.9})
+    assert audio.clock(3723) == "1:02:03"
+
+
+def test_session_contexts_and_nested_runs():
+    from lighting import commands
+
+    class D:
+        events = []
+        ctxs = {}
+        abort_gen = 0
+
+        class abort:
+            @staticmethod
+            def is_set():
+                return False
+
+    a, b = commands.Context(D(), "a"), commands.Context(D(), "b")
+    a.tabs, b.tabs = ["t1"], ["t2"]
+    assert a.tabs != b.tabs and a.ep is None and b.owned == set()
+    r = {"name": "loop", "params": {}, "steps": [{"cmd": "run", "args": ["loop"], "flags": {}}], "check": None,
+         "stats": {"runs": 0, "ok": 0, "fail": 0, "ms": 0, "saved": 0, "recent": []}, "source": "saved"}
+    routines.save(r)
+    try:
+        a.run_stack = ["loop"]
+        try:
+            routines.cmd_run(a, ["loop"], {})
+            assert False, "a routine that calls itself must fail"
+        except Exception as e:
+            assert "calls itself" in str(e)
+    finally:
+        routines.path("loop").unlink()
+
+
+def test_learned_steps_reuse_routines():
+    st = lambda c, *a: {"cmd": c, "args": list(a), "flags": {}, "where": None}
+    inner = {"name": "gh-open", "params": {"page": "Lighting"}, "flaky": False,
+             "steps": [st("open", "github.com/QDHShamiro/{page}"), st("click", "Issues")]}
+    steps = [st("open", "github.com/QDHShamiro/Tools"), st("click", "Issues"), st("fill", "Title={title}")]
+    out = routines.compact(steps, [inner])
+    assert [s["cmd"] for s in out] == ["run", "fill"] and out[0]["args"] == ["gh-open", "page=Tools"]
+    assert routines.compact(steps[1:], [inner]) == steps[1:]
+
+
+def test_same_steps_as_a_saved_routine_are_not_learned_again():
+    import time
+
+    class C:
+        class d:
+            events = []
+
+    step = lambda c, a: {"cmd": c, "args": [a], "flags": {}, "where": {"kind": "web", "url": "https://x.com/a", "title": "A"}}
+    saved = routines.new_routine({"params": {}, "steps": [step("open", "x.com/a"), step("click", "Go")], "check": None},
+                                 "saved", 10)
+    saved["name"] = "x-go"
+    routines.save(saved)
+    try:
+        ep = {"steps": [step("open", "x.com/b"), step("click", "Stop")], "via": None, "start": step("open", "")["where"],
+              "cost": 10, "t0": time.time()}
+        assert routines.learn(C(), ep, [ep]) is None
+    finally:
+        routines.path("x-go").unlink()
+
+
+def test_json_shape():
+    from lighting.browser import shape
+    s = shape({"items": [{"id": 1, "name": "a"}], "total": 2, "meta": {"q": "x"}})
+    assert s.startswith("items[] (1) {id: 1, name: \"a\"}") and "total: 2" in s
+
+
+def test_skill_and_mcp_budget():
+    from lighting import mcp
+    skill = (ROOT / "skills" / "lighting" / "SKILL.md").read_bytes()
+    assert len(skill) <= 3300, "SKILL.md grew to %d bytes (budget 3300)" % len(skill)
+    assert len(mcp.DESCRIPTION) <= 700, "MCP description grew to %d chars" % len(mcp.DESCRIPTION)
 
 
 if __name__ == "__main__":
