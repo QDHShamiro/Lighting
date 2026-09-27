@@ -138,9 +138,9 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-python tests/test_units.py     # 26/26
+python tests/test_units.py     # 28/28
 cd client && cargo test && cargo clippy --release --all-targets
-lighting selftest              # must print 130/130 passed (129/129 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
+lighting selftest              # must print 135/135 passed (134/134 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
 lighting bench
 lighting bench --real          # compare tokens with the last run
 ```
@@ -176,6 +176,8 @@ For routines: do one task twice with different values, `lighting routine learn`,
 - **Tab ids live in `chrome.storage.session`**: an extension reload or a browser restart starts them at `t1` again. The extension sends an `epoch` in its hello; when it changes the daemon forgets every session's tab ids.
 - **`git checkout main` while a `lighting.exe` from this folder runs** stopped halfway (Windows cannot replace a running exe) and left the 0.7.2 files in the folder the daemon loads from (`~/.lighting/client-root`). Fast-forward first (`git fetch origin main:main`), then switch.
 - **Test rounds restart the daemon under other sessions**: `lighting stop` and `ext-reload` break their waits and tab ids. Batch the changes, restart once.
+- **`node --check` passes broken ES modules**: a `.js` file with `import`/`export` and a raw line break inside a string still exits 0. Check the extension as modules: copy each file to `.mjs`, then `node --check`.
+- **A Python replace turned `\n` into a real line break once more** (actions.js, 1.1.0): a heredoc typed through a tool call loses one level of backslashes, so `\\n` arrives as `\n`. The Edit tool for anything with backslashes, no exceptions.
 - **Only the fixture was tested.** A sweep over real sites (GitHub, YouTube, Wikipedia, SpigotMC, Modrinth, Hugging Face, PaperMC docs) found six output and timing problems in one hour. Repeat that sweep after bigger changes.
 
 ## 6. Failure modes

@@ -210,6 +210,7 @@ def browser(r, base):
            lambda o, e: not e and 'img "orange test square" 64x64' in o)
     r.step("frames of a paused video", ["frames", vref, "--count", "2", "--every", "400"],
            lambda o, e: not e and ".jpg" in o and "did not move" in o and "not seekable" in o)
+    r.step("frames --small", ["frames", vref, "--count", "2", "--every", "400", "--small"], lambda o, e: not e and "(768x" in o)
     r.step("frames read captions", ["frames", vref, "--count", "2", "--every", "300"],
            lambda o, e: not e and "captions:" in o and "Hello from the caption track" in o)
     from PIL import Image
@@ -269,6 +270,9 @@ def browser(r, base):
     r.step("leak guard blocks", ["read", leak], lambda o, e: e and "possible data leak" in o)
     r.step("leak guard --yes passes", ["read", leak, "--yes"], lambda o, e: e and "read failed" in o)
     r.step("unchanged snap", ["snap"], ok)
+    r.step("snap --full", ["snap", "--full"], ok)
+    r.step("toggle for a small change", ["click", "Dark mode"], ok)
+    r.step("snap shows only changes", ["snap"], lambda o, e: not e and "changed since your last snap" in o and "Dark mode" in o)
     r.step("blocklist enforced", ["_blocked"], lambda o, e: e and "blocked" in o)
     r.step("record start (web)", ["record", "start", "selftest-rec", "--web"], lambda o, e: not e and "recording" in o)
     r.step("recorded fill", ["fill", "Email=rec@example.com"], ok)
@@ -374,6 +378,8 @@ def desktop(r):
         r.step("toggle checkbox", ["click", refs.get("checkbox", "d0")], lambda o, e: not e)
         r.step("click button by name", ["click", "Go"], lambda o, e: not e)
         r.step("read status via uia", ["snap", "app:Lighting Test App", "--text", "-f", "status"], lambda o, e: "clicked 1 with Claude" in o)
+        r.step("wait in an app", ["wait", "clicked 1", "app:Lighting Test App", "--timeout", "5s"], lambda o, e: not e and o.startswith("ok ("))
+        r.step("app wait gives up", ["wait", "never shown", "app:Lighting Test App", "--timeout", "1s"], lambda o, e: e and "not there" in o)
         r.step("ocr read", ["read", "app:Lighting Test App"], lambda o, e: not e and "Remember" in o)
         r.fn("ocr via PrintWindow", printwindow_ocr)
         after = win.cursor()

@@ -184,7 +184,8 @@ async function frameId(tabId, host) {
 
 async function snap(a, tab) {
   const tabId = await tabOf(tab);
-  const opts = { all: !!a.all, scope: a.scope || null, filter: a.filter || null, diff: !!a.diff, force: !!a.force, media: !!a.media };
+  const opts = { all: !!a.all, scope: a.scope || null, filter: a.filter || null, diff: !!a.diff, force: !!a.force || !!a.full, media: !!a.media };
+  opts.plain = !a.full && !a.frame && !opts.all && !opts.scope && !opts.filter && !opts.diff && !opts.force && !opts.media;
   if (a.frame) {
     const fid = await frameId(tabId, a.frame);
     const res = await page(tabId, "snap", [Object.assign(opts, { force: true })], fid);
@@ -743,7 +744,13 @@ chrome.alarms.onAlarm.addListener(() => {
   if (!port) connect();
 });
 
-chrome.runtime.onStartup.addListener(connect);
+const ready = T.restore();
+chrome.runtime.onStartup.addListener(async () => {
+  await ready;
+  await T.fresh();
+  if (port) post(Object.assign({ event: "hello", ext: VERSION, focused: false, epoch: T.getEpoch() }, brandInfo()));
+  else connect();
+});
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create("lighting", { periodInMinutes: 0.5 });
   connect();
@@ -752,4 +759,4 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.alarms.get("lighting").then((a) => {
   if (!a) chrome.alarms.create("lighting", { periodInMinutes: 0.5 });
 });
-T.restore().then(connect);
+ready.then(connect);

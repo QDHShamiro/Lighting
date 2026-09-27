@@ -3,6 +3,25 @@
 Versions follow semver. Every release on GitHub carries `lighting.exe` built from the tag by CI,
 a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in the repo at that tag).
 
+## [1.1.0] - 2026-09-27
+
+### Added
+- Sessions survive restarts: the daemon keeps each session's window group, tabs, window refs and launched apps in
+  `~/.lighting/sessions.json`, and the extension keeps tab ids across its own reloads (they start over only when
+  the browser restarts). An update or `lighting stop` no longer makes a session say "no tab yet".
+- `wait "text" w3` (or after an app command) waits in any app: names and values of its controls, else OCR
+  (terminals, games); `--gone`, `--timeout 60s`. It does not block other commands.
+- A repeated `snap` of the same page shows only what changed since your last `snap` (`changed since your last snap:
+  +2, -1 gone`); `snap --full` shows everything.
+- `frames --small`: a 768 px contact sheet (about 45% fewer image tokens).
+
+### Changed
+- Routines learn cleaner: a typed value that differs between two runs becomes one whole parameter named after its
+  field (`title`, `comment`, not `add_a`), and a task with a long fixed text (80+ characters) is not learned.
+
+### Fixed
+- The extension id check (1.0.0) only ran on later hellos, not when the browser connected.
+
 ## [1.0.0] - 2026-09-27
 
 Built from the stumbles in real sessions since 0.9.0, and every session gets its own browser window.

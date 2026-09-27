@@ -669,6 +669,19 @@
     S.lastY = Math.round(scrollY);
     S.sig = sig;
     const out = { title: document.title, url: location.href, lines: res.lines, notes: res.notes, searched: res.searched, below: res.below, above: res.above };
+    const seenLines = S.plainHref === location.href ? S.plainLines : null;
+    if (opts.plain || opts.force) {
+      S.plainHref = location.href;
+      S.plainLines = new Set(res.lines);
+    }
+    if (opts.plain && seenLines) {
+      const added = res.lines.filter((l) => !seenLines.has(l));
+      const gone = [...seenLines].filter((l) => !S.plainLines.has(l)).length;
+      if (added.length + gone <= Math.max(4, res.lines.length / 2)) {
+        out.lines = added;
+        out.delta = { gone, total: res.lines.length };
+      }
+    }
     if (S.keys.size) out.keys = [...S.keys].slice(0, 40);
     if (opts.diff) {
       out.lines = res.lines.filter((l) => /^e\d+ /.test(l) && !prev.has(l.split(" ")[0]));

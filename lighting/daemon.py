@@ -102,9 +102,59 @@ class Daemon:
         self.abort_gen = 0
         self.ctxs = {}
         self.epochs = {}
+        self.saved = None
+
+    def session_rows(self):
+        rows = {}
+        for sid, c in self.ctxs.items():
+            st = getattr(c, "app", None)
+            if sid:
+                rows[sid] = {"group": c.group, "tabs": list(c.tabs), "owned": sorted(c.owned), "used": int(c.used),
+                             "target": list(c.target) if c.target else None,
+                             "windows": dict(st.windows) if st else {}, "hwnd": st.hwnd if st else None,
+                             "launched": {str(k): v for k, v in st.launched.items()} if st else {}}
+        return rows
+
+    def save_sessions(self):
+        rows = self.session_rows()
+        sig = json.dumps([{k: dict(v, used=v["used"] // 600) for k, v in rows.items()}, self.epochs], sort_keys=True)
+        if sig == self.saved:
+            return
+        self.saved = sig
+        try:
+            D.SESSIONS.write_text(json.dumps({"epochs": self.epochs, "sessions": rows}), "utf-8")
+        except OSError:
+            pass
+
+    def load_sessions(self, commands):
+        from lighting import desktop
+        try:
+            data = json.loads(D.SESSIONS.read_text("utf-8"))
+        except (OSError, ValueError):
+            return
+        self.epochs = data.get("epochs") or {}
+        for sid, s in (data.get("sessions") or {}).items():
+            if not sid or time.time() - s.get("used", 0) > D.SESSION_IDLE_S:
+                continue
+            c = commands.Context(self, sid)
+            c.group, c.tabs, c.owned, c.used = s.get("group") or c.group, list(s.get("tabs") or []), set(s.get("owned") or []), s.get("used", 0)
+            c.target = tuple(s["target"]) if s.get("target") else None
+            st = desktop.state(c)
+            st.windows = {k: int(v) for k, v in (s.get("windows") or {}).items()}
+            st.launched = {int(k): v for k, v in (s.get("launched") or {}).items()}
+            st.hwnd = s.get("hwnd")
+            self.ctxs[sid] = c
+
+    def note_epoch(self, brand, ep):
+        if ep and self.epochs.get(brand, ep) != ep:
+            for c in list(self.ctxs.values()):
+                c.tabs, c.owned = [], set()
+        if ep:
+            self.epochs[brand] = ep
 
     def add_host(self, conn, hello):
         host = Host(self, conn, hello)
+        self.note_epoch(host.brand, hello.get("epoch"))
         with self.lock:
             self.hosts.append(host)
         from lighting import browser
@@ -123,12 +173,7 @@ class Daemon:
             return
         if kind == "hello":
             host.info.update(msg)
-            ep = msg.get("epoch")
-            if ep and self.epochs.get(host.brand, ep) != ep:
-                for c in list(self.ctxs.values()):
-                    c.tabs, c.owned = [], set()
-            if ep:
-                self.epochs[host.brand] = ep
+            self.note_epoch(host.brand, msg.get("epoch"))
             return
         text = msg.get("text")
         if text:
@@ -217,12 +262,14 @@ class Daemon:
                     waits.append((res["pending"], reply, ctx))
                 else:
                     reply.put(res)
+                self.save_sessions()
             now = time.time()
             for w in [w for w in waits if w[0].due <= now or w[0].gen != self.abort_gen]:
                 res = self.guarded(lambda: commands.poll_pending(w[2], w[0]))
                 if res is not None:
                     waits.remove(w)
                     w[1].put(res)
+                    self.save_sessions()
 
     def guarded(self, fn):
         try:
@@ -252,6 +299,8 @@ class Daemon:
             return
         ipc.token()
         D.PIDFILE.write_text(str(os.getpid()), "utf-8")
+        from lighting import commands
+        self.load_sessions(commands)
         cleanup_out()
         try:
             from lighting import install

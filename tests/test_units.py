@@ -59,6 +59,26 @@ def test_learn_from_two_runs():
     assert routines.align(a["steps"][:1], b["steps"][:1]) is None
 
 
+def pr_episode(title, body):
+    w = page("https://github.com/x/y/compare/main...dev?expand=1", "Compare")
+    return {"start": w, "steps": [
+        {"cmd": "open", "args": ["https://github.com/x/y/compare/main...dev?expand=1"], "flags": {}, "where": w},
+        {"cmd": "type", "args": ["Add a title *", title], "flags": {}, "where": w},
+        {"cmd": "type", "args": ["Comment", body], "flags": {}, "where": w},
+        {"cmd": "click", "args": ["Create pull request"], "flags": {}, "where": page("https://github.com/x/y/pull/1", title)},
+    ]}
+
+
+def test_typed_values_become_whole_named_params():
+    a, b = pr_episode("Lighting 0.9.0: sound", "short"), pr_episode("Lighting 1.0.0: own windows", "other")
+    body = routines.build(a["steps"], b, routines.align(a["steps"], b["steps"]))
+    assert body["params"].get("title") == "Lighting 1.0.0: own windows" and body["params"].get("comment") == "other"
+    long_a, long_b = pr_episode("A", "x" * 90), pr_episode("B", "x" * 90)
+    blk = routines.align(long_a["steps"], long_b["steps"])
+    assert any(routines.long_literal(s) for s in routines.build(long_a["steps"], long_b, blk)["steps"])
+    assert routines.label_name("Add a title *") == "title"
+
+
 def test_confirmed_steps_are_not_learned():
     class Ctx:
         class d:
@@ -372,6 +392,29 @@ def test_json_shape():
     from lighting.browser import shape
     s = shape({"items": [{"id": 1, "name": "a"}], "total": 2, "meta": {"q": "x"}})
     assert s.startswith("items[] (1) {id: 1, name: \"a\"}") and "total: 2" in s
+
+
+def test_sessions_survive_a_restart():
+    from lighting import daemon, desktop
+
+    class Fake:
+        events, abort_gen, saved = [], 0, None
+        session_rows, save_sessions = daemon.Daemon.session_rows, daemon.Daemon.save_sessions
+        load_sessions, note_epoch = daemon.Daemon.load_sessions, daemon.Daemon.note_epoch
+
+    f = Fake()
+    f.ctxs, f.epochs = {}, {"brave": 5}
+    c = daemon.Daemon.context(f, commands, "s1")
+    c.tabs, c.owned = ["t4"], {"t4"}
+    desktop.state(c).windows = {"w2": 1234}
+    f.save_sessions()
+    g = Fake()
+    g.ctxs, g.epochs = {}, {}
+    g.load_sessions(commands)
+    r = g.ctxs["s1"]
+    assert (r.group, r.tabs, r.owned, desktop.state(r).windows, g.epochs) == (c.group, ["t4"], {"t4"}, {"w2": 1234}, {"brave": 5})
+    g.note_epoch("brave", 6)
+    assert r.tabs == [] and r.owned == set()
 
 
 def test_session_windows_keep_close_done():
