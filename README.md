@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-111111?style=flat-square" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-125%2F125-111111?style=flat-square" alt="125/125 selftest">
+  <img src="https://img.shields.io/badge/selftest-130%2F130-111111?style=flat-square" alt="130/130 selftest">
   <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
   <br>
@@ -141,6 +141,10 @@ watches in real time (streams). `snap --media` gives every image a ref with its 
 
 ### It cleans up after itself
 
+Each Claude session works in its own browser window (your logged-in profile) with its own tab group,
+`Lighting #1`, `Lighting #2`, ..., so your tabs stay yours and parallel sessions never mix
+(`lighting config window off` puts the tabs into your window instead).
+
 When the AI finishes its reply, the tabs and apps it opened close again and the window you were in
 comes back to the front (`lighting done`, run by a Claude Code hook). A tab you are looking at stays,
 an app that was open before stays, an app with unsaved work is only asked to close. `lighting keep`
@@ -246,7 +250,7 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **125/125** (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (24/24), `cargo test` in `client/`.
+- `lighting selftest`: **130/130** (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (26/26), `cargo test` in `client/`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - Filling and submitting a form: ~160 ms.
 - GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
@@ -271,6 +275,10 @@ your logged-in browser and your apps, cheaply.
 
 ## What's new
 
+- **1.0.0** Every session gets its own browser window (`Lighting #1`, `Lighting #2`); `lighting claude "task" --yes`
+  opens a new terminal tab with Claude and Remote Control and hands it the task; `shot screen --seconds 10` films
+  the screen for your phone. Fixed from real sessions: clicks in payment and login frames, tabs lost after `done`,
+  `keep`, `wait` on button names, `snap -f` that missed text.
 - **0.9.0** Hears videos: `listen` says what a TikTok or YouTube video says (captions, else speech-to-text), also
   for logged-in videos by recording the tab. Every Claude session keeps its own tabs and cleans up only those;
   `unread` shows waiting Discord messages; `search youtube "x"` jumps to results and learns new sites; `net` shows
@@ -368,7 +376,7 @@ args = ["mcp"]
 | Wait | `wait "text" \| url:/x \| 1500 [--gone]` · `expect "text"` |
 | Data | `table e8` · `fetch /api/me --pick login` (with your cookies) · `js` |
 | Tabs | `tabs` · `tab t3` · `close` · `back` · `reload` · `dialog accept\|dismiss` · `dismiss` (cookie banners) · `viewport 390x844` |
-| Clean up | `done` (close what Lighting opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) |
+| Clean up | `done` (close what Lighting opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) · `config window off` (tabs in your window, not an own one) |
 | Images, video | `snap --media` (images get refs, captions as names) · `shot e57` (look at one image) · `frames e40 [--scenes] [--from 1:30 --to 2:00] [--live]` (the whole video as one contact sheet, captions included) · `read <image url>` |
 
 **Windows desktop**
@@ -376,8 +384,9 @@ args = ["mcp"]
 | | |
 |---|---|
 | Start | `launch spotify` · `launch "spotify:search:SOS"` · `launch calc` (Win+R names and Store apps too) · `close w4` · `close "app:Rechner"` |
-| Look | `windows` · `snap w2` (UI Automation) · `read w2` (OCR) · `shot w2` (even when covered) |
+| Look | `windows` · `snap w2` (UI Automation) · `read w2` (OCR) · `shot w2` (even when covered) · `shot screen --seconds 10` (a short video) |
 | Act | `click d5` · `click "Save"` · `click o3` (OCR text, real click, cursor goes back) · `type "Search" text` · `type focused text` · `press ctrl+s` · `clip get\|set` |
+| Claude | `claude "task" --yes` (new terminal tab: Claude with Remote Control, the task sent once it is ready) · `--dir E:/proj` · `--no-remote` |
 
 **Routines**
 

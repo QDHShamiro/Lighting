@@ -63,7 +63,43 @@ async function withDialog(tabId, promise, ms) {
   }
 }
 
+const FRAME_REF = /^f(\d+)\.(e\d+)$/;
+
+async function frameOrigin(tabId, fid) {
+  const frames = (await chrome.webNavigation.getAllFrames({ tabId })) || [];
+  const me = frames.find((f) => f.frameId === fid);
+  if (!me) throw new Error("frame f" + fid + " is gone -> try: lighting snap");
+  const size = await page(tabId, "act.viewSize", [], fid);
+  const twins = frames.filter((f) => f.parentFrameId === me.parentFrameId && f.url === me.url).sort((x, y) => x.frameId - y.frameId);
+  const box = await page(tabId, "act.frameBox", [me.url, size, twins.indexOf(me)], me.parentFrameId);
+  if (!box) throw new Error("frame f" + fid + " is not on the page any more -> try: lighting snap");
+  const up = me.parentFrameId > 0 ? await frameOrigin(tabId, me.parentFrameId) : { x: 0, y: 0 };
+  return { x: box.x + up.x, y: box.y + up.y };
+}
+
+async function inFrame(tabId, fid, fn, args, ms) {
+  const tag = (s) => (typeof s === "string" ? s.replace(/^e(\d+) /, "f" + fid + ".e$1 ") : s);
+  let res;
+  try {
+    res = await page(tabId, fn, args, fid, ms);
+  } catch (e) {
+    if (/no frame with id/i.test(String(e && e.message))) throw new Error("frame f" + fid + " is gone -> try: lighting snap");
+    throw e;
+  }
+  if (res && typeof res === "object") {
+    if (typeof res.x === "number" && typeof res.y === "number") {
+      const o = await frameOrigin(tabId, fid);
+      res.x = Math.round(res.x + o.x);
+      res.y = Math.round(res.y + o.y);
+    }
+    if (res.line) res.line = tag(res.line);
+  }
+  return tag(res);
+}
+
 export async function page(tabId, fn, args, frameId, ms) {
+  const fr = !frameId && args && typeof args[0] === "string" ? FRAME_REF.exec(args[0]) : null;
+  if (fr) return inFrame(tabId, Number(fr[1]), fn, [fr[2]].concat(args.slice(1)), ms);
   const target = { tabId, frameIds: [frameId || 0] };
   const call = () => chrome.scripting.executeScript({ target, func: callLt, args: [fn, args || []] });
   let tab = null;

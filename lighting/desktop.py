@@ -822,6 +822,42 @@ def cmd_shot(ctx, pos, flags):
                       int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
 
 
+def cmd_video(ctx, pos, flags):
+    import subprocess
+    from lighting import audio
+    from lighting.common import Pending, outfile
+    secs = max(1, min(int(float(flags.get("seconds") or 10)), D.VIDEO_MAX_S))
+    if pos and pos[0] != "screen" and ref_kind(pos[0]) != "w" and not pos[0].lower().startswith("app:"):
+        raise Fail("a video films the screen or a window", "lighting shot screen --seconds %d  (a browser: lighting windows -f brave, then shot w<N> --seconds %d)" % (secs, secs))
+    exe = audio.ffmpeg()
+    if not exe:
+        raise Fail("a video needs ffmpeg", "winget install Gyan.FFmpeg")
+    _, (x0, y0, x1, y1) = region(ctx, pos or ["screen"])
+    size = "%dx%d" % ((x1 - x0) // 2 * 2, (y1 - y0) // 2 * 2)
+    out = outfile("video", "mp4")
+    proc = subprocess.Popen(
+        [exe, "-y", "-loglevel", "error", "-f", "gdigrab", "-framerate", str(D.VIDEO_FPS), "-offset_x", str(x0),
+         "-offset_y", str(y0), "-video_size", size, "-i", "desktop", "-t", str(secs),
+         "-vf", "scale='min(%d,iw)':-2" % int(flags.get("width") or D.VIDEO_WIDTH), "-c:v", "libx264",
+         "-preset", "veryfast", "-crf", str(D.VIDEO_CRF), "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(out)],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, creationflags=audio.HIDDEN)
+
+    def poll(last):
+        if proc.poll() is None:
+            if not last:
+                return None
+            proc.kill()
+            raise Fail("the video did not finish")
+        err = proc.stderr.read().decode("utf-8", "replace").strip()
+        if proc.returncode or not out.exists():
+            raise Fail("video failed: %s" % (err.splitlines() or ["ffmpeg exit %d" % proc.returncode])[-1][:200])
+        n = out.stat().st_size
+        mb = "%.1f MB" % (n / 1e6) if n >= 1e6 else "%d KB" % max(1, round(n / 1e3))
+        return "video %s (%d s, %s, %s)" % (str(out).replace("\\", "/"), secs, size, mb)
+
+    return Pending(poll, secs + 30, 0.5)
+
+
 def cmd_clip(ctx, pos, flags):
     if pos and pos[0] == "set":
         win.clip_set(ctx.secret if ctx.secret is not None else " ".join(pos[1:]))

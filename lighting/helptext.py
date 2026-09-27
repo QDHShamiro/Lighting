@@ -16,13 +16,14 @@ web     open <url> [-n] [-f "a|b"] [--text]   snap [-f "a|b"] [-s css|ref] [--al
 sound   listen [ref|url|file] [--from m:ss --to m:ss] [--lang de] [--live] [--local]   frames <ref> --audio
 desktop windows [-f x]   launch <app|uri|path> [-f x]   focus <w>   close <w>   snap <w> [--web]
         click <d|o|"text">   type <d|"Field"|focused> <text> [--tab] [--enter]   press <keys>   read [w|screen]
-        shot [w|screen]   clip [get|set <text>]   press playpause|nexttrack|volumeup (no window needed)
+        shot [w|screen] [--seconds 10] (video)   clip [get|set <text>]   press playpause|volumeup (no window)
+        claude ["prompt" --yes] [--dir path] [--name x] [--no-remote]  new Claude tab with remote control
 chat    inbox <w|"title"> [--from name] [--since id] [--timeout 5m]   reply <w|"title"> "text" [--wait] [--yes]
         unread [w|"title"] (unread DMs and mentions)
 keys    keys [app|site] [-f x]   keys add <app> "ctrl+k=what"   keys rm <app> <key>
 routine routines [-f x]   run <name|words> [param=value ...] [--yes]   routine show|save|rm|rename|forget <name>
         record start [name] [--web|--desktop]   record stop [name] [param=value ...]   record cancel|status
-cleanup done [--quiet]   keep [t|w]   config cleanup on|off
+cleanup done [--quiet]   keep [t|w]   config cleanup on|off   config window on|off (own window per session)
 system  do "cmd; cmd; ..."   status   stop   config [key value]   log [stats]   version
         setup [--manual]   install <ai>   selftest [web|app|chat]   bench [--real]   ext-reload   uninstall [--purge]
 

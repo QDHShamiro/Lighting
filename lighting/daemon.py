@@ -34,7 +34,7 @@ class Host:
         self.connected = time.time()
         self.focused = time.time() if hello.get("focused") else 0.0
 
-    def call(self, cmd, args=None, tab=None, timeout=D.CALL_TIMEOUT):
+    def call(self, cmd, args=None, tab=None, timeout=D.CALL_TIMEOUT, group=None):
         with self.lock:
             self.seq += 1
             i = self.seq
@@ -42,7 +42,7 @@ class Host:
             self.pending[i] = box
         try:
             t0 = time.perf_counter()
-            ipc.send(self.conn, {"id": i, "cmd": cmd, "args": args or {}, "tab": tab})
+            ipc.send(self.conn, {"id": i, "cmd": cmd, "args": args or {}, "tab": tab, "group": group})
             t1 = time.perf_counter()
             try:
                 msg = box.get(timeout=timeout)
@@ -101,6 +101,7 @@ class Daemon:
         self.lock = threading.Lock()
         self.abort_gen = 0
         self.ctxs = {}
+        self.epochs = {}
 
     def add_host(self, conn, hello):
         host = Host(self, conn, hello)
@@ -122,6 +123,12 @@ class Daemon:
             return
         if kind == "hello":
             host.info.update(msg)
+            ep = msg.get("epoch")
+            if ep and self.epochs.get(host.brand, ep) != ep:
+                for c in list(self.ctxs.values()):
+                    c.tabs, c.owned = [], set()
+            if ep:
+                self.epochs[host.brand] = ep
             return
         text = msg.get("text")
         if text:
@@ -184,6 +191,12 @@ class Daemon:
         ctx = self.ctxs.get(sid)
         if ctx is None:
             ctx = self.ctxs[sid] = commands.Context(self, sid)
+            if sid:
+                taken = {c.group for c in self.ctxs.values() if c is not ctx}
+                n = 1
+                while "Lighting #%d" % n in taken:
+                    n += 1
+                ctx.group = "Lighting #%d" % n
         ctx.used = now
         return ctx
 

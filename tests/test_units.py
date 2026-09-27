@@ -374,6 +374,40 @@ def test_json_shape():
     assert s.startswith("items[] (1) {id: 1, name: \"a\"}") and "total: 2" in s
 
 
+def test_session_windows_keep_close_done():
+    from lighting import browser, commands, daemon, desktop
+
+    class Fake:
+        ctxs = {}
+        events = []
+        abort_gen = 0
+
+    f = Fake()
+    a, b, n = (daemon.Daemon.context(f, commands, s) for s in ("sa", "sb", ""))
+    assert (a.group, b.group, n.group) == ("Lighting #1", "Lighting #2", "Lighting")
+    del f.ctxs["sa"]
+    assert daemon.Daemon.context(f, commands, "sc").group == "Lighting #1"
+    sent, calls = [], []
+    keep_browsers, keep_out = commands.browsers, browser.out
+    commands.browsers = lambda ctx, cmd, args=None: sent.append((cmd, args)) or [{"kept": 1, "closed": 1, "shut": ["t5"]}]
+    browser.out = lambda ctx, cmd, args, timeout: calls.append(args) or "closed t5"
+    try:
+        b.tabs, b.owned = ["t5", "t6"], {"t5"}
+        assert commands.cmd_keep(b, [], {}).startswith("kept 1 tab") and sent[-1][1]["only"] == ["t5"]
+        browser.cmd_close(b, [], {})
+        assert calls[-1]["force"] is True and b.tabs == ["t6"]
+        b.tabs, b.owned = ["t5", "t6"], {"t5"}
+        commands.cmd_done(b, [], {"quiet": True})
+        assert b.tabs == ["t6"] and b.owned == set()
+    finally:
+        commands.browsers, browser.out = keep_browsers, keep_out
+    try:
+        desktop.cmd_video(b, ["e5"], {"seconds": "3"})
+        assert False, "a video of a page ref must fail"
+    except Exception as e:
+        assert "screen or a window" in str(e)
+
+
 def test_skill_and_mcp_budget():
     from lighting import mcp
     skill = (ROOT / "skills" / "lighting" / "SKILL.md").read_bytes()

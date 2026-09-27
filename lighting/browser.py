@@ -32,7 +32,7 @@ def blocklist():
 
 def config_payload(ctx_cfg):
     return {"blocklist": blocklist(), "risk": D.RISK_WORDS, "pointer": bool(ctx_cfg.get("pointer", True)),
-            "navLines": D.NAV_LINES, "navChars": D.NAV_CHARS}
+            "window": bool(ctx_cfg.get("window", True)), "navLines": D.NAV_LINES, "navChars": D.NAV_CHARS}
 
 
 def on_connect(daemon, host):
@@ -142,7 +142,7 @@ def call(ctx, cmd, args=None, timeout=D.CALL_TIMEOUT, want=None, tab=None):
     host = ensure_host(ctx, want)
     args = args if args is not None else {}
     own = session_tab(ctx, cmd, args) if tab is None else tab
-    msg = host.call(cmd, args, tab=own, timeout=timeout)
+    msg = host.call(cmd, args, tab=own, timeout=timeout, group=getattr(ctx, "group", None))
     ctx.target = ("web", host.brand)
     if not msg.get("ok"):
         err = str(msg.get("error") or "browser error")
@@ -611,7 +611,9 @@ def cmd_tab(ctx, pos, flags):
 
 
 def cmd_close(ctx, pos, flags):
-    res = out(ctx, "close", {"id": pos[0] if pos else None, "force": bool(flags.get("force"))}, 15)
+    sid = getattr(ctx, "sid", "")
+    mine = sid and (pos[0] if pos else (ctx.tabs[0] if ctx.tabs else None)) in ctx.owned
+    res = out(ctx, "close", {"id": pos[0] if pos else None, "force": bool(flags.get("force") or mine)}, 15)
     m = re.match(r"closed (t\d+)", res)
     if m and getattr(ctx, "sid", ""):
         gone = m.group(1)

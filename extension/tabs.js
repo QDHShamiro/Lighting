@@ -1,17 +1,24 @@
 const GROUP = "Lighting";
+const OURS = /^Lighting( #\d+)?$/;
+const colors = {};
 let target = null;
-let groupId = null;
-let color = null;
 const alias = { seq: 0, fwd: {}, back: {} };
 let mru = [];
+let epoch = 0;
 
 export async function restore() {
   try {
-    const s = await chrome.storage.session.get(["target", "alias", "mru"]);
+    const s = await chrome.storage.session.get(["target", "alias", "mru", "epoch"]);
     if (typeof s.target === "number") target = s.target;
     if (s.alias && s.alias.fwd) Object.assign(alias, s.alias);
     if (Array.isArray(s.mru)) mru = s.mru;
+    epoch = s.epoch || Date.now();
+    if (!s.epoch) await chrome.storage.session.set({ epoch });
   } catch (e) {}
+}
+
+export function getEpoch() {
+  return epoch;
 }
 
 export function sid(realId) {
@@ -50,58 +57,100 @@ export async function previous(excluding) {
   return tabs.length ? tabs[0].id : null;
 }
 
-async function lightingGroup(windowId) {
-  if (groupId !== null) {
-    try {
-      const g = await chrome.tabGroups.get(groupId);
-      if (g.windowId === windowId) return groupId;
-    } catch (e) {}
-  }
-  const found = await chrome.tabGroups.query({ title: GROUP, windowId });
-  groupId = found.length ? found[0].id : null;
-  return groupId;
+export function isOurs(title) {
+  return OURS.test(title || "");
 }
 
-export async function addToGroup(tabId) {
+async function lightingGroup(windowId, label) {
+  const found = await chrome.tabGroups.query({ title: label, windowId });
+  return found.length ? found[0].id : null;
+}
+
+export async function addToGroup(tabId, label) {
+  label = label || GROUP;
   try {
     const tab = await chrome.tabs.get(tabId);
-    const gid = await lightingGroup(tab.windowId);
+    const gid = await lightingGroup(tab.windowId, label);
     if (gid !== null) {
       await chrome.tabs.group({ tabIds: [tabId], groupId: gid });
     } else {
-      groupId = await chrome.tabs.group({ tabIds: [tabId], createProperties: { windowId: tab.windowId } });
-      await chrome.tabGroups.update(groupId, { title: GROUP, color: color || "orange", collapsed: false });
+      const ng = await chrome.tabs.group({ tabIds: [tabId], createProperties: { windowId: tab.windowId } });
+      await chrome.tabGroups.update(ng, { title: label, color: colors[label] || "orange", collapsed: false });
     }
   } catch (e) {}
 }
 
-export async function paint(c) {
-  if (c === color) return;
-  color = c;
-  const groups = await chrome.tabGroups.query({ title: GROUP }).catch(() => []);
-  for (const g of groups) await chrome.tabGroups.update(g.id, { color: c }).catch(() => {});
-}
-
-export async function inGroup(tabId) {
-  try {
-    const t = await chrome.tabs.get(tabId);
-    if (t.groupId === -1) return false;
-    const g = await chrome.tabGroups.get(t.groupId);
-    return g.title === GROUP;
-  } catch (e) {
-    return false;
+export async function paint(c, label) {
+  if (label && colors[label] === c) return;
+  if (label) colors[label] = c;
+  else for (const k of Object.keys(colors)) colors[k] = c;
+  const groups = await chrome.tabGroups.query({}).catch(() => []);
+  for (const g of groups) {
+    if ((label ? g.title === label : isOurs(g.title)) && g.color !== c) await chrome.tabGroups.update(g.id, { color: c }).catch(() => {});
   }
 }
 
-export async function create() {
-  let win = null;
+export async function groupOf(tabId) {
   try {
-    win = await chrome.windows.getLastFocused({ windowTypes: ["normal"] });
-  } catch (e) {}
-  const props = { url: "about:blank", active: false };
-  if (win) props.windowId = win.id;
-  const tab = await chrome.tabs.create(props);
-  await addToGroup(tab.id);
+    const t = await chrome.tabs.get(tabId);
+    if (t.groupId === -1) return null;
+    const g = await chrome.tabGroups.get(t.groupId);
+    return isOurs(g.title) ? g.title : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+export async function inGroup(tabId) {
+  return (await groupOf(tabId)) !== null;
+}
+
+let ownWindow = true;
+let wins = null;
+
+export function setOwnWindow(on) {
+  ownWindow = on;
+}
+
+async function loadWins() {
+  if (wins === null) {
+    const s = await chrome.storage.session.get(["wins"]).catch(() => ({}));
+    wins = s.wins || {};
+  }
+  return wins;
+}
+
+const alive = (id) => chrome.windows.get(id).then((w) => w.type === "normal", () => false);
+
+export async function ownWindows() {
+  const out = new Set();
+  for (const id of Object.values(await loadWins())) if (await alive(id)) out.add(id);
+  return out;
+}
+
+async function tabInOwnWindow(label) {
+  const w = await loadWins();
+  if (w[label] !== undefined && (await alive(w[label]))) return chrome.tabs.create({ windowId: w[label], url: "about:blank", active: true });
+  const nw = await chrome.windows.create({ url: "about:blank", focused: false });
+  w[label] = nw.id;
+  chrome.storage.session.set({ wins: w }).catch(() => {});
+  return nw.tabs && nw.tabs[0] ? nw.tabs[0] : (await chrome.tabs.query({ windowId: nw.id }))[0];
+}
+
+export async function create(label) {
+  label = label || GROUP;
+  let tab;
+  if (ownWindow) tab = await tabInOwnWindow(label);
+  else {
+    let win = null;
+    try {
+      win = await chrome.windows.getLastFocused({ windowTypes: ["normal"] });
+    } catch (e) {}
+    const props = { url: "about:blank", active: false };
+    if (win) props.windowId = win.id;
+    tab = await chrome.tabs.create(props);
+  }
+  await addToGroup(tab.id, label);
   await chrome.tabs.update(tab.id, { autoDiscardable: false }).catch(() => {});
   setTarget(tab.id);
   return tab.id;
@@ -120,8 +169,8 @@ export async function resolve(requested) {
   return target;
 }
 
-export async function groupTabs() {
-  const groups = await chrome.tabGroups.query({ title: GROUP });
+export async function groupTabs(label) {
+  const groups = (await chrome.tabGroups.query({})).filter((g) => (label ? g.title === label : isOurs(g.title)));
   const out = [];
   for (const g of groups) out.push(...(await chrome.tabs.query({ groupId: g.id })));
   return out;
@@ -186,8 +235,8 @@ export async function list() {
   const tabs = await chrome.tabs.query({});
   const lines = [];
   for (const t of tabs.slice(0, 60)) {
-    const lit = t.groupId !== -1 && (await inGroup(t.id));
-    const flags = (lit ? "L" : "") + (t.id === target ? "*" : "") + (t.active ? "a" : "");
+    const g = t.groupId !== -1 ? await groupOf(t.id) : null;
+    const flags = (g ? "L" + g.replace(/^Lighting( #)?/, "") : "") + (t.id === target ? "*" : "") + (t.active ? "a" : "");
     const title = (t.title || "").replace(/\s+/g, " ").slice(0, 50);
     lines.push("t" + sid(t.id) + (flags ? " " + flags : "") + " " + title + " - " + short(t.url || t.pendingUrl || "", 60));
   }

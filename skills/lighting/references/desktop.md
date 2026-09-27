@@ -16,6 +16,7 @@
 - Browser windows hide the web page part (use the web commands for the page); `--web` includes it.
 - Apps without accessible controls (games, canvas UIs): `lighting read w3` runs Windows OCR and prints `o4 "Play" @960,420`. `--lang de` or `--lang en` picks the OCR language (default English, switch with `lighting config ocr_lang de`).
 - `lighting shot w3` saves a small JPEG of just that window. Read it only if you really need pixels.
+- `lighting shot screen --seconds 10` (or `shot w3 --seconds 10`) films the screen or a window: an MP4 (H.264, 15 fps, 1280 px wide, up to 60 s) to send to the user, for example to a phone.
 
 ## Act
 - `click d5` uses the control's own action (Invoke, Toggle, Select, Expand) in the background. The user's mouse and focus stay where they are.
@@ -47,6 +48,11 @@
 - Speech-to-text runs with the Groq or OpenAI key from `GROQ_API_KEY`/`OPENAI_API_KEY` or `~/.config/watch/.env` (the sound goes to that service), otherwise, with `--local` or `lighting config audio local`, on this PC with faster-whisper (installed once, ~150 MB, about real time on the CPU).
 - `--from 1:30 --to 2:00` for a part, `--lang de` if the language is known. Music with singing can be misheard (the header then says `mostly music`); pure music answers `(no speech: only music or silence; on-screen text: lighting frames)`.
 - `frames e40 --audio` puts the pictures and the words of the same part into one answer.
+
+## A new Claude session
+- `lighting claude "the task" --yes` opens a new tab in Windows Terminal (like its `+` button), starts Claude Code with Remote Control (so the user can follow it on the phone or at claude.ai/code), waits until it is ready and pastes the task. Only when the user asked for it.
+- `--dir E:/project` picks the folder (default: the current one), `--name "Shop fix"` the tab and Remote Control name, `--no-remote` leaves Remote Control off. Without a task it only starts the session.
+- If Claude asks whether to trust the folder, Lighting stops and says so: the user answers in the terminal. The task is typed only while that tab is in front, never into another session.
 
 ## Limits
 - Windows that run as administrator cannot be controlled from a normal terminal (Windows UIPI). Lighting says so.

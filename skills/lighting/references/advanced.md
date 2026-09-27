@@ -10,7 +10,7 @@
 
 ## Frames
 - Same-origin iframes are part of the normal snapshot.
-- Cross-origin iframes appear as `iframe host.com (cross-origin, lighting snap --frame host.com)`. Refs there look like `f5.e3`.
+- Cross-origin iframes appear as `iframe host.com (cross-origin, lighting snap --frame host.com)`. Refs there look like `f5.e3` and work like any ref (`click f5.e3`, `type f5.e3 text`): payment and login frames included.
 
 ## Data without the UI
 - `lighting fetch /api/me --pick login` runs fetch() inside the page with the user's cookies and returns compact JSON. `--pick data.items[].name` selects fields. `--method POST --body '{"a":1}'` for writes (not on blocked sites).
@@ -21,11 +21,11 @@
 - WebMCP (pages that offer tools to AI, Chrome origin trial): `open` says `webmcp: 2 tools (lighting tools)`; `lighting tools` lists them, `lighting call <tool> '{"q": "x"}'` runs one. Tools that can change something need `--yes`.
 
 ## Tabs and browsers
-- Lighting works in its own orange tab group "Lighting". `open -n` opens another tab.
+- Every Claude session works in its own browser window (the same logged-in profile) with its own tab group `Lighting #1`, `Lighting #2`, ...; calls without a session use the group "Lighting". The window opens behind the user's window and closes when its last tab closes. `lighting config window off` puts the tabs into the user's window instead. `open -n` opens another tab.
 - Every Claude session has its own tabs (it sends `CLAUDE_CODE_SESSION_ID`): its commands go to its own last tab, a session without a tab gets `this session has no tab yet` instead of touching another session's tab, and `done` at the end of a reply closes only that session's tabs and apps. `lighting tabs` + `tab t3` borrows any tab. Calls without a session (a plain terminal) share one context as before.
-- `lighting tabs` lists all tabs (`L` = Lighting group, `*` = current target, `a` = active). `lighting tab t3` works in any tab, including the user's own.
+- `lighting tabs` lists all tabs (`L` = Lighting group, `L2` = `Lighting #2`, `*` = current target, `a` = active). `lighting tab t3` works in any tab, including the user's own.
 - Links that open a new tab switch the target automatically (`! new tab t9 opened from t4`).
-- `close` only closes Lighting tabs unless you add `--force`.
+- `close` only closes Lighting tabs and tabs this session opened, unless you add `--force`. `keep t3` takes a tab out of the cleanup; you can go on working in it.
 - Several browsers connected: the last focused one is used. `lighting config browser brave|chrome|edge|auto`.
 
 ## Waiting
@@ -51,7 +51,7 @@
 - `cannot script this page` (brave://, chrome://, Web Store, PDF viewer) -> use desktop control on the browser window: `lighting snap w1 --web`.
 - `dialog open: confirm "..."` -> `lighting dialog accept` or `dismiss`.
 - Something hangs: `lighting stop` restarts the background process on the next call.
-- `lighting selftest` runs 125 checks (browser, desktop, chat, sessions). `lighting bench --real` times six real sites and compares with the last run.
+- `lighting selftest` runs 130 checks (browser, desktop, chat, sessions). `lighting bench --real` times six real sites and compares with the last run.
 
 ## Routines (learned tasks)
 - Every successful action is kept with a stable target (`click e12` is stored as `click "Sign in"`, desktop `d5` by its name). Reads (snap, text, shot) only count as cost.

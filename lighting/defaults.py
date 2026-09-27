@@ -73,6 +73,11 @@ SESSION_IDLE_S = 12 * 3600
 SITES = HOME / "sites.json"
 LISTEN_MAX_S = 300
 LISTEN_TIMEOUT_S = 900
+VIDEO_MAX_S = 60
+VIDEO_FPS = 15
+VIDEO_WIDTH = 1280
+VIDEO_CRF = 30
+SPAWN_TIMEOUT_S = 90
 LISTEN_CHARS = 1800
 
 IDLE_MS = 300
@@ -92,6 +97,7 @@ CONFIG_DEFAULTS = {
     "learn": True,
     "cleanup": True,
     "audio": "auto",
+    "window": True,
 }
 
 RISK_WORDS = [

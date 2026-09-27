@@ -632,6 +632,19 @@
     return { lines: out, ids, below: below + cut.below, above: above + cut.above, notes: notesOut.concat(notes(frames)) };
   }
 
+  function textHits(filter) {
+    const words = filter.toLowerCase().split("|").map((s) => s.trim()).filter(Boolean);
+    const out = [];
+    for (const raw of (document.body ? document.body.innerText : "").split("\n")) {
+      const s = raw.replace(/\s+/g, " ").trim();
+      const at = Math.min(...words.map((w) => (s.toLowerCase().indexOf(w) + 1 || Infinity) - 1));
+      if (at === Infinity) continue;
+      out.push('"' + (at > 60 ? "..." + trunc(s.slice(at - 30), 90) : trunc(s, 120)) + '"');
+      if (out.length >= 3) break;
+    }
+    return out;
+  }
+
   function snap(opts) {
     opts = opts || {};
     const sig = JSON.stringify([opts.all, opts.scope, opts.filter, opts.media]);
@@ -640,9 +653,13 @@
     }
     let res = collectLines(opts);
     if (res.error) return res;
-    if (opts.filter && !opts.all && !res.lines.some((l) => /^e\d+ /.test(l))) {
-      res = collectLines(Object.assign({}, opts, { all: true }));
-      res.notes = res.notes.concat(res.lines.some((l) => /^e\d+ /.test(l)) ? "(no match in view, matches from the whole page; click scrolls to them)" : '(no match for "' + opts.filter + '" on the whole page)');
+    if (opts.filter && !res.lines.some((l) => /^e\d+ /.test(l))) {
+      if (!opts.all) res = collectLines(Object.assign({}, opts, { all: true }));
+      if (res.lines.some((l) => /^e\d+ /.test(l))) res.notes = res.notes.concat("(no match in view, matches from the whole page; click scrolls to them)");
+      else {
+        const said = textHits(opts.filter);
+        res.notes = res.notes.concat(said.length ? ['(no control matches "' + opts.filter + '", this text does:)'].concat(said) : '(no match for "' + opts.filter + '" on the whole page)');
+      }
       res.searched = true;
     }
     const prev = S.last;
