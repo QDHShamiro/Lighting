@@ -309,7 +309,7 @@ def cmd_call(ctx, pos, flags):
 
 def cmd_snap(ctx, pos, flags):
     args = {"all": bool(flags.get("all")), "diff": bool(flags.get("diff")), "force": bool(flags.get("force")),
-            "media": bool(flags.get("media"))}
+            "media": bool(flags.get("media")), "full": bool(flags.get("full"))}
     if flags.get("f"):
         args["filter"] = flags["f"]
     scope = flags.get("s") or (pos[0] if pos and REF_RE.match(pos[0]) else None)
@@ -732,7 +732,8 @@ def cmd_frames(ctx, pos, flags):
         sheet.paste(tile.resize((tw, th)), (x, y))
         draw.rectangle((x, y, x + 8 + 7 * len(stamp), y + 16), fill="black")
         draw.text((x + 4, y + 2), stamp, fill="white")
-    res = save_image(ctx, sheet, "frames-" + pos[0], False, int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
+    width = int(flags.get("width") or (D.SMALL_WIDTH if flags.get("small") else ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
+    res = save_image(ctx, sheet, "frames-" + pos[0], False, width)
     looks = {hashlib.md5(t.convert("L").resize((32, 18)).point(lambda v: v // 24 * 24).tobytes()).hexdigest() for t in tiles}
     still = len(looks) == 1 or (len(set(stamps)) == 1 and ":" in stamps[0])
     note = ""

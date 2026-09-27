@@ -27,6 +27,7 @@
 - Key names: letters, digits, `f1`-`f24`, `enter tab esc space backspace delete insert home end pgup pgdn up down left right` (also `arrowdown`), `plus minus comma period`, `numpad0`-`numpad9`, `ctrl++` (zoom in), modifiers `ctrl shift alt win altgr` (German `strg umschalt` too). Media keys need no window: `playpause nexttrack prevtrack stop volumeup volumedown mute`.
 - `click o4` or `click "Play"` (OCR text) does a real mouse click: it waits until the user has not moved the mouse for 0.3 s, clicks and puts the cursor back exactly.
 - `scroll d9` / `scroll up` scroll a list or the window. `drag d3 d9` drags with the real mouse (cursor restored).
+- `wait "Done" w3` waits until an app shows a text: names and values of its controls, else OCR (terminals, games). `--gone` waits until it disappears, `--timeout 60s` (default 30 s). Other commands keep running meanwhile.
 - An orange Claude pointer shows where Lighting acts. Turn it off with `lighting config pointer off`.
 
 ## Keyboard shortcuts
@@ -47,7 +48,7 @@
 - Cheapest first: captions on the page, then captions via yt-dlp, then the audio via yt-dlp, then a live recording in the tab (`--live`, or when the site cannot be downloaded: logged-in videos). The live recording plays the video muted for as long as the part lasts (at most 5 minutes) and puts time and pause back.
 - Speech-to-text runs with the Groq or OpenAI key from `GROQ_API_KEY`/`OPENAI_API_KEY` or `~/.config/watch/.env` (the sound goes to that service), otherwise, with `--local` or `lighting config audio local`, on this PC with faster-whisper (installed once, ~150 MB, about real time on the CPU).
 - `--from 1:30 --to 2:00` for a part, `--lang de` if the language is known. Music with singing can be misheard (the header then says `mostly music`); pure music answers `(no speech: only music or silence; on-screen text: lighting frames)`.
-- `frames e40 --audio` puts the pictures and the words of the same part into one answer.
+- `frames e40 --audio` puts the pictures and the words of the same part into one answer. `--small` makes the sheet 768 px wide (about 45% fewer image tokens).
 
 ## A new Claude session
 - `lighting claude "the task" --yes` opens a new tab in Windows Terminal (like its `+` button), starts Claude Code with Remote Control (so the user can follow it on the phone or at claude.ai/code), waits until it is ready and pastes the task. Only when the user asked for it.

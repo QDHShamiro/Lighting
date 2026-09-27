@@ -159,6 +159,12 @@ function formatSnap(tabId, res, limit, whole) {
   if (res.unchanged) return header(tabId, res) + "\nunchanged since last snap (refs still valid)";
   const out = [header(tabId, res)];
   for (const n of res.notes || []) out.push(n);
+  if (res.delta) {
+    const d = res.delta;
+    out.push(res.lines.length || d.gone ? "changed since your last snap: +" + res.lines.length + (d.gone ? ", -" + d.gone + " gone" : "") + " (all " + d.total + " lines: lighting snap --full)" : "no change since your last snap (all " + d.total + " lines: lighting snap --full)");
+    out.push(...res.lines);
+    return out.join("\n");
+  }
   let lines = res.lines || [];
   if (!whole && res.removed === undefined) lines = sameHead(tabId, res, lines);
   let cut = 0;

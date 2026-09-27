@@ -8,13 +8,34 @@ let epoch = 0;
 
 export async function restore() {
   try {
-    const s = await chrome.storage.session.get(["target", "alias", "mru", "epoch"]);
+    const s = await chrome.storage.local.get(["target", "alias", "mru", "epoch", "wins"]);
     if (typeof s.target === "number") target = s.target;
     if (s.alias && s.alias.fwd) Object.assign(alias, s.alias);
     if (Array.isArray(s.mru)) mru = s.mru;
+    if (s.wins) wins = s.wins;
+    const live = new Set((await chrome.tabs.query({})).map((t) => t.id));
+    for (const [real, n] of Object.entries(alias.fwd)) {
+      if (!live.has(Number(real))) {
+        delete alias.fwd[real];
+        delete alias.back[n];
+      }
+    }
+    if (target !== null && !live.has(target)) target = null;
+    mru = mru.filter((id) => live.has(id));
     epoch = s.epoch || Date.now();
-    if (!s.epoch) await chrome.storage.session.set({ epoch });
+    await chrome.storage.local.set({ alias, target, mru, epoch });
   } catch (e) {}
+}
+
+export async function fresh() {
+  alias.seq = 0;
+  alias.fwd = {};
+  alias.back = {};
+  target = null;
+  mru = [];
+  wins = {};
+  epoch = Date.now();
+  await chrome.storage.local.set({ alias, target, mru, wins, epoch }).catch(() => {});
 }
 
 export function getEpoch() {
@@ -28,7 +49,7 @@ export function sid(realId) {
     n = ++alias.seq;
     alias.fwd[realId] = n;
     alias.back[n] = realId;
-    chrome.storage.session.set({ alias }).catch(() => {});
+    chrome.storage.local.set({ alias }).catch(() => {});
   }
   return n;
 }
@@ -45,7 +66,7 @@ export function getTarget() {
 export function setTarget(id) {
   target = id;
   if (id !== null) mru = [id, ...mru.filter((x) => x !== id)].slice(0, 20);
-  chrome.storage.session.set({ target: id, mru }).catch(() => {});
+  chrome.storage.local.set({ target: id, mru }).catch(() => {});
 }
 
 export async function previous(excluding) {
@@ -114,7 +135,7 @@ export function setOwnWindow(on) {
 
 async function loadWins() {
   if (wins === null) {
-    const s = await chrome.storage.session.get(["wins"]).catch(() => ({}));
+    const s = await chrome.storage.local.get(["wins"]).catch(() => ({}));
     wins = s.wins || {};
   }
   return wins;
@@ -133,7 +154,7 @@ async function tabInOwnWindow(label) {
   if (w[label] !== undefined && (await alive(w[label]))) return chrome.tabs.create({ windowId: w[label], url: "about:blank", active: true });
   const nw = await chrome.windows.create({ url: "about:blank", focused: false });
   w[label] = nw.id;
-  chrome.storage.session.set({ wins: w }).catch(() => {});
+  chrome.storage.local.set({ wins: w }).catch(() => {});
   return nw.tabs && nw.tabs[0] ? nw.tabs[0] : (await chrome.tabs.query({ windowId: nw.id }))[0];
 }
 

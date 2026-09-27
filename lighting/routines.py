@@ -297,6 +297,10 @@ def align(A, B):
             continue
         s = sim(A[i], B[j])
         if 0.3 <= s < 1.0:
+            whole = typed_pairs(A[i], B[j])
+            if whole is not None:
+                mapping.update(whole)
+                continue
             for va, vb, _ in slot_pairs(A[i], B[j]):
                 if len(va) <= 60 and len(vb) <= 60:
                     mapping[va] = vb
@@ -315,6 +319,35 @@ def align(A, B):
 
 
 PARAM_BAD = {"https", "http", "www", "com", "de", "org", "net"}
+FILLER = {"add", "a", "an", "the", "your", "enter", "type", "here", "please", "new", "optional", "required", "ein", "eine",
+          "einen", "der", "die", "das", "dein", "deine", "hier", "eingeben", "an", "to", "for", "fuer"}
+
+
+def label_name(label):
+    words = [w for w in slug(label, 12).split("-") if w and w not in FILLER]
+    return "_".join(words[:2])
+
+
+def typed_pairs(a, b):
+    if a["cmd"] != b["cmd"] or a["cmd"] not in ("type", "fill"):
+        return None
+    if a["cmd"] == "type":
+        if not a["args"] or not b["args"] or a["args"][0] != b["args"][0]:
+            return None
+        va, vb = " ".join(a["args"][1:]), " ".join(b["args"][1:])
+        return {va: vb} if va and vb and va != vb else {}
+    la = dict(x.partition("=")[::2] for x in a["args"])
+    lb = dict(x.partition("=")[::2] for x in b["args"])
+    if set(la) != set(lb):
+        return None
+    return {la[k]: lb[k] for k in la if la[k] and lb[k] and la[k] != lb[k]}
+
+
+def long_literal(step):
+    if step["cmd"] not in ("type", "fill"):
+        return False
+    vals = step["args"][1:] if step["cmd"] == "type" else [x.partition("=")[2] for x in step["args"]]
+    return any(len(v) > 80 and "{" not in v for v in vals)
 
 
 def param_name(prev, step, value, used):
@@ -323,10 +356,10 @@ def param_name(prev, step, value, used):
         for a in step["args"]:
             label, _, v = a.partition("=")
             if value in v:
-                base = slug(label, 2).replace("-", "_")
+                base = label_name(label)
                 break
     elif step["cmd"] == "type" and len(step["args"]) > 1 and value in " ".join(step["args"][1:]):
-        base = slug(step["args"][0], 2).replace("-", "_")
+        base = label_name(step["args"][0])
     if not base and prev and prev.lower() not in PARAM_BAD and not prev.isdigit():
         base = prev.lower()
     if not base:
@@ -407,8 +440,10 @@ def build(A, ep, blk):
     for i, j in blk["pairs"]:
         if i is None:
             continue
-        for va, vb, prev in slot_pairs(A[i], B[j]):
-            if vb in values or len(vb) > 60 or len(vb) < 2:
+        whole = typed_pairs(A[i], B[j])
+        pairs = [(va, vb, "") for va, vb in whole.items()] if whole is not None else slot_pairs(A[i], B[j])
+        for va, vb, prev in pairs:
+            if vb in values or len(vb) < 2 or (whole is None and len(vb) > 60):
                 continue
             p = param_name(prev, B[j], vb, used)
             used.add(p)
@@ -513,6 +548,8 @@ def learn(ctx, ep, past):
         return None
     body = build(best_old["steps"], ep, best)
     body["steps"] = compact(body["steps"], rs)
+    if any(long_literal(s) for s in body["steps"]):
+        return None
     if any(signature(body["steps"]) == signature(r["steps"]) for r in rs):
         return None
     r = new_routine(body, "learned", (best_old.get("cost", 0) + ep["cost"]) // 2)

@@ -131,6 +131,14 @@ def side(ctx, pos, verb, flags=None):
     return web()
 
 
+def app_wait(ctx, pos, flags):
+    if flags.get("on") in ("app", "web"):
+        return flags["on"] == "app"
+    if any(ref_kind(p) == "w" or p.lower().startswith("app:") for p in pos):
+        return True
+    return ctx.kind() == "app" and bool(pos) and not pos[0].isdigit() and not ref_kind(pos[0]) and not pos[0].startswith(("url:", "css:"))
+
+
 def route(ctx, name, pos, flags):
     if name in SYSTEM:
         return SYSTEM[name](ctx, pos, flags)
@@ -153,6 +161,8 @@ def route(ctx, name, pos, flags):
         return getattr(app(), "cmd_" + name)(ctx, pos, flags)
     if name == "shot" and flags.get("seconds"):
         return app().cmd_video(ctx, pos, flags)
+    if name == "wait" and app_wait(ctx, pos, flags):
+        return app().cmd_wait(ctx, pos, flags)
     if name in SHARED:
         return getattr(side(ctx, pos, name, flags), "cmd_" + name)(ctx, pos, flags)
     if name in WEB_ONLY:

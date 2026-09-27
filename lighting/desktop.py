@@ -822,6 +822,54 @@ def cmd_shot(ctx, pos, flags):
                       int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
 
 
+def app_text(hwnd):
+    from lighting import uia
+    U = uia.api()[1]
+    parts = []
+    for el in uia.collect(hwnd, with_text=True)[1]:
+        for pid in (U.UIA_NamePropertyId, U.UIA_ValueValuePropertyId):
+            v = uia.cached(el, pid)
+            if isinstance(v, str) and v.strip():
+                parts.append(" ".join(v.split()))
+    return " ".join(parts)
+
+
+def cmd_wait(ctx, pos, flags):
+    from lighting import ocr
+    from lighting.common import Pending, parse_ms
+    words = [p for p in pos if ref_kind(p) != "w" and not p.lower().startswith("app:")]
+    if not words:
+        raise Fail('waiting in an app needs "text"', 'lighting wait "Done" w3 --timeout 60s')
+    want, gone = " ".join(words).lower(), bool(flags.get("gone"))
+    hwnd = target(ctx, [p for p in pos if p not in words] or None)
+    limit = parse_ms(flags.get("timeout"), D.APP_WAIT_MS) / 1000.0
+    t0, last = time.time(), [0.0]
+
+    def seen():
+        if not win.alive(hwnd):
+            raise Fail("window %s is gone" % wref(ctx, hwnd), "lighting windows")
+        try:
+            if want in app_text(hwnd).lower():
+                return True
+        except Exception:
+            pass
+        if not (gone or time.time() - last[0] >= D.APP_WAIT_OCR_S) or win.user32.IsIconic(hwnd):
+            return None
+        last[0] = time.time()
+        return want in " ".join(t for t, *_ in ocr.recognize(grab(win.rect(hwnd), hwnd), ctx.cfg.get("ocr_lang"))).lower()
+
+    def poll(end):
+        hit = seen()
+        if (hit is False) if gone else hit:
+            return "ok (%.1f s)" % (time.time() - t0)
+        if end:
+            raise Fail('"%s" %s after %d s in %s' % (" ".join(words), "still there" if gone else "not there", limit, wref(ctx, hwnd)),
+                       "lighting read %s" % wref(ctx, hwnd))
+        return None
+
+    return Pending(poll, limit, 0.5)
+
+
 def cmd_video(ctx, pos, flags):
     import subprocess
     from lighting import audio

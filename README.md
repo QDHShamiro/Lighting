@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-111111?style=flat-square" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-130%2F130-111111?style=flat-square" alt="130/130 selftest">
+  <img src="https://img.shields.io/badge/selftest-135%2F135-111111?style=flat-square" alt="135/135 selftest">
   <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
   <br>
@@ -250,7 +250,7 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **130/130** (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (26/26), `cargo test` in `client/`.
+- `lighting selftest`: **135/135** (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (28/28), `cargo test` in `client/`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - Filling and submitting a form: ~160 ms.
 - GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
@@ -275,6 +275,9 @@ your logged-in browser and your apps, cheaply.
 
 ## What's new
 
+- **1.1.0** Sessions keep their tabs and windows through updates and restarts; `wait "text" w3` waits in any
+  app; a repeated `snap` shows only what changed (`--full` for all); `frames --small`; routines learn whole values
+  with clean names and skip one-off tasks.
 - **1.0.0** Every session gets its own browser window (`Lighting #1`, `Lighting #2`); `lighting claude "task" --yes`
   opens a new terminal tab with Claude and Remote Control and hands it the task; `shot screen --seconds 10` films
   the screen for your phone. Fixed from real sessions: clicks in payment and login frames, tabs lost after `done`,
@@ -373,7 +376,7 @@ args = ["mcp"]
 |---|---|
 | Look | `open <url>` · `snap [-f "a\|b"] [-s e40] [--diff] [--all]` · `text` (Markdown via [Defuddle](https://github.com/kepano/defuddle)) · `read <url> [url2 ...]` (pages and PDFs, no browser) · `shot --marks` |
 | Act | `click` · `type` · `fill "Email=a@b.c" --submit` · `press` · `select` · `check` · `hover` · `drag` · `scroll --until "text"` · `upload` |
-| Wait | `wait "text" \| url:/x \| 1500 [--gone]` · `expect "text"` |
+| Wait | `wait "text" \| url:/x \| 1500 [--gone]` · `expect "text"` · `wait "Done" w3` (in an app) |
 | Data | `table e8` · `fetch /api/me --pick login` (with your cookies) · `js` |
 | Tabs | `tabs` · `tab t3` · `close` · `back` · `reload` · `dialog accept\|dismiss` · `dismiss` (cookie banners) · `viewport 390x844` |
 | Clean up | `done` (close what Lighting opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) · `config window off` (tabs in your window, not an own one) |

@@ -6,6 +6,7 @@
 - When a modal is open, the snapshot shows only the modal.
 - `more: 23 below` means scroll or use `--all`.
 - `unchanged since last snap` means the page did not change and your refs still work.
+- A repeated plain `snap` of the same page answers only what changed since your last `snap`: `changed since your last snap: +2, -1 gone (all 40 lines: lighting snap --full)` and the new lines. After a big change, a new page or with any flag you get the full view; `snap --full` always does.
 - Refs stay valid until the page navigates. A stale ref answers `e12 is gone -> try: lighting snap`.
 
 ## Frames
@@ -22,7 +23,7 @@
 
 ## Tabs and browsers
 - Every Claude session works in its own browser window (the same logged-in profile) with its own tab group `Lighting #1`, `Lighting #2`, ...; calls without a session use the group "Lighting". The window opens behind the user's window and closes when its last tab closes. `lighting config window off` puts the tabs into the user's window instead. `open -n` opens another tab.
-- Every Claude session has its own tabs (it sends `CLAUDE_CODE_SESSION_ID`): its commands go to its own last tab, a session without a tab gets `this session has no tab yet` instead of touching another session's tab, and `done` at the end of a reply closes only that session's tabs and apps. `lighting tabs` + `tab t3` borrows any tab. Calls without a session (a plain terminal) share one context as before.
+- Every Claude session has its own tabs (it sends `CLAUDE_CODE_SESSION_ID`): its commands go to its own last tab, a session without a tab gets `this session has no tab yet` instead of touching another session's tab, and `done` at the end of a reply closes only that session's tabs and apps. `lighting tabs` + `tab t3` borrows any tab. Calls without a session (a plain terminal) share one context as before. Sessions survive `lighting stop`, updates and extension reloads (kept in `~/.lighting/sessions.json`); only a browser restart starts the tab ids over.
 - `lighting tabs` lists all tabs (`L` = Lighting group, `L2` = `Lighting #2`, `*` = current target, `a` = active). `lighting tab t3` works in any tab, including the user's own.
 - Links that open a new tab switch the target automatically (`! new tab t9 opened from t4`).
 - `close` only closes Lighting tabs and tabs this session opened, unless you add `--force`. `keep t3` takes a tab out of the cleanup; you can go on working in it.
