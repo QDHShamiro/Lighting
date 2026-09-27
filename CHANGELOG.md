@@ -3,6 +3,33 @@
 Versions follow semver. Every release on GitHub carries `lighting.exe` built from the tag by CI,
 a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in the repo at that tag).
 
+## [1.0.0] - 2026-09-27
+
+Built from the stumbles in real sessions since 0.9.0, and every session gets its own browser window.
+
+### Added
+- Each Claude session works in its own browser window (same logged-in profile) with its own tab group
+  `Lighting #1`, `Lighting #2`, ...; the status colour belongs to that session and `tabs` shows `L2` for its tabs.
+  `config window off` keeps the tabs in your window as before.
+- `claude ["prompt"] --yes [--dir path] [--name x] [--no-remote]`: a new Windows Terminal tab with Claude Code and
+  Remote Control; once Claude is ready the prompt is pasted and sent (any characters work). It stops when Claude
+  asks whether to trust the folder. A prompt needs `--yes`: only when the user asked for it.
+- `shot screen|w2 --seconds 10`: a short H.264 video (15 fps, 1280 px wide, up to 60 s) to send to a phone.
+
+### Fixed
+- After `done` a session lost track of the tabs it opened next: every command said "this session has no tab yet"
+  and those tabs stayed open. From 0.9.0 on this would have hit after every reply.
+- Clicks, typing and every other action on refs in cross-origin frames (`f134.e1` from `snap --frame`) never reached
+  the frame ("is gone (page changed)"), so the PayPal button of a Shopify checkout could not be clicked. The action
+  now runs in its frame, at the frame's position on the page.
+- `keep` dropped the tab as the target ("no tab yet" on the next command), handed over the tabs of every session,
+  and the session could no longer close its own kept tab without `--force`.
+- After an extension reload or a browser restart tab ids start again at `t1`, so a session could act on another tab
+  with an old id; sessions now forget their tab ids when that happens.
+- `snap -f "word"` said "no match on the whole page" when the word was only in text or headings; it shows those lines.
+- `wait "text"` did not see names of controls (GitHub's "3 / 3 checks OK" is a button label).
+- `done` without a session id (by hand, older clients) closed the tabs and apps of every session; now only its own.
+
 ## [0.9.0] - 2026-09-27
 
 From a research round (Katalog v3): sound in videos, sessions that stay apart, fewer tokens for chat apps,

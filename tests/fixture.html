@@ -54,10 +54,13 @@ body { font-family: Segoe UI, sans-serif; margin: 20px; }
 <img id="pic" alt="orange test square" width="64" height="64" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23ff8a00'/%3E%3C/svg%3E">
 <table id="prices"><tr><th>Name</th><th>Price</th></tr><tr><td>Alpha</td><td>1.00</td></tr><tr><td>Beta</td><td>2.50</td></tr><tr><td>Gamma</td><td>9.99</td></tr></table>
 <iframe src="/frame" title="same origin frame" width="320" height="70"></iframe>
+<iframe id="xo" title="other site frame" width="320" height="70"></iframe>
+<span role="img" aria-label="Checks all green" style="display:inline-block;width:12px;height:12px;background:#2da44e"></span>
 <ul id="items"></ul>
 <div class="cookie-banner" id="cookie-banner">We use cookies. <button>Accept all</button> <button id="rej">Reject all</button></div>
 <script>
 const $ = (id) => document.getElementById(id);
+$("xo").src = location.origin.replace("127.0.0.1", "localhost") + "/frame";
 $("f").addEventListener("submit", (e) => {
   e.preventDefault();
   $("result").textContent = "Submitted: " + $("email").value + " / " + $("country").value + " / " + ($("remember").checked ? "yes" : "no") + " / pw " + $("pw").value.length;

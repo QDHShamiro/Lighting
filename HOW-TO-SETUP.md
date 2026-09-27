@@ -138,9 +138,9 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-python tests/test_units.py     # 24/24
+python tests/test_units.py     # 26/26
 cd client && cargo test && cargo clippy --release --all-targets
-lighting selftest              # must print 125/125 passed (124/124 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
+lighting selftest              # must print 130/130 passed (129/129 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
 lighting bench
 lighting bench --real          # compare tokens with the last run
 ```
@@ -171,6 +171,11 @@ For routines: do one task twice with different values, `lighting routine learn`,
 - **Tests of a rebuilt client ran the old one**: `lighting` resolved to the stale `~/.lighting/bin` copy. Compare `md5sum bin/lighting.exe ~/.lighting/bin/lighting.exe`.
 - **Testing through Lighting leaves learned routines behind**: repeated test flows became routines (`github-confirm-merge` clicked "Merge pull request" and was offered on every PR page, `calc-focused` typed a fixed sum). After a test session run `lighting routines` and `routine rm` what the tests made. Merge buttons now need `--yes`.
 - **A focus fix stole the keyboard**: bringing a window forward for `type focused` without `pointer.wait_idle()` would have sent the user's own keystrokes into it. Everything that changes the foreground waits for 300 ms of user idle first.
+- **Frame refs were printed but never used** (until 1.0.0): `snap --frame` gave `f134.e1`, every action then looked for it in the top frame and said "is gone". Actions now run in the frame and add the frame's position on the page. The selftest clicks a button in a cross-origin frame (`localhost` inside `127.0.0.1`).
+- **The answer named the tab that was asked for, not the one used**: when a session's remembered tab was closed, `open` made a new tab but reported none, so the session lost it and said "no tab yet" after every `done`. `where` follows the tab the command really used.
+- **Tab ids live in `chrome.storage.session`**: an extension reload or a browser restart starts them at `t1` again. The extension sends an `epoch` in its hello; when it changes the daemon forgets every session's tab ids.
+- **`git checkout main` while a `lighting.exe` from this folder runs** stopped halfway (Windows cannot replace a running exe) and left the 0.7.2 files in the folder the daemon loads from (`~/.lighting/client-root`). Fast-forward first (`git fetch origin main:main`), then switch.
+- **Test rounds restart the daemon under other sessions**: `lighting stop` and `ext-reload` break their waits and tab ids. Batch the changes, restart once.
 - **Only the fixture was tested.** A sweep over real sites (GitHub, YouTube, Wikipedia, SpigotMC, Modrinth, Hugging Face, PaperMC docs) found six output and timing problems in one hour. Repeat that sweep after bigger changes.
 
 ## 6. Failure modes

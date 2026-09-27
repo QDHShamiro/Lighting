@@ -9,7 +9,7 @@ from lighting.common import Fail, Pending, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
-          "reload", "since"}
+          "reload", "since", "seconds", "dir", "name"}
 TRACE = (D.HOME / "trace").exists()
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
          "-m": "media"}
@@ -37,6 +37,7 @@ class Context:
         self.ep = None
         self.run_stack = []
         self.quiet_steps = 0
+        self.group = "Lighting"
 
     def kind(self):
         return self.target[0] if self.target else None
@@ -145,8 +146,13 @@ def route(ctx, name, pos, flags):
     if name == "listen":
         from lighting import audio
         return audio.cmd_listen(ctx, pos, flags)
+    if name == "claude":
+        from lighting import spawn
+        return spawn.cmd_claude(ctx, pos, flags)
     if name in APP_ONLY:
         return getattr(app(), "cmd_" + name)(ctx, pos, flags)
+    if name == "shot" and flags.get("seconds"):
+        return app().cmd_video(ctx, pos, flags)
     if name in SHARED:
         return getattr(side(ctx, pos, name, flags), "cmd_" + name)(ctx, pos, flags)
     if name in WEB_ONLY:
@@ -349,7 +355,7 @@ def browsers(ctx, cmd, args=None):
     replies = []
     for h in [h for h in ctx.d.hosts if h.alive]:
         try:
-            replies.append(h.call(cmd, args or {}, timeout=5))
+            replies.append(h.call(cmd, args or {}, timeout=5, group=ctx.group))
         except TimeoutError:
             pass
     return replies
@@ -367,11 +373,13 @@ def cmd_done(ctx, pos, flags):
     tabs = sum(r.get("closed") or 0 for r in replies)
     viewed = sum(r.get("kept") or 0 for r in replies)
     closed, left = [], []
-    for c in [ctx] if ctx.sid else list(ctx.d.ctxs.values()) or [ctx]:
+    for c in [ctx]:
         got = app().cleanup(c)
         closed += got[0]
         left += got[1]
     if ctx.sid:
+        gone = {t for r in replies for t in r.get("shut") or []}
+        ctx.tabs = [t for t in ctx.tabs if t not in gone]
         ctx.owned = set()
     if quiet:
         return ""
@@ -390,7 +398,8 @@ def cmd_keep(ctx, pos, flags):
     kind = ref_kind(spec) if spec else None
     tabs = apps = 0
     if not spec or kind == "t":
-        tabs = sum(r.get("kept") or 0 for r in browsers(ctx, "keep", {"id": spec}))
+        args = {"id": spec, "only": sorted(ctx.owned)} if ctx.sid and not spec else {"id": spec}
+        tabs = sum(r.get("kept") or 0 for r in browsers(ctx, "keep", args))
     if not spec or kind == "w" or spec.lower().startswith("app:"):
         apps = app().keep(ctx, spec)
     parts = [plural(n, w) for n, w in ((tabs, "tab"), (apps, "app")) if n]
@@ -428,8 +437,9 @@ def cmd_status(ctx, pos, flags):
     if ctx.target:
         lines.append("target %s %s" % (ctx.target[0], ctx.target[1]))
     cfg = ctx.cfg
-    lines.append("pointer %s | cleanup %s | browser pref %s | out %s" % (
-        "on" if cfg.get("pointer") else "off", "on" if cfg.get("cleanup") else "off", cfg.get("browser"), D.OUT.as_posix()))
+    onoff = lambda k: "on" if cfg.get(k, True) else "off"
+    lines.append("pointer %s | cleanup %s | own window %s | browser pref %s | out %s" % (
+        onoff("pointer"), onoff("cleanup"), onoff("window"), cfg.get("browser"), D.OUT.as_posix()))
     return "\n".join(lines)
 
 

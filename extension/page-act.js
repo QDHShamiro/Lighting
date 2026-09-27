@@ -265,8 +265,44 @@
       const el = document.querySelector(spec.css);
       return !!el && visible(el);
     }
-    if (spec.text) return (document.body ? document.body.innerText : "").toLowerCase().includes(spec.text.toLowerCase());
+    if (spec.text) {
+      const t = spec.text.toLowerCase();
+      if ((document.body ? document.body.innerText : "").toLowerCase().includes(t)) return true;
+      for (const el of document.querySelectorAll("[aria-label],[title],img[alt],input[value],input[placeholder]")) {
+        const n = el.getAttribute("aria-label") || el.getAttribute("title") || el.getAttribute("alt") || el.value || el.getAttribute("placeholder") || "";
+        if (n.toLowerCase().includes(t) && visible(el)) return true;
+      }
+    }
     return false;
+  }
+
+  function viewSize() {
+    return { w: innerWidth, h: innerHeight };
+  }
+
+  function frameBox(url, size, idx) {
+    const base = (u) => String(u || "").split("#")[0];
+    const origin = (u) => {
+      try {
+        return new URL(u, location.href).origin;
+      } catch (e) {
+        return "";
+      }
+    };
+    const all = [...document.querySelectorAll("iframe,frame")];
+    let c = all.filter((f) => base(f.src) === base(url));
+    if (!c.length) c = all.filter((f) => origin(f.src) === origin(url));
+    const fit = c.filter((f) => Math.abs(f.clientWidth - size.w) < 3 && Math.abs(f.clientHeight - size.h) < 3);
+    if (fit.length) c = fit;
+    const f = c[Math.min(Math.max(idx, 0), c.length - 1)];
+    if (!f) return null;
+    let r = f.getBoundingClientRect();
+    if (r.bottom < 1 || r.right < 1 || r.top > innerHeight - 1 || r.left > innerWidth - 1) {
+      f.scrollIntoView({ block: "center", inline: "center", behavior: "instant" });
+      r = f.getBoundingClientRect();
+    }
+    const cs = getComputedStyle(f);
+    return { x: r.left + f.clientLeft + (parseFloat(cs.paddingLeft) || 0), y: r.top + f.clientTop + (parseFloat(cs.paddingTop) || 0) };
   }
 
   function waitFor(spec, timeout) {
@@ -497,5 +533,5 @@
     return { name: clean(nameOf(el)), role: L.roleOf(el), tag: el.tagName, desc: describe(el), hint: L.hintOf(el) };
   }
 
-  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info };
+  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info, viewSize, frameBox };
 })();

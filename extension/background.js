@@ -50,7 +50,7 @@ async function connect() {
     const w = await chrome.windows.getLastFocused();
     focused = !!w.focused;
   } catch (e) {}
-  post(Object.assign({ event: "hello", ext: VERSION, focused }, brandInfo()));
+  post(Object.assign({ event: "hello", ext: VERSION, focused, epoch: T.getEpoch() }, brandInfo()));
 }
 
 function event(text) {
@@ -64,11 +64,11 @@ async function onMessage(msg) {
   const busy = !NO_TAB.has(msg.cmd) && !msg.cmd.startsWith("record") && msg.cmd !== "where";
   const t0 = performance.now();
   try {
-    if (busy) await T.paint("orange");
-    const res = await run(msg.cmd, msg.args || {}, msg.tab);
+    if (busy) await T.paint("orange", msg.group);
+    const res = await run(msg.cmd, Object.assign(msg.args || {}, msg.group ? { group: msg.group } : {}), msg.tab);
     if (id) post(Object.assign({ id, ok: true, extMs: performance.now() - t0 }, typeof res === "string" ? { out: res } : res));
   } catch (e) {
-    if (busy) T.paint("red");
+    if (busy) T.paint("red", msg.group);
     if (id) post({ id, ok: false, error: String((e && e.message) || e) });
   }
 }
@@ -82,7 +82,7 @@ async function open(a, tab) {
 async function openTab(a, tab) {
   let tabId = a.new ? null : await tabOf(tab, false);
   if (tabId === null) {
-    tabId = await T.create();
+    tabId = await T.create(a.group);
     a.created = true;
   } else T.setTarget(tabId);
   a.tabId = tabId;
@@ -531,7 +531,7 @@ async function run(cmd, a, tab) {
   try {
     res = await route(cmd, a, tab);
   } finally {
-    where = await remember(tab);
+    where = await remember(typeof a.tabId === "number" ? a.tabId : tab);
   }
   const out = typeof res === "string" ? { out: res } : res || {};
   if (target) out.target = target;
@@ -601,6 +601,7 @@ async function route(cmd, a, tab) {
       cfg.blocklist = a.blocklist || [];
       cfg.risk = a.risk || [];
       cfg.pointer = a.pointer !== false;
+      T.setOwnWindow(a.window !== false);
       if (a.navLines) cfg.navLines = a.navLines;
       if (a.navChars) cfg.navChars = a.navChars;
       return {};
@@ -623,18 +624,21 @@ async function route(cmd, a, tab) {
       return { out: "closed " + n };
     }
     case "cleanup": {
-      await T.paint("green");
+      await T.paint("green", a.group);
       const only = Array.isArray(a.only) ? new Set(a.only.map((x) => T.rid(x)).filter((x) => x !== null)) : null;
-      const tabs = (await T.groupTabs()).filter((t) => !only || only.has(t.id));
-      const shut = a.close === false ? [] : tabs.filter((t) => !t.active).map((t) => t.id);
+      const tabs = (await T.groupTabs(a.group)).filter((t) => !only || only.has(t.id));
+      const own = await T.ownWindows();
+      const last = await chrome.windows.getLastFocused().catch(() => null);
+      const looked = (t) => t.active && (!own.has(t.windowId) || (last && last.focused && last.id === t.windowId));
+      const shut = a.close === false ? [] : tabs.filter((t) => !looked(t)).map((t) => t.id);
       if (shut.length) await chrome.tabs.remove(shut).catch(() => {});
       if (shut.includes(T.getTarget())) T.setTarget(null);
-      return { out: "", closed: shut.length, kept: tabs.length - shut.length };
+      return { out: "", closed: shut.length, kept: tabs.length - shut.length, shut: shut.map((id) => "t" + T.sid(id)) };
     }
     case "keep": {
-      const ids = a.id ? [T.rid(a.id)].filter((x) => x !== null) : (await T.groupTabs()).map((t) => t.id);
+      const only = Array.isArray(a.only) ? new Set(a.only.map((x) => T.rid(x)).filter((x) => x !== null)) : null;
+      const ids = a.id ? [T.rid(a.id)].filter((x) => x !== null) : (await T.groupTabs(a.group)).map((t) => t.id).filter((id) => !only || only.has(id));
       if (ids.length) await chrome.tabs.ungroup(ids).catch(() => {});
-      if (ids.includes(T.getTarget())) T.setTarget(null);
       return { out: "", kept: ids.length };
     }
     case "tabs":
@@ -718,7 +722,7 @@ chrome.webNavigation.onCreatedNavigationTarget.addListener(async (d) => {
   const src = d.sourceTabId;
   if (src !== T.getTarget() && !(await T.inGroup(src))) return;
   if (rec.on && rec.tabs.has(src)) rec.tabs.add(d.tabId);
-  await T.addToGroup(d.tabId);
+  await T.addToGroup(d.tabId, (await T.groupOf(src)) || undefined);
   chrome.tabs.update(d.tabId, { autoDiscardable: false }).catch(() => {});
   T.setTarget(d.tabId);
   event("new tab t" + T.sid(d.tabId) + " opened from t" + T.sid(src) + " (now the target; lighting tab t" + T.sid(src) + " to go back)");

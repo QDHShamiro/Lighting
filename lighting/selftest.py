@@ -10,7 +10,7 @@ from lighting import defaults as D
 from lighting.common import Fail
 
 EXTRA = {
-    "/frame": "<title>Frame</title><button>Frame button</button>",
+    "/frame": "<title>Frame</title><button onclick=\"this.textContent='Frame clicked'\">Frame button</button>",
     "/second": "<title>Second</title><h1>Second page</h1><p>Opened in a new tab.</p>",
     "/quiet": "<title>Quiet</title><p>Only text here, nothing to click.</p>",
     "/finder": "<title>Finder</title><form action=/find method=get role=search><input name=q aria-label=Search></form>",
@@ -252,6 +252,13 @@ def browser(r, base):
     r.step("js with const again", ["js", "const v = 2; v * 3"], lambda o, e: o.strip() == "6")
     r.step("fetch json-less", ["fetch", base + "frame"], lambda o, e: not e and "200" in o)
     r.step("snap iframe", ["snap", "--frame", "127.0.0.1"], lambda o, e: not e and "Frame button" in o)
+    fout = r.step("snap other-site frame", ["snap", "--frame", "localhost", "-f", "Frame button"],
+                  lambda o, e: not e and re.search(r"^f\d+\.e\d+ button", o, re.M))
+    found = re.search(r"^(f\d+\.e\d+) button", fout, re.M)
+    r.step("click in other-site frame", ["click", found.group(1) if found else "f0.e0"], ok)
+    r.step("frame click landed", ["snap", "--frame", "localhost"], lambda o, e: not e and "Frame clicked" in o)
+    r.step("wait sees control names", ["wait", "checks all green", "--timeout", "2000"], ok)
+    r.step("filter falls back to text", ["snap", "-f", "Fact"], lambda o, e: not e and "this text does" in o and '"Fact' in o)
     r.step("shot element", ["shot", "e1"], lambda o, e: not e and ".jpg" in o)
     r.step("new tab event", ["click", "Open in new tab"], lambda o, e: not e and "new tab t" in o)
     r.step("close popup tab", ["close"], ok)
@@ -274,13 +281,13 @@ def browser(r, base):
     r.step("close fixture tab", ["close"], ok)
     r.step("target back to decoy", ["snap"], lambda o, e: not e and "Second" in o)
     dref = tab_ref(decoy)
-    listed = lambda o, ref, lit: re.search(r"^%s %s" % (ref, "L[*a]* " if lit else "(?!L[*a]* )"), o, re.M)
+    listed = lambda o, ref, lit: re.search(r"^%s %s" % (ref, r"L\d*[*a]* " if lit else r"(?!L\d*[*a]* )"), o, re.M)
     r.step("keep hands tab over", ["keep", dref], lambda o, e: not e and "kept 1 tab" in o)
     r.step("kept tab left the group", ["tabs"], lambda o, e: listed(o, dref, False))
     tref = tab_ref(r.step("throwaway tab", ["open", base + "second", "--new"], lambda o, e: not e and "Second" in o))
     from lighting import commands
     from lighting import desktop as dk
-    lit = re.findall(r"^(t\d+) L[*a]* ", commands.run(r.ctx, {"argv": ["tabs"]}).get("out", ""), re.M)
+    lit = re.findall(r"^(t\d+) L\d*[*a]* ", commands.run(r.ctx, {"argv": ["tabs"]}).get("out", ""), re.M)
     if [t for t in lit if t != tref] or dk.state(r.ctx).launched:
         r.rows.append("SKIP done closes tabs (other Lighting tabs or launched apps are open)")
         r.step("close throwaway tab", ["close", tref], ok)
@@ -299,10 +306,14 @@ def sessions_check(ctx, base):
         run(a, "open", base + "second")
         run(b, "open", base + "quiet")
         seen = [run(a, "snap", "--force"), run(b, "done"), run(a, "snap", "--force")]
+        run(b, "open", base + "quiet")
+        seen += [run(b, "keep"), run(b, "snap", "--force")]
     finally:
+        run(b, "close")
         run(a, "done")
         run(b, "done")
-    good = "Second" in seen[0] and seen[1].startswith("closed 1 tab") and "Second" in seen[2]
+    good = ("Second" in seen[0] and seen[1].startswith("closed 1 tab") and "Second" in seen[2]
+            and seen[3].startswith("kept 1 tab") and "Quiet" in seen[4])
     return good, " / ".join(s.split("\n")[0] for s in seen)
 
 
