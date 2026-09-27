@@ -22,6 +22,9 @@ class AppState:
         self.snap_t = 0.0
         self.launched = {}
         self.front0 = None
+        self.slow = set()
+        self.last_snap = {}
+        self.full = None
 
 
 def state(ctx):
@@ -131,11 +134,20 @@ def snapshot(ctx, hwnd, flags):
     if len(items) < 3 and win.class_of(hwnd) == CHROMIUM_CLASS:
         time.sleep(0.4)
         root, items = uia.collect(hwnd, with_text=bool(flags.get("text")), skip_rect=skip)
+    from lighting import keys
+    U = uia.api()[1]
     filt = terms(flags.get("f"))
-    lines, refs, row, ft = [], {}, None, {}
+    lines, refs, row, ft, pairs = [], {}, None, {}, []
     for el in items:
         role, name, extra = uia.describe(el)
         name, extra = BIDI.sub("", name), BIDI.sub("", extra)
+        ak = uia.cached(el, U.UIA_AcceleratorKeyPropertyId) or uia.cached(el, U.UIA_AccessKeyPropertyId)
+        hinted = keys.from_name(name)
+        if hinted:
+            pairs.append(hinted)
+            name = hinted[1]
+        elif ak and name:
+            pairs.append((ak, name))
         if role == "text" and (not name or len(name) > 120):
             continue
         if not name and role in ("listitem", "dataitem", "treeitem", "tab", "button", "link", "menuitem") and not extra:
@@ -169,8 +181,12 @@ def snapshot(ctx, hwnd, flags):
     st.refs = refs
     st.snap_t = time.time()
     st.snap_hwnd = hwnd
+    if pairs:
+        keys.harvest(win.exe_of(win.pid_of(hwnd)).lower(), pairs)
     if filt:
         lines = best_only([(ft.get(i), l) for i, l in enumerate(lines)])
+    elif not flags.get("text"):
+        st.full = (hwnd, time.time(), list(lines))
     head = header(ctx, hwnd, " (%d controls%s)" % (len(refs), ", browser page hidden: use lighting snap for the page" if skip else ""))
     if not lines:
         lines.append("(no controls found: try lighting read %s for screen text)" % wref(ctx, hwnd))
@@ -262,9 +278,12 @@ def run_name(name):
 
 def owner_of(wins, hint):
     words = [w for w in re.split(r"[^a-z0-9]+", (hint or "").lower()) if len(w) > 2]
-    for w in sorted(wins, key=lambda x: not x["fg"]):
-        exe = (w["exe"] or "").lower().replace(".exe", "")
-        if any(word == exe or word in w["title"].lower() for word in words):
+    ordered = sorted(wins, key=lambda x: not x["fg"])
+    for w in ordered:
+        if (w["exe"] or "").lower().replace(".exe", "") in words:
+            return w
+    for w in ordered:
+        if any(word in w["title"].lower() for word in words):
             return w
     return None
 
@@ -285,7 +304,7 @@ def wait_window(before, fg0, ms, hint, running):
         if cand:
             if not pick or cand["hwnd"] != pick["hwnd"]:
                 pick, seen_at = cand, time.time()
-            elif time.time() - seen_at > 0.6:
+            elif time.time() - seen_at > (0.3 if running else 0.6):
                 return pick["hwnd"]
         time.sleep(0.15)
     return pick["hwnd"] if pick else None
@@ -306,8 +325,10 @@ def cmd_launch(ctx, pos, flags):
         os.startfile(path)
         what = hint = os.path.splitext(os.path.basename(path))[0]
     elif uri:
-        if spec.lower().startswith("file:") and not flags.get("yes"):
-            raise Fail("file: URIs can run programs", "lighting launch <path> --yes")
+        scheme = spec.split(":", 1)[0].lower()
+        if scheme in D.RISKY_SCHEMES and not flags.get("yes"):
+            raise Fail("%s: links can run programs or open remote files" % scheme,
+                       'only if the user asked for it: lighting launch "%s" --yes' % spec[:60])
         os.startfile(spec)
         what, hint = spec, spec.split(":", 1)[0]
     else:
@@ -331,7 +352,25 @@ def cmd_launch(ctx, pos, flags):
         st.launched[hwnd] = win.text_of(hwnd) or what
     st.hwnd = hwnd
     ctx.target = ("app", hwnd)
-    return "ok (%s) -> %s" % (what, header(ctx, hwnd))
+    return "ok (%s) -> %s" % (what, first_look(ctx, hwnd, flags))
+
+
+def first_look(ctx, hwnd, flags):
+    try:
+        text = snapshot(ctx, hwnd, {"f": flags["f"]} if flags.get("f") else {})
+    except Fail:
+        return header(ctx, hwnd)
+    rows = text.split("\n")
+    out, chars = rows[:1], 0
+    for r in rows[1:]:
+        if len(out) > D.NAV_LINES or chars + len(r) > D.NAV_CHARS:
+            out.append("... +%d more (lighting snap %s)" % (len(rows) - len(out), wref(ctx, hwnd)))
+            break
+        out.append(r)
+        chars += len(r) + 1
+    from lighting import keys
+    out[0] += keys.hint(win.exe_of(win.pid_of(hwnd)).lower())
+    return "\n".join(out)
 
 
 def cleanup(ctx):
@@ -375,7 +414,67 @@ def cmd_close(ctx, pos, flags):
 
 def cmd_snap(ctx, pos, flags):
     hwnd = target(ctx, pos)
-    return cap(snapshot(ctx, hwnd, flags), "app-snap", lines=D.SNAP_LINES)
+    text = snapshot(ctx, hwnd, flags)
+    st = state(ctx)
+    if not any(flags.get(k) for k in ("f", "text", "force", "all")):
+        if st.last_snap.get(hwnd) == text:
+            return text.split("\n", 1)[0] + "\nunchanged since last snap (refs still valid)"
+        st.last_snap[hwnd] = text
+        from lighting import keys
+        head, _, rest = text.partition("\n")
+        text = head + keys.hint(win.exe_of(win.pid_of(hwnd)).lower()) + "\n" + rest
+    return cap(text, "app-snap", lines=D.SNAP_LINES)
+
+
+def before_action(ctx, hwnd):
+    st = state(ctx)
+    if hwnd in st.slow or not win.alive(hwnd):
+        return None
+    if st.full and st.full[0] == hwnd and time.time() - st.full[1] < 1.5:
+        return set(st.full[2])
+    t0 = time.time()
+    try:
+        snapshot(ctx, hwnd, {})
+    except Fail:
+        return None
+    if time.time() - t0 > 0.5:
+        st.slow.add(hwnd)
+        return None
+    return set(st.full[2]) if st.full and st.full[0] == hwnd else None
+
+
+def after_action(ctx, hwnd, before, wait=0.6):
+    if before is None:
+        return ""
+    st = state(ctx)
+    t0, last, now, lines = time.time(), None, before, []
+    while time.time() - t0 < wait:
+        time.sleep(0.1)
+        if not win.alive(hwnd):
+            return " (window closed)"
+        try:
+            snapshot(ctx, hwnd, {})
+        except Fail:
+            return ""
+        if not st.full or st.full[0] != hwnd:
+            return ""
+        lines = st.full[2]
+        now = set(lines)
+        if now != before:
+            if now == last:
+                break
+            last = now
+    if now == before:
+        return ""
+    added = [l for l in lines if l not in before]
+    gone = len(before - now)
+    if not added:
+        return " (-%d gone)" % gone
+    shown = added[:D.DIFF_LINES]
+    s = " (+%d new%s)\n%s" % (len(added), ", -%d gone" % gone if gone else "", "\n".join(shown))
+    if len(added) > len(shown):
+        s += "\n... +%d more (lighting snap %s)" % (len(added) - len(shown), wref(ctx, hwnd))
+    return s
 
 
 def element(ctx, ref):
@@ -475,16 +574,18 @@ def cmd_click(ctx, pos, flags):
         arg = ref
     note_target(ctx, el)
     x, y = center(el)
+    before = before_action(ctx, hwnd)
     if flags.get("mouse") or flags.get("right") or flags.get("double"):
         pointer.blitz_click(x, y, "right" if flags.get("right") else "left", 2 if flags.get("double") else 1, hwnd=hwnd)
-        return "ok %s (mouse click, cursor restored)" % arg
+        return "ok %s (mouse click, cursor restored)%s" % (arg, after_action(ctx, hwnd, before))
     pointer.show(x, y)
     how = uia.act(el)
     if how:
-        time.sleep(0.15)
-        return "ok %s (%s in background)" % (arg, how)
+        if before is None:
+            time.sleep(0.15)
+        return "ok %s (%s in background)%s" % (arg, how, after_action(ctx, hwnd, before))
     pointer.blitz_click(x, y, hwnd=hwnd)
-    return "ok %s (mouse click, cursor restored)" % arg
+    return "ok %s (mouse click, cursor restored)%s" % (arg, after_action(ctx, hwnd, before))
 
 
 FIELD_ROLES = ("edit", "combobox", "document", "spinner")
@@ -508,7 +609,6 @@ def focused_in(hwnd):
 
 
 def cmd_type(ctx, pos, flags):
-    from lighting import uia
     if not pos:
         raise Fail("type needs a d-ref, a field name or focused", 'lighting type d5 "hello" | type "Search" hello')
     if ref_kind(pos[0]) == "d":
@@ -525,15 +625,39 @@ def cmd_type(ctx, pos, flags):
         pos = [ref] + list(pos[1:])
     note_target(ctx, el)
     text = ctx.secret if ctx.secret is not None else " ".join(pos[1:])
-    if flags.get("append"):
-        cur = uia.get_value(el) or ""
-        text = cur + text
-    x, y = center(el)
-    pointer.show(x, y)
-    shown = "%d %schars" % (len(text), "secret " if ctx.secret is not None else "")
-    if uia.set_value(el, text):
-        return "ok %s (typed %s in background)" % (pos[0], shown)
     hwnd = target(ctx)
+    before = before_action(ctx, hwnd)
+    return put_text(ctx, hwnd, el, pos[0], text, flags) + after_action(ctx, hwnd, before)
+
+
+def settle_ui(hwnd, least, most):
+    from lighting import uia
+    time.sleep(least)
+    t0, last = time.time(), None
+    while time.time() - t0 < most - least:
+        try:
+            n = len(uia.collect(hwnd)[1])
+        except Exception:
+            return
+        if n == last:
+            return
+        last = n
+        time.sleep(0.08)
+
+
+def put_text(ctx, hwnd, el, label, text, flags):
+    from lighting import uia
+    try:
+        pointer.show(*center(el))
+    except Fail:
+        pass
+    shown = "%d %schars" % (len(text), "secret " if ctx.secret is not None else "")
+    keys = [k for k in ("tab", "enter") if flags.get(k)]
+    rich = win.class_of(hwnd) == CHROMIUM_CLASS
+    if not keys and not rich:
+        full = (uia.get_value(el) or "") + text if flags.get("append") else text
+        if uia.set_value(el, full):
+            return "ok %s (typed %s in background)" % (label, shown)
     saved = win.clip_get()
 
     def paste():
@@ -546,18 +670,27 @@ def cmd_type(ctx, pos, flags):
         win.clip_set(text)
         win.press("ctrl+v")
         time.sleep(0.08)
+        for k in keys:
+            settle_ui(hwnd, 0.35, 1.0)
+            win.press(k)
 
     pointer.with_focus(hwnd, paste, stay=bool(flags.get("stay")))
     if saved is not None:
         win.clip_set(saved)
-    return "ok %s (pasted %s, window was briefly in front)" % (pos[0], shown)
+    return "ok %s (pasted %s%s, window was briefly in front)" % (label, shown, "".join(" +" + k for k in keys))
 
 
 def cmd_press(ctx, pos, flags):
     if not pos:
         raise Fail("press needs keys", "lighting press ctrl+s")
+    if all(p.lower() in win.MEDIA for p in pos):
+        for combo in pos:
+            win.press(combo)
+            time.sleep(0.03)
+        return "ok (%s, media key for the whole system)" % " ".join(pos)
     hwnd = target(ctx)
     game = bool(flags.get("game"))
+    before = None if game else before_action(ctx, hwnd)
 
     def go():
         for combo in pos:
@@ -568,7 +701,11 @@ def cmd_press(ctx, pos, flags):
         pointer.with_focus(hwnd, go, stay=bool(flags.get("stay")))
     except ValueError as e:
         raise Fail(str(e))
-    return "ok (%s sent to %s)" % (" ".join(pos), wref(ctx, hwnd))
+    diff = after_action(ctx, hwnd, before)
+    if diff.startswith(" (+") and len(pos) == 1:
+        from lighting import keys
+        keys.learn(win.exe_of(win.pid_of(hwnd)).lower(), pos[0], diff.split("\n", 2)[1])
+    return "ok (%s sent to %s)%s" % (" ".join(pos), wref(ctx, hwnd), diff)
 
 
 def cmd_scroll(ctx, pos, flags):

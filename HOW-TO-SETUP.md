@@ -105,6 +105,16 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - Recorder: web events come from `page-rec.js` in the isolated world (trusted events only; Lighting's own CDP input counts as trusted, its `selectOpt`/`setValue` synthetic events do not). Desktop: `WH_MOUSE_LL` + `WH_KEYBOARD_LL` on their own thread with a message loop; the callbacks only queue, a second thread with its **own** COM apartment and `IUIAutomation` resolves `ElementFromPoint`/`GetFocusedElement` (UIA objects from the command thread cannot be used there). Injected input is ignored unless `--injected` (selftest). Keys become text via `ToUnicodeEx` with flag 4 (keeps dead-key state), AltGr = ctrl+alt + printable char.
 - Writing other programs' config files: keep their line endings (`eol_of`). Python's `write_text` on Windows turned the LF `~/.codex/config.toml` into CRLF.
 
+- The daemon has one worker thread for all commands of all sessions. A command that waits long returns a `Pending` (`common.py`: `poll(last)`, `deadline`, `interval`); the worker keeps a list, polls each one when due (`jobs.get(timeout=next due)`) and runs other jobs in between. `poll_pending` saves and restores `ctx.target/where/last_target` so a poll never redirects another session's next command. Inside `do`/`run`/selftest a `Pending` is drained synchronously (`commands.drain`). Abort bumps `abort_gen` and wakes the worker with a `(None, None)` job. The MCP path (`cli.execute`) waits `max(180 s, --timeout + 30 s)`; the Rust client waits without limit.
+- Chromium/Electron text fields accept a UIA `SetValue`, but the page's own input handlers never run: Discord's editor sends nothing on Enter, Obsidian's quick switcher keeps its unfiltered list and Enter opens the top note. In `Chrome_WidgetWin_1` windows `type` always pastes (`desktop.put_text`), and `--tab`/`--enter` wait for the UI to settle (`settle_ui`, at least 0.35 s, up to 1 s).
+- Discord in UIA: the message list is the `list` named `Nachrichten in <name>` / `Messages in ...`; every message is a direct `listitem` child with AutomationId `chat-messages-<channel>-<snowflake>` (snowflakes grow with time, so "new" = id above the baseline). Inside: a text `itsluiss (ItsLuis) 16:13` and a button with the sender (first message of a group only), `message-timestamp-<id>`, then the content as text/hyperlink nodes, then the hover toolbar buttons. Own messages have `Bearbeiten`/`Löschen` (`Edit`/`Delete`), others `Mehr`. Follow-ups carry `16:27` and the long date after the timestamp and no sender. `chat.parse` reads this; apps without it fall back to the item name and the sent text.
+- `launch` found an already open app with `owner_of`, which matched titles and exes in one pass with the foreground first: a terminal titled "◐ Obsidian lighting session" won over Obsidian.exe. Exe matches now come first.
+- `normalize_url` passed every `scheme:` through to the browser, so `obsidian://` became an empty tab. Schemes outside `WEB_SCHEMES` go to `desktop.cmd_launch`; `RISKY_SCHEMES` need `--yes` there. `host:port` is http, not a scheme.
+- Shortcuts: `page.js nameOf` fills `S.keys` from `KEYHINT` matches, `aria-keyshortcuts` and `accesskey` before stripping the hint from the name; `snap`/`open` replies carry `keys`, `browser.call` stores them per host (`keys.harvest`). Desktop snapshots read UIA `AcceleratorKey`/`AccessKey` (in the cache request) and `(Ctrl+K)` name hints. `press` that produced new lines stores `combo -> first new line` as `learned`. Rank: learned/user > ui > seed. File `~/.lighting/keys.json`.
+- The Rust client swallows `--stats` (its own timing flag), so the log summary is `lighting log stats`, not a flag.
+- `suggest` (UserPromptSubmit hook) is on the client's silent path like `done`: never starts the daemon, reads the hook JSON from stdin and passes it as an argument. The daemon answers it without logging and without attaching pending `!` events (they would land in the user's prompt). Matching: stems (first 5 letters) of the prompt against routine name words, tags and its app/site; app + 1 word or 2 words.
+- `routines.persist` keeps `episodes.jsonl` open (line buffered) and trims every 50 writes; `routine forget` closes it first (Windows cannot delete an open file).
+
 ## 3. Build order when changing things
 
 1. Python: edit `lighting/*.py`, `py_compile`, then `lighting stop` (next call starts the new daemon).
@@ -119,9 +129,9 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-python tests/test_units.py     # 10/10
+python tests/test_units.py     # 16/16
 cd client && cargo test && cargo clippy --release --all-targets
-lighting selftest              # must print 97/97 passed (96/96 with a SKIP line when other Lighting tabs are open or you used the mouse)
+lighting selftest              # must print 113/113 passed (112/112 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
 lighting bench
 lighting bench --real          # compare tokens with the last run
 ```

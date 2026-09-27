@@ -5,7 +5,8 @@ import threading
 import time
 
 from lighting import defaults as D
-from lighting.common import Fail, cap, ref_kind
+from lighting import recall
+from lighting.common import Fail, cap, parse_ms, ref_kind
 
 DIR = D.HOME / "routines"
 EPISODES = D.HOME / "episodes.jsonl"
@@ -14,7 +15,7 @@ ACTIONS = {"open", "launch", "focus", "click", "type", "fill", "press", "select"
 ENTRY = {"open", "launch", "focus"}
 REF_CMDS = {"click", "type", "select", "check", "hover"}
 KEEP_FLAGS = {"new", "yes", "enter", "append", "submit", "first", "right", "double", "force", "until", "delta",
-              "gone", "timeout", "game", "stay", "web", "max", "mouse", "text", "on"}
+              "gone", "timeout", "game", "stay", "web", "max", "mouse", "text", "on", "tab", "reload"}
 SHARED = {"click", "type", "press", "scroll", "hover"}
 IDLE_S = 45
 KEEP_EPISODES = 300
@@ -37,7 +38,10 @@ _reset()
 
 
 def slug(text, n=3):
-    words = [w for w in re.split(r"[^a-z0-9]+", (text or "").lower()) if w and not w.isdigit()]
+    t = (text or "").lower()
+    for a, b in (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss")):
+        t = t.replace(a, b)
+    words = [w for w in re.split(r"[^a-z0-9]+", t) if w and not w.isdigit()]
     return "-".join(words[:n])
 
 
@@ -150,16 +154,29 @@ def episodes(limit=150):
     return out
 
 
+_epf = {"f": None, "n": 0}
+
+
+def close_episodes():
+    if _epf["f"]:
+        _epf["f"].close()
+        _epf["f"] = None
+
+
 def persist(ep):
     D.HOME.mkdir(parents=True, exist_ok=True)
-    with open(EPISODES, "a", encoding="utf-8") as f:
-        f.write(json.dumps(ep, ensure_ascii=False) + "\n")
     try:
-        rows = EPISODES.read_text("utf-8").splitlines()
-        if len(rows) > KEEP_EPISODES + 100:
-            EPISODES.write_text("\n".join(rows[-KEEP_EPISODES:]) + "\n", "utf-8")
+        if _epf["f"] is None:
+            _epf["f"] = open(EPISODES, "a", encoding="utf-8", buffering=1)
+        _epf["f"].write(json.dumps(ep, ensure_ascii=False) + "\n")
+        _epf["n"] += 1
+        if _epf["n"] % 50 == 0:
+            close_episodes()
+            rows = EPISODES.read_text("utf-8").splitlines()
+            if len(rows) > KEEP_EPISODES + 100:
+                EPISODES.write_text("\n".join(rows[-KEEP_EPISODES:]) + "\n", "utf-8")
     except OSError:
-        pass
+        close_episodes()
 
 
 def text_of(step):
@@ -409,6 +426,9 @@ def auto_name(r):
         if s["cmd"] in ("click", "type", "fill", "select", "check") and s["args"]:
             tail = re.sub(r"\{[^}]*\}", " ", s["args"][0].split("=")[0])
             break
+    said = [t for t in r.get("tags") or [] if t.isalpha() and head.lower() not in t and t not in head.lower()]
+    if said:
+        tail = " ".join(said[:2])
     name = slug(head + " " + tail, 4) or "routine"
     base, n = name, 2
     while (DIR / (name + ".json")).exists():
@@ -454,14 +474,24 @@ def covers(r, steps):
     return got if k == len(need) else None
 
 
+NAV_ONLY = {"open", "launch", "focus", "scroll", "wait", "back", "forward", "reload", "tab", "expect", "dismiss"}
+
+
+def same_shape(r, steps, start):
+    a = [s["cmd"] for s in r["steps"] if not s.get("optional")]
+    return a == [s["cmd"] for s in steps] and site((r["steps"][0] or {}).get("where") or {}) == site(start or {})
+
+
 def learn(ctx, ep, past):
     rs = load_all()
     if ep["via"]:
         return repair(ctx, ep, rs)
     if any((s.get("flags") or {}).get("yes") for s in ep["steps"]):
         return None
+    if all(s["cmd"] in NAV_ONLY for s in ep["steps"]):
+        return None
     for r in rs:
-        if covers(r, ep["steps"]) is not None:
+        if covers(r, ep["steps"]) is not None or (r.get("source") == "learned" and same_shape(r, ep["steps"], ep["start"])):
             r["stats"]["seen"] = r["stats"].get("seen", 0) + 1
             save(r)
             return None
@@ -478,10 +508,28 @@ def learn(ctx, ep, past):
     if any(signature(body["steps"]) == signature(r["steps"]) for r in rs):
         return None
     r = new_routine(body, "learned", (best_old.get("cost", 0) + ep["cost"]) // 2)
+    r["tags"] = recall.tags_for(ep.get("t0") or time.time(), r["params"])
     r["name"] = auto_name(r)
     save(r)
+    prune()
     ctx.d.events.append("learned routine %s from 2 runs -> next time: %s" % (r["name"], usage(r)))
     return r
+
+
+def prune():
+    limit = time.time() - D.PRUNE_DAYS * 86400
+    for r in load_all():
+        if r.get("source") != "learned" or r["stats"].get("runs"):
+            continue
+        try:
+            made = time.mktime(time.strptime(r.get("created", ""), "%Y-%m-%d %H:%M"))
+        except ValueError:
+            continue
+        if made < limit:
+            try:
+                path(r["name"]).unlink()
+            except OSError:
+                pass
 
 
 def repair(ctx, ep, rs):
@@ -647,16 +695,21 @@ def record_result(r, ok, ms, out_tokens, err=None):
 
 
 def cmd_run(ctx, pos, flags):
-    from lighting.commands import run_one
+    from lighting.commands import drain, run_one
     if not pos:
         raise Fail("run needs a routine name", "lighting routines")
-    r = load(pos[0])
+    query = [p for p in pos if "=" not in p]
+    try:
+        r = load("-".join(query) if query else pos[0])
+    except Fail:
+        if not query:
+            raise
+        r = recall.find(" ".join(query))
     params = dict(r["params"]) if flags.get("defaults") else {}
-    for p in pos[1:]:
+    for p in pos:
         k, sep, v = p.partition("=")
-        if not sep:
-            raise Fail("parameters look like name=value, got %s" % p)
-        params[k.strip()] = v
+        if sep:
+            params[k.strip()] = v
     missing = [p for p in r["params"] if p not in params]
     if missing:
         raise Fail("%s needs %s" % (r["name"], ", ".join(missing)), usage(r))
@@ -678,11 +731,14 @@ def cmd_run(ctx, pos, flags):
             raise Fail("%s step %d/%d (%s) needs a confirmation" % (r["name"], i, n, step_line(s, params)),
                        "rerun with --yes if the user wants this")
         argv = [s["cmd"]] + [fill(a, params) for a in s["args"]] + flag_argv(s.get("flags") or {})
-        limit = float((s.get("flags") or {}).get("timeout") or 0) / 1000 or 6.0
+        try:
+            limit = parse_ms((s.get("flags") or {}).get("timeout"), 0) / 1000 or 6.0
+        except Fail:
+            limit = 6.0
         deadline = time.time() + min(max(limit, 4.0), 30.0)
         while True:
             try:
-                run_one(ctx, argv)
+                drain(ctx, run_one(ctx, argv)[0])
                 break
             except Fail as e:
                 msg = str(e)
@@ -719,28 +775,23 @@ def cmd_run(ctx, pos, flags):
 
 
 def cmd_routines(ctx, pos, flags):
+    prune()
     rs = load_all()
     if flags.get("f"):
         from lighting.common import terms, tiers
         ws = terms(flags["f"])
-        rs = [r for r in rs if any(tiers(ws, r["name"], " ".join(" ".join(s["args"]) for s in r["steps"])))]
+        rs = [r for r in rs if any(tiers(ws, r["name"], " ".join(r.get("tags") or []),
+                                         " ".join(" ".join(s["args"]) for s in r["steps"])))]
     if not rs:
         return "no routines yet (Lighting learns one when a task repeats; lighting routine save <name> saves the last task)"
     lines = []
-    for r in sorted(rs, key=lambda x: -x["stats"].get("runs", 0)):
+    for r in sorted(rs, key=lambda x: (-x["stats"].get("runs", 0), x["name"])):
         st = r["stats"]
-        rate = "%d/%d ok" % (st["ok"], st["runs"]) if st["runs"] else "new"
-        extra = ", %.1f s" % (st["ms"] / 1000) if st.get("ms") else ""
-        saved = ", saved ~%s tokens" % short_num(st["saved"]) if st.get("saved") else ""
-        flaky = " FLAKY" if r.get("flaky") else ""
+        rate = "%dx ok" % st["ok"] if st["runs"] and st["ok"] == st["runs"] else "%d/%d ok" % (st["ok"], st["runs"]) if st["runs"] else "new"
+        extra = " | %.1f s" % (st["ms"] / 1000) if st.get("ms") else ""
         args = "".join(" %s=" % p for p in r["params"])
-        steps = " > ".join(step_line(s) for s in r["steps"] if not s.get("optional"))
-        lines.append("%s%s | %s%s%s%s | %s" % (r["name"], args, rate, extra, saved, flaky, steps[:110]))
-    return cap("\n".join(lines), "routines", lines=60)
-
-
-def short_num(n):
-    return "%.1fk" % (n / 1000.0) if n >= 1000 else str(n)
+        lines.append("%s%s | %s%s%s" % (r["name"], args, rate, extra, " | FLAKY" if r.get("flaky") else ""))
+    return cap("\n".join(lines) + "\n(steps: lighting routine show <name>)", "routines", lines=60)
 
 
 def cmd_routine(ctx, pos, flags):
@@ -777,6 +828,7 @@ def cmd_routine(ctx, pos, flags):
     if sub == "save":
         return save_current(ctx, need(rest, "save"), rest[1:], flags)
     if sub == "forget":
+        close_episodes()
         try:
             EPISODES.unlink()
         except OSError:
@@ -809,6 +861,7 @@ def from_steps(name, raw, kv, cost, source, start=None):
             values[v] = re.sub(r"[^a-z0-9_]", "", k.lower()) or "text"
     r = new_routine({"steps": templatize(steps, values), "params": {p: v for v, p in values.items()},
                      "check": check_of(raw[-1].get("where") if raw else None, values)}, source, cost)
+    r["tags"] = recall.tags_for((raw[0].get("t") if raw else None) or time.time(), r["params"])
     r["name"] = slug(name, 6) or name
     save(r)
     return r

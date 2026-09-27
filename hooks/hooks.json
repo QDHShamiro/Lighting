@@ -1,5 +1,5 @@
 {
-  "description": "Closes the tabs and apps Lighting opened when Claude finishes a reply (lighting config cleanup off keeps them)",
+  "description": "Closes the tabs and apps Lighting opened when Claude finishes a reply (lighting config cleanup off keeps them) and names a learned routine that fits the user's request",
   "hooks": {
     "Stop": [
       {
@@ -7,7 +7,19 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/lighting.exe\" done --quiet",
-            "timeout": 15
+            "timeout": 15,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/lighting.exe\" suggest",
+            "timeout": 5
           }
         ]
       }

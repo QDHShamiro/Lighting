@@ -26,12 +26,14 @@
 
 ## Waiting
 - Actions already wait for navigation and for the page to go quiet (about 0.1 s).
-- `wait "Order placed" --timeout 20000`, `wait url:/dashboard`, `wait "Loading" --gone`, `wait 1500`.
+- `wait "Order placed" --timeout 20s`, `wait url:/dashboard`, `wait "Loading" --gone`, `wait 1500` (times: `90s`, `10m` or milliseconds).
+- `wait "All checks have passed" --reload 15s --timeout 10m` reloads the tab every 15 s until the text is there (CI checks, deploys, queues). It waits inside the Lighting daemon: no sleep loops, and other Lighting commands keep working meanwhile. Longer than 2 minutes through Bash? Give the Bash call a longer timeout, or use the MCP tool.
+- A page with no controls shows its text instead: `(no controls in view) text: ...`. `(nothing drawn yet ...)` means the page only draws in a visible window (minimized browser, some feeds): `lighting shot`.
 
 ## Status, config, logs
 - `lighting status` shows the daemon, connected browsers and the current target.
 - `lighting config` lists settings: `browser`, `pointer`, `ocr_lang`, `shot_width` (default 1024 px, screenshot tokens are width/28 x height/28).
-- `lighting log` shows the last actions (typed text and secrets are never logged).
+- `lighting log` shows the last actions (typed text and secrets are never logged). `lighting log stats` sums them up per command: runs, error rate, time, output tokens and how often a `snap` followed an action (the next thing to save).
 - Big outputs are cut and the full text is saved to `~/.lighting/out/` (path printed); `grep` that file instead of re-running.
 - `--stats` after any command prints its time and token estimate.
 
@@ -45,17 +47,21 @@
 - `cannot script this page` (brave://, chrome://, Web Store, PDF viewer) -> use desktop control on the browser window: `lighting snap w1 --web`.
 - `dialog open: confirm "..."` -> `lighting dialog accept` or `dismiss`.
 - Something hangs: `lighting stop` restarts the background process on the next call.
-- `lighting selftest` runs 82 checks (browser + desktop). `lighting bench --real` times six real sites and compares with the last run.
+- `lighting selftest` runs 113 checks (browser, desktop, chat). `lighting bench --real` times six real sites and compares with the last run.
 
 ## Routines (learned tasks)
 - Every successful action is kept with a stable target (`click e12` is stored as `click "Sign in"`, desktop `d5` by its name). Reads (snap, text, shot) only count as cost.
 - A task ends after 45 s without commands or when a new site/app starts. Lighting then aligns it with earlier tasks (sequence alignment, like DNA matching); parts that differ between runs become parameters (`spotify:search:SOS` and `spotify:search:Numb` give `search`). Seen twice: a routine is saved and announced once (`! learned routine spotify-wiedergeben ...`).
 - Starting a known task prints `! routine X can finish this in one call: lighting run X search=...` after the first matching step.
+- Even earlier: a hook reads the user's message and, when a routine fits (its app plus a word, or two words of its name and tags), adds one line to the prompt: `Lighting routine fits this request (one call, swap the values): lighting run discord-markieren user=Luis text='hi'`. Nothing fits: nothing is added (0 tokens). The same routine is named at most every 10 minutes.
+- Routines keep the words of the request they were learned from as tags (`markiere`, `discord`, `@`; parameter values left out), so the next request in other words still finds them. Name saved routines by intent in the user's words: `routine save discord-markieren user=Tom text=hi`.
+- `lighting run discord markieren user=Tom text=hi` also works without the exact name: words before the `k=v` pairs pick the routine (name, then tags); several fit equally: the error names them.
+- Clean-up: tasks that only navigate (open, launch, scroll, wait) are not learned, the same steps on the same site update the existing routine instead of adding `-2`, and learned routines never run within 14 days are deleted (saved and recorded ones stay).
 - `lighting run X param=value` replays with fresh lookups: elements that are not there yet are retried for up to 6 s, `matches several` is retried with the first match, steps seen in only one run are optional. Steps that needed `--yes` stop the run unless the run itself gets `--yes`.
 - The end state is checked (the parameter must show up in the title or URL, or the same page/app must be open). A run that does not verify counts as failed.
 - Stats per routine: runs, ok, average time, tokens saved (manual cost minus the one-line answer). Three failures in the last five runs mark it `FLAKY`; flaky routines are not suggested.
 - A failed run says which step broke. Finish the task by hand: when that task ends, Lighting rebuilds the routine from what worked (`! repaired routine X (v2)`).
-- `lighting routines [-f word]` lists them, `routine show X` shows steps and stats, `routine save X [param=value]` saves the task just done, `routine rm|rename`, `routine forget` clears the task history (routines stay). `lighting config learn off` stops learning.
+- `lighting routines [-f word]` lists them in one short line each (`spotify-wiedergeben search= | 2x ok | 1.4 s`), `routine show X` shows steps and stats, `routine save X [param=value]` saves the task just done, `routine rm|rename`, `routine forget` clears the task history (routines stay). `lighting config learn off` stops learning.
 - Files: `~/.lighting/routines/<name>.json` (steps, params, check, stats) and `~/.lighting/episodes.jsonl` (last 300 tasks, typed text included, secrets never: `--env` values are stored as `@secret`).
 
 ## Recording (the user shows it once)

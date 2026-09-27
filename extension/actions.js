@@ -134,7 +134,12 @@ function formatSnap(tabId, res, limit, whole) {
     lines = lines.slice(0, n);
   }
   out.push(...lines);
-  if (!lines.length && !res.searched) out.push(res.removed !== undefined ? "(nothing new)" : "(no interactive elements in view)");
+  if (!lines.length && !res.searched) {
+    if (res.removed !== undefined) out.push("(nothing new)");
+    else if (res.peek) out.push("(no controls in view) text: " + res.peek);
+    else if (res.peek === "") out.push("(nothing drawn yet: some pages only draw in a visible window -> try: lighting shot)");
+    else out.push("(no interactive elements in view)");
+  }
   if (res.removed) out.push("-" + res.removed + " gone");
   if (cut) out.push("... +" + cut + " more (lighting snap)");
   const more = [];

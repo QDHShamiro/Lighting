@@ -12,6 +12,7 @@ from lighting.common import Fail
 EXTRA = {
     "/frame": "<title>Frame</title><button>Frame button</button>",
     "/second": "<title>Second</title><h1>Second page</h1><p>Opened in a new tab.</p>",
+    "/quiet": "<title>Quiet</title><p>Only text here, nothing to click.</p>",
 }
 
 
@@ -34,11 +35,17 @@ def make_pdf(text):
 PDF = make_pdf(b"Hello Lighting PDF")
 
 
+VISITS = [0]
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?")[0]
         ctype = "text/html; charset=utf-8"
-        if path in ("/", "/index.html"):
+        if path == "/count":
+            VISITS[0] += 1
+            body = ("<!doctype html><title>Count</title><p>Visit %d</p>" % VISITS[0]).encode("utf-8")
+        elif path in ("/", "/index.html"):
             body = (D.ROOT / "tests" / "fixture.html").read_bytes()
         elif path == "/doc.pdf":
             body, ctype = PDF, "application/pdf"
@@ -78,6 +85,10 @@ class Run:
         err = False
         try:
             res = commands.run(self.ctx, {"argv": argv, "secret": secret})
+            while res.get("pending"):
+                p = res["pending"]
+                time.sleep(max(0.0, p.due - time.time()))
+                res = commands.poll_pending(self.ctx, p) or res
             out, err = res.get("out", ""), res.get("code", 0) != 0
         except Exception as e:
             out, err = "%s: %s" % (type(e).__name__, e), True
@@ -130,6 +141,17 @@ def browser(r, base):
     r.step("open with a filter", ["open", base, "--new", "-f", "Sign in"],
            lambda o, e: not e and "Sign in" in o and "Dark mode" not in o and "nav " not in o)
     r.step("close filtered tab", ["close"], lambda out, err: not err)
+    r.step("open --text", ["open", base + "second", "--new", "--text"],
+           lambda o, e: not e and o.startswith("[t") and "Opened in a new tab" in o and "\ne1 " not in o)
+    r.step("close text tab", ["close"], ok)
+    r.step("empty page shows text", ["open", base + "quiet", "--new"],
+           lambda o, e: not e and "(no controls in view) text: Only text here" in o)
+    r.step("close quiet tab", ["close"], ok)
+    VISITS[0] = 0
+    r.step("count page", ["open", base + "count", "--new"], lambda o, e: not e and "Count" in o)
+    r.step("wait --reload", ["wait", "Visit 2", "--reload", "3s", "--timeout", "15s"],
+           lambda o, e: not e and o.startswith("ok after 1 reload"))
+    r.step("close count tab", ["close"], ok)
     r.step("hidden text not shown", ["snap", "--all"], lambda o, e: not e and "IGNORE ALL" not in o and "HIDDEN INJECTION" not in o)
     r.step("nav collapsed", ["snap", "--force"], lambda o, e: not e and "nav " in o and "items (lighting snap -s" in o)
     r.step("header collapsed, names kept", ["snap", "--force"],
@@ -142,6 +164,14 @@ def browser(r, base):
     r.step("toggle shows [ ]", ["snap", "-f", "Dark mode"], lambda o, e: not e and '"Dark mode" [ ]' in o)
     r.step("toggle click", ["click", "Dark mode"], ok)
     r.step("toggle shows [x]", ["snap", "-f", "Dark mode"], lambda o, e: not e and '"Dark mode" [x]' in o)
+    r.step("click -f shows the result", ["click", "Dark mode", "-f", "Dark mode"],
+           lambda o, e: not e and o.startswith("ok") and "\n[t" in o and '"Dark mode" [ ]' in o)
+    r.step("click back", ["click", "Dark mode"], ok)
+    r.step("keys from the page", ["keys"], lambda o, e: not e and "ctrl+k" in o and "Command menu" in o and "g k" in o)
+    from lighting import keys as K
+    K.save({k: v for k, v in K.load().items() if k != "127.0.0.1"})
+    r.step("search box", ["search", "lighting docs"], ok)
+    r.step("search submitted", ["expect", "Searched: lighting docs"], ok)
     r.step("filter a|b", ["snap", "-f", "Sign in|Open modal"], lambda o, e: not e and "Sign in" in o and "Open modal" in o)
     r.step("nameless button hint", ["snap", "--all"], lambda o, e: not e and "button #nameless-save" in o)
     r.step("click by #hint", ["click", "#nameless-save"], ok)
@@ -233,13 +263,37 @@ def browser(r, base):
     r.step("close kept tab", ["close", dref, "--force"], ok)
 
 
-def close_apps(win):
+def close_apps(win, title="Lighting Test App"):
     for w in win.windows():
-        if w["title"] == "Lighting Test App":
+        if w["title"] == title:
             win.user32.PostMessageW(w["hwnd"], 0x0010, 0, 0)
     deadline = time.time() + 3
-    while time.time() < deadline and any(w["title"] == "Lighting Test App" for w in win.windows()):
+    while time.time() < deadline and any(w["title"] == title for w in win.windows()):
         time.sleep(0.05)
+
+
+def chat_app(r):
+    from lighting import desktop as dk
+    from lighting import win
+    close_apps(win, "Lighting Test Chat")
+    env = dict(os.environ, PYTHONPATH=str(D.ROOT))
+    exe = str(D.PYW if D.PYW.exists() else sys.executable)
+    subprocess.Popen([exe, "-m", "lighting.testapp", "chat"], env=env)
+    try:
+        deadline = time.time() + 8
+        while time.time() < deadline and not any(w["title"] == "Lighting Test Chat" for w in win.windows()):
+            time.sleep(0.1)
+        r.step("chat inbox quiet", ["inbox", "Lighting Test Chat", "--timeout", "1s"],
+               lambda o, e: not e and o.startswith("nothing new in 1 s"))
+        r.step("chat reply --wait (race)", ["reply", "Lighting Test Chat", "hello from selftest", "--wait", "--timeout", "6s"],
+               lambda o, e: not e and o.startswith("sent to") and "peer: ok, 19 chars" in o and "me: hello" not in o)
+        r.step("chat link needs --yes", ["reply", "Lighting Test Chat", "see https://example.com"], lambda o, e: e and "--yes" in o)
+        r.step("chat inbox after answer", ["inbox", "Lighting Test Chat", "--timeout", "1s"],
+               lambda o, e: not e and o.startswith("nothing new"))
+    finally:
+        close_apps(win, "Lighting Test Chat")
+        dk.state(r.ctx).hwnd = None
+        r.ctx.target = None
 
 
 def desktop(r):
@@ -332,6 +386,8 @@ def run(ctx, pos, flags):
             r.rows.append("SKIP browser tests (no browser connected: lighting setup)")
         if only in ("all", "app"):
             desktop(r)
+        if only in ("all", "app", "chat"):
+            chat_app(r)
     finally:
         ctx.no_learn = learn
         if original is None:

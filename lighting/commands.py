@@ -5,10 +5,11 @@ import sys
 import time
 
 from lighting import defaults as D
-from lighting.common import Fail, cap, is_url, ref_kind
+from lighting.common import Fail, Pending, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
-          "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to"}
+          "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
+          "reload", "since"}
 TRACE = (D.HOME / "trace").exists()
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
          "-m": "media"}
@@ -48,7 +49,7 @@ def parse(argv):
             key = ALIAS[a]
         if key is None:
             pos.append(a)
-        elif key in VALUED and i + 1 < len(argv):
+        elif key in VALUED and i + 1 < len(argv) and not argv[i + 1].startswith("--"):
             flags[key] = argv[i + 1]
             i += 1
         else:
@@ -96,6 +97,10 @@ def app():
 
 def side(ctx, pos, verb, flags=None):
     on = (flags or {}).get("on")
+    if verb == "press" and pos and not on:
+        from lighting import win
+        if all(p.lower() in win.MEDIA for p in pos):
+            return app()
     if on == "web":
         return web()
     if on == "app":
@@ -125,6 +130,9 @@ def route(ctx, name, pos, flags):
         return app().cmd_read(ctx, pos, flags)
     if name == "close" and pos and (ref_kind(pos[0]) == "w" or pos[0].lower().startswith("app:")):
         return app().cmd_close(ctx, pos, flags)
+    if name in CHAT:
+        from lighting import chat
+        return getattr(chat, "cmd_" + name)(ctx, pos, flags)
     if name in APP_ONLY:
         return getattr(app(), "cmd_" + name)(ctx, pos, flags)
     if name in SHARED:
@@ -141,10 +149,10 @@ def run_one(ctx, argv):
         raise Fail("no command", "lighting help")
     ctx.last_target = None
     if name in SYSTEM:
-        return route(ctx, name, pos, flags), name, pos
+        return with_view(ctx, name, flags, route(ctx, name, pos, flags)), name, pos
     try:
         t0 = time.perf_counter()
-        out = route(ctx, name, pos, flags)
+        out = with_view(ctx, name, flags, route(ctx, name, pos, flags))
         t1 = time.perf_counter()
     except Fail as e:
         routines.observe(ctx, name, pos, flags, e.text(), False)
@@ -154,6 +162,20 @@ def run_one(ctx, argv):
         print("trace %s: route %.2f ms, observe %.2f ms" % (name, (t1 - t0) * 1000, (time.perf_counter() - t1) * 1000),
               file=sys.stderr, flush=True)
     return out, name, pos
+
+
+POST_VIEW = {"click", "type", "press", "fill", "select", "check", "scroll", "hover", "drag", "do", "run", "search",
+             "back", "forward", "reload", "dismiss", "focus"}
+
+
+def with_view(ctx, name, flags, out):
+    if not flags.get("f") or name not in POST_VIEW or not isinstance(out, str):
+        return out
+    try:
+        view = route(ctx, "snap", [], {"f": flags["f"]})
+    except Fail as e:
+        view = e.text()
+    return out + "\n" + view
 
 
 def run(ctx, msg):
@@ -172,8 +194,56 @@ def run(ctx, msg):
         out, code = "err: " + str(e), 1
     finally:
         ctx.secret = None
+    if isinstance(out, Pending):
+        out.meta = (name, argv, t)
+        out.gen = ctx.d.abort_gen
+        return {"pending": out}
     if isinstance(out, dict):
         return out
+    if name == "suggest":
+        return {"out": out if code == 0 else "", "code": 0}
+    return finish(ctx, name, argv, out, code, t)
+
+
+def poll_pending(ctx, p):
+    name, argv, t = p.meta
+    if p.gen != ctx.d.abort_gen:
+        return finish(ctx, name, argv, "stopped (Ctrl+Alt+End or lighting abort)", 1, t)
+    last = time.time() >= p.deadline
+    saved = (ctx.target, ctx.where, ctx.last_target)
+    ctx.image = None
+    code = 0
+    try:
+        out = p.poll(last)
+    except Fail as e:
+        out, code = e.text(), 1
+    except TimeoutError as e:
+        out, code = "err: " + str(e), 1
+    except Exception as e:
+        out, code = "err: %s: %s" % (type(e).__name__, str(e)[:300]), 1
+    finally:
+        ctx.target, ctx.where, ctx.last_target = saved
+    if out is None and not last:
+        p.due = time.time() + p.interval
+        return None
+    return finish(ctx, name, argv, out or "", code, t)
+
+
+def drain(ctx, out):
+    while isinstance(out, Pending):
+        if ctx.d.abort.is_set():
+            raise Fail("stopped by hotkey")
+        time.sleep(max(0.0, out.due - time.time()))
+        last = time.time() >= out.deadline
+        res = out.poll(last)
+        if res is None and not last:
+            out.due = time.time() + out.interval
+            continue
+        return res or ""
+    return out
+
+
+def finish(ctx, name, argv, out, code, t):
     events = []
     while ctx.d.events:
         ev = ctx.d.events.popleft()
@@ -184,7 +254,7 @@ def run(ctx, msg):
     if events:
         out = (out + "\n" if out else "") + "\n".join(events)
     t_log = time.perf_counter()
-    log(name, argv, code, (time.perf_counter() - t) * 1000)
+    log(name, argv, code, (time.perf_counter() - t) * 1000, out, ctx.no_learn)
     if TRACE:
         print("trace %s: total %.2f ms, log %.2f ms" % (name, (time.perf_counter() - t) * 1000, (time.perf_counter() - t_log) * 1000),
               file=sys.stderr, flush=True)
@@ -197,8 +267,8 @@ def run(ctx, msg):
 _log = {"f": None, "n": 0}
 
 
-def log(name, argv, code, ms):
-    if name in ("ping", "status", "log"):
+def log(name, argv, code, ms, out="", test=False):
+    if name in ("ping", "status", "log", "suggest"):
         return
     try:
         if _log["f"] is None or _log["n"] >= 500:
@@ -210,8 +280,15 @@ def log(name, argv, code, ms):
             _log["f"], _log["n"] = open(D.LOG, "a", encoding="utf-8", buffering=1), 0
         _log["n"] += 1
         ref = next((a for a in argv[1:2] if ref_kind(a)), "")
-        _log["f"].write(json.dumps({"t": time.strftime("%Y-%m-%d %H:%M:%S"), "cmd": name, "ref": ref,
-                                    "ok": code == 0, "ms": int(ms)}) + "\n")
+        row = {"t": time.strftime("%Y-%m-%d %H:%M:%S"), "cmd": name, "ref": ref, "ok": code == 0, "ms": int(ms),
+               "n": len(out or "")}
+        if "-f" in argv[1:]:
+            row["f"] = 1
+        if test:
+            row["x"] = 1
+        if code:
+            row["e"] = (out or "").replace("err: ", "", 1).split(" -> try:")[0][:60]
+        _log["f"].write(json.dumps(row, ensure_ascii=False) + "\n")
     except OSError:
         _log["f"] = None
 
@@ -229,6 +306,7 @@ def cmd_do(ctx, pos, flags):
         argv = tokenize(step)
         try:
             out, _, _ = run_one(ctx, argv)
+            out = drain(ctx, out)
         except Fail as e:
             left = len(steps) - i
             lines.append("%d %s%s" % (i, e.text(), " (stopped, %d skipped)" % left if left else ""))
@@ -361,8 +439,53 @@ def cmd_config(ctx, pos, flags):
     return "%s = %s" % (key, json.dumps(val))
 
 
+def log_stats(rows):
+    import collections
+    import datetime
+    seen = collections.OrderedDict()
+    prev = None
+    for e in rows:
+        s = seen.setdefault(e["cmd"], {"runs": 0, "err": 0, "chars": 0, "sized": 0, "ms": 0, "snap_after": 0})
+        s["runs"] += 1
+        s["err"] += 0 if e.get("ok") else 1
+        s["ms"] += e.get("ms", 0)
+        if "n" in e:
+            s["chars"] += e["n"]
+            s["sized"] += 1
+        if prev and e["cmd"] == "snap" and prev["cmd"] in ACTION_VERBS and not prev.get("f"):
+            gap = (datetime.datetime.fromisoformat(e["t"]) - datetime.datetime.fromisoformat(prev["t"])).total_seconds()
+            if gap <= 15:
+                seen[prev["cmd"]]["snap_after"] += 1
+        prev = e
+    out = ["cmd          runs  err%  avg ms  avg tok  snap after"]
+    for cmd, s in sorted(seen.items(), key=lambda kv: -kv[1]["runs"]):
+        tok = "%7d" % (s["chars"] // s["sized"] // 4 + 1) if s["sized"] else "      -"
+        after = "%d%%" % (100 * s["snap_after"] // s["runs"]) if cmd in ACTION_VERBS else ""
+        out.append("%-12s %5d %4d%% %7d  %s  %s" % (cmd, s["runs"], 100 * s["err"] // s["runs"], s["ms"] // s["runs"], tok, after))
+    return "\n".join(out)
+
+
+ACTION_VERBS = {"click", "type", "press", "fill", "select", "check", "scroll", "hover", "open", "launch", "do", "run"}
+
+
 def cmd_log(ctx, pos, flags):
+    if pos and pos[0].lower() == "stats":
+        pos = pos[1:]
+        flags = dict(flags, stats=True)
     n = int(pos[0]) if pos and pos[0].isdigit() else 15
+    if flags.get("stats"):
+        rows = []
+        try:
+            for r in D.LOG.read_text("utf-8").splitlines():
+                try:
+                    rows.append(json.loads(r))
+                except ValueError:
+                    pass
+        except OSError:
+            return "log is empty"
+        rows = [r for r in rows if not r.get("x") and r.get("cmd") not in ("selftest", "bench", "done", "ext-reload")]
+        rows = rows[-(int(pos[0]) if pos and pos[0].isdigit() else 2000):]
+        return cap(log_stats(rows), "log-stats", lines=40) if rows else "log is empty"
     try:
         rows = D.LOG.read_text("utf-8").splitlines()[-n:]
     except OSError:
@@ -440,15 +563,26 @@ def cmd_record(ctx, pos, flags):
     return record.cmd_record(ctx, pos, flags)
 
 
+def cmd_keys(ctx, pos, flags):
+    from lighting import keys
+    return keys.cmd_keys(ctx, pos, flags)
+
+
+def cmd_suggest(ctx, pos, flags):
+    from lighting import recall
+    return recall.cmd_suggest(ctx, pos, flags)
+
+
 SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status, "config": cmd_config,
           "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload,
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
-          "done": cmd_done, "keep": cmd_keep}
+          "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest}
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
-         "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames"}
+         "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys"}
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}
 APP_ONLY = {"windows", "focus", "clip", "launch"}
-WEB_ONLY = {"open", "text", "fill", "select", "check", "wait", "expect", "table", "fetch", "js", "dismiss",
+CHAT = {"inbox", "reply"}
+WEB_ONLY = {"open", "text", "fill", "select", "check", "wait", "expect", "table", "fetch", "js", "dismiss", "search",
             "upload", "tabs", "tab", "close", "back", "forward", "reload", "dialog", "downloads", "console", "viewport",
             "frames"}
 

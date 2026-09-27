@@ -55,6 +55,21 @@ JPEG_QUALITY = 70
 OUT_KEEP_HOURS = 24
 LOG_MAX_BYTES = 5_000_000
 
+LONG_WAITS = {"inbox": 300_000, "reply": 300_000, "wait": 10_000}
+WEB_SCHEMES = {"http", "https", "file", "about", "chrome", "brave", "edge", "view-source", "data", "blob",
+               "chrome-extension"}
+RISKY_SCHEMES = {"file", "ms-msdt", "search-ms", "search", "ms-officecmd", "ms-word", "ms-excel", "ms-powerpoint",
+                 "ms-visio", "ms-access", "ms-appinstaller", "ms-cxh", "ms-cxh-full", "hcp", "javascript", "vbscript"}
+CHAT_POLL_S = 1.0
+CHAT_GAP_S = 2.0
+CHAT_UNANSWERED = 5
+CHAT_TEXT = 300
+CHAT_LINES = 5
+KEYS = HOME / "keys.json"
+KEY_HINT_EVERY_S = 7200
+SUGGEST_EVERY_S = 600
+PRUNE_DAYS = 14
+
 IDLE_MS = 300
 BLITZ_WAIT_MS = 3000
 POINTER_MS = 1200

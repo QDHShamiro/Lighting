@@ -181,6 +181,91 @@ def test_cleanup_closes_only_launched_windows():
         desktop.win = real
 
 
+def test_times_and_keys():
+    from lighting import keys
+    from lighting.common import parse_ms
+    assert parse_ms("10m", 0) == 600000 and parse_ms("90s", 0) == 90000 and parse_ms("1500", 0) == 1500
+    assert parse_ms(None, 7) == 7 and parse_ms(True, 5) == 5
+    assert keys.norm("Strg+Umschalt+N") == "ctrl+shift+n" and keys.norm("g then d") == "g d"
+    assert keys.norm("Alt, F") == "alt+f" and keys.norm("Control+K") == "ctrl+k"
+    assert keys.from_name("Search (Ctrl+K)") == ("Ctrl+K", "Search") and keys.from_name("Search") is None
+    keys.learn("discord.exe", "Ctrl+K", 'd93 edit "Where to?"')
+    assert keys.known("discord.exe")["ctrl+k"]["src"] == "learned"
+    assert "win+e" not in keys.known("discord.exe") and "win+e" in keys.known("windows")
+    first = keys.hint("discord.exe")
+    assert "ctrl+k" in first and keys.hint("discord.exe") == ""
+    if WINDOWS:
+        from lighting import win
+        assert win.combo_parts("ctrl++") == ["ctrl", "+"] and win.combo_parts("ctrl+shift+a") == ["ctrl", "shift", "a"]
+        assert win.vk_of("playpause")[0] == 0xB3 and win.vk_of("arrowdown")[0] == 0x28 and win.vk_of("numpad5")[0] == 0x65
+
+
+def test_owner_prefers_the_exe():
+    if not WINDOWS:
+        return
+    from lighting import desktop
+    wins = [{"exe": "WindowsTerminal.exe", "title": "Obsidian lighting session", "fg": True},
+            {"exe": "Obsidian.exe", "title": "Vault - Obsidian 1.13", "fg": False}]
+    assert desktop.owner_of(wins, "Obsidian")["exe"] == "Obsidian.exe"
+    assert desktop.owner_of(wins[:1], "Obsidian")["exe"] == "WindowsTerminal.exe"
+
+
+def test_app_links_and_risky_schemes():
+    from lighting import browser
+    from lighting import defaults as D
+    assert browser.normalize_url("localhost:3000/x") == "http://localhost:3000/x"
+    assert browser.normalize_url("obsidian://open?vault=V").split(":")[0] not in D.WEB_SCHEMES
+    assert browser.normalize_url("github.com").startswith("https://")
+    assert {"ms-msdt", "search-ms", "file"} <= D.RISKY_SCHEMES and "spotify" not in D.RISKY_SCHEMES
+
+
+def test_chat_rows_and_own_messages():
+    from lighting import chat
+    rows = [{"key": k, "num": n, "name": k} for k, n in (("a", 10), ("b", 11), ("c", 12))]
+    assert [r["key"] for r in chat.fresh_rows(chat.baseline(None, rows[:2]), rows)] == ["c"]
+    hashed = [dict(r, num=None) for r in rows]
+    assert [r["key"] for r in chat.fresh_rows(chat.baseline(None, hashed[:2]), hashed)] == ["c"]
+    st = {"sent": [chat.norm("Hello  there")]}
+    assert chat.said_by_me(st, "me: hello there") and chat.said_by_me(st, "hello there")
+    assert not chat.said_by_me(st, "peer: ok, 11 chars")
+    assert chat.is_stamp("16:27") and chat.is_stamp("Sonntag, 27. September 2026 16:27")
+    assert not chat.is_stamp("itsluiss (ItsLuis) 16:13") and chat.short_sender("itsluiss (ItsLuis)") == "itsluiss"
+    assert chat.LINK_RE.search("see https://x.io") and not chat.LINK_RE.search("wie gehts dir so")
+
+
+def test_recall_finds_routines_by_words():
+    import time
+    from lighting import recall
+    r = {"name": "discord-markieren", "tags": ["markiere", "@"], "params": {"user": "Luis"},
+         "steps": [{"cmd": "launch", "args": ["discord"], "where": {"kind": "app", "exe": "Discord.exe"}}]}
+    stems = lambda text: {recall.stem(w) for w in recall.words(text)}
+    assert recall.fits(stems("markiere Tom auf Discord"), r)
+    assert not recall.fits(stems("fix the minecraft plugin"), r)
+    recall.note_prompt("markiere Luis auf Discord bitte")
+    assert recall.tags_for(time.time(), {"user": "Luis"}) == ["markiere", "discord"]
+
+
+def test_routines_cleanup():
+    import time
+    old = routines.new_routine({"params": {}, "steps": [{"cmd": "open", "args": ["x.com"]}], "check": None}, "learned", 10)
+    old.update(name="old-unused", created="2020-01-01 10:00")
+    routines.save(old)
+    routines.save(dict(old, name="old-saved", source="saved"))
+    routines.prune()
+    names = {r["name"] for r in routines.load_all()}
+    assert "old-unused" not in names and "old-saved" in names
+    routines.path("old-saved").unlink()
+    step = lambda url: {"cmd": "open", "args": [url], "flags": {}, "where": None}
+    nav = {"steps": [step("a.com"), step("b.com")], "via": None, "start": None, "cost": 10, "t0": time.time()}
+
+    class C:
+        class d:
+            events = []
+
+    assert routines.learn(C(), nav, [nav]) is None
+    assert routines.slug("Öffne Spotify") == "oeffne-spotify"
+
+
 if __name__ == "__main__":
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
     failed = 0

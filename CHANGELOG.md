@@ -3,6 +3,52 @@
 Versions follow semver. Every release on GitHub carries `lighting.exe` built from the tag by CI,
 a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in the repo at that tag).
 
+## [0.8.0] - 2026-09-27
+
+Built from what went wrong in real sessions: fewer rounds per task, fewer wrong turns, chats, shortcuts and
+routines that find themselves.
+
+### Added
+- Chats: `inbox "@Name"` waits until someone else writes and prints the full message without OCR (Discord,
+  other chat apps); `reply "@Name" "text" [--wait]` sends it and waits for the answer in the same call. Message
+  ids come from the app (Discord `chat-messages-...`), so an answer that arrives while sending is never missed;
+  own messages are skipped. Links need `--yes`, at most 5 messages without an answer.
+- Long waits no longer block Lighting: `inbox`, `reply --wait` and `wait --reload` wait inside the daemon while
+  other commands (and other sessions) keep running. `--timeout` takes `90s`, `10m` or milliseconds.
+- `wait "text" --reload 15s --timeout 10m` reloads until the text is there (CI checks), no sleep loops.
+- `-f "word"` after any action (`click`, `type`, `press`, `do`, `run`, ...) shows the matching lines of the result
+  in the same call.
+- `search "words"` finds the page's search field, types and submits. `open <url> --text` opens and reads.
+- `open` with an app link (`obsidian://`, `spotify:`, `mailto:`) starts the app. Risky links (`file:`,
+  `ms-msdt:`, `search-ms:`, Office links) need `--yes`, also for `launch`.
+- `launch` answers with the app's first look (`-f` narrows it).
+- Desktop `click`/`type`/`press` answer `ok (+N new, -M gone)` with the new lines, after the app went quiet;
+  a repeated `snap` of an unchanged window answers `unchanged since last snap`.
+- Keyboard shortcuts: Lighting keeps them per app and site (shown by the app, learned from a `press` that opened
+  something, a few well-known ones), prints one `keys:` line on the first look (every 2 h at most) and lists them
+  with `lighting keys [app]`, `keys add|rm`. More key names: media keys without a window (`playpause`,
+  `volumeup`, ...), `numpad0-9`, `pgup`/`pgdn`, `arrowdown`, `plus`/`minus`, `altgr`, `strg`/`umschalt`,
+  `f13`-`f24`; `ctrl++` works.
+- Routines find themselves: a `UserPromptSubmit` hook names a fitting routine in the prompt (nothing when none
+  fits, 0 tokens). Routines keep the words of the request as tags; `run discord markieren user=Tom` picks one by
+  words.
+- `lighting log stats`: runs, errors, time, output tokens and "snap right after the action" per command.
+
+### Changed
+- The Stop hook (`done --quiet`) runs async: replies no longer wait for the clean-up.
+- `routines` prints one short line per routine; tasks that only navigate are not learned, the same steps on the
+  same site update a routine instead of adding `-2`, unused learned routines are deleted after 14 days.
+- A page without controls shows its visible text; a page that draws nothing yet says so and names `shot`.
+- SKILL.md covers all of it in fewer bytes (3,310 -> 3,168).
+
+### Fixed
+- `launch obsidian` picked a terminal whose title mentioned Obsidian; the app's exe now wins over titles.
+- `open obsidian://...` ended as an empty browser tab.
+- Typing into Electron apps (Discord, Obsidian) used a background value the app never saw, so the quick switcher
+  opened the wrong note; it pastes now, and `--tab`/`--enter` wait until the autocomplete has appeared.
+- `type --append` into a field without a value pattern pasted the old text twice.
+- `localhost:3000` was treated as a URL scheme.
+
 ## [0.7.2] - 2026-09-26
 
 ### Fixed

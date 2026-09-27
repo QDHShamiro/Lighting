@@ -16,6 +16,26 @@ class Fail(Exception):
         return "err: " + str(self) + (" -> try: " + self.hint if self.hint else "")
 
 
+class Pending:
+    def __init__(self, poll, timeout_s, interval=1.0):
+        self.poll = poll
+        self.deadline = time.time() + timeout_s
+        self.interval = interval
+        self.due = time.time() + interval
+        self.gen = 0
+        self.meta = None
+
+
+def parse_ms(value, default_ms):
+    if value in (None, True, ""):
+        return int(default_ms)
+    m = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*(ms|s|m|h)?\s*", str(value).lower())
+    if not m:
+        raise Fail("cannot read the time '%s'" % value, "use 90s, 10m or milliseconds")
+    n, unit = float(m.group(1)), m.group(2) or "ms"
+    return int(n * {"ms": 1, "s": 1000, "m": 60000, "h": 3600000}[unit])
+
+
 def ref_kind(token):
     m = REF.match(token or "")
     return m.group(2) if m else None
