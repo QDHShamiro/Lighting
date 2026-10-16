@@ -700,7 +700,13 @@ def hint(ctx):
 
 
 def literal(step):
-    return sum(len(re.sub(r"\{\w+\}", "", re.sub(r"^[a-z]+://", "", str(a), flags=re.I))) for a in step.get("args") or [])
+    n = 0
+    for a in step.get("args") or []:
+        a = re.sub(r"^[a-z]+://", "", str(a), flags=re.I)
+        if step.get("cmd") == "open":
+            a = a.split("/", 1)[1] if "/" in a else ""
+        n += len(re.sub(r"\{\w+\}", "", a))
+    return n
 
 
 def flag_argv(flags):
