@@ -8,6 +8,16 @@ a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in t
 Built from 1,831 failed commands in the log since 1.1.0: most came from a few loops that kept hitting the same wall.
 
 ### Added
+- The brain: Lighting learns on this PC which controls are used on each page and app (it starts from the recorded
+  episodes). On known pages `open`, `snap`, `back`, `forward`, `reload` and app snapshots show only those (up to 15,
+  `config snap_top`) plus notes and alerts, with one line saying how many are hidden; `snap --full` shows all.
+  github.com/QDHShamiro/Lighting went from ~450 to ~117 tokens.
+- Self-correction when it is sure: a ref that is gone after the page changed is retried once by its role and name
+  (only if that element is still there once), and a name that missed is replaced by the one that worked right after
+  the same miss twice before (once: the error names it).
+- `lighting brain` (what it learned), `brain forget <site|app:x.exe>`, `brain reset --yes`, `config brain off`.
+- `lighting improve [days]`: a self-check of the last days (top errors with what to do, loops, what the brain saved);
+  once a week a 3-line summary comes with the first prompt.
 - `upload` works on file inputs inside cross-origin frames (`f134.e2`, files up to 8 MB).
 - `claude --model m --effort e` starts the new Claude session with that model and effort.
 - `windows -f x` with exactly one match chooses that window, so `press`/`type`/`click` without a ref go there.

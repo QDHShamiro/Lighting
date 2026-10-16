@@ -13,6 +13,8 @@ KEY = HOME / "key"
 OUT = HOME / "out"
 LOG = HOME / "log.jsonl"
 SESSIONS = HOME / "sessions.json"
+BRAIN = HOME / "brain.json"
+IMPROVE = HOME / "improve.json"
 CONFIG = HOME / "config.json"
 BLOCKLIST = HOME / "blocklist.txt"
 EXT = HOME / "extension"
@@ -92,6 +94,19 @@ REPEAT_NOTE_AT = 3
 REPEAT_WINDOW_S = 120
 HINT_LITERAL = 6
 TYPE_SETTLE_S = 0.3
+BRAIN_TOP = 15
+BRAIN_PAGE_USES = 3
+BRAIN_HOST_USES = 10
+BRAIN_MIN_HITS = 3
+BRAIN_MIN_HIDDEN = 5
+BRAIN_FIX_SURE = 2
+BRAIN_FIX_WINDOW_S = 90
+BRAIN_SAVE_S = 30
+BRAIN_MAX_PAGES = 400
+BRAIN_MAX_ELS = 150
+BRAIN_HALF_LIFE_D = 30
+IMPROVE_EVERY_S = 7 * 86400
+IMPROVE_MIN_FAILS = 10
 POINTER_MS = 1200
 POINTER_COLOR = "#ff8a00"
 HOTKEY_MODS = 0x0002 | 0x0001
@@ -108,6 +123,8 @@ CONFIG_DEFAULTS = {
     "cleanup": True,
     "audio": "auto",
     "window": True,
+    "brain": True,
+    "snap_top": BRAIN_TOP,
 }
 
 RISK_WORDS = [

@@ -7,7 +7,13 @@
 - `more: 23 below` means scroll or use `--all`.
 - `unchanged since last snap` means the page did not change and your refs still work.
 - A repeated plain `snap` of the same page answers only what changed since your last `snap`: `changed since your last snap: +2, -1 gone (all 40 lines: lighting snap --full)` and the new lines. After a big change, a new page or with any flag you get the full view; `snap --full` always does.
-- Refs stay valid until the page navigates. A stale ref answers `e12 is gone -> try: lighting snap`.
+- Refs stay valid until the page navigates. A stale ref answers `e12 is gone -> try: lighting snap`; when the same element (role and name) is still on the page once, Lighting uses it and says `! e12 was gone (the page changed); used the same button "Save" instead`.
+
+## The brain (learns on this PC)
+- Lighting remembers which controls you use on each page and app. On a page it knows, `open`, plain `snap`, `back`, `forward`, `reload` and app snapshots show only those (up to 15) plus notes, headings and alerts: `brain: 3 controls you use here, 30 others hidden (lighting snap --full shows all)`. Need something else: `snap --full`, `snap -f word` or `click "Name"` (searches the whole page).
+- It learns from misses: when `click "Checkout"` finds nothing and `click "Go to checkout"` works right after, the next miss says so, and from the second time on it uses the name that worked (`! nothing called "Checkout" here; used "Go to checkout" ...`).
+- `lighting brain` shows what it learned, `brain forget github.com` or `brain forget app:spotify.exe` drops a site, `brain reset --yes` everything (only when the user asks), `config brain off` turns it off. Nothing leaves this PC; blocklisted sites are never learned.
+- `lighting improve [days]` is a self-check: the most frequent errors of the last days with what to do, loops that kept going after an error, and what the brain saved. Once a week a 3-line summary comes with the first prompt.
 
 ## Frames
 - Same-origin iframes are part of the normal snapshot.
