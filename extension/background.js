@@ -402,21 +402,36 @@ async function clipShot(tabId, ref, quality) {
   return img.data;
 }
 
+function markedIn(doc, id) {
+  const el = doc.querySelector('[data-lt-mark="' + id + '"]');
+  if (el) {
+    el.removeAttribute("data-lt-mark");
+    return el;
+  }
+  for (const f of doc.querySelectorAll("iframe, frame")) {
+    try {
+      const hit = f.contentDocument && markedIn(f.contentDocument, id);
+      if (hit) return hit;
+    } catch (e) {}
+  }
+  return null;
+}
+
 async function upload(a, tab) {
   const tabId = await tabOf(tab);
   await guard(tabId, "upload");
   await C.attach(tabId);
   const id = "u" + Date.now();
-  const m = await page(tabId, "act.mark", [a.ref, id]);
+  const m = await page(tabId, "act.mark", [a.ref, id, true]);
   if (m.gone) throw new Error(a.ref + " is gone -> try: lighting snap");
+  if (m.nofile) throw new Error("no file input at or near " + a.ref + " -> try: the upload button or its label");
   const fr = /^f(\d+)\.e\d+$/.exec(a.ref);
   if (fr) {
     if (!a.data) throw new Error("file too big for a frame upload (max 8 MB)");
     const [r] = await chrome.scripting.executeScript({ target: { tabId, frameIds: [Number(fr[1])] }, args: [id, a.data], func: (mark, data) => {
       const el = document.querySelector('[data-lt-mark="' + mark + '"]');
       el && el.removeAttribute("data-lt-mark");
-      let inp = el && (el.matches('input[type=file]') ? el : el.querySelector('input[type=file]'));
-      for (let p = el; !inp && p; p = p.parentElement) inp = p.querySelector('input[type=file]');
+      const inp = el && el.matches('input[type=file]') ? el : null;
       if (!inp) return "no file input near the ref";
       const dt = new DataTransfer();
       for (const f of data) dt.items.add(new File([Uint8Array.from(atob(f.b64), (c) => c.charCodeAt(0))], f.name, { type: f.mime }));
@@ -429,10 +444,10 @@ async function upload(a, tab) {
     return "ok (" + a.data.length + " file" + (a.data.length === 1 ? "" : "s") + " set on " + a.ref + ")";
   }
   try {
-    const doc = await C.send(tabId, "DOM.getDocument", { depth: 0 });
-    const q = await C.send(tabId, "DOM.querySelector", { nodeId: doc.root.nodeId, selector: '[data-lt-mark="' + id + '"]' });
-    if (!q.nodeId) throw new Error("file input not reachable (inside a frame?)");
-    await C.send(tabId, "DOM.setFileInputFiles", { nodeId: q.nodeId, files: a.files });
+    await C.send(tabId, "DOM.getDocument", { depth: 0 });
+    const r = await C.send(tabId, "Runtime.evaluate", { expression: "(" + markedIn + ")(document, " + JSON.stringify(id) + ")" });
+    if (!r.result || !r.result.objectId) throw new Error("file input not reachable (inside a frame?)");
+    await C.send(tabId, "DOM.setFileInputFiles", { objectId: r.result.objectId, files: a.files });
   } finally {
     await page(tabId, "act.unmark", []).catch(() => {});
   }
