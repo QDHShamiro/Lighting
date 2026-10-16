@@ -24,6 +24,8 @@
   <img src="https://img.shields.io/badge/known%20task-%E2%88%9296%25%20tokens-1E7BEF?style=flat-square&labelColor=0A1A30" alt="-96% tokens per known task">
 </p>
 
+https://github.com/user-attachments/assets/ff2f8cf2-f22a-4cb5-8c94-75e3bebd9a6d
+
 <h3 align="center">An AI that looks at a page with screenshots pays ~15,850 tokens. Lighting pays ~440.</h3>
 
 <table>
