@@ -25,6 +25,14 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
   so no extra `windows` call is needed.
 - `desktop` is an alias: `lighting desktop` lists windows, `lighting desktop <cmd>` runs `<cmd>` on the desktop.
 - The third identical failure of the same command in a row says that repeating it will not help.
+- `lighting doctor` and `/lighting:doctor`: one line per part of Lighting (packages, client, browser link, daemon,
+  stuck processes, browser, MCP, Claude Code plugin with hooks and permissions, other AIs, OCR, sound, data files,
+  disk, memory, errors, focus, updates), each problem with its fix. `--fix` repairs what is safe to repair: packages,
+  browser link files and registry, the client copy, PATH, unreadable data files, stuck Lighting processes, the
+  daemon, the extension and other AIs' entries. `--offline` skips the update check. Works through MCP too.
+- `tabs -f x` lists only the matching tabs.
+- `shot --if-changed --threshold 5` counts a screenshot as unchanged when less than 5% of it moved (default 2%).
+- `bench --real --runs 3` reports the median of several runs; plain `bench` also measures a call through MCP.
 
 ### Changed
 - `done` from the Stop hook paints the group green at once and closes the session's tabs and apps 20 s later;
@@ -39,6 +47,11 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
   routine that starts with `open https://{page}` was offered after every page), and a suggestion needs the
   routine's app or site in the prompt plus one more word.
 - Desktop `type` waits 0.3 s for the UI to react (0.6 s with `--enter`/`--tab`).
+- `open`, `back`, `forward` and `reload` wait at most 1.5 s for the page to calm down (was 3 s) and say so when it
+  was still changing; a second `snap` then shows only what is new.
+- `open` of a YouTube embed link opens the watch page (embeds opened directly show "Error 153").
+- The skill text is 9% shorter (3,296 -> 3,002 bytes); it is loaded in every session that uses Lighting.
+- `improve` and the weekly self-check read only the last 14 days of the log.
 
 ### Fixed
 - The daemon crashed in `open`/`tabs` when `tasklist` printed non-ASCII text (umlauts in the OEM code page).
@@ -49,6 +62,10 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
   when the app supports it.
 - Links to files (`/file=` paths) are no longer shortened, so they can be opened as shown.
 - "this session has no tab" after a cleanup names the page that was closed.
+- `lighting done --quiet` and `lighting suggest` hung forever when their input stayed open without hook data (an
+  agent running them in its shell); they wait at most 1 s for it now.
+- `downloads` printed the whole address of a failed download, a `data:` image of 30,000+ characters; it is cut to
+  80 now.
 
 ## [1.1.0] - 2026-09-27
 

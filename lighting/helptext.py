@@ -7,8 +7,8 @@ web     open <url> [-n] [-f "a|b"] [--text]   snap [-f "a|b"] [-s css|ref] [--al
         check <ref> [off]   hover <ref>   drag <ref> <ref>   scroll [ref|up|down] [--until "text"]
         wait <"text"|url:x|ms|ref> [--gone] [--reload 15s --timeout 10m]   expect <"text"|url:x> [--gone]
         fetch <url> [--pick a.b]   read <url|file.pdf> [url ...] [--links]   js <code|--file f>   dismiss
-        upload <ref> <file>   tabs   tab <id>   close [id]   back   forward   reload   table <ref|css>
-        shot [ref] [--marks] [--if-changed]   viewport <WxH|reset>   snap --media (images too)
+        upload <ref> <file>   tabs [-f x]   tab <id>   close [id]   back   forward   reload   table <ref|css>
+        shot [ref] [--marks] [--if-changed] [--threshold 2 (% moved)]   viewport <WxH|reset>   snap --media (images too)
         frames <video ref> [--count 6] [--scenes] [--small] [--from m:ss --to m:ss] [--live --every ms]
         read <image url|file> (saved as JPEG to look at)
         dialog accept|dismiss [text]   downloads   console   net [n] [-f x] (JSON the page loaded)
@@ -28,7 +28,8 @@ routine routines [-f x]   run <name|words> [param=value ...] [--yes]   routine s
         record start [name] [--web|--desktop]   record stop [name] [param=value ...]   record cancel|status
 cleanup done [--quiet]   keep [t|w]   config cleanup on|off   config window on|off (own window per session)
 system  do "cmd; cmd; ..."   status   stop   config [key value]   log [stats]   version
-        setup [--manual]   install <ai>   selftest [web|app|chat]   bench [--real]   ext-reload   uninstall [--purge]
+        setup [--manual]   install <ai>   selftest [web|app|chat]   bench [--real [--runs 3]]   ext-reload   uninstall [--purge]
+        doctor [--fix] [--offline]   checks every part of Lighting, --fix repairs what it safely can
 
 Any action takes -f "a|b" to show the matching lines of the result in the same call.
 Output is plain text, one line per action. Big results go to a file (path printed).

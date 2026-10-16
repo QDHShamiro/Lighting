@@ -7,7 +7,7 @@ import threading
 import time
 
 from lighting import defaults as D
-from lighting.common import Fail
+from lighting.common import Fail, Pending
 
 EXTRA = {
     "/frame": "<title>Frame</title><button onclick=\"this.textContent='Frame clicked'\">Frame button</button>",
@@ -473,20 +473,26 @@ def bench_real(ctx, pos, flags):
         before = json.loads(path.read_text("utf-8"))
     except (OSError, ValueError):
         before = {}
-    now, rows = {}, ["site                          open ms  tok   snap ms  tok   text ms   tok  raw page tok  saved  vs last"]
+    import statistics
+    runs = max(1, min(9, int(flags.get("runs") or 3)))
+    now, rows = {}, ["site                          open ms  tok   snap ms  tok   text ms   tok  raw page tok  saved  vs last"
+                     + ("   (median of %d runs)" % runs if runs > 1 else "")]
     total = [0, 0]
     learn = ctx.no_learn
     ctx.no_learn = True
     try:
         for i, site in enumerate(sites):
-            res = {}
-            for key, argv in (("open", ["open", site] + (["--new"] if i == 0 else [])), ("snap", ["snap", "--force"]), ("text", ["text"])):
-                t = time.perf_counter()
-                try:
-                    out, _, _ = commands.run_one(ctx, argv)
-                except Fail as e:
-                    out = e.text()
-                res[key] = [int((time.perf_counter() - t) * 1000), len(out) // 4 + 1]
+            got = {"open": [], "snap": [], "text": []}
+            for n in range(runs):
+                for key, argv in (("open", ["open", site] + (["--new"] if i == 0 and n == 0 else [])), ("snap", ["snap", "--force"]),
+                                  ("text", ["text"])):
+                    t = time.perf_counter()
+                    try:
+                        out, _, _ = commands.run_one(ctx, argv)
+                    except Fail as e:
+                        out = e.text()
+                    got[key].append((int((time.perf_counter() - t) * 1000), len(out) // 4 + 1))
+            res = {k: [int(statistics.median(a for a, _ in v)), int(statistics.median(b for _, b in v))] for k, v in got.items()}
             try:
                 raw = int(commands.run_one(ctx, ["js", "document.body.innerText.length"])[0].strip()) // 4 + 1
             except (Fail, ValueError):
@@ -541,4 +547,48 @@ def bench(ctx, pos, flags):
     finally:
         ctx.no_learn = learn
         srv.shutdown()
-    return "\n".join(rows)
+    if getattr(ctx, "in_do", False) or ctx.run_stack or flags.get("no-mcp"):
+        return "\n".join(rows)
+    box = []
+    threading.Thread(target=mcp_probe, args=(box,), daemon=True).start()
+
+    def poll(last):
+        if box:
+            got = box[0]
+            rows.append("mcp: %s" % got if isinstance(got, Exception) else
+                        "mcp ping through lighting.exe mcp: start %d ms, then median %.1f ms, max %.1f ms (%d calls)" % got)
+            return "\n".join(rows)
+        if last:
+            rows.append("mcp: no answer within 60 s")
+            return "\n".join(rows)
+        return None
+
+    return Pending(poll, 60, 0.2)
+
+
+def mcp_probe(box, n=20):
+    import json
+    import statistics
+    try:
+        p = subprocess.Popen([str(D.ROOT / "bin" / "lighting.exe"), "mcp"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                             stderr=subprocess.DEVNULL, creationflags=0x08000000)
+
+        def ask(i, method, params):
+            p.stdin.write((json.dumps({"jsonrpc": "2.0", "id": i, "method": method, "params": params}) + "\n").encode("utf-8"))
+            p.stdin.flush()
+            return json.loads(p.stdout.readline().decode("utf-8"))
+
+        t0 = time.perf_counter()
+        ask(1, "initialize", {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "bench", "version": D.version()}})
+        start, times = (time.perf_counter() - t0) * 1000, []
+        for i in range(n):
+            t = time.perf_counter()
+            answer = json.dumps(ask(10 + i, "tools/call", {"name": "lighting", "arguments": {"cmd": "ping"}}))
+            times.append((time.perf_counter() - t) * 1000)
+            if "pong" not in answer:
+                raise RuntimeError("unexpected answer " + answer[:80])
+        p.stdin.close()
+        p.wait(5)
+        box.append((start, statistics.median(times), max(times), n))
+    except Exception as e:
+        box.append(e)

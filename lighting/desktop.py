@@ -891,12 +891,12 @@ def cmd_read(ctx, pos, flags):
 
 
 def cmd_shot(ctx, pos, flags):
-    from lighting.browser import save_image
+    from lighting.browser import save_image, threshold
     hwnd, box = region(ctx, pos)
     img = grab(box, hwnd)
     key = "app-%s" % (hwnd or "screen")
     return save_image(ctx, img, key, bool(flags.get("if-changed")),
-                      int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
+                      int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH), threshold(flags))
 
 
 def app_text(hwnd):
