@@ -16,6 +16,16 @@ class Fail(Exception):
         return "err: " + str(self) + (" -> try: " + self.hint if self.hint else "")
 
 
+class Busy(Fail):
+    pass
+
+
+def note(ctx, text):
+    notes = getattr(ctx, "notes", None)
+    if notes is not None and ("! " + text) not in notes:
+        notes.append("! " + text)
+
+
 class Pending:
     def __init__(self, poll, timeout_s, interval=1.0):
         self.poll = poll

@@ -451,6 +451,186 @@ def test_session_windows_keep_close_done():
         assert "screen or a window" in str(e)
 
 
+def test_hints_need_fixed_text():
+    from lighting import commands
+
+    class F:
+        events = []
+
+    st = lambda c, *a: {"cmd": c, "args": list(a), "flags": {}}
+    loose = {"name": "any-page", "params": {"page": "x"}, "steps": [st("open", "https://{page}"), st("click", "Go")]}
+    site = {"name": "any-github", "params": {"page": "x"}, "steps": [st("open", "github.com/{page}"), st("click", "New")]}
+    tight = {"name": "gh-issues", "params": {"repo": "x"},
+             "steps": [st("open", "github.com/QDHShamiro/{repo}"), st("click", "Issues")]}
+    assert routines.literal(loose["steps"][0]) == 0 and routines.literal(site["steps"][0]) == 0
+    assert routines.literal(tight["steps"][0]) == 11 and routines.literal(st("click", "Issues")) == 6
+    for r in (loose, site, tight):
+        routines.save(r)
+    try:
+        c = commands.Context(F())
+        c.ep = {"steps": [st("open", "github.com/QDHShamiro/Lighting")], "hinted": set(), "via": None}
+        routines.hint(c)
+        assert F.events == ["routine gh-issues can finish this in one call: lighting run gh-issues repo=Lighting"]
+    finally:
+        for r in (loose, site, tight):
+            routines.path(r["name"]).unlink()
+
+
+def test_suggest_needs_the_app():
+    from lighting import recall
+    stems = lambda text: {recall.stem(w) for w in recall.words(text)}
+    r = {"name": "panel-schaue-host", "tags": ["schaue", "website", "udn", "alles"],
+         "steps": [{"cmd": "open", "args": ["https://panel.dolphinsmp.net/app"]}]}
+    assert not recall.fits(stems("schaue bei mir spotify udn website alles"), r)
+    assert recall.fits(stems("schaue im panel nach dem host"), r)
+
+
+def test_desktop_alias_and_routing_without_a_tab():
+    from lighting import commands
+    seen = []
+    keep = commands.app
+
+    class App:
+        def __getattr__(self, name):
+            return lambda ctx, pos, flags: seen.append((name, pos, flags.get("on"))) or "ok"
+
+    inst = App()
+    commands.app = lambda: inst
+    try:
+        c = commands.Context(type("F", (), {"events": [], "hosts": []})(), "s1")
+        commands.route(c, "desktop", [], {})
+        commands.route(c, "desktop", ["snap", "w3"], {})
+        assert seen == [("cmd_windows", [], None), ("cmd_snap", ["w3"], "app")]
+        if WINDOWS:
+            assert commands.side(c, ["space"], "press") is inst
+        c.tabs, c.target = ["t1"], ("web", "brave")
+        assert commands.side(c, ["space"], "press") is not inst
+    finally:
+        commands.app = keep
+
+
+def test_repeated_failures_get_a_note():
+    from lighting import commands
+    c = commands.Context(type("F", (), {"events": []})(), "s1")
+    outs = [commands.repeated(c, ["read", "w12"], "err: window w12 is gone (closed)") for _ in range(3)]
+    assert "\n!" not in outs[0] and "\n!" not in outs[1] and "3 times in a row" in outs[2]
+    assert "\n!" not in commands.repeated(c, ["read", "w12"], "err: other")
+
+
+def test_running_reads_bytes():
+    from lighting import browser
+    keep = browser.subprocess.run
+
+    class R:
+        stdout = "brave.exe  1234 Console  1  20.000 K Geschäft".encode("cp850")
+
+    browser.subprocess.run = lambda *a, **k: R()
+    try:
+        assert browser.running("brave.exe") and not browser.running("chrome.exe")
+    finally:
+        browser.subprocess.run = keep
+
+
+def test_done_waits_while_the_session_still_works():
+    import time
+    from lighting import commands
+    sent, timers = [], []
+
+    class F:
+        events, waits, hosts, started = [], [], [], 0.0
+
+        def later(self, delay, fn):
+            timers.append(fn)
+
+    keep = commands.browsers
+    commands.browsers = lambda ctx, cmd, args=None: sent.append(args) or [{"closed": 1, "shut": ["t5"]}]
+    try:
+        c = commands.Context(F(), "s1")
+        c.tabs, c.owned = ["t5"], {"t5"}
+        assert commands.cmd_done(c, [], {"quiet": True}) == "" and sent[-1]["close"] is False and c.tabs == ["t5"]
+        c.closing = time.time() - 1
+        timers.pop()()
+        assert c.tabs == [] and c.owned == set() and "close" not in sent[-1]
+        c.tabs, c.owned = ["t6"], {"t6"}
+        commands.cmd_done(c, [], {"quiet": True})
+        commands.run(c, {"argv": ["routines"]})
+        timers.pop()()
+        assert c.tabs == ["t6"] and c.owned == {"t6"}
+    finally:
+        commands.browsers = keep
+
+
+def test_busy_input_becomes_a_wait():
+    from lighting import commands, common
+    calls = []
+    keep = commands.route
+
+    def route(ctx, name, pos, flags):
+        calls.append(name)
+        if len(calls) == 1:
+            raise common.Busy("busy")
+        return "ok sent"
+
+    commands.route = route
+    try:
+        c = commands.Context(type("F", (), {"events": []})(), "s1")
+        out, _, _ = commands.run_one(c, ["press", "enter"])
+        assert isinstance(out, common.Pending)
+        if WINDOWS:
+            from lighting import win
+            keep_idle = win.idle_ms
+            win.idle_ms = lambda: 10_000
+            try:
+                assert out.poll(False) == "ok sent"
+            finally:
+                win.idle_ms = keep_idle
+    finally:
+        commands.route = keep
+
+
+def test_gone_window_finds_its_successor():
+    if not WINDOWS:
+        return
+    from lighting import commands, desktop, win
+    keep = (win.windows, win.alive)
+    win.windows = lambda owned=False: [{"hwnd": 77, "title": "Minecraft 1.21.11", "exe": "javaw.exe", "cls": "GLFW",
+                                        "pid": 1, "min": False, "fg": False}]
+    win.alive = lambda h: h == 77
+    try:
+        c = commands.Context(type("F", (), {"events": []})(), "s1")
+        st = desktop.state(c)
+        st.windows, st.info = {"w12": 55}, {"w12": ("javaw.exe", "Minecraft 1.21.11")}
+        assert desktop.find_window(c, "w12") == 77 and st.windows["w12"] == 77
+        assert c.notes and "w12 is now the new javaw.exe window" in c.notes[0]
+        st.info["w12"] = ("other.exe", "x")
+        st.windows["w12"] = 56
+        try:
+            desktop.find_window(c, "w12")
+            assert False, "a closed window of another app must fail"
+        except Exception as e:
+            assert "is gone" in str(e)
+    finally:
+        win.windows, win.alive = keep
+
+
+def test_front_window_only_after_the_agent_saw_it():
+    if not WINDOWS:
+        return
+    from lighting import commands, desktop, win
+    keep = (win.foreground, win.alive, win.class_of, win.pid_of, win.exe_of, win.elevated)
+    win.foreground, win.alive, win.class_of = (lambda: 77), (lambda h: True), (lambda h: "GLFW30")
+    win.pid_of, win.exe_of, win.elevated = (lambda h: 5), (lambda p: "javaw.exe"), (lambda p: False)
+    try:
+        c = commands.Context(type("F", (), {"events": []})(), "s1")
+        assert desktop.front_app(c) is None
+        desktop.state(c).seen_front = 77
+        assert desktop.front_app(c) == 77
+        win.exe_of = lambda p: "WindowsTerminal.exe"
+        assert desktop.front_app(c) is None
+    finally:
+        win.foreground, win.alive, win.class_of, win.pid_of, win.exe_of, win.elevated = keep
+
+
 def test_skill_and_mcp_budget():
     from lighting import mcp
     skill = (ROOT / "skills" / "lighting" / "SKILL.md").read_bytes()

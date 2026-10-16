@@ -692,11 +692,21 @@ def hint(ctx):
                         break
                 got.update(m)
                 k += 1
-            if ok and k < len(need):
+            if ok and k < len(need) and sum(literal(s) for s in need[:k]) >= D.HINT_LITERAL:
                 hinted.add(r["name"])
                 ctx.d.events.append("routine %s can finish this in one call: %s" % (r["name"], usage(r, got)))
                 return
             break
+
+
+def literal(step):
+    n = 0
+    for a in step.get("args") or []:
+        a = re.sub(r"^[a-z]+://", "", str(a), flags=re.I)
+        if step.get("cmd") == "open":
+            a = a.split("/", 1)[1] if "/" in a else ""
+        n += len(re.sub(r"\{\w+\}", "", a))
+    return n
 
 
 def flag_argv(flags):

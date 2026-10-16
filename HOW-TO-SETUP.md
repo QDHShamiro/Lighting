@@ -124,6 +124,19 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - `net`: `Network.enable` on every attached Lighting tab; only XHR/Fetch GET answers with a JSON mime type and status < 400 are kept (30 per tab); the body is fetched with `Network.getResponseBody` only when shown (it can be gone after a reload).
 - WebMCP: `Page.addScriptToEvaluateOnNewDocument` wraps `registerTool`/`unregisterTool`/`provideContext` of `document.modelContext` and `navigator.modelContext` in the main world (`window.__ltWebMCP`); pages attached before the hook need a reload. Brave 154 has no WebMCP without an origin-trial token, so the selftest only checks that `tools` answers.
 
+- `done --quiet` (Stop hook) in a session paints the group green at once and closes 20 s later (`DONE_GRACE_S`): the daemon keeps `timers` that the worker runs between jobs. Any command of that session in between (not `done`/`suggest`/`status`...) or a pending wait of it keeps the tabs. Before, a session's background loop lost its Hugging Face tab when the reply ended and failed 648 times in an hour with "no tab yet" (2026-10-15). `closing` is saved in `sessions.json`; after a cleanup the "no tab" error names the closed page.
+- User input: `pointer` raises `Busy` after 0.8 s of input; `run_one` turns it into a `Pending` that retries the whole command once the user has been idle 300 ms, up to `BUSY_WAIT_S` (10 s), so other sessions keep running. The old blocking 3 s wait still failed while the user kept using the mouse. Every raise of `Busy` happens before the action, so a retry never acts twice.
+- `--frame <host>` matches the frame URL, then the host start either way (a trailing `…`/`.` is ignored), waits up to 3 s (Hugging Face Spaces add the iframe after `open`), and lists the frames present when none matches.
+- Window choice: `windows -f x` with exactly one match chooses it (`choose`: not browsers, terminals, editors). Without a chosen window, app commands use the foreground window only if the session's last `windows` listed it as foreground (`seen_front`) and it is still in front; never terminals/editors/Claude, browsers, chat apps or elevated windows. Without that rule a fresh session's `press space` went into the user's game.
+- `press`/`type`/`scroll`/`drag` of a session without a tab go to the desktop (`side`): scripts did `windows -f x` then `press` and got "no tab yet".
+- A w-ref whose window closed is rebound to the only window of the same exe (same title if there are several, `successor`); `info` (exe, title per ref) is saved with the session. A script read a closed window 375 times.
+- `desktop` is an alias (`desktop` = `windows`, `desktop <cmd>` = `<cmd> --on app`): agents guessed it 61 times in one loop.
+- The same argv failing with the same error 3 times within 120 s gets a `!` note (`ctx.fails`). Notes from deep code (`common.note`) are appended to the answer by `finish`.
+- Routine hints need 6+ literal characters (`routines.literal`, scheme and `{params}` removed, for `open` only the part after the host) in the matched steps: a learned routine starting with `open https://{page}` was offered after every `open`, one starting with `open github.com/{page}` on every GitHub page. `suggest` needs the routine's app/site in the prompt plus one more word; two filler words ("schaue", "website", typos) used to be enough.
+- `browser.running` compares bytes: `tasklist` prints in the OEM code page, and under `-X utf8` the reader thread failed to decode it, `stdout` was `None` and `open`/`tabs` crashed (28x).
+- `scroll w5` without a d-ref uses the largest vertically scrollable UIA element in the background (`uia.main_scroller`, not for Chromium windows: their trees are too big); before, it ignored `w5` and scrolled the chosen window.
+- Desktop `type` waits `TYPE_SETTLE_S` (0.3 s) for the UI diff, 0.6 s with `--enter`/`--tab`.
+
 ## 3. Build order when changing things
 
 1. Python: edit `lighting/*.py`, `py_compile`, then `lighting stop` (next call starts the new daemon).
@@ -138,7 +151,7 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-python tests/test_units.py     # 28/28
+python tests/test_units.py     # 37/37
 cd client && cargo test && cargo clippy --release --all-targets
 lighting selftest              # must print 135/135 passed (134/134 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
 lighting bench

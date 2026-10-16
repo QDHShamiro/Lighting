@@ -232,6 +232,28 @@ def get_value(el):
     return None
 
 
+def main_scroller(hwnd):
+    uia, U = api()
+    cr = _state.get("scroll-cache")
+    if cr is None:
+        cr = uia.CreateCacheRequest()
+        cr.AddProperty(U.UIA_BoundingRectanglePropertyId)
+        _state["scroll-cache"] = cr
+    cond = uia.CreateAndCondition(uia.CreatePropertyCondition(U.UIA_IsScrollPatternAvailablePropertyId, True),
+                                  uia.CreatePropertyCondition(U.UIA_ScrollVerticallyScrollablePropertyId, True))
+    try:
+        arr = uia.ElementFromHandle(hwnd).FindAllBuildCache(7, cond, cr)
+    except Exception:
+        return None
+    best, area = None, 0
+    for i in range(arr.Length):
+        el = arr.GetElement(i)
+        l, t, r, b = rect_of(el)
+        if (r - l) * (b - t) > area:
+            best, area = el, (r - l) * (b - t)
+    return best
+
+
 def scroll(el, down=True, large=True):
     uia, U = api()
     p = pattern(el, U.UIA_ScrollPatternId, U.IUIAutomationScrollPattern)

@@ -5,11 +5,14 @@ import time
 from lighting import defaults as D
 from lighting import pointer
 from lighting import win
-from lighting.common import Fail, best_only, cap, ref_kind, terms, tiers
+from lighting.common import Busy, Fail, best_only, cap, note, ref_kind, terms, tiers
 
 BROWSER_EXES = {"brave.exe", "chrome.exe", "msedge.exe", "opera.exe", "vivaldi.exe"}
 CHROMIUM_CLASS = "Chrome_WidgetWin_1"
 TERMINALS = {"CASCADIA_HOSTING_WINDOW_CLASS", "ConsoleWindowClass", "mintty", "VirtualConsoleClass", "PuTTY"}
+SHELL_CLASSES = {"Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd"}
+AGENT_EXES = {"windowsterminal.exe", "openconsole.exe", "conhost.exe", "cmd.exe", "powershell.exe", "pwsh.exe",
+              "mintty.exe", "wezterm-gui.exe", "alacritty.exe", "code.exe", "cursor.exe", "windsurf.exe", "claude.exe"}
 
 
 class AppState:
@@ -26,6 +29,8 @@ class AppState:
         self.slow = set()
         self.last_snap = {}
         self.full = None
+        self.info = {}
+        self.seen_front = None
 
 
 def state(ctx):
@@ -46,12 +51,26 @@ def list_windows(ctx):
             while ref in st.windows:
                 ref = "w%d" % (int(ref[1:]) + 1)
             st.windows[ref] = w["hwnd"]
+        st.info[ref] = ((w["exe"] or "").lower(), w["title"])
+        if w["fg"]:
+            st.seen_front = w["hwnd"]
         flag = " *" if w["fg"] else ""
         flag += " (min)" if w["min"] else ""
         title = w["title"] if len(w["title"]) <= 60 else w["title"][:57] + "..."
         lines.append((int(ref[1:]), "%s %s - %s%s" % (ref, title, w["exe"] or w["cls"], flag)))
     lines.sort()
     return [l for _, l in lines]
+
+
+def successor(ctx, spec):
+    st = state(ctx)
+    exe, title = st.info.get(spec) or ("", "")
+    if not exe:
+        return None
+    same = [w for w in win.windows() if (w["exe"] or "").lower() == exe]
+    if len(same) > 1:
+        same = [w for w in same if w["title"] == title]
+    return same[0]["hwnd"] if len(same) == 1 else None
 
 
 def find_window(ctx, spec):
@@ -61,8 +80,14 @@ def find_window(ctx, spec):
         if not hwnd:
             list_windows(ctx)
             hwnd = st.windows.get(spec)
+        if hwnd and not win.alive(hwnd):
+            new = successor(ctx, spec)
+            if new:
+                st.windows[spec] = new
+                note(ctx, "the old %s was closed; %s is now the new %s window" % (spec, spec, st.info[spec][0]))
+                return new
         if not hwnd or not win.alive(hwnd):
-            raise Fail("window %s is gone" % spec, "lighting windows")
+            raise Fail("window %s is gone (closed)" % spec, "lighting windows")
         return hwnd
     text = spec[4:] if spec.lower().startswith("app:") else spec
     tl = text.lower()
@@ -78,6 +103,18 @@ def find_window(ctx, spec):
     return best[1]
 
 
+def front_app(ctx):
+    from lighting.chat import CHAT_EXES
+    hwnd = win.foreground()
+    if not hwnd or hwnd != state(ctx).seen_front or not win.alive(hwnd) or win.class_of(hwnd) in TERMINALS | SHELL_CLASSES:
+        return None
+    pid = win.pid_of(hwnd)
+    exe = win.exe_of(pid).lower()
+    if not exe or exe in AGENT_EXES or exe in BROWSER_EXES or exe in CHAT_EXES or win.elevated(pid):
+        return None
+    return hwnd
+
+
 def target(ctx, pos=None):
     st = state(ctx)
     if pos and (ref_kind(pos[0]) == "w" or pos[0].lower().startswith("app:")):
@@ -85,10 +122,19 @@ def target(ctx, pos=None):
     elif st.hwnd and win.alive(st.hwnd):
         hwnd = st.hwnd
     else:
-        raise Fail("no window chosen", "lighting windows, then lighting snap w<N>")
+        hwnd = front_app(ctx)
+        if not hwnd:
+            raise Fail("no window chosen", "lighting windows -f <app> (one match is chosen), or name it: snap w3")
+        note(ctx, "no window was chosen: used %s, still in front since your last windows" % label(ctx, hwnd))
     st.hwnd = hwnd
     ctx.target = ("app", hwnd)
     return hwnd
+
+
+def label(ctx, hwnd):
+    title = win.text_of(hwnd)
+    title = title if len(title) <= 40 else title[:37] + "..."
+    return "%s %s - %s" % (wref(ctx, hwnd), title, win.exe_of(win.pid_of(hwnd)))
 
 
 def wref(ctx, hwnd):
@@ -223,7 +269,21 @@ def cmd_windows(ctx, pos, flags):
     if flags.get("f"):
         filt = terms(flags["f"])
         lines = best_only([(t, l) for t, l in ((tiers(filt, l), l) for l in lines) if any(t)])
+        if len(lines) == 1 and choose(ctx, lines[0].split(" ", 1)[0]):
+            lines[0] += "  (chosen: app commands without a window go here)"
     return cap("\n".join(lines) or "no windows", "windows", lines=80)
+
+
+def choose(ctx, ref):
+    st = state(ctx)
+    hwnd = st.windows.get(ref)
+    if not hwnd or not win.alive(hwnd) or win.class_of(hwnd) in TERMINALS or is_browser(hwnd):
+        return False
+    if win.exe_of(win.pid_of(hwnd)).lower() in AGENT_EXES:
+        return False
+    st.hwnd = hwnd
+    ctx.target = ("app", hwnd)
+    return True
 
 
 def cmd_focus(ctx, pos, flags):
@@ -600,17 +660,18 @@ def cmd_click(ctx, pos, flags):
     note_target(ctx, el)
     x, y = center(el)
     before = before_action(ctx, hwnd)
+    known = {w["hwnd"] for w in win.windows()}
     if flags.get("mouse") or flags.get("right") or flags.get("double"):
         pointer.blitz_click(x, y, "right" if flags.get("right") else "left", 2 if flags.get("double") else 1, hwnd=hwnd)
-        return "ok %s (mouse click, cursor restored)%s" % (arg, after_action(ctx, hwnd, before))
+        return "ok %s (mouse click, cursor restored)%s%s" % (arg, after_action(ctx, hwnd, before), new_windows(ctx, known))
     pointer.show(x, y)
     how = uia.act(el)
     if how:
         if before is None:
             time.sleep(0.15)
-        return "ok %s (%s in background)%s" % (arg, how, after_action(ctx, hwnd, before))
+        return "ok %s (%s in background)%s%s" % (arg, how, after_action(ctx, hwnd, before), new_windows(ctx, known))
     pointer.blitz_click(x, y, hwnd=hwnd)
-    return "ok %s (mouse click, cursor restored)%s" % (arg, after_action(ctx, hwnd, before))
+    return "ok %s (mouse click, cursor restored)%s%s" % (arg, after_action(ctx, hwnd, before), new_windows(ctx, known))
 
 
 FIELD_ROLES = ("edit", "combobox", "document", "spinner")
@@ -627,7 +688,7 @@ def focused_in(hwnd):
             return el
         if attempt == 1:
             if not pointer.wait_idle():
-                raise Fail("you are using mouse or keyboard right now", "retry in a moment")
+                raise Busy(pointer.BUSY, "retry in a moment")
             if pointer.front(hwnd):
                 time.sleep(0.15)
     raise Fail("nothing focused in %s" % win.text_of(hwnd)[:40], "lighting click the field first, or type d<N> text")
@@ -652,7 +713,8 @@ def cmd_type(ctx, pos, flags):
     text = ctx.secret if ctx.secret is not None else " ".join(pos[1:])
     hwnd = target(ctx)
     before = before_action(ctx, hwnd)
-    return put_text(ctx, hwnd, el, pos[0], text, flags) + after_action(ctx, hwnd, before)
+    wait = 0.6 if flags.get("enter") or flags.get("tab") else D.TYPE_SETTLE_S
+    return put_text(ctx, hwnd, el, pos[0], text, flags) + after_action(ctx, hwnd, before, wait)
 
 
 def settle_ui(hwnd, least, most):
@@ -718,6 +780,7 @@ def cmd_press(ctx, pos, flags):
     hwnd = target(ctx)
     game = bool(flags.get("game"))
     before = None if game else before_action(ctx, hwnd)
+    known = {w["hwnd"] for w in win.windows()}
 
     def go():
         for combo in pos:
@@ -732,20 +795,31 @@ def cmd_press(ctx, pos, flags):
     if diff.startswith(" (+") and len(pos) == 1:
         from lighting import keys
         keys.learn(win.exe_of(win.pid_of(hwnd)).lower(), pos[0], diff.split("\n", 2)[1])
-    return "ok (%s sent to %s)%s" % (" ".join(pos), wref(ctx, hwnd), diff)
+    return "ok (%s sent to %s)%s%s" % (" ".join(pos), label(ctx, hwnd), diff, new_windows(ctx, known))
+
+
+def new_windows(ctx, known):
+    fresh = [w for w in win.windows() if w["hwnd"] not in known]
+    if not fresh:
+        return ""
+    list_windows(ctx)
+    return "".join("\n! new window: %s" % label(ctx, w["hwnd"]) for w in fresh[:3])
 
 
 def cmd_scroll(ctx, pos, flags):
     from lighting import uia
     down = not any(p.lower() == "up" for p in pos)
     refs = [p for p in pos if ref_kind(p) == "d"]
-    hwnd = target(ctx)
+    hwnd = target(ctx, [p for p in pos if ref_kind(p) == "w" or p.lower().startswith("app:")] or None)
     if refs:
         el = element(ctx, refs[0])
         if uia.scroll(el, down):
             return "ok (scrolled %s in background)" % refs[0]
         x, y = center(el)
     else:
+        el = None if win.class_of(hwnd) == CHROMIUM_CLASS else uia.main_scroller(hwnd)
+        if el is not None and uia.scroll(el, down):
+            return "ok (scrolled %s in background)" % wref(ctx, hwnd)
         l, t, r, b = win.rect(hwnd)
         x, y = (l + r) // 2, (t + b) // 2
     pointer.show(x, y)

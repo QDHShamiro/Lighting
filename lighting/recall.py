@@ -10,6 +10,8 @@ a an and are auf aus bei bin bis bitte can da dann das dass dem den der des die 
 einer er es for from für geht gib hab habe hast hat he hey hi i ich ihr im in is ist it ja kann kannst mach mache
 machen mal me mein meine mich mir mit my nach nicht noch nur oder of on or please sag so soll the then to um und uns
 unter vom von vor was we wie will wir with wo you zu zum zur über lighting claude okay ok jetzt schnell einfach
+auch alle alles aber also hier dort mehr sehr gut kurz neu neue schau schaue guck gucke check checke look see
+this that these those what when where why how have has had get got want need just also more some any all
 """.split())
 TOKEN = re.compile(r"[@#]|[^\W\d_][\w-]*", re.U)
 
@@ -54,7 +56,7 @@ def score(prompt_stems, r):
 
 def fits(prompt_stems, r):
     app_hit, other = score(prompt_stems, r)
-    return (app_hit and other >= 1) or other >= 2
+    return app_hit and other >= 1
 
 
 def note_prompt(prompts, text):
