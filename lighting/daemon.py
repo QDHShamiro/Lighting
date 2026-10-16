@@ -103,6 +103,11 @@ class Daemon:
         self.ctxs = {}
         self.epochs = {}
         self.saved = None
+        self.timers = []
+        self.waits = []
+
+    def later(self, delay, fn):
+        self.timers.append((time.time() + delay, fn))
 
     def session_rows(self):
         rows = {}
@@ -112,7 +117,9 @@ class Daemon:
                 rows[sid] = {"group": c.group, "tabs": list(c.tabs), "owned": sorted(c.owned), "used": int(c.used),
                              "target": list(c.target) if c.target else None,
                              "windows": dict(st.windows) if st else {}, "hwnd": st.hwnd if st else None,
-                             "launched": {str(k): v for k, v in st.launched.items()} if st else {}}
+                             "info": {k: list(v) for k, v in st.info.items()} if st else {},
+                             "launched": {str(k): v for k, v in st.launched.items()} if st else {},
+                             "closing": int(getattr(c, "closing", 0) or 0)}
         return rows
 
     def save_sessions(self):
@@ -142,8 +149,12 @@ class Daemon:
             st = desktop.state(c)
             st.windows = {k: int(v) for k, v in (s.get("windows") or {}).items()}
             st.launched = {int(k): v for k, v in (s.get("launched") or {}).items()}
+            st.info = {k: tuple(v) for k, v in (s.get("info") or {}).items()}
             st.hwnd = s.get("hwnd")
             self.ctxs[sid] = c
+            if s.get("closing") and getattr(self, "later", None):
+                c.closing = float(s["closing"])
+                self.later(max(1.0, c.closing - time.time()), lambda c=c: commands.close_later(c))
 
     def note_epoch(self, brand, ep):
         if ep and self.epochs.get(brand, ep) != ep:
@@ -247,9 +258,10 @@ class Daemon:
 
     def worker(self):
         from lighting import commands
-        waits = []
+        waits = self.waits
         while True:
-            left = max(0.0, min(p.due for p, _, _ in waits) - time.time()) if waits else None
+            dues = [p.due for p, _, _ in waits] + [t for t, _ in self.timers]
+            left = max(0.0, min(dues) - time.time()) if dues else None
             try:
                 msg, reply = self.jobs.get(timeout=left)
             except queue.Empty:
@@ -270,6 +282,10 @@ class Daemon:
                     waits.remove(w)
                     w[1].put(res)
                     self.save_sessions()
+            for t in [t for t in self.timers if t[0] <= now]:
+                self.timers.remove(t)
+                self.guarded(t[1])
+                self.save_sessions()
 
     def guarded(self, fn):
         try:

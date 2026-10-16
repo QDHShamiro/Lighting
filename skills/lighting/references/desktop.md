@@ -3,6 +3,8 @@
 ## Find the window
 - `lighting windows` lists top-level windows: `w3 Discord - Discord.exe *` (`*` = in front, `(min)` = minimized).
 - Target a window by ref (`snap w3`) or by name (`snap app:Discord`, matches title or exe). Later commands without a ref use that window.
+- `lighting windows -f spotify` with exactly one match chooses that window (not browsers or terminals). Without a chosen window an app command uses the window in front only if your last `windows` showed it with `*` and it is still in front; the answer says so.
+- A `w` ref whose window was closed moves to the app's new window when there is exactly one; otherwise `window w4 is gone (closed)`.
 
 ## Start and close apps
 - `lighting launch spotify` starts an app: an exact Start menu name first, then Win+R names (`calc`, `notepad`, `mspaint`), then the closest Start menu name (Store apps too). It waits for the window and answers with its first look: `ok (Spotify) -> [w1] Spotify Premium - Spotify.exe (84 controls)` plus the controls (`-f word` narrows them). That window becomes the target; `lighting done` closes it again at the end of the task (apps that were already open stay). An app that is already open is found by its exe, never by another window whose title only mentions it.
@@ -52,7 +54,7 @@
 
 ## A new Claude session
 - `lighting claude "the task" --yes` opens a new tab in Windows Terminal (like its `+` button), starts Claude Code with Remote Control (so the user can follow it on the phone or at claude.ai/code), waits until it is ready and pastes the task. Only when the user asked for it.
-- `--dir E:/project` picks the folder (default: the current one), `--name "Shop fix"` the tab and Remote Control name, `--no-remote` leaves Remote Control off. Without a task it only starts the session.
+- `--dir E:/project` picks the folder (default: the current one), `--name "Shop fix"` the tab and Remote Control name, `--model opus|sonnet|haiku|<id>` and `--effort low|medium|high|xhigh|max` set the session's model and effort, `--no-remote` leaves Remote Control off. Without a task it only starts the session.
 - If Claude asks whether to trust the folder, Lighting stops and says so: the user answers in the terminal. The task is typed only while that tab is in front, never into another session.
 
 ## Limits

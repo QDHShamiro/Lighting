@@ -4,6 +4,7 @@ import * as A from "./actions.js";
 
 const HOST = "dev.qdhshamiro.lighting";
 const VERSION = chrome.runtime.getManifest().version;
+const FRAME_WAIT_MS = 3000;
 const { cfg, page, formatSnap, header, guard, tabOf, trunc, LOAD_MS } = A;
 let port = null;
 let backoff = 300;
@@ -175,11 +176,31 @@ async function history(kind, tab) {
   return formatSnap(tabId, res, cfg.navLines);
 }
 
+function hostOf(url) {
+  try {
+    return new URL(url).host.toLowerCase();
+  } catch (e) {
+    return "";
+  }
+}
+
 async function frameId(tabId, host) {
-  const frames = (await chrome.webNavigation.getAllFrames({ tabId })) || [];
-  const hit = frames.find((f) => f.frameId !== 0 && f.url && f.url.includes(host));
-  if (!hit) throw new Error("no frame matching " + host);
-  return hit.frameId;
+  const want = String(host || "").replace(/^[a-z]+:\/\//i, "").replace(/[….]+$/, "").toLowerCase();
+  if (!want) throw new Error("--frame needs a host -> try: lighting snap (iframe lines name it)");
+  const end = Date.now() + FRAME_WAIT_MS;
+  let frames = [];
+  for (;;) {
+    frames = ((await chrome.webNavigation.getAllFrames({ tabId })) || []).filter((f) => f.frameId !== 0 && f.url);
+    const hit = frames.find((f) => f.url.toLowerCase().includes(want)) || frames.find((f) => {
+      const h = hostOf(f.url);
+      return h && (h.startsWith(want) || want.startsWith(h));
+    });
+    if (hit) return hit.frameId;
+    if (Date.now() >= end) break;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  const hosts = [...new Set(frames.map((f) => hostOf(f.url)).filter(Boolean))].slice(0, 6);
+  throw new Error("no frame matching " + host + (hosts.length ? " (frames now: " + hosts.join(", ") + ")" : " (no frames yet: the page may still be loading)") + " -> try: lighting snap");
 }
 
 async function snap(a, tab) {
@@ -388,6 +409,25 @@ async function upload(a, tab) {
   const id = "u" + Date.now();
   const m = await page(tabId, "act.mark", [a.ref, id]);
   if (m.gone) throw new Error(a.ref + " is gone -> try: lighting snap");
+  const fr = /^f(\d+)\.e\d+$/.exec(a.ref);
+  if (fr) {
+    if (!a.data) throw new Error("file too big for a frame upload (max 8 MB)");
+    const [r] = await chrome.scripting.executeScript({ target: { tabId, frameIds: [Number(fr[1])] }, args: [id, a.data], func: (mark, data) => {
+      const el = document.querySelector('[data-lt-mark="' + mark + '"]');
+      el && el.removeAttribute("data-lt-mark");
+      let inp = el && (el.matches('input[type=file]') ? el : el.querySelector('input[type=file]'));
+      for (let p = el; !inp && p; p = p.parentElement) inp = p.querySelector('input[type=file]');
+      if (!inp) return "no file input near the ref";
+      const dt = new DataTransfer();
+      for (const f of data) dt.items.add(new File([Uint8Array.from(atob(f.b64), (c) => c.charCodeAt(0))], f.name, { type: f.mime }));
+      inp.files = dt.files;
+      inp.dispatchEvent(new Event("input", { bubbles: true }));
+      inp.dispatchEvent(new Event("change", { bubbles: true }));
+      return "";
+    } });
+    if (r && r.result) throw new Error(r.result);
+    return "ok (" + a.data.length + " file" + (a.data.length === 1 ? "" : "s") + " set on " + a.ref + ")";
+  }
   try {
     const doc = await C.send(tabId, "DOM.getDocument", { depth: 0 });
     const q = await C.send(tabId, "DOM.querySelector", { nodeId: doc.root.nodeId, selector: '[data-lt-mark="' + id + '"]' });

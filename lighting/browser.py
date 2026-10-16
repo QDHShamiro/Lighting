@@ -67,10 +67,10 @@ def pick_host(ctx, quiet=False, want=None):
 def running(exe_name):
     try:
         out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq " + exe_name, "/NH"], capture_output=True,
-                             text=True, timeout=5, creationflags=0x08000000).stdout
+                             timeout=5, creationflags=0x08000000).stdout or b""
     except (OSError, subprocess.SubprocessError):
         return False
-    return exe_name.lower() in out.lower()
+    return exe_name.lower().encode("ascii", "ignore") in out.lower()
 
 
 def ensure_host(ctx, want=None):
@@ -119,7 +119,12 @@ def session_tab(ctx, cmd, args):
             args["new"] = True
         return ctx.tabs[0] if ctx.tabs else None
     if not ctx.tabs:
-        raise Fail("this session has no tab yet", "lighting open <url>, or lighting tabs + lighting tab t3 to use one")
+        last = getattr(ctx, "closed_url", None)
+        if last:
+            raise Fail("this session has no tab: its tabs were closed after an earlier reply (last page %s)" % last[:80],
+                       "lighting open %s" % last)
+        raise Fail("this session has no tab yet",
+                   "lighting open <url>, lighting tabs + lighting tab t3 to use one, or lighting windows -f <app> for an app")
     return ctx.tabs[0]
 
 
@@ -127,6 +132,8 @@ def track(ctx, cmd, msg):
     if not getattr(ctx, "sid", ""):
         return
     t = (msg.get("where") or {}).get("tab")
+    if t:
+        ctx.closed_url = None
     if cmd == "open" and msg.get("created") and t:
         ctx.owned.add(t)
     if t and (cmd in ("open", "tab") or t in ctx.owned or (ctx.tabs and ctx.tabs[0] == t)):
@@ -597,7 +604,12 @@ def cmd_upload(ctx, pos, flags):
         if not os.path.exists(p):
             raise Fail("file not found: " + p)
         files.append(p)
-    return out(ctx, "upload", {"ref": pos[0], "files": files}, 30)
+    args = {"ref": pos[0], "files": files}
+    if pos[0].startswith("f") and sum(os.path.getsize(p) for p in files) <= 8 << 20:
+        import base64, mimetypes
+        args["data"] = [{"name": os.path.basename(p), "mime": mimetypes.guess_type(p)[0] or "application/octet-stream",
+                         "b64": base64.b64encode(open(p, "rb").read()).decode()} for p in files]
+    return out(ctx, "upload", args, 30)
 
 
 def cmd_tabs(ctx, pos, flags):

@@ -43,9 +43,13 @@ def cmd_claude(ctx, pos, flags):
     if ours(name):
         name = "%s %d" % (name, int(time.time()) % 1000)
     args = [wt, "-w", "0", "new-tab", "--title", name, "--suppressApplicationTitle", "-d", folder, claude_cmd()]
+    for f in ("model", "effort"):
+        if flags.get(f):
+            args += ["--" + f, flags[f]]
     if not flags.get("no-remote"):
         args += ["--remote-control", name]
-    subprocess.Popen(args, close_fds=True)
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDE_CODE_CHILD_SESSION"}
+    subprocess.Popen(args, close_fds=True, env=env)
     remote = "" if flags.get("no-remote") else ", remote control on (claude.ai/code or the Claude app)"
     head = 'started Claude "%s" in a new Windows Terminal tab (%s)%s' % (name, folder, remote)
 

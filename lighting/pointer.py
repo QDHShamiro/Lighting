@@ -4,9 +4,10 @@ import time
 
 from lighting import defaults as D
 from lighting import win
-from lighting.common import Fail
+from lighting.common import Busy, Fail
 
 _q = queue.Queue()
+BUSY = "you are using mouse or keyboard right now"
 _started = []
 
 
@@ -128,7 +129,7 @@ def front(hwnd):
 def blitz_click(x, y, button="left", count=1, hwnd=None):
     show(x, y)
     if not wait_idle():
-        raise Fail("you are using mouse or keyboard right now (waited %ds)" % (D.BLITZ_WAIT_MS // 1000), "retry in a moment")
+        raise Busy(BUSY, "retry in a moment")
     prev_fg = win.foreground()
     if hwnd:
         front(hwnd)
@@ -146,7 +147,7 @@ def blitz_click(x, y, button="left", count=1, hwnd=None):
 def blitz_drag(a, b, hwnd=None):
     show(*a)
     if not wait_idle():
-        raise Fail("you are using mouse or keyboard right now", "retry in a moment")
+        raise Busy(BUSY, "retry in a moment")
     if hwnd:
         front(hwnd)
     saved = win.cursor()
@@ -165,7 +166,7 @@ def blitz_drag(a, b, hwnd=None):
 
 def with_focus(hwnd, fn, stay=False):
     if not wait_idle():
-        raise Fail("you are using mouse or keyboard right now", "retry in a moment")
+        raise Busy(BUSY, "retry in a moment")
     prev = win.foreground()
     if not front(hwnd):
         raise Fail("Windows refused to bring the window to the front, keys were not sent",

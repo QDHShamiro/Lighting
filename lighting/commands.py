@@ -5,11 +5,11 @@ import sys
 import time
 
 from lighting import defaults as D
-from lighting.common import Fail, Pending, cap, is_url, ref_kind
+from lighting.common import Busy, Fail, Pending, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
-          "reload", "since", "seconds", "dir", "name"}
+          "reload", "since", "seconds", "dir", "name", "model", "effort"}
 TRACE = (D.HOME / "trace").exists()
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
          "-m": "media"}
@@ -38,6 +38,10 @@ class Context:
         self.run_stack = []
         self.quiet_steps = 0
         self.group = "Lighting"
+        self.notes = []
+        self.fails = {}
+        self.closing = 0.0
+        self.closed_url = None
 
     def kind(self):
         return self.target[0] if self.target else None
@@ -122,6 +126,8 @@ def side(ctx, pos, verb, flags=None):
         return app()
     if pos and (pos[0] == "screen" or pos[0].lower().startswith("app:")):
         return app()
+    if verb in ("press", "type", "scroll", "drag") and getattr(ctx, "sid", "") and not ctx.tabs:
+        return app()
     if ctx.kind() == "app":
         return app()
     if ctx.kind() == "web":
@@ -167,6 +173,10 @@ def route(ctx, name, pos, flags):
         return getattr(side(ctx, pos, name, flags), "cmd_" + name)(ctx, pos, flags)
     if name in WEB_ONLY:
         return getattr(web(), "cmd_" + name)(ctx, pos, flags)
+    if name == "desktop":
+        if not pos or pos[0].lower() == "desktop":
+            return app().cmd_windows(ctx, [], flags)
+        return route(ctx, pos[0].lower(), pos[1:], dict(flags, on="app"))
     raise Fail("unknown command '%s'" % name, "lighting help")
 
 
@@ -180,7 +190,11 @@ def run_one(ctx, argv):
         return with_view(ctx, name, flags, route(ctx, name, pos, flags)), name, pos
     try:
         t0 = time.perf_counter()
-        out = with_view(ctx, name, flags, route(ctx, name, pos, flags))
+        try:
+            res = route(ctx, name, pos, flags)
+        except Busy:
+            res = when_idle(ctx, name, pos, flags)
+        out = with_view(ctx, name, flags, res)
         t1 = time.perf_counter()
     except Fail as e:
         routines.observe(ctx, name, pos, flags, e.text(), False)
@@ -206,18 +220,42 @@ def with_view(ctx, name, flags, out):
     return out + "\n" + view
 
 
+def when_idle(ctx, name, pos, flags):
+    from lighting import win
+
+    def poll(last):
+        if win.idle_ms() >= D.IDLE_MS:
+            try:
+                return with_view(ctx, name, flags, route(ctx, name, pos, flags))
+            except Busy:
+                pass
+        if last:
+            raise Fail("you kept using mouse or keyboard for %d s, so nothing was sent" % D.BUSY_WAIT_S,
+                       "retry when the user is done, or ask them to pause for a moment")
+        return None
+
+    return Pending(poll, D.BUSY_WAIT_S, 0.15)
+
+
+QUIET_CMDS = {"done", "suggest", "ping", "status", "log", "version", "help", "config"}
+
+
 def run(ctx, msg):
     ctx.secret = msg.get("secret")
     ctx.cwd = msg.get("cwd")
     ctx.image = None
+    ctx.notes = []
     argv = msg.get("argv") or []
     t = time.perf_counter()
     code = 0
     name = argv[0] if argv else ""
+    if name.lower() not in QUIET_CMDS:
+        ctx.closing = 0.0
     try:
         out, name, pos = run_one(ctx, argv)
+        ctx.fails.pop(tuple(argv), None)
     except Fail as e:
-        out, code = e.text(), 1
+        out, code = repeated(ctx, argv, e.text()), 1
     except TimeoutError as e:
         out, code = "err: " + str(e), 1
     finally:
@@ -231,6 +269,18 @@ def run(ctx, msg):
     if name == "suggest":
         return {"out": out if code == 0 else "", "code": 0}
     return finish(ctx, name, argv, out, code, t)
+
+
+def repeated(ctx, argv, out):
+    key, now = tuple(argv), time.time()
+    err, n, t0 = ctx.fails.get(key) or ("", 0, 0.0)
+    n = n + 1 if err == out and now - t0 < D.REPEAT_WINDOW_S else 1
+    ctx.fails[key] = (out, n, now)
+    if len(ctx.fails) > 20:
+        ctx.fails.pop(next(iter(ctx.fails)))
+    if n >= D.REPEAT_NOTE_AT:
+        out += "\n! the same command failed %d times in a row with this error: repeating it will not help" % n
+    return out
 
 
 def poll_pending(ctx, p):
@@ -272,6 +322,9 @@ def drain(ctx, out):
 
 
 def finish(ctx, name, argv, out, code, t):
+    notes, ctx.notes = getattr(ctx, "notes", []), []
+    if notes:
+        out = (out + "\n" if out else "") + "\n".join(notes)
     events = []
     while ctx.d.events:
         ev = ctx.d.events.popleft()
@@ -374,11 +427,36 @@ def browsers(ctx, cmd, args=None):
 def cmd_done(ctx, pos, flags):
     quiet = flags.get("quiet")
     scope = {"only": sorted(ctx.owned)} if ctx.sid else {}
+    ctx.closing = 0.0
     if not ctx.cfg.get("cleanup"):
         browsers(ctx, "cleanup", dict(scope, close=False))
         return "" if quiet else "left everything open (cleanup is off: lighting config cleanup on)"
     if ctx.sid and not ctx.owned and not app().state(ctx).launched:
         return "" if quiet else "nothing to close"
+    if quiet and ctx.sid and getattr(ctx.d, "later", None):
+        browsers(ctx, "cleanup", dict(scope, close=False))
+        ctx.closing = time.time() + D.DONE_GRACE_S
+        ctx.d.later(D.DONE_GRACE_S, lambda: close_later(ctx))
+        return ""
+    return cleanup_now(ctx, quiet, scope)
+
+
+def close_later(ctx):
+    if not ctx.closing:
+        return
+    if time.time() < ctx.closing - 0.05 or any(w[2] is ctx for w in getattr(ctx.d, "waits", [])):
+        ctx.closing = max(ctx.closing, time.time() + 1.0)
+        ctx.d.later(max(1.0, ctx.closing - time.time()), lambda: close_later(ctx))
+        return
+    ctx.closing = 0.0
+    if ctx.sid and not ctx.owned and not app().state(ctx).launched:
+        return
+    cleanup_now(ctx, True, {"only": sorted(ctx.owned)} if ctx.sid else {})
+
+
+def cleanup_now(ctx, quiet, scope):
+    if ctx.sid and ctx.tabs and ctx.tabs[0] in ctx.owned and ctx.where and ctx.where.get("kind") == "web":
+        ctx.closed_url = ctx.where.get("url")
     replies = browsers(ctx, "cleanup", scope)
     tabs = sum(r.get("closed") or 0 for r in replies)
     viewed = sum(r.get("kept") or 0 for r in replies)

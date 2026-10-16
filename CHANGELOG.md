@@ -3,6 +3,43 @@
 Versions follow semver. Every release on GitHub carries `lighting.exe` built from the tag by CI,
 a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in the repo at that tag).
 
+## [2.0.0] - unreleased
+
+Built from 1,831 failed commands in the log since 1.1.0: most came from a few loops that kept hitting the same wall.
+
+### Added
+- `upload` works on file inputs inside cross-origin frames (`f134.e2`, files up to 8 MB).
+- `claude --model m --effort e` starts the new Claude session with that model and effort.
+- `windows -f x` with exactly one match chooses that window, so `press`/`type`/`click` without a ref go there.
+- `press` says which window got the keys, and `press` and desktop `click` name new windows that opened (dialogs),
+  so no extra `windows` call is needed.
+- `desktop` is an alias: `lighting desktop` lists windows, `lighting desktop <cmd>` runs `<cmd>` on the desktop.
+- The third identical failure of the same command in a row says that repeating it will not help.
+
+### Changed
+- `done` from the Stop hook paints the group green at once and closes the session's tabs and apps 20 s later;
+  any command of that session in between keeps them. A background loop no longer loses its tab when a reply ends.
+- When the user is typing or moving the mouse, desktop actions wait up to 10 s for a pause (without blocking other
+  sessions) instead of failing after 3 s.
+- `press`, `type`, `scroll` and `drag` of a session that has no tab go to the desktop instead of failing with
+  "this session has no tab yet".
+- Without a chosen window, an app command uses the window in front only if the session's last `windows` showed it
+  in front (never a terminal, editor, browser, chat app or admin window).
+- Routine hints and the prompt `suggest` hook are stricter: a hint needs fixed text in the steps it matched (a
+  routine that starts with `open https://{page}` was offered after every page), and a suggestion needs the
+  routine's app or site in the prompt plus one more word.
+- Desktop `type` waits 0.3 s for the UI to react (0.6 s with `--enter`/`--tab`).
+
+### Fixed
+- The daemon crashed in `open`/`tabs` when `tasklist` printed non-ASCII text (umlauts in the OEM code page).
+- `snap --frame host` right after `open` failed because the frame was not there yet; it now waits up to 3 s,
+  accepts the start of the host and lists the frames that exist when none matches.
+- A `w` ref whose window closed and reopened (an app restart) now moves to the new window of the same app.
+- `scroll w5` scrolled the last chosen window instead of w5; without a d-ref it now scrolls in the background
+  when the app supports it.
+- Links to files (`/file=` paths) are no longer shortened, so they can be opened as shown.
+- "this session has no tab" after a cleanup names the page that was closed.
+
 ## [1.1.0] - 2026-09-27
 
 ### Added
