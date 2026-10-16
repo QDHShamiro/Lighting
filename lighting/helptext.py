@@ -22,6 +22,8 @@ desktop windows [-f x] (one match = chosen)   launch <app|uri|path> [-f x]   foc
 chat    inbox <w|"title"> [--from name] [--since id] [--timeout 5m]   reply <w|"title"> "text" [--wait] [--yes]
         unread [w|"title"] (unread DMs and mentions)
 keys    keys [app|site] [-f x]   keys add <app> "ctrl+k=what"   keys rm <app> <key>
+brain   brain (what Lighting learned)   brain forget <site|app:x.exe>   brain reset --yes   improve [days] (self-check)
+        known pages show the controls you use there; snap --full shows all   config brain off
 routine routines [-f x]   run <name|words> [param=value ...] [--yes]   routine show|save|rm|rename|forget <name>
         record start [name] [--web|--desktop]   record stop [name] [param=value ...]   record cancel|status
 cleanup done [--quiet]   keep [t|w]   config cleanup on|off   config window on|off (own window per session)

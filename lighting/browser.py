@@ -223,7 +223,10 @@ def cmd_open(ctx, pos, flags):
         return head.split("\n", 1)[0] + "\n" + cmd_text(ctx, [], flags)
     msg = call(ctx, "open", {"url": url, "new": bool(flags.get("new")), "filter": flags.get("f"), "scope": flags.get("s"),
                              "media": bool(flags.get("media"))}, D.LOAD_TIMEOUT + 10)
-    res = cap(msg.get("out", ""), "open", lines=D.SNAP_LINES)
+    text = msg.get("out", "")
+    if not (flags.get("f") or flags.get("s") or flags.get("media") or flags.get("full")):
+        text = trimmed(ctx, text)
+    res = cap(text, "open", lines=D.SNAP_LINES)
     from lighting import keys
     extra = keys.hint(keys.app_of(ctx))
     if msg.get("net"):
@@ -326,7 +329,15 @@ def cmd_snap(ctx, pos, flags):
         args["frame"] = flags["frame"]
     limit = None if flags.get("all") else D.SNAP_LINES
     msg = call(ctx, "snap", args, 30)
-    return cap(msg.get("out", ""), "snap", lines=limit or 100000)
+    text = msg.get("out", "")
+    if not (scope or any(flags.get(k) for k in ("f", "all", "diff", "force", "media", "full", "frame"))):
+        text = trimmed(ctx, text)
+    return cap(text, "snap", lines=limit or 100000)
+
+
+def trimmed(ctx, text):
+    from lighting import brain
+    return brain.prune(ctx, text, brain.page_key((ctx.where or {}).get("url")))
 
 
 def cmd_text(ctx, pos, flags):
@@ -636,15 +647,20 @@ def cmd_close(ctx, pos, flags):
 
 
 def cmd_back(ctx, pos, flags):
-    return out(ctx, "back", {}, D.LOAD_TIMEOUT + 10)
+    return history(ctx, "back", flags)
 
 
 def cmd_forward(ctx, pos, flags):
-    return out(ctx, "forward", {}, D.LOAD_TIMEOUT + 10)
+    return history(ctx, "forward", flags)
 
 
 def cmd_reload(ctx, pos, flags):
-    return out(ctx, "reload", {}, D.LOAD_TIMEOUT + 10)
+    return history(ctx, "reload", flags)
+
+
+def history(ctx, cmd, flags):
+    text = call(ctx, cmd, {}, D.LOAD_TIMEOUT + 10).get("out", "")
+    return cap(text if flags.get("full") else trimmed(ctx, text), cmd, lines=D.SNAP_LINES)
 
 
 def cmd_dialog(ctx, pos, flags):

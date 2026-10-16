@@ -136,6 +136,10 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - `browser.running` compares bytes: `tasklist` prints in the OEM code page, and under `-X utf8` the reader thread failed to decode it, `stdout` was `None` and `open`/`tabs` crashed (28x).
 - `scroll w5` without a d-ref uses the largest vertically scrollable UIA element in the background (`uia.main_scroller`, not for Chromium windows: their trees are too big); before, it ignored `w5` and scrolled the chosen window.
 - Desktop `type` waits `TYPE_SETTLE_S` (0.3 s) for the UI diff, 0.6 s with `--enter`/`--tab`.
+- Brain (`brain.py`, `~/.lighting/brain.json`): `observe` runs after every command next to `routines.observe` (only the worker thread touches it). Learned per page key (host + up to 4 path segments, numbers/hashes/long slugs -> `#`) and per host (or `app:<exe>`): element name (lowercase, digits -> `#`, `...` cut) -> [score, last use, role, label], score halves every 30 days. The first load builds it from `episodes.jsonl`; `focused`/`screen`/refs/`#hints` are not names. Saved at most every 30 s and on `stop` (one file write per command would cost ~14 ms, see above). Blocklisted hosts are never learned; `no_learn` (selftest, bench) stops learning but not trimming, so `bench --real` measures what users get.
+- Trimming: a page key with 3+ uses (else its host with 10+) is known; the top `snap_top` (15) names are kept by exact or substring match (4+ chars), alert/dialog/status lines and every non-element line always stay, deltas (`changed since your last snap`) are never trimmed, and nothing changes unless 3+ learned controls are shown and 5+ are hidden. Simulated on the recorded episodes: github.com/QDHShamiro/Lighting 450 -> 117 tokens, its pull list 433 -> 180, unknown sites unchanged.
+- Self-correction in `run_one`: on `eN is gone` the ref's role and name from the last snapshot of that tab (`ctx.refnames`, names cut with `...` are skipped) are retried once as a text target with `--role`; the extension's stale guard still refuses it when the URL changed. A miss (`nothing matches/called`, `no field called`) followed within 90 s by a success of the same command on the same page key is a fix; used automatically from the 2nd time, named in the error after the 1st. Retries never act twice: all those errors are raised before acting.
+- `improve` reads `log.jsonl` (+ `.old.jsonl`), groups errors by shape (quoted text, refs, numbers replaced), flags bursts (10+ within 10 min = a loop) and maps shapes to advice (`ADVICE`). `suggest` (UserPromptSubmit) adds the weekly summary when 7 days passed (`improve.json`) and 10+ commands failed.
 
 ## 3. Build order when changing things
 
@@ -151,7 +155,7 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-python tests/test_units.py     # 37/37
+python tests/test_units.py     # 42/42
 cd client && cargo test && cargo clippy --release --all-targets
 lighting selftest              # must print 135/135 passed (134/134 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
 lighting bench

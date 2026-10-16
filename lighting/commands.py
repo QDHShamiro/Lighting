@@ -42,6 +42,8 @@ class Context:
         self.fails = {}
         self.closing = 0.0
         self.closed_url = None
+        self.refnames = {}
+        self.brain_miss = None
 
     def kind(self):
         return self.target[0] if self.target else None
@@ -181,7 +183,7 @@ def route(ctx, name, pos, flags):
 
 
 def run_one(ctx, argv):
-    from lighting import routines
+    from lighting import brain, routines
     name, pos, flags = parse(argv)
     if not name:
         raise Fail("no command", "lighting help")
@@ -194,12 +196,22 @@ def run_one(ctx, argv):
             res = route(ctx, name, pos, flags)
         except Busy:
             res = when_idle(ctx, name, pos, flags)
+        except Fail as e:
+            fixed = brain.retry(ctx, name, pos, flags, e, route)
+            if fixed is None:
+                raise
+            res, pos, flags = fixed
         out = with_view(ctx, name, flags, res)
         t1 = time.perf_counter()
     except Fail as e:
         routines.observe(ctx, name, pos, flags, e.text(), False)
+        brain.observe(ctx, name, pos, flags, "", False, e.text())
+        better = brain.hint_for(ctx, name, pos, e)
+        if better is not None:
+            raise better from None
         raise
     routines.observe(ctx, name, pos, flags, out if isinstance(out, str) else "", True)
+    brain.observe(ctx, name, pos, flags, out if isinstance(out, str) else "", True)
     if TRACE:
         print("trace %s: route %.2f ms, observe %.2f ms" % (name, (t1 - t0) * 1000, (time.perf_counter() - t1) * 1000),
               file=sys.stderr, flush=True)
@@ -237,7 +249,7 @@ def when_idle(ctx, name, pos, flags):
     return Pending(poll, D.BUSY_WAIT_S, 0.15)
 
 
-QUIET_CMDS = {"done", "suggest", "ping", "status", "log", "version", "help", "config"}
+QUIET_CMDS = {"done", "suggest", "ping", "status", "log", "version", "help", "config", "brain", "improve"}
 
 
 def run(ctx, msg):
@@ -405,8 +417,9 @@ def cmd_ping(ctx, pos, flags):
 
 
 def cmd_stop(ctx, pos, flags):
-    from lighting import routines
+    from lighting import brain, routines
     routines.close(ctx)
+    brain.save()
     return {"out": "lighting daemon stopped", "code": 0, "shutdown": True}
 
 
@@ -692,10 +705,21 @@ def cmd_suggest(ctx, pos, flags):
     return recall.cmd_suggest(ctx, pos, flags)
 
 
+def cmd_brain(ctx, pos, flags):
+    from lighting import brain
+    return brain.cmd_brain(ctx, pos, flags)
+
+
+def cmd_improve(ctx, pos, flags):
+    from lighting import brain
+    return brain.cmd_improve(ctx, pos, flags)
+
+
 SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status, "config": cmd_config,
           "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload,
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
-          "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest}
+          "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest, "brain": cmd_brain,
+          "improve": cmd_improve}
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
          "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys",
          "listen", "unread", "net", "tools"}

@@ -90,9 +90,11 @@ def cmd_suggest(ctx, pos, flags):
     except (ValueError, AttributeError):
         prompt = raw
     note_prompt(ctx.prompts, prompt)
+    from lighting import brain
+    tip = brain.weekly_tip()
     stems = {stem(w) for w in words(prompt)}
     if len(stems) < 2:
-        return ""
+        return tip
     now = time.time()
     hits = []
     for r in routines.load_all():
@@ -100,14 +102,12 @@ def cmd_suggest(ctx, pos, flags):
             continue
         app_hit, other = score(stems, r)
         hits.append((app_hit, other, r.get("stats", {}).get("ok", 0), r))
-    if not hits:
-        return ""
     hits.sort(key=lambda h: (h[0], h[1], h[2]), reverse=True)
     lines = []
     for *_, r in hits[:2]:
         ctx.told[r["name"]] = now
         lines.append("Lighting routine fits this request (one call, swap the values): %s" % routines.usage(r))
-    return "\n".join(lines)
+    return "\n".join(lines + ([tip] if tip else []))
 
 
 def find(query):

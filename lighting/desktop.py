@@ -505,9 +505,12 @@ def cmd_snap(ctx, pos, flags):
         if st.last_snap.get(hwnd) == text:
             return text.split("\n", 1)[0] + "\nunchanged since last snap (refs still valid)"
         st.last_snap[hwnd] = text
-        from lighting import keys
+        from lighting import brain, keys
+        exe = win.exe_of(win.pid_of(hwnd)).lower()
         head, _, rest = text.partition("\n")
-        text = head + keys.hint(win.exe_of(win.pid_of(hwnd)).lower()) + "\n" + rest
+        text = head + keys.hint(exe) + "\n" + rest
+        if not flags.get("full") and not flags.get("web"):
+            text = brain.prune(ctx, text, "app:" + exe)
     return cap(text, "app-snap", lines=D.SNAP_LINES)
 
 

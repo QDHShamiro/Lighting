@@ -631,6 +631,112 @@ def test_front_window_only_after_the_agent_saw_it():
         win.foreground, win.alive, win.class_of, win.pid_of, win.exe_of, win.elevated = keep
 
 
+def test_brain_page_keys():
+    from lighting import brain
+    assert brain.page_key("https://www.github.com/QDHShamiro/Lighting/pull/17/files?x=1") == "github.com/qdhshamiro/lighting/pull/#"
+    assert brain.page_key("https://github.com/a/b/commit/84ab236e9f") == "github.com/a/b/commit/#"
+    assert brain.page_key("file:///C:/x.html") == "" and brain.page_key("not a url") == ""
+    assert brain.norm("  Checks3 (3) ") == "checks# (#)" and brain.norm("Long name...") == "long name"
+
+
+def test_brain_trims_known_pages():
+    import time
+    from lighting import brain, commands
+    brain._b["data"] = brain.empty()
+    d, now = brain.data(), time.time()
+    for _ in range(3):
+        for name in ("Issues", "Pull requests", "Merge pull request", "Code"):
+            brain.use(d, "github.com/qdhshamiro/lighting", name, "link", now)
+    c = commands.Context(type("F", (), {"events": []})())
+    lines = ["[t5] QDHShamiro/Lighting - github.com/QDHShamiro/Lighting", "iframe x.com (cross-origin, lighting snap --frame x.com)"]
+    lines += ['e%d link "Other %d"' % (i, i) for i in range(1, 9)]
+    lines += ['e20 link "Issues 3" ->./issues', 'e21 link "Pull requests" ->./pulls', 'e22 button "Code"',
+              'e23 alert "Build failed"', "more: 40 below (scroll or snap --all)"]
+    text = "\n".join(lines)
+    out = brain.prune(c, text, "github.com/qdhshamiro/lighting")
+    assert out.splitlines()[1].startswith("brain: 3 controls you use here, 8 others hidden")
+    assert 'e20 link "Issues 3"' in out and "e23 alert" in out and "iframe x.com" in out and "Other 1" not in out
+    assert out.endswith("(scroll or snap --all)") and brain.data()["stats"]["pruned"] == 1
+    assert brain.prune(c, text, "example.com") == text
+    delta = lines[0] + "\nchanged since your last snap: +2\n" + "\n".join(lines[2:])
+    assert brain.prune(c, delta, "github.com/qdhshamiro/lighting") == delta
+    c.cfg["brain"] = False
+    assert brain.prune(c, text, "github.com/qdhshamiro/lighting") == text
+
+
+def test_brain_learns_fixes_and_regains_refs():
+    from lighting import brain, commands, common
+    brain._b["data"] = brain.empty()
+    c = commands.Context(type("F", (), {"events": []})(), "s1")
+    c.where = {"kind": "web", "url": "https://shop.example/cart", "tab": "t9"}
+    for _ in range(2):
+        brain.observe(c, "click", ["Checkout"], {}, "", False, 'err: nothing matches "Checkout"')
+        brain.observe(c, "click", ["Go to checkout"], {}, "ok", True)
+    assert brain.fix_for(c, "click", "Checkout")[:2] == ["Go to checkout", 2]
+    calls = []
+
+    def route(ctx, name, pos, flags):
+        calls.append((name, pos, flags.get("role")))
+        return "ok e7"
+
+    got = brain.retry(c, "click", ["Checkout"], {}, common.Fail('nothing matches "Checkout"'), route)
+    assert got[0] == "ok e7" and calls[-1] == ("click", ["Go to checkout"], None)
+    brain.remember_refs(c, '[t9] Cart - shop.example/cart\ne5 button "Pay now"\ne6 link "Very long name..."')
+    got = brain.retry(c, "click", ["e5"], {}, common.Fail("e5 is gone (page changed)", "lighting snap"), route)
+    assert got[1] == ["Pay now"] and calls[-1] == ("click", ["Pay now"], "button") and "e5 was gone" in c.notes[-1]
+    assert brain.retry(c, "click", ["e6"], {}, common.Fail("e6 is gone (page changed)"), route) is None
+    fresh = commands.Context(type("F", (), {"events": []})(), "s2")
+    fresh.where = c.where
+    brain.data()["fixes"]["shop.example/cart"]["click|checkout"][1] = 1
+    better = brain.hint_for(fresh, "click", ["Checkout"], common.Fail('nothing matches "Checkout"'))
+    assert 'worked here before after the same miss: "Go to checkout"' in str(better)
+
+
+def test_self_check_and_weekly_tip():
+    import json
+    import time
+    from lighting import brain
+    from lighting import defaults as D
+    now = time.time()
+    stamp = lambda t: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t))
+    with open(D.LOG, "a", encoding="utf-8") as f:
+        for i in range(12):
+            f.write(json.dumps({"t": stamp(now - 3600 + i * 10), "cmd": "snap", "ok": False, "ms": 0,
+                                "e": "this session has no tab yet"}) + "\n")
+        for i in range(30):
+            f.write(json.dumps({"t": stamp(now - 7200 + i), "cmd": "open", "ok": True, "ms": 900}) + "\n")
+    s = brain.summary(7, now)
+    top = [p for p in s["patterns"] if "no tab yet" in p["error"]][0]
+    assert top["n"] == 12 and top["burst"] == 12 and "open a page first" in top["advice"]
+    out = brain.cmd_improve(type("C", (), {"cfg": {}})(), [], {})
+    assert "12x this session has no tab yet (snap)" in out and "a loop kept going" in out
+    D.IMPROVE.unlink(missing_ok=True)
+    tip = brain.weekly_tip(now)
+    assert tip.startswith("Lighting self-check (weekly)") and tip.endswith("Details: lighting improve")
+    assert brain.weekly_tip(now + 60) == ""
+
+
+def test_brain_boots_from_episodes():
+    import json
+    import time
+    from lighting import brain
+    from lighting import defaults as D
+    step = lambda cmd, args, url, role=None: {"cmd": cmd, "args": args, "flags": {}, "role": role, "t": time.time(),
+                                             "where": {"kind": "web", "url": url}}
+    ep = {"t0": time.time(), "steps": [step("open", ["github.com/x/y/pull/3"], "https://github.com/x/y/pull/3"),
+                                      step("click", ["Merge pull request"], "https://github.com/x/y/pull/3", "button"),
+                                      step("fill", ["Email=a@b.c", "Name=Tom"], "https://shop.example/signup")]}
+    with open(D.HOME / "episodes.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(ep) + "\n")
+    D.BRAIN.unlink(missing_ok=True)
+    brain._b["data"] = None
+    pages = brain.data()["pages"]
+    assert pages["github.com/x/y/pull/#"]["els"]["merge pull request"][2] == "button"
+    assert set(pages["shop.example/signup"]["els"]) == {"email", "name"} and "github.com" in pages
+    brain.save()
+    assert json.loads(D.BRAIN.read_text("utf-8"))["v"] == 1
+
+
 def test_skill_and_mcp_budget():
     from lighting import mcp
     skill = (ROOT / "skills" / "lighting" / "SKILL.md").read_bytes()
