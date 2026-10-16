@@ -314,7 +314,6 @@ async function expect(a, tab) {
 
 function wrap(code) {
   if (/\breturn\b/.test(code)) return "(async()=>{" + code + "\n})()";
-  if (/\bawait\b/.test(code) && !/;\s*\S/.test(code.trim().replace(/;\s*$/, ""))) return "(async()=>{return (" + code.trim().replace(/;\s*$/, "") + ")\n})()";
   if (/(^|[;{}\n])\s*(const|let|class)\s/.test(code)) return "{" + code + "\n}";
   return code;
 }
@@ -323,7 +322,8 @@ async function js(a, tab) {
   const tabId = await tabOf(tab);
   await guard(tabId, "js");
   await C.attach(tabId);
-  const r = await C.send(tabId, "Runtime.evaluate", { expression: wrap(a.code), awaitPromise: true, returnByValue: true, userGesture: true, timeout: 15000 });
+  const replMode = /\bawait\b/.test(a.code) && !/\breturn\b/.test(a.code);
+  const r = await C.send(tabId, "Runtime.evaluate", { expression: wrap(a.code), awaitPromise: true, returnByValue: true, userGesture: true, replMode, timeout: 15000 });
   if (r.exceptionDetails) {
     const d = r.exceptionDetails;
     throw new Error("js: " + String((d.exception && d.exception.description) || d.text).split("\n")[0]);

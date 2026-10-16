@@ -52,6 +52,10 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
 - `open` of a YouTube embed link opens the watch page (embeds opened directly show "Error 153").
 - The skill text is 9% shorter (3,296 -> 3,002 bytes); it is loaded in every session that uses Lighting.
 - `improve` and the weekly self-check read only the last 14 days of the log.
+- A command that fails the same way 5 times in a row is answered after a growing pause (1 s, 2 s, 4 s ... up to
+  30 s) with a STOP line. One agent loop on 15.10. had asked 583 times in an hour for a tab that was gone.
+- `snap`, `text`, `shot`, `frames` and `expect` reopen the page when Lighting itself closed the session's tab after
+  an earlier reply, and say so. Clicks and typing still stop with the hint, since the page state would be lost.
 
 ### Fixed
 - The daemon crashed in `open`/`tabs` when `tasklist` printed non-ASCII text (umlauts in the OEM code page).
@@ -66,6 +70,10 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
   agent running them in its shell); they wait at most 1 s for it now.
 - `downloads` printed the whole address of a failed download, a `data:` image of 30,000+ characters; it is cut to
   80 now.
+- `js` with `await` in more than one statement (`const r = await fetch(u); r.status`) failed with "await is only
+  valid in async functions".
+- A routine could be learned from page opens alone (two runs that opened the same test pages); a learned routine
+  now needs at least one step that does something on the page.
 
 ## [1.1.0] - 2026-09-27
 

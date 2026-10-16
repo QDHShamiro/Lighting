@@ -109,6 +109,7 @@ def ensure_host(ctx, want=None):
 NEW_TAB = re.compile(r"new tab (t\d+) opened from (t\d+)")
 SESSION_FREE = {"config", "abort", "reload-extension", "ping", "close-url", "tabs", "downloads", "cleanup", "keep",
                 "tab", "record-start", "record-stop", "record-status"}
+REOPEN = {"snap", "text", "shot", "frames", "expect"}
 
 
 def session_tab(ctx, cmd, args):
@@ -122,6 +123,11 @@ def session_tab(ctx, cmd, args):
         return ctx.tabs[0] if ctx.tabs else None
     if not ctx.tabs:
         last = getattr(ctx, "closed_url", None)
+        if last and cmd in REOPEN:
+            call(ctx, "open", {"url": last, "new": True, "quiet": True}, D.LOAD_TIMEOUT + 10)
+            if ctx.tabs:
+                note(ctx, "reopened %s: Lighting had closed this session's tab after an earlier reply" % last[:80])
+                return ctx.tabs[0]
         if last:
             raise Fail("this session has no tab: its tabs were closed after an earlier reply (last page %s)" % last[:80],
                        "lighting open %s" % last)

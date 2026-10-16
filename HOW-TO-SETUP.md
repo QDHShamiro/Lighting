@@ -159,7 +159,7 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-python tests/test_units.py     # 44/44
+python tests/test_units.py     # 46/46
 lighting doctor                # 0 problems (memory/errors warnings depend on the PC and the log)
 cd client && cargo test && cargo clippy --release --all-targets
 lighting selftest              # must print 135/135 passed (134/134 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)

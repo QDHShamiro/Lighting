@@ -548,6 +548,8 @@ def learn(ctx, ep, past):
         return None
     body = build(best_old["steps"], ep, best)
     body["steps"] = compact(body["steps"], rs)
+    if all(s["cmd"] in NAV_ONLY for s in body["steps"] if not s.get("optional")):
+        return None
     if any(long_literal(s) for s in body["steps"]):
         return None
     if any(signature(body["steps"]) == signature(r["steps"]) for r in rs):

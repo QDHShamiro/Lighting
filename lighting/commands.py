@@ -5,7 +5,7 @@ import sys
 import time
 
 from lighting import defaults as D
-from lighting.common import Busy, Fail, Pending, cap, is_url, ref_kind
+from lighting.common import Busy, Fail, Pending, Said, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
@@ -267,7 +267,7 @@ def run(ctx, msg):
         out, name, pos = run_one(ctx, argv)
         ctx.fails.pop(tuple(argv), None)
     except Fail as e:
-        out, code = repeated(ctx, argv, e.text()), 1
+        out, code = repeated(ctx, argv, e.text(), name.lower() not in QUIET_CMDS), 1
     except TimeoutError as e:
         out, code = "err: " + str(e), 1
     finally:
@@ -283,16 +283,29 @@ def run(ctx, msg):
     return finish(ctx, name, argv, out, code, t)
 
 
-def repeated(ctx, argv, out):
+def repeated(ctx, argv, out, brake=True):
     key, now = tuple(argv), time.time()
     err, n, t0 = ctx.fails.get(key) or ("", 0, 0.0)
     n = n + 1 if err == out and now - t0 < D.REPEAT_WINDOW_S else 1
     ctx.fails[key] = (out, n, now)
     if len(ctx.fails) > 20:
         ctx.fails.pop(next(iter(ctx.fails)))
+    if brake and n >= D.REPEAT_BRAKE_AT:
+        wait = min(D.REPEAT_BRAKE_MAX_S, 2 ** (n - D.REPEAT_BRAKE_AT))
+        return braked(out + "\n! STOP: the same command failed %d times in a row with this error, so Lighting waited %d s "
+                            "before answering. Change the command or end the loop" % (n, wait), wait)
     if n >= D.REPEAT_NOTE_AT:
         out += "\n! the same command failed %d times in a row with this error: repeating it will not help" % n
     return out
+
+
+def braked(text, wait):
+    def poll(last):
+        if last:
+            raise Said(text)
+        return None
+
+    return Pending(poll, wait, wait)
 
 
 def poll_pending(ctx, p):

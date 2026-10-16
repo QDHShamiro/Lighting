@@ -179,6 +179,8 @@ def browser(r, base):
     r.step("webmcp tools", ["tools"], lambda o, e: not e and ("no WebMCP tools" in o or "(" in o))
     r.step("close data tab", ["close"], ok)
     r.fn("sessions stay apart", lambda: sessions_check(r.ctx, base))
+    r.fn("closed page reopens for reading", lambda: reopen_check(r.ctx, base))
+    r.fn("a loop is braked", lambda: brake_check(r.ctx))
     r.step("hidden text not shown", ["snap", "--all"], lambda o, e: not e and "IGNORE ALL" not in o and "HIDDEN INJECTION" not in o)
     r.step("nav collapsed", ["snap", "--force"], lambda o, e: not e and "nav " in o and "items (lighting snap -s" in o)
     r.step("header collapsed, names kept", ["snap", "--force"],
@@ -251,6 +253,8 @@ def browser(r, base):
     r.step("js", ["js", "document.title"], lambda o, e: o.strip() == "Lighting Fixture")
     r.step("js with const", ["js", "const v = 2; v * 3"], lambda o, e: o.strip() == "6")
     r.step("js with const again", ["js", "const v = 2; v * 3"], lambda o, e: o.strip() == "6")
+    r.step("js with await and const", ["js", "const r = await Promise.resolve(21); r * 2"], lambda o, e: o.strip() == "42")
+    r.step("js await expression", ["js", "await Promise.resolve('ok')"], lambda o, e: o.strip() == "ok")
     r.step("fetch json-less", ["fetch", base + "frame"], lambda o, e: not e and "200" in o)
     r.step("snap iframe", ["snap", "--frame", "127.0.0.1"], lambda o, e: not e and "Frame button" in o)
     fout = r.step("snap other-site frame", ["snap", "--frame", "localhost", "-f", "Frame button"],
@@ -319,6 +323,35 @@ def sessions_check(ctx, base):
     good = ("Second" in seen[0] and seen[1].startswith("closed 1 tab") and "Second" in seen[2]
             and seen[3].startswith("kept 1 tab") and "Quiet" in seen[4])
     return good, " / ".join(s.split("\n")[0] for s in seen)
+
+
+def reopen_check(ctx, base):
+    from lighting import commands
+    c = commands.Context(ctx.d, "selftest-reopen")
+    c.no_learn = True
+    run = lambda *argv: commands.run(c, {"argv": list(argv)}).get("out", "")
+    try:
+        run("open", base + "second")
+        seen = [run("done"), run("snap", "--force")]
+    finally:
+        run("done")
+    good = seen[0].startswith("closed 1 tab") and "reopened" in seen[1] and "Second" in seen[1]
+    return good, " / ".join(s.split("\n")[0] for s in seen) + (" / reopened" if "reopened" in seen[1] else "")
+
+
+def brake_check(ctx):
+    from lighting import commands
+    c = commands.Context(ctx.d, "selftest-brake")
+    c.no_learn = True
+    got = [commands.run(c, {"argv": ["tab", "t9998"]}) for _ in range(D.REPEAT_BRAKE_AT)]
+    last = got[-1].get("pending")
+    if last is None or any("out" not in g for g in got[:-1]):
+        return False, str(got[-1])[:120]
+    early = commands.poll_pending(c, last)
+    last.deadline = 0
+    text = (commands.poll_pending(c, last) or {}).get("out", "")
+    good = early is None and "STOP" in text and "no tab t9998" in text
+    return good, "waits after %d identical failures, then: %s" % (D.REPEAT_BRAKE_AT, text.split("\n")[-1][:60])
 
 
 def close_apps(win, title="Lighting Test App"):

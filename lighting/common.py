@@ -20,6 +20,11 @@ class Busy(Fail):
     pass
 
 
+class Said(Fail):
+    def text(self):
+        return str(self)
+
+
 def note(ctx, text):
     notes = getattr(ctx, "notes", None)
     if notes is not None and ("! " + text) not in notes:

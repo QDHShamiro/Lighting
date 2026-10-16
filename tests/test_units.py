@@ -388,6 +388,26 @@ def test_same_steps_as_a_saved_routine_are_not_learned_again():
         routines.path("x-go").unlink()
 
 
+def test_navigation_only_routines_are_not_learned():
+    import time
+
+    class C:
+        class d:
+            events = []
+
+    step = lambda c, a, u: {"cmd": c, "args": a, "flags": {}, "where": {"kind": "web", "url": u, "title": "T"}}
+    h, o, o2 = "http://127.0.0.1:8769/", "http://127.0.0.1:8769/outer.html", "http://127.0.0.1:8769/outer2.html"
+    ep = lambda steps: {"steps": steps, "via": None, "start": step("open", [""], h)["where"], "cost": 300, "t0": time.time()}
+    a = ep([step("open", [h], h), step("open", [h], h), step("open", [o], o)])
+    b = ep([step("open", [h], h), step("open", [o], o), step("open", [h], h), step("open", [o2], o2),
+            step("run", ["selftest-rec", "email=x"], o2)])
+    blk = routines.align(a["steps"], b["steps"])
+    assert blk is not None
+    body = routines.compact(routines.build(a["steps"], b, blk)["steps"], [])
+    assert all(s["cmd"] in routines.NAV_ONLY for s in body)
+    assert routines.learn(C(), b, [a]) is None
+
+
 def test_json_shape():
     from lighting.browser import shape
     s = shape({"items": [{"id": 1, "name": "a"}], "total": 2, "meta": {"q": "x"}})
@@ -515,6 +535,28 @@ def test_repeated_failures_get_a_note():
     outs = [commands.repeated(c, ["read", "w12"], "err: window w12 is gone (closed)") for _ in range(3)]
     assert "\n!" not in outs[0] and "\n!" not in outs[1] and "3 times in a row" in outs[2]
     assert "\n!" not in commands.repeated(c, ["read", "w12"], "err: other")
+
+
+def test_repeated_failures_are_braked():
+    from lighting import commands
+    from lighting import defaults as D
+    from lighting.common import Pending, Said
+    c = commands.Context(type("F", (), {"events": []})(), "s2")
+    outs = [commands.repeated(c, ["snap"], "err: this session has no tab yet") for _ in range(D.REPEAT_BRAKE_AT + 1)]
+    assert all(isinstance(o, str) for o in outs[:D.REPEAT_BRAKE_AT - 1])
+    first, second = outs[-2], outs[-1]
+    assert isinstance(first, Pending) and isinstance(second, Pending)
+    assert second.deadline - first.deadline > 0.5
+    assert first.poll(False) is None
+    try:
+        first.poll(True)
+    except Said as e:
+        assert e.text().startswith("err: this session has no tab yet") and "STOP" in e.text()
+    else:
+        raise AssertionError("the braked failure did not answer")
+    assert isinstance(commands.repeated(c, ["snap"], "err: other"), str)
+    hooks = [commands.repeated(c, ["suggest"], "err: broken", False) for _ in range(D.REPEAT_BRAKE_AT + 2)]
+    assert all(isinstance(o, str) for o in hooks)
 
 
 def test_running_reads_bytes():
