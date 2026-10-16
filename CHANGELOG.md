@@ -56,6 +56,12 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
   30 s) with a STOP line. One agent loop on 15.10. had asked 583 times in an hour for a tab that was gone.
 - `snap`, `text`, `shot`, `frames` and `expect` reopen the page when Lighting itself closed the session's tab after
   an earlier reply, and say so. Clicks and typing still stop with the hint, since the page state would be lost.
+- Link targets that only repeat the link's name (`link "Issues" ->./issues`, `->/wiki/Mojang_Studios`), the home
+  page, the page itself and cut-off queries are left out; external and other targets stay. `snap --links` shows all.
+  Link targets were 30-46% of a snapshot: on GitHub, Wikipedia, Hugging Face and Modrinth `snap` got 29% shorter
+  (11,711 -> 8,310 characters) and the first look of `open` 19% (6,866 -> 5,589).
+- The skill and the "no window chosen" hint teach `snap app:spotify`, which picks the app's window without a
+  `windows` call first (`windows` was the most used command: 3,011 calls in two weeks).
 
 ### Fixed
 - The daemon crashed in `open`/`tabs` when `tasklist` printed non-ASCII text (umlauts in the OEM code page).

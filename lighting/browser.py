@@ -339,7 +339,7 @@ def cmd_call(ctx, pos, flags):
 
 def cmd_snap(ctx, pos, flags):
     args = {"all": bool(flags.get("all")), "diff": bool(flags.get("diff")), "force": bool(flags.get("force")),
-            "media": bool(flags.get("media")), "full": bool(flags.get("full"))}
+            "media": bool(flags.get("media")), "full": bool(flags.get("full")), "links": bool(flags.get("links"))}
     if flags.get("f"):
         args["filter"] = flags["f"]
     scope = flags.get("s") or (pos[0] if pos and REF_RE.match(pos[0]) else None)
@@ -350,7 +350,7 @@ def cmd_snap(ctx, pos, flags):
     limit = None if flags.get("all") else D.SNAP_LINES
     msg = call(ctx, "snap", args, 30)
     text = msg.get("out", "")
-    if not (scope or any(flags.get(k) for k in ("f", "all", "diff", "force", "media", "full", "frame"))):
+    if not (scope or any(flags.get(k) for k in ("f", "all", "diff", "force", "media", "full", "frame", "links"))):
         text = trimmed(ctx, text)
     return cap(text, "snap", lines=limit or 100000)
 

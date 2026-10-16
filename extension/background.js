@@ -232,7 +232,7 @@ async function frameId(tabId, host) {
 
 async function snap(a, tab) {
   const tabId = await tabOf(tab);
-  const opts = { all: !!a.all, scope: a.scope || null, filter: a.filter || null, diff: !!a.diff, force: !!a.force || !!a.full, media: !!a.media };
+  const opts = { all: !!a.all, scope: a.scope || null, filter: a.filter || null, diff: !!a.diff, force: !!a.force || !!a.full || !!a.links, media: !!a.media, links: !!a.links };
   opts.plain = !a.full && !a.frame && !opts.all && !opts.scope && !opts.filter && !opts.diff && !opts.force && !opts.media;
   if (a.frame) {
     const fid = await frameId(tabId, a.frame);

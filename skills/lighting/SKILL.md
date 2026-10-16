@@ -24,7 +24,7 @@ Secrets: `type e3 --env PASS` or `fill "Password=@secret" --env PASS`, never inl
 
 ## Video, desktop, chats
 `listen [e40|url|file]` (speech, `--from 1:30`), `frames e40 [--audio]`, `shot screen --seconds 10` (video for the user).
-`launch spotify [-f x]`, `windows -f x` (one match = chosen), `snap w2`, `click d5|"Save"|o3`, `type d5|"Search"|focused text [--enter]`, `press ctrl+k`, `read w2` (OCR), `wait "Done" w2`, `close w2`. Shortcuts: the `keys:` line, `lighting keys [app]`. `claude "task" --yes` only if asked.
+`launch spotify [-f x]`, `snap app:spotify` (no `windows` needed; several windows: `windows -f x`), `click d5|"Save"|o3`, `type d5|"Search"|focused text [--enter]`, `press ctrl+k`, `read app:spotify` (OCR), `wait "Done" app:spotify`, `close w2`. `snap --links`: all link targets. Shortcuts: the `keys:` line, `lighting keys [app]`. `claude "task" --yes` only if asked.
 `reply "@Name" "text" --wait`, `inbox "@Name"`, `unread`. Links need `--yes`.
 
 ## Routines

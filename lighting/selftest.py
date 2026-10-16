@@ -187,6 +187,9 @@ def browser(r, base):
            lambda o, e: not e and re.search(r"header: 13 items \(lighting snap -s e\d+\): Top 1 \| Top 2", o) and 'link "Top 5"' not in o)
     r.step("footnotes, key hints, hashes", ["snap", "--all"],
            lambda o, e: not e and '"[1]"' not in o and 'link "Keyboard help" ->' in o and "commit/0123456…" in o)
+    r.step("obvious link target hidden", ["snap", "--all", "--force"],
+           lambda o, e: not e and re.search(r'link "Pricing"$', o, re.M) and 'link "Open in new tab" ->' in o)
+    r.step("snap --links shows it", ["snap", "--all", "--links"], lambda o, e: not e and 'link "Pricing" ->/pricing' in o)
     r.step("long list collapsed", ["snap", "--force"], lambda o, e: "similar items" in o or "more:" in o)
     r.step("cookie banner noticed", ["snap", "--force"], lambda o, e: "cookie banner" in o)
     r.step("dismiss cookie banner", ["dismiss"], lambda o, e: not e and "rejected" in o)

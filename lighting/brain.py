@@ -18,7 +18,7 @@ ADVICE = [
     (r"is gone|older snapshot", "the page changed under the ref: snap again (the brain now retries by name)"),
     (r"nothing matches|nothing called|no field called", "the name was guessed: look first with snap -f <word> (the brain learns real names)"),
     (r"mouse or keyboard", "the user was busy; Lighting waits up to 10 s for a pause now"),
-    (r"no window chosen", "choose the app first: lighting windows -f <app>"),
+    (r"no window chosen", "name the app: lighting snap app:<name> (no windows call needed)"),
     (r"unknown command", "check the name in lighting help"),
     (r"did not answer|disconnected|not connected", "the browser was busy or restarted: lighting status"),
     (r"not there after|still there after|timed out", "the page was slower than the wait: raise --timeout or wait for other text"),

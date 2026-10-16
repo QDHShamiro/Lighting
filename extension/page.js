@@ -268,7 +268,7 @@
     }
   }
 
-  function state(el, role) {
+  function state(el, role, name) {
     let s = "";
     if (role === "checkbox" || role === "radio" || role === "switch" || role === "menuitemcheckbox" || role === "menuitemradio") {
       const a = el.getAttribute("aria-checked");
@@ -296,14 +296,39 @@
     else if (ex === "false") s += " (collapsed)";
     if (role === "link" && el.href) {
       const h = short(el.href);
-      if (h) s += " ->" + h;
+      if (h && (S.links || !obvious(name, h))) s += " ->" + h;
     }
     return s;
   }
 
+  function alnum(s) {
+    return String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
+  }
+
+  function obvious(name, t) {
+    if (t === "." || t === "/") return true;
+    const nm = alnum(name);
+    if (!nm) return false;
+    if (t.startsWith("#")) return alnum(t).length >= 3 && nm.includes(alnum(t).slice(0, 4));
+    if (!t.startsWith("/") && !t.startsWith(".")) return false;
+    if (t.endsWith("?…")) return true;
+    const [path, query = ""] = t.replace(/…$/, "").split("?");
+    let seg = path.split("#")[0].split("/").filter(Boolean).pop() || "";
+    try {
+      seg = decodeURIComponent(seg);
+    } catch (e) {}
+    seg = alnum(seg);
+    if (query && alnum(query).includes(nm.slice(0, 6))) return true;
+    if (/^\d+$/.test(seg)) return nm.includes(seg);
+    if (seg.length < 3) return false;
+    let k = 0;
+    while (k < seg.length && k < nm.length && seg[k] === nm[k]) k++;
+    return nm.includes(seg) || seg.includes(nm) || k >= 4;
+  }
+
   function line(el, role, name) {
     const hint = name || role === "video" || role === "audio" || role === "img" ? "" : hintOf(el);
-    return ref(el) + " " + role + (name ? ' "' + q(trunc(name, 60)) + '"' : hint ? " #" + hint : "") + state(el, role);
+    return ref(el) + " " + role + (name ? ' "' + q(trunc(name, 60)) + '"' : hint ? " #" + hint : "") + state(el, role, name);
   }
 
   function frameOffset(doc) {
@@ -647,12 +672,16 @@
 
   function snap(opts) {
     opts = opts || {};
-    const sig = JSON.stringify([opts.all, opts.scope, opts.filter, opts.media]);
+    const sig = JSON.stringify([opts.all, opts.scope, opts.filter, opts.media, !!opts.links]);
     if (!opts.force && S.muts === S.lastMuts && location.href === S.lastHref && Math.round(scrollY) === S.lastY && sig === S.sig) {
       return { unchanged: true, title: document.title, url: location.href };
     }
+    S.links = !!opts.links;
     let res = collectLines(opts);
-    if (res.error) return res;
+    if (res.error) {
+      S.links = false;
+      return res;
+    }
     if (opts.filter && !res.lines.some((l) => /^e\d+ /.test(l))) {
       if (!opts.all) res = collectLines(Object.assign({}, opts, { all: true }));
       if (res.lines.some((l) => /^e\d+ /.test(l))) res.notes = res.notes.concat("(no match in view, matches from the whole page; click scrolls to them)");
@@ -662,6 +691,7 @@
       }
       res.searched = true;
     }
+    S.links = false;
     const prev = S.last;
     S.last = res.ids;
     S.lastMuts = S.muts;

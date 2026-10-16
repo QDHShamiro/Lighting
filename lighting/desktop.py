@@ -124,7 +124,7 @@ def target(ctx, pos=None):
     else:
         hwnd = front_app(ctx)
         if not hwnd:
-            raise Fail("no window chosen", "lighting windows -f <app> (one match is chosen), or name it: snap w3")
+            raise Fail("no window chosen", "lighting snap app:<name> picks that app's window (several: lighting windows -f <app>)")
         note(ctx, "no window was chosen: used %s, still in front since your last windows" % label(ctx, hwnd))
     st.hwnd = hwnd
     ctx.target = ("app", hwnd)
