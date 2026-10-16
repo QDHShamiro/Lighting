@@ -1,21 +1,27 @@
+<p align="center">
+  <img src="docs/icon.png" width="112" height="112" alt="Lighting icon">
+</p>
+
 <h1 align="center">Lighting</h1>
 
 <p align="center">
   <em>Your real browser and every Windows app, as a few lines of text.</em>
+  <br>
+  <sub>by <a href="https://github.com/QDHShamiro">QDHShamiro</a></sub>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/claude%20code-plugin-111111?style=flat-square" alt="Claude Code plugin">
-  <img src="https://img.shields.io/badge/codex-plugin-111111?style=flat-square" alt="Codex plugin">
-  <img src="https://img.shields.io/badge/mcp-any%20client-111111?style=flat-square" alt="MCP for any client">
-  <img src="https://img.shields.io/badge/routines-self--learning-111111?style=flat-square" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-135%2F135-111111?style=flat-square" alt="135/135 selftest">
-  <img src="https://img.shields.io/badge/platform-windows-111111?style=flat-square" alt="Windows">
-  <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
+  <img src="https://img.shields.io/badge/claude%20code-plugin-1B3A66?style=flat-square&labelColor=0A1A30" alt="Claude Code plugin">
+  <img src="https://img.shields.io/badge/codex-plugin-1B3A66?style=flat-square&labelColor=0A1A30" alt="Codex plugin">
+  <img src="https://img.shields.io/badge/mcp-any%20client-1B3A66?style=flat-square&labelColor=0A1A30" alt="MCP for any client">
+  <img src="https://img.shields.io/badge/routines-self--learning-1B3A66?style=flat-square&labelColor=0A1A30" alt="Self-learning routines">
+  <img src="https://img.shields.io/badge/selftest-135%2F135-1B3A66?style=flat-square&labelColor=0A1A30" alt="135/135 selftest">
+  <img src="https://img.shields.io/badge/platform-windows-1B3A66?style=flat-square&labelColor=0A1A30" alt="Windows">
+  <img src="https://img.shields.io/badge/license-MIT-1B3A66?style=flat-square&labelColor=0A1A30" alt="MIT license">
   <br>
-  <img src="https://img.shields.io/badge/first%20look%20at%20a%20page-%E2%88%9297%25%20tokens-FF8A00?style=flat-square" alt="-97% tokens per page">
-  <img src="https://img.shields.io/badge/click%20result-%E2%88%9298%25%20tokens-FF8A00?style=flat-square" alt="-98% tokens per click">
-  <img src="https://img.shields.io/badge/known%20task-%E2%88%9296%25%20tokens-FF8A00?style=flat-square" alt="-96% tokens per known task">
+  <img src="https://img.shields.io/badge/first%20look%20at%20a%20page-%E2%88%9297%25%20tokens-1E7BEF?style=flat-square&labelColor=0A1A30" alt="-97% tokens per page">
+  <img src="https://img.shields.io/badge/click%20result-%E2%88%9298%25%20tokens-1E7BEF?style=flat-square&labelColor=0A1A30" alt="-98% tokens per click">
+  <img src="https://img.shields.io/badge/known%20task-%E2%88%9296%25%20tokens-1E7BEF?style=flat-square&labelColor=0A1A30" alt="-96% tokens per known task">
 </p>
 
 <h3 align="center">An AI that looks at a page with screenshots pays ~15,850 tokens. Lighting pays ~440.</h3>
@@ -28,7 +34,7 @@
 <tr>
 <td valign="top">
 
-One screenshot (**~2,350** image tokens), then the page as text (**~13,500** tokens, cut off at 50,000 of 64,787 characters). After every click: another screenshot, another **~2,350**. And it is logged out, because it drives a fresh browser.
+One screenshot (**~2,350** image tokens), then the page as text (**~13,500** tokens, cut off at 50,000 of 64,787 characters). After every click: another screenshot, another **~2,350**. Agents that drive a fresh browser are logged out on top of that.
 
 </td>
 <td valign="top">
@@ -259,9 +265,9 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 
 | | Lighting | Claude in Chrome | Playwright MCP | agent-browser |
 |---|---|---|---|---|
-| Your real browser profile and logins | ✅ | ✅ | fresh profile | own browser |
+| Your real browser profile and logins | ✅ | ✅ | with its extension, Chrome and Edge ([3]) | a copy of a profile, or attached over CDP ([2]) |
 | Windows apps (UI Automation + OCR) | ✅ | – | – | – |
-| Tokens for a first look at a page | **~440** (measured) | ~15,850: screenshot + page text (measured) | 15,000-30,000 on dense pages ([1]) | ~1,400 ([2]) |
+| Tokens for a first look at a page | **~440** (measured) | ~15,850: screenshot + page text (measured) | 15,000-30,000 on dense pages ([1]) | no number published ([2]) |
 | Repeated tasks | learned routines, one call | saved shortcuts | – | – |
 | A whole video as one image | ✅ `frames` | – | – | – |
 | Headless, CI, Linux, macOS | ❌ Windows, real browser | desktop Chrome, no headless | ✅ | ✅ |
@@ -272,6 +278,7 @@ your logged-in browser and your apps, cheaply.
 
 [1]: https://lite.ego.app/article/playwright-mcp-token-problem
 [2]: https://github.com/vercel-labs/agent-browser
+[3]: https://github.com/microsoft/playwright-mcp
 
 ## What's new
 
