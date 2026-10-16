@@ -529,6 +529,12 @@ def test_desktop_alias_and_routing_without_a_tab():
         commands.app = keep
 
 
+def test_quick_keys_wait_less():
+    from lighting import desktop
+    assert all(desktop.quick_key(k) for k in ("tab", "shift+tab", "End", "x", "pgdn", "backspace"))
+    assert not any(desktop.quick_key(k) for k in ("enter", "ctrl+a", "alt+f4", "f5", "win+r", "ctrl+shift+tab"))
+
+
 def test_repeated_failures_get_a_note():
     from lighting import commands
     c = commands.Context(type("F", (), {"events": []})(), "s1")
