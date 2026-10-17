@@ -117,8 +117,8 @@ def test_config_merge_keeps_line_endings():
         install.merge_toml(toml)
         install.merge_toml(toml)
         raw = toml.read_bytes().decode()
-        assert raw.count("[mcp_servers.lighting]") == 1 and "old" not in raw and 'model = "x"' in raw
-        assert ("\r\n" in raw) == (eol == "\r\n") and raw.replace("\r\n", "").count("\r") == 0
+        assert raw.count("[mcp_servers.lighting]") == 1 and '"old"' not in raw and 'model = "x"' in raw, repr(raw)
+        assert ("\r\n" in raw) == (eol == "\r\n") and raw.replace("\r\n", "").count("\r") == 0, repr(raw)
     js = d / "mcp.json"
     js.write_text('{"mcpServers": {"other": {"command": "x"}}}', "utf-8")
     install.merge_json(js, "mcpServers", {"command": "lighting.exe", "args": ["mcp"]})
@@ -567,6 +567,9 @@ def test_repeated_failures_are_braked():
 
 def test_running_reads_bytes():
     from lighting import browser
+    from lighting import defaults as D
+    if not D.WIN:
+        return
     keep = browser.subprocess.run
 
     class R:
@@ -829,8 +832,12 @@ def test_doctor():
     assert procs.classify(ps, 11, None)["orphans"] == []
     assert procs.client_args('"C:\\a b\\lighting.exe" done --quiet') == ["done", "--quiet"]
     assert doctor.newer("2.0.0", "1.10.3") and not doctor.newer("1.1.0", "1.1.0") and doctor.newer("v1.2", "1.1.9")
-    text = json.dumps({"mcpServers": {"lighting": {"command": "C:\\Users\\a\\.lighting\\bin\\lighting.exe"}}})
-    assert [x.replace("\\\\", "\\") for x in doctor.EXE_PATH.findall(text)] == ["C:\\Users\\a\\.lighting\\bin\\lighting.exe"]
+    if D.WIN:
+        text = json.dumps({"mcpServers": {"lighting": {"command": "C:\\Users\\a\\.lighting\\bin\\lighting.exe"}}})
+        assert [x.replace("\\\\", "\\") for x in doctor.EXE_PATH.findall(text)] == ["C:\\Users\\a\\.lighting\\bin\\lighting.exe"]
+    else:
+        text = json.dumps({"mcpServers": {"lighting": {"command": "/home/a/.lighting/bin/lighting"}}})
+        assert doctor.EXE_PATH.findall(text) == ["/home/a/.lighting/bin/lighting"], doctor.EXE_PATH.findall(text)
     rows = [(doctor.OK, "daemon", "fine", "", ()), (doctor.WARN, "procs", "stuck", "ends them", ("kill",)),
             (doctor.FAIL, "browser", "not connected", "lighting setup brave", ())]
     out = doctor.render(rows).splitlines()

@@ -592,7 +592,7 @@ def bench(ctx, pos, flags):
         if box:
             got = box[0]
             rows.append("mcp: %s" % got if isinstance(got, Exception) else
-                        "mcp ping through lighting.exe mcp: start %d ms, then median %.1f ms, max %.1f ms (%d calls)" % got)
+                        "mcp ping through lighting mcp: start %d ms, then median %.1f ms, max %.1f ms (%d calls)" % got)
             return "\n".join(rows)
         if last:
             rows.append("mcp: no answer within 60 s")
@@ -606,7 +606,7 @@ def mcp_probe(box, n=20):
     import json
     import statistics
     try:
-        p = subprocess.Popen([str(D.ROOT / "bin" / "lighting.exe"), "mcp"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        p = subprocess.Popen([str(D.ROOT / "bin" / D.CLIENT), "mcp"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                              stderr=subprocess.DEVNULL, creationflags=D.NO_WINDOW)
 
         def ask(i, method, params):

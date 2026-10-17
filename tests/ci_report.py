@@ -12,21 +12,18 @@ def main(path, label):
     except OSError:
         print("::error title=%s::no log" % label)
         return 1
-    blocks = re.split(r"(?m)^== ", text)
-    chunk, size, n = [], 0, 0
-    for b in blocks:
-        if not b.strip():
-            continue
-        part = "== " + b
-        if size + len(part) > 30000 and chunk:
-            n += 1
-            print("::notice title=%s part %d::%s" % (label, n, esc("".join(chunk))))
-            chunk, size = [], 0
-        chunk.append(part)
-        size += len(part)
-    if chunk:
-        n += 1
-        print("::notice title=%s part %d::%s" % (label, n, esc("".join(chunk))))
+    keep = [l for l in text.splitlines() if not l.startswith("PASS ")]
+    chunks, cur = [], ""
+    for line in keep:
+        line = line[:400]
+        if len(cur) + len(line) + 1 > 3800:
+            chunks.append(cur)
+            cur = ""
+        cur += line + "\n"
+    if cur:
+        chunks.append(cur)
+    for n, c in enumerate(chunks[:9], 1):
+        print("::notice title=%s part %d/%d::%s" % (label, n, len(chunks), esc(c)))
     m = re.findall(r"(\d+)/(\d+) passed", text)
     if m:
         print("::notice title=%s selftest::%s/%s passed" % (label, m[-1][0], m[-1][1]))

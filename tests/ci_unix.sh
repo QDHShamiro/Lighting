@@ -57,13 +57,16 @@ run "doctor" lighting doctor --offline
 PROFILE="$RUNNER_TEMP/profile"
 mkdir -p "$PROFILE/NativeMessagingHosts"
 cp "$HOME/.lighting/dev.qdhshamiro.lighting.json" "$PROFILE/NativeMessagingHosts/"
-"$CHROME" --user-data-dir="$PROFILE" --no-first-run --no-default-browser-check --disable-search-engine-choice-screen \
+EXTRA=""
+[ "$(uname)" = Linux ] && EXTRA="--no-sandbox"
+"$CHROME" $EXTRA --user-data-dir="$PROFILE" --no-first-run --no-default-browser-check --disable-search-engine-choice-screen \
   --load-extension="$HOME/.lighting/extension" --window-size=1300,900 about:blank > "$RUNNER_TEMP/chrome.log" 2>&1 &
 for i in $(seq 1 40); do
   lighting status 2>/dev/null | grep -q "^browser .* | ext " && break
   sleep 0.5
 done
 run "status (browser)" lighting status
+run "chrome log" bash -c 'tail -25 "$RUNNER_TEMP/chrome.log"; ls -la "$RUNNER_TEMP/profile/NativeMessagingHosts"; cat ~/.lighting/host.sh' 
 run "windows" lighting windows
 run "open fixture" lighting open "file://$PWD/tests/fixture.html"
 run "snap" lighting snap
