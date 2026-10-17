@@ -9,27 +9,32 @@ CTYPE = {"button": 50000, "checkbox": 50002, "combobox": 50003, "edit": 50004, "
          "listitem": 50007, "list": 50008, "menuitem": 50011, "radio": 50013, "slider": 50015, "spinner": 50016,
          "tab": 50019, "text": 50020, "treeitem": 50024, "dataitem": 50029, "document": 50030, "splitbutton": 50031,
          "header": 50035, "control": 50025}
+ROLE_NAMES = {
+    "PUSH_BUTTON": "button", "TOGGLE_BUTTON": "checkbox", "CHECK_BOX": "checkbox", "CHECK_MENU_ITEM": "menuitem",
+    "COMBO_BOX": "combobox", "ENTRY": "edit", "PASSWORD_TEXT": "edit", "TEXT": "edit", "SPIN_BUTTON": "spinner",
+    "LINK": "link", "LIST_ITEM": "listitem", "MENU_ITEM": "menuitem", "MENU": "menuitem",
+    "RADIO_BUTTON": "radio", "RADIO_MENU_ITEM": "menuitem", "SLIDER": "slider", "PAGE_TAB": "tab",
+    "TREE_ITEM": "treeitem", "TABLE_CELL": "dataitem", "TABLE_ROW": "listitem", "DOCUMENT_WEB": "document",
+    "DOCUMENT_FRAME": "document", "HEADING": "header", "LABEL": "text", "STATIC": "text",
+    "PARAGRAPH": "text", "LIST": "list", "LIST_BOX": "list", "TABLE": "list", "TREE_TABLE": "list",
+    "TREE": "list", "IMAGE": "image", "ICON": "image", "SWITCH": "checkbox", "TOOL_BAR": "control",
+}
 FRAME_ROLES = ("FRAME", "DIALOG", "WINDOW", "FILE_CHOOSER", "ALERT")
 
 
 def A():
-    if "A" not in _state:
+    if "roles" not in _state:
         import gi
         gi.require_version("Atspi", "2.0")
         from gi.repository import Atspi
         Atspi.init()
         _state["A"] = Atspi
-        R = Atspi.Role
-        _state["roles"] = {
-            R.PUSH_BUTTON: "button", R.TOGGLE_BUTTON: "checkbox", R.CHECK_BOX: "checkbox", R.CHECK_MENU_ITEM: "menuitem",
-            R.COMBO_BOX: "combobox", R.ENTRY: "edit", R.PASSWORD_TEXT: "edit", R.TEXT: "edit", R.SPIN_BUTTON: "spinner",
-            R.LINK: "link", R.LIST_ITEM: "listitem", R.MENU_ITEM: "menuitem", R.MENU: "menuitem",
-            R.RADIO_BUTTON: "radio", R.RADIO_MENU_ITEM: "menuitem", R.SLIDER: "slider", R.PAGE_TAB: "tab",
-            R.TREE_ITEM: "treeitem", R.TABLE_CELL: "dataitem", R.TABLE_ROW: "listitem", R.DOCUMENT_WEB: "document",
-            R.DOCUMENT_FRAME: "document", R.HEADING: "header", R.LABEL: "text", R.STATIC: "text",
-            R.PARAGRAPH: "text", R.LIST: "list", R.LIST_BOX: "list", R.TABLE: "list", R.TREE_TABLE: "list",
-            R.TREE: "list", R.IMAGE: "image", R.ICON: "image", R.SWITCH: "checkbox", R.TOOL_BAR: "control",
-        }
+        roles = {}
+        for name, role in ROLE_NAMES.items():
+            r = getattr(Atspi.Role, name, None)
+            if r is not None:
+                roles[r] = role
+        _state["roles"] = roles
     return _state["A"]
 
 
@@ -143,7 +148,7 @@ def frame_id(acc):
 
 def frame_list():
     Atspi = A()
-    roles = {getattr(Atspi.Role, r) for r in FRAME_ROLES}
+    roles = {getattr(Atspi.Role, r, None) for r in FRAME_ROLES} - {None}
     out = []
     for app in apps():
         for f in kids(app):

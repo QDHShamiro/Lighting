@@ -162,6 +162,9 @@ def route(ctx, name, pos, flags):
     if name == "listen":
         from lighting import audio
         return audio.cmd_listen(ctx, pos, flags)
+    if name == "phone":
+        from lighting import android
+        return android.cmd_phone(ctx, pos, flags)
     if name == "claude":
         from lighting import spawn
         return spawn.cmd_claude(ctx, pos, flags)

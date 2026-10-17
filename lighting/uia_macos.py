@@ -97,7 +97,21 @@ def name_of(el):
         t = text(el.a.get(key)).strip()
         if t:
             return t
+    if r in ("listitem", "dataitem", "treeitem"):
+        return inner_text(el, 3)
     return ""
+
+
+def inner_text(el, depth):
+    if depth <= 0:
+        return ""
+    parts = []
+    for kid in children(el):
+        t = text(kid.a.get("AXValue")).strip() if role_of(kid) in ("text", "edit") else ""
+        t = t or text(kid.a.get("AXTitle")).strip() or inner_text(kid, depth - 1)
+        if t:
+            parts.append(t)
+    return " ".join(parts)[:200]
 
 
 def root_of(hwnd):

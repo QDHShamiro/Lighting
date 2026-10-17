@@ -684,7 +684,7 @@ def listen_input(q, stop, ready, injected=False):
     from Xlib.ext import record
     from Xlib.protocol import rq
     ctl, data = xd.Display(), xd.Display()
-    ctx = ctl.record_create_context(0, [record.AllClients], [{
+    ctx = data.record_create_context(0, [record.AllClients], [{
         "core_requests": (0, 0), "core_replies": (0, 0), "ext_requests": (0, 0, 0, 0), "ext_replies": (0, 0, 0, 0),
         "delivered_events": (0, 0), "device_events": (X.KeyPress, X.ButtonPress), "errors": (0, 0),
         "client_started": False, "client_died": False}])
@@ -720,7 +720,11 @@ def listen_input(q, stop, ready, injected=False):
     ctl.record_disable_context(ctx)
     ctl.flush()
     th.join(2)
-    ctl.record_free_context(ctx)
+    try:
+        data.record_free_context(ctx)
+        data.close()
+    except Exception:
+        pass
 
 
 def terminal_app():

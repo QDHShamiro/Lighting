@@ -19,6 +19,8 @@ desktop windows [-f x] (one match = chosen)   launch <app|uri|path> [-f x]   foc
         wait "text" [w] [--gone] [--timeout 60s] (in an app)
         shot [w|screen] [--seconds 10] (video)   clip [get|set <text>]   press playpause|volumeup (no window)
         claude ["prompt" --yes] [--dir path] [--name x] [--model m] [--effort e] [--no-remote]  new Claude tab with remote control
+phone   phone devices|setup   phone snap [-f x]   phone tap <p3|"text"> [--long]   phone type ["text"] [--enter]
+        phone key back|home|recent|enter   phone swipe up|down|left|right   phone shot   phone launch <app>   phone open <url>
 chat    inbox <w|"title"> [--from name] [--since id] [--timeout 5m]   reply <w|"title"> "text" [--wait] [--yes]
         unread [w|"title"] (unread DMs and mentions)
 keys    keys [app|site] [-f x]   keys add <app> "ctrl+k=what"   keys rm <app> <key>

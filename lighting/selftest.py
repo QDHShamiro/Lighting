@@ -325,7 +325,8 @@ def sessions_check(ctx, base):
         run(b, "done")
     good = ("Second" in seen[0] and seen[1].startswith("closed 1 tab") and "Second" in seen[2]
             and seen[3].startswith("kept 1 tab") and "Quiet" in seen[4])
-    return good, " / ".join(s.split("\n")[0] for s in seen)
+    detail = " / ".join(s.split("\n")[0] for s in seen)
+    return good, detail if good else detail + " | a=%s/%s b=%s/%s" % (a.tabs, sorted(a.owned), b.tabs, sorted(b.owned))
 
 
 def reopen_check(ctx, base):
