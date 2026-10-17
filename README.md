@@ -334,17 +334,20 @@ Then install `lighting` from `/plugins`, and run once in a terminal:
 lighting install codex
 ```
 
-**Cursor, Gemini CLI, VS Code (Copilot), Windsurf, Claude Desktop, LM Studio / Bionic, Cline, Roo Code, Zed, any MCP client**
+**Antigravity, Cursor, Gemini CLI, VS Code (Copilot), Windsurf, Claude Desktop, LM Studio / Bionic, Cline, Roo Code, Zed, any MCP client**
 
 ```bash
 git clone https://github.com/QDHShamiro/Lighting.git
 Lighting\bin\lighting.exe setup
-lighting install cursor        # or: gemini | vscode | windsurf | claude-desktop | codex
+lighting install cursor        # or: antigravity | gemini | vscode | windsurf | claude-desktop | codex
                                #     bionic | lmstudio | cline | roo | zed
 ```
 
 `install bionic` (same as `lmstudio`) also copies the Lighting skill into `~/.lmstudio/skills/lighting`,
-where Bionic picks up global skills; later updates refresh that copy.
+where Bionic picks up global skills; later updates refresh that copy. `install antigravity` writes
+`~/.gemini/config/mcp_config.json` (and the older `~/.gemini/antigravity/mcp_config.json` if it exists) and copies
+the skill into `~/.gemini/skills/lighting` and Antigravity's own skill folders that exist; click Refresh under
+Manage MCP Servers afterwards.
 
 `setup` installs the Python side into `~/.lighting`, registers the native messaging host,
 **loads the extension into your browser by itself** (it opens the extensions page, switches on

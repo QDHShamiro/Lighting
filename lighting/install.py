@@ -260,6 +260,30 @@ def copy_skill(dst):
     shutil.copytree(D.ROOT / "skills" / "lighting", dst, dirs_exist_ok=True)
 
 
+def antigravity_configs():
+    gem = Path.home() / ".gemini"
+    return [gem / "config" / "mcp_config.json", gem / "antigravity" / "mcp_config.json"]
+
+
+def antigravity_skills():
+    gem = Path.home() / ".gemini"
+    return [gem / "skills" / "lighting", gem / "antigravity" / "global_skills" / "lighting",
+            gem / "antigravity" / "skills" / "lighting", gem / "antigravity-cli" / "skills" / "lighting"]
+
+
+def antigravity():
+    main, *old = antigravity_configs()
+    merge_json(main, "mcpServers", mcp_entry())
+    for p in old:
+        if p.exists():
+            merge_json(p, "mcpServers", mcp_entry())
+    first, *rest = antigravity_skills()
+    copy_skill(first)
+    for p in rest:
+        if p.parent.parent.exists():
+            copy_skill(p)
+
+
 def agent_files():
     home = Path.home()
     if D.WIN:
@@ -273,6 +297,7 @@ def agent_files():
         zed = appdata / "zed" / "settings.json"
     vsext = appdata / "Code" / "User" / "globalStorage"
     return {
+        "antigravity": antigravity_configs()[0],
         "claude-desktop": appdata / "Claude" / "claude_desktop_config.json",
         "cline": vsext / "saoudrizwan.claude-dev" / "settings" / "cline_mcp_settings.json",
         "codex": home / ".codex" / "config.toml",
@@ -294,6 +319,7 @@ def lmstudio():
 def agents():
     f = agent_files()
     return {
+        "antigravity": antigravity,
         "bionic": lmstudio,
         "claude-desktop": lambda: merge_json(f["claude-desktop"], "mcpServers", mcp_entry()),
         "cline": lambda: merge_json(f["cline"], "mcpServers", dict(mcp_entry(), disabled=False)),
@@ -332,6 +358,9 @@ def refresh():
         copy_exe()
         if bionic_skill().exists():
             copy_skill(bionic_skill())
+        for p in antigravity_skills():
+            if p.exists():
+                copy_skill(p)
     except OSError:
         pass
     return ext_id

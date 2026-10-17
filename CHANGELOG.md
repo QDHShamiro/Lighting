@@ -8,6 +8,8 @@ a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in t
 Built from 1,831 failed commands in the log since 1.1.0: most came from a few loops that kept hitting the same wall.
 
 ### Added
+- `lighting install antigravity`: Lighting's MCP server and skill for Google Antigravity (IDE, app and CLI share
+  `~/.gemini/config/mcp_config.json`; older config and skill folders are updated when they exist).
 - The brain: Lighting learns on this PC which controls are used on each page and app (it starts from the recorded
   episodes). On known pages `open`, `snap`, `back`, `forward`, `reload` and app snapshots show only those (up to 15,
   `config snap_top`) plus notes and alerts, with one line saying how many are hidden; `snap --full` shows all.
