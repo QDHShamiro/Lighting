@@ -360,7 +360,7 @@ def brake_check(ctx):
 def close_apps(win, title="Lighting Test App"):
     for w in win.windows():
         if w["title"] == title:
-            win.user32.PostMessageW(w["hwnd"], 0x0010, 0, 0)
+            win.close(w["hwnd"])
     deadline = time.time() + 3
     while time.time() < deadline and any(w["title"] == title for w in win.windows()):
         time.sleep(0.05)
@@ -372,7 +372,7 @@ def chat_app(r):
     close_apps(win, "Lighting Test Chat")
     env = dict(os.environ, PYTHONPATH=str(D.ROOT))
     exe = str(D.PYW if D.PYW.exists() else sys.executable)
-    subprocess.Popen([exe, "-m", "lighting.testapp", "chat"], env=env)
+    subprocess.Popen([exe, "-m", "lighting.testapp" if D.WIN else "lighting.testapp_unix", "chat"], env=env)
     try:
         deadline = time.time() + 8
         while time.time() < deadline and not any(w["title"] == "Lighting Test Chat" for w in win.windows()):
@@ -398,7 +398,7 @@ def desktop(r):
     close_apps(win)
     env = dict(os.environ, PYTHONPATH=str(D.ROOT))
     exe = str(D.PYW if D.PYW.exists() else sys.executable)
-    subprocess.Popen([exe, "-m", "lighting.testapp"], env=env)
+    subprocess.Popen([exe, "-m", "lighting.testapp" if D.WIN else "lighting.testapp_unix"], env=env)
     try:
         deadline = time.time() + 8
         while time.time() < deadline and not any(w["title"] == "Lighting Test App" for w in win.windows()):
