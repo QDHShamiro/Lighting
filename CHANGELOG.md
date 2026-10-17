@@ -8,6 +8,9 @@ a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in t
 Built from 1,831 failed commands in the log since 1.1.0: most came from a few loops that kept hitting the same wall.
 
 ### Added
+- `routine schedule <name> daily 08:00` (or `weekly mon 09:30`, `hourly`, `every 30m`) runs a routine on a
+  schedule through the Windows Task Scheduler, launchd on macOS or a systemd user timer on Linux, without a window;
+  `routine schedules` lists them, `routine unschedule <name>` (and `routine rm`) removes them.
 - `lighting install antigravity`: Lighting's MCP server and skill for Google Antigravity (IDE, app and CLI share
   `~/.gemini/config/mcp_config.json`; older config and skill folders are updated when they exist).
 - The brain: Lighting learns on this PC which controls are used on each page and app (it starts from the recorded

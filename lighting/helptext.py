@@ -26,6 +26,7 @@ brain   brain (what Lighting learned)   brain forget <site|app:x.exe>   brain re
         known pages show the controls you use there; snap --full shows all   config brain off
 routine routines [-f x]   run <name|words> [param=value ...] [--yes]   routine show|save|rm|rename|forget <name>
         record start [name] [--web|--desktop]   record stop [name] [param=value ...]   record cancel|status
+        routine schedule <name> daily 08:00|weekly mon 09:30|hourly|every 30m [param=value]   routine schedules|unschedule
 cleanup done [--quiet]   keep [t|w]   config cleanup on|off   config window on|off (own window per session)
 system  do "cmd; cmd; ..."   status   stop   config [key value]   log [stats]   version
         setup [--manual]   install <ai>   selftest [web|app|chat]   bench [--real [--runs 3]]   ext-reload   uninstall [--purge]
