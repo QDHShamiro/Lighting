@@ -201,28 +201,43 @@ def copy_skill(dst):
     shutil.copytree(D.ROOT / "skills" / "lighting", dst, dirs_exist_ok=True)
 
 
-def lmstudio():
-    merge_json(Path.home() / ".lmstudio" / "mcp.json", "mcpServers", mcp_entry())
-    copy_skill(bionic_skill())
-
-
-def agents():
+def agent_files():
     home = Path.home()
     appdata = Path(os.environ.get("APPDATA") or home / "AppData" / "Roaming")
     vsext = appdata / "Code" / "User" / "globalStorage"
     return {
+        "claude-desktop": appdata / "Claude" / "claude_desktop_config.json",
+        "cline": vsext / "saoudrizwan.claude-dev" / "settings" / "cline_mcp_settings.json",
+        "codex": home / ".codex" / "config.toml",
+        "cursor": home / ".cursor" / "mcp.json",
+        "gemini": home / ".gemini" / "settings.json",
+        "lmstudio": home / ".lmstudio" / "mcp.json",
+        "roo": vsext / "rooveterinaryinc.roo-cline" / "settings" / "mcp_settings.json",
+        "vscode": appdata / "Code" / "User" / "mcp.json",
+        "windsurf": home / ".codeium" / "windsurf" / "mcp_config.json",
+        "zed": appdata / "Zed" / "settings.json",
+    }
+
+
+def lmstudio():
+    merge_json(agent_files()["lmstudio"], "mcpServers", mcp_entry())
+    copy_skill(bionic_skill())
+
+
+def agents():
+    f = agent_files()
+    return {
         "bionic": lmstudio,
-        "claude-desktop": lambda: merge_json(appdata / "Claude" / "claude_desktop_config.json", "mcpServers", mcp_entry()),
-        "cline": lambda: merge_json(vsext / "saoudrizwan.claude-dev" / "settings" / "cline_mcp_settings.json", "mcpServers",
-                                    dict(mcp_entry(), disabled=False)),
-        "codex": lambda: merge_toml(home / ".codex" / "config.toml"),
-        "cursor": lambda: merge_json(home / ".cursor" / "mcp.json", "mcpServers", mcp_entry()),
-        "gemini": lambda: merge_json(home / ".gemini" / "settings.json", "mcpServers", mcp_entry()),
+        "claude-desktop": lambda: merge_json(f["claude-desktop"], "mcpServers", mcp_entry()),
+        "cline": lambda: merge_json(f["cline"], "mcpServers", dict(mcp_entry(), disabled=False)),
+        "codex": lambda: merge_toml(f["codex"]),
+        "cursor": lambda: merge_json(f["cursor"], "mcpServers", mcp_entry()),
+        "gemini": lambda: merge_json(f["gemini"], "mcpServers", mcp_entry()),
         "lmstudio": lmstudio,
-        "roo": lambda: merge_json(vsext / "rooveterinaryinc.roo-cline" / "settings" / "mcp_settings.json", "mcpServers", mcp_entry()),
-        "vscode": lambda: merge_json(appdata / "Code" / "User" / "mcp.json", "servers", dict(mcp_entry(), type="stdio")),
-        "windsurf": lambda: merge_json(home / ".codeium" / "windsurf" / "mcp_config.json", "mcpServers", mcp_entry()),
-        "zed": lambda: merge_json(appdata / "Zed" / "settings.json", "context_servers", dict(mcp_entry(), source="custom")),
+        "roo": lambda: merge_json(f["roo"], "mcpServers", mcp_entry()),
+        "vscode": lambda: merge_json(f["vscode"], "servers", dict(mcp_entry(), type="stdio")),
+        "windsurf": lambda: merge_json(f["windsurf"], "mcpServers", mcp_entry()),
+        "zed": lambda: merge_json(f["zed"], "context_servers", dict(mcp_entry(), source="custom")),
     }
 
 

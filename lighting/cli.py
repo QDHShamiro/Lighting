@@ -71,6 +71,9 @@ def main():
     if cmd in ("setup", "uninstall", "install"):
         from lighting import install
         sys.exit(install.main(argv))
+    if cmd == "doctor":
+        from lighting import doctor
+        sys.exit(doctor.main(argv))
     stats = "--stats" in argv
     if stats:
         argv = [a for a in argv if a != "--stats"]

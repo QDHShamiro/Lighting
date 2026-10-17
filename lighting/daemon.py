@@ -50,8 +50,9 @@ class Host:
                 raise TimeoutError("browser did not answer '%s' within %ds" % (cmd, timeout))
             t2 = time.perf_counter()
             if TRACE:
-                print("trace browser %s: send %.2f ms, reply %.2f ms, inside extension %.2f ms" % (
-                    cmd, (t1 - t0) * 1000, (t2 - t0) * 1000, msg.get("extMs", -1)), file=sys.stderr, flush=True)
+                print("trace browser %s: send %.2f ms, reply %.2f ms, inside extension %.2f ms%s" % (
+                    cmd, (t1 - t0) * 1000, (t2 - t0) * 1000, msg.get("extMs", -1),
+                    " (%s)" % msg["steps"] if msg.get("steps") else ""), file=sys.stderr, flush=True)
         finally:
             self.pending.pop(i, None)
         if msg.get("abort"):
@@ -315,6 +316,8 @@ class Daemon:
             return
         ipc.token()
         D.PIDFILE.write_text(str(os.getpid()), "utf-8")
+        print("%s %s %s pid %d" % (D.DAEMON_STARTED, D.version(), time.strftime("%Y-%m-%d %H:%M:%S"), os.getpid()),
+              file=sys.stderr, flush=True)
         from lighting import commands
         self.load_sessions(commands)
         cleanup_out()

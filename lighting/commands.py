@@ -5,11 +5,11 @@ import sys
 import time
 
 from lighting import defaults as D
-from lighting.common import Busy, Fail, Pending, cap, is_url, ref_kind
+from lighting.common import Busy, Fail, Pending, Said, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
-          "reload", "since", "seconds", "dir", "name", "model", "effort"}
+          "reload", "since", "seconds", "dir", "name", "model", "effort", "threshold", "runs"}
 TRACE = (D.HOME / "trace").exists()
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
          "-m": "media"}
@@ -249,7 +249,7 @@ def when_idle(ctx, name, pos, flags):
     return Pending(poll, D.BUSY_WAIT_S, 0.15)
 
 
-QUIET_CMDS = {"done", "suggest", "ping", "status", "log", "version", "help", "config", "brain", "improve"}
+QUIET_CMDS = {"done", "suggest", "ping", "status", "log", "version", "help", "config", "brain", "improve", "doctor-info"}
 
 
 def run(ctx, msg):
@@ -267,7 +267,7 @@ def run(ctx, msg):
         out, name, pos = run_one(ctx, argv)
         ctx.fails.pop(tuple(argv), None)
     except Fail as e:
-        out, code = repeated(ctx, argv, e.text()), 1
+        out, code = repeated(ctx, argv, e.text(), name.lower() not in QUIET_CMDS), 1
     except TimeoutError as e:
         out, code = "err: " + str(e), 1
     finally:
@@ -283,16 +283,29 @@ def run(ctx, msg):
     return finish(ctx, name, argv, out, code, t)
 
 
-def repeated(ctx, argv, out):
+def repeated(ctx, argv, out, brake=True):
     key, now = tuple(argv), time.time()
     err, n, t0 = ctx.fails.get(key) or ("", 0, 0.0)
     n = n + 1 if err == out and now - t0 < D.REPEAT_WINDOW_S else 1
     ctx.fails[key] = (out, n, now)
     if len(ctx.fails) > 20:
         ctx.fails.pop(next(iter(ctx.fails)))
+    if brake and n >= D.REPEAT_BRAKE_AT:
+        wait = min(D.REPEAT_BRAKE_MAX_S, 2 ** (n - D.REPEAT_BRAKE_AT))
+        return braked(out + "\n! STOP: the same command failed %d times in a row with this error, so Lighting waited %d s "
+                            "before answering. Change the command or end the loop" % (n, wait), wait)
     if n >= D.REPEAT_NOTE_AT:
         out += "\n! the same command failed %d times in a row with this error: repeating it will not help" % n
     return out
+
+
+def braked(text, wait):
+    def poll(last):
+        if last:
+            raise Said(text)
+        return None
+
+    return Pending(poll, wait, wait)
 
 
 def poll_pending(ctx, p):
@@ -392,23 +405,27 @@ def cmd_do(ctx, pos, flags):
     if not steps:
         raise Fail("do needs steps", 'lighting do "click e3; type e4 hi; press Enter"')
     lines = []
-    for i, step in enumerate(steps, 1):
-        if ctx.d.abort.is_set():
-            lines.append("%d stopped by hotkey" % i)
-            break
-        argv = tokenize(step)
-        try:
-            out, _, _ = run_one(ctx, argv)
-            out = drain(ctx, out)
-        except Fail as e:
-            left = len(steps) - i
-            lines.append("%d %s%s" % (i, e.text(), " (stopped, %d skipped)" % left if left else ""))
-            break
-        text = out if isinstance(out, str) else json.dumps(out)
-        if i < len(steps) and parse(argv)[0] not in READS:
-            text = text.split("\n", 1)[0]
-        prefix = "%d " % i if len(steps) > 1 else ""
-        lines.append(prefix + text)
+    ctx.in_do = True
+    try:
+        for i, step in enumerate(steps, 1):
+            if ctx.d.abort.is_set():
+                lines.append("%d stopped by hotkey" % i)
+                break
+            argv = tokenize(step)
+            try:
+                out, _, _ = run_one(ctx, argv)
+                out = drain(ctx, out)
+            except Fail as e:
+                left = len(steps) - i
+                lines.append("%d %s%s" % (i, e.text(), " (stopped, %d skipped)" % left if left else ""))
+                break
+            text = out if isinstance(out, str) else json.dumps(out)
+            if i < len(steps) and parse(argv)[0] not in READS:
+                text = text.split("\n", 1)[0]
+            prefix = "%d " % i if len(steps) > 1 else ""
+            lines.append(prefix + text)
+    finally:
+        ctx.in_do = False
     return "\n".join(lines)
 
 
@@ -715,11 +732,20 @@ def cmd_improve(ctx, pos, flags):
     return brain.cmd_improve(ctx, pos, flags)
 
 
+def cmd_doctor_info(ctx, pos, flags):
+    d, now = ctx.d, time.time()
+    hosts = [{"brand": h.brand, "browser": h.info.get("browserVersion", ""), "ext": h.info.get("ext", ""),
+              "alive": bool(h.alive), "hostpid": h.info.get("hostpid"), "up": now - h.connected} for h in list(d.hosts)]
+    return {"out": "", "code": 0, "info": {"pid": os.getpid(), "version": D.version(), "root": str(D.ROOT),
+                                           "up": now - d.started, "hotkey": bool(d.hotkey), "trace": TRACE,
+                                           "sessions": len(d.ctxs), "waits": len(d.waits), "hosts": hosts}}
+
+
 SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status, "config": cmd_config,
           "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload,
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
           "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest, "brain": cmd_brain,
-          "improve": cmd_improve}
+          "improve": cmd_improve, "doctor-info": cmd_doctor_info}
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
          "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys",
          "listen", "unread", "net", "tools"}

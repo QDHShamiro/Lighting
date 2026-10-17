@@ -8,7 +8,8 @@ use std::os::windows::io::{AsRawHandle, RawHandle};
 use std::path::{Path, PathBuf};
 use std::process::{self, Command};
 use std::ptr::{null, null_mut};
-use std::thread::sleep;
+use std::sync::mpsc;
+use std::thread::{self, sleep};
 use std::time::{Duration, Instant};
 
 const HIDDEN: u32 = 0x0000_0200 | 0x0800_0000;
@@ -17,8 +18,10 @@ const EXTENDED_STARTUPINFO: u32 = 0x0008_0000;
 const USE_STD_HANDLES: u32 = 0x0000_0100;
 const HANDLE_LIST: usize = 0x0002_0002;
 const ERROR_PIPE_BUSY: i32 = 231;
+const HOOK_INPUT_WAIT: Duration = Duration::from_millis(1000);
+const HOOK_INPUT_MAX: u64 = 64 * 1024;
 const LOCAL: &[&str] = &[
-    "", "help", "-h", "--help", "--version", "daemon", "host", "mcp", "setup", "uninstall", "install",
+    "", "help", "-h", "--help", "--version", "daemon", "host", "mcp", "setup", "uninstall", "install", "doctor",
 ];
 
 fn home() -> PathBuf {
@@ -312,6 +315,16 @@ fn hex(bytes: &[u8]) -> String {
     s
 }
 
+fn read_hook_input() -> String {
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || {
+        let mut text = String::new();
+        let _ = io::stdin().take(HOOK_INPUT_MAX).read_to_string(&mut text);
+        let _ = tx.send(text);
+    });
+    rx.recv_timeout(HOOK_INPUT_WAIT).unwrap_or_default()
+}
+
 fn main() {
     let raw: Vec<String> = env::args().skip(1).collect();
     let args: Vec<String> = match msys_root() {
@@ -338,7 +351,7 @@ fn main() {
     }
     let mut hook_input = String::new();
     if ((first == "suggest" && args.len() == 1) || (first == "done" && quiet)) && !io::stdin().is_terminal() {
-        let _ = io::stdin().take(64 * 1024).read_to_string(&mut hook_input);
+        hook_input = read_hook_input();
     }
     let mut sid = env::var("CLAUDE_CODE_SESSION_ID").unwrap_or_default();
     if sid.is_empty() {

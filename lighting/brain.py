@@ -18,7 +18,7 @@ ADVICE = [
     (r"is gone|older snapshot", "the page changed under the ref: snap again (the brain now retries by name)"),
     (r"nothing matches|nothing called|no field called", "the name was guessed: look first with snap -f <word> (the brain learns real names)"),
     (r"mouse or keyboard", "the user was busy; Lighting waits up to 10 s for a pause now"),
-    (r"no window chosen", "choose the app first: lighting windows -f <app>"),
+    (r"no window chosen", "name the app: lighting snap app:<name> (no windows call needed)"),
     (r"unknown command", "check the name in lighting help"),
     (r"did not answer|disconnected|not connected", "the browser was busy or restarted: lighting status"),
     (r"not there after|still there after|timed out", "the page was slower than the wait: raise --timeout or wait for other text"),
@@ -380,7 +380,8 @@ def cmd_brain(ctx, pos, flags):
     return cap("\n".join(lines), "brain", lines=60)
 
 
-def read_log():
+def read_log(since=0.0):
+    floor = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(since)) if since else ""
     rows = []
     for p in (D.LOG.with_suffix(".old.jsonl"), D.LOG):
         try:
@@ -388,13 +389,13 @@ def read_log():
         except OSError:
             continue
         for line in text.splitlines():
-            try:
-                r = json.loads(line)
-            except ValueError:
+            if floor and line[7:26] < floor:
                 continue
             try:
-                r["ts"] = time.mktime(time.strptime(r["t"], "%Y-%m-%d %H:%M:%S"))
-            except (KeyError, ValueError):
+                r = json.loads(line)
+                t = r["t"]
+                r["ts"] = time.mktime((int(t[0:4]), int(t[5:7]), int(t[8:10]), int(t[11:13]), int(t[14:16]), int(t[17:19]), 0, 0, -1))
+            except (KeyError, TypeError, ValueError):
                 continue
             rows.append(r)
     return rows
@@ -408,8 +409,8 @@ def shape(err):
 
 def summary(days=7, now=None, rows=None):
     now = now or time.time()
-    rows = read_log() if rows is None else rows
     t0, t1 = now - days * 86400, now - 2 * days * 86400
+    rows = read_log(t1) if rows is None else rows
     cur = [r for r in rows if r["ts"] >= t0 and not r.get("x")]
     prev = [r for r in rows if t1 <= r["ts"] < t0 and not r.get("x")]
     groups = {}

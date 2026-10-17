@@ -46,6 +46,7 @@ def main():
     first["type"] = "hello"
     first["token"] = ipc.token()
     first["origin"] = sys.argv[1] if len(sys.argv) > 1 else ""
+    first["hostpid"] = os.getpid()
     ipc.send(conn, first)
 
     def down():

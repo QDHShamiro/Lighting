@@ -124,7 +124,7 @@ def target(ctx, pos=None):
     else:
         hwnd = front_app(ctx)
         if not hwnd:
-            raise Fail("no window chosen", "lighting windows -f <app> (one match is chosen), or name it: snap w3")
+            raise Fail("no window chosen", "lighting snap app:<name> picks that app's window (several: lighting windows -f <app>)")
         note(ctx, "no window was chosen: used %s, still in front since your last windows" % label(ctx, hwnd))
     st.hwnd = hwnd
     ctx.target = ("app", hwnd)
@@ -531,7 +531,7 @@ def before_action(ctx, hwnd):
     return set(st.full[2]) if st.full and st.full[0] == hwnd else None
 
 
-def after_action(ctx, hwnd, before, wait=0.6):
+def after_action(ctx, hwnd, before, wait=0.6, quiet=None):
     if before is None:
         return ""
     st = state(ctx)
@@ -552,6 +552,8 @@ def after_action(ctx, hwnd, before, wait=0.6):
             if now == last:
                 break
             last = now
+        elif last is None and quiet and time.time() - t0 >= quiet:
+            break
     if now == before:
         return ""
     added = [l for l in lines if l not in before]
@@ -772,6 +774,17 @@ def put_text(ctx, hwnd, el, label, text, flags):
     return "ok %s (pasted %s%s, window was briefly in front)" % (label, shown, "".join(" +" + k for k in keys))
 
 
+QUICK_KEYS = {"tab", "esc", "escape", "backspace", "space", "delete", "del", "home", "end", "pageup", "pagedown", "pgup",
+              "pgdn", "up", "down", "left", "right", "arrowup", "arrowdown", "arrowleft", "arrowright"}
+
+
+def quick_key(combo):
+    parts = [p.lower() for p in win.combo_parts(combo)]
+    if any(m != "shift" for m in parts[:-1]):
+        return False
+    return parts[-1] in QUICK_KEYS or (len(parts[-1]) == 1 and parts[-1].isprintable())
+
+
 def cmd_press(ctx, pos, flags):
     if not pos:
         raise Fail("press needs keys", "lighting press ctrl+s")
@@ -794,7 +807,7 @@ def cmd_press(ctx, pos, flags):
         pointer.with_focus(hwnd, go, stay=bool(flags.get("stay")))
     except ValueError as e:
         raise Fail(str(e))
-    diff = after_action(ctx, hwnd, before)
+    diff = after_action(ctx, hwnd, before, quiet=D.KEY_QUIET_S if all(quick_key(p) for p in pos) else None)
     if diff.startswith(" (+") and len(pos) == 1:
         from lighting import keys
         keys.learn(win.exe_of(win.pid_of(hwnd)).lower(), pos[0], diff.split("\n", 2)[1])
@@ -891,12 +904,12 @@ def cmd_read(ctx, pos, flags):
 
 
 def cmd_shot(ctx, pos, flags):
-    from lighting.browser import save_image
+    from lighting.browser import save_image, threshold
     hwnd, box = region(ctx, pos)
     img = grab(box, hwnd)
     key = "app-%s" % (hwnd or "screen")
     return save_image(ctx, img, key, bool(flags.get("if-changed")),
-                      int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
+                      int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH), threshold(flags))
 
 
 def app_text(hwnd):

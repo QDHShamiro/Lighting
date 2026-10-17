@@ -5,6 +5,13 @@ import * as A from "./actions.js";
 const HOST = "dev.qdhshamiro.lighting";
 const VERSION = chrome.runtime.getManifest().version;
 const FRAME_WAIT_MS = 3000;
+const SETTLE_MAX_MS = 1500;
+const BUSY_NOTE = "page still changing after " + SETTLE_MAX_MS / 1000 + " s: it may still be loading (a second snap shows only what is new)";
+
+function stillBusy(calm, res) {
+  if (calm && calm.changed && calm.ms >= SETTLE_MAX_MS - 30 && res && !res.error) res.notes = (res.notes || []).concat(BUSY_NOTE);
+  return res;
+}
 const { cfg, page, formatSnap, header, guard, tabOf, trunc, LOAD_MS } = A;
 let port = null;
 let backoff = 300;
@@ -74,28 +81,48 @@ async function onMessage(msg) {
   }
 }
 
+function laps() {
+  const done = [];
+  let t = performance.now();
+  const lap = (name) => {
+    const n = performance.now();
+    done.push(name + " " + Math.round(n - t));
+    t = n;
+  };
+  lap.text = () => done.join(", ");
+  return lap;
+}
+
 async function open(a, tab) {
+  a.lap = laps();
   const res = await openTab(a, tab);
   const extras = a.quiet || !a.tabId ? {} : await pageExtras(a.tabId).catch(() => ({}));
-  return Object.assign(typeof res === "string" ? { out: res } : res, extras, { created: a.created });
+  a.lap("extras");
+  return Object.assign(typeof res === "string" ? { out: res } : res, extras, { created: a.created, steps: a.lap.text() });
 }
 
 async function openTab(a, tab) {
+  const lap = a.lap || (() => {});
   let tabId = a.new ? null : await tabOf(tab, false);
   if (tabId === null) {
     tabId = await T.create(a.group);
     a.created = true;
   } else T.setTarget(tabId);
   a.tabId = tabId;
+  lap("tab");
   await C.attach(tabId).catch(() => {});
+  lap("attach");
   const nav = await T.navigate(tabId, a.url, LOAD_MS);
-  await page(tabId, "act.settle", [300, 3000, 0, 150], 0, 8000).catch(() => {});
+  lap("load");
+  const calm = await page(tabId, "act.settle", [300, SETTLE_MAX_MS, 0, 150], 0, 8000).catch(() => null);
+  lap("settle");
   let t = await chrome.tabs.get(tabId);
   if (nav.error && nav.error !== "net::ERR_ABORTED") throw new Error("load failed: " + nav.error + " (" + T.short(a.url, 60) + ")");
   if (a.quiet) return header(tabId, { title: t.title, url: t.url });
   const narrow = !!(a.filter || a.scope);
   const opts = { force: true, filter: a.filter || null, scope: a.scope || null, media: !!a.media };
   let res = await page(tabId, "snap", [opts]).catch((e) => ({ error: e.message }));
+  lap("snap");
   if (!narrow && !res.error && !(res.lines || []).length) {
     const peek = await page(tabId, "act.peek", [300]).catch(() => "");
     if (peek) res.peek = peek;
@@ -107,7 +134,7 @@ async function openTab(a, tab) {
     }
   }
   if (res.error) return header(tabId, { title: t.title, url: t.url }) + "\n" + res.error;
-  return withKeys(formatSnap(tabId, res, narrow ? 0 : cfg.navLines, narrow), res);
+  return withKeys(formatSnap(tabId, stillBusy(calm, res), narrow ? 0 : cfg.navLines, narrow), res);
 }
 
 function withKeys(out, res) {
@@ -171,9 +198,9 @@ async function history(kind, tab) {
   else if (kind === "forward") await chrome.tabs.goForward(tabId).catch(() => {});
   else await chrome.tabs.reload(tabId);
   await nav.wait(1500, LOAD_MS);
-  await page(tabId, "act.settle", [300, 3000, 0, 150], 0, 8000).catch(() => {});
+  const calm = await page(tabId, "act.settle", [300, SETTLE_MAX_MS, 0, 150], 0, 8000).catch(() => null);
   const res = await page(tabId, "snap", [{ force: true }]);
-  return formatSnap(tabId, res, cfg.navLines);
+  return formatSnap(tabId, stillBusy(calm, res), cfg.navLines);
 }
 
 function hostOf(url) {
@@ -205,7 +232,7 @@ async function frameId(tabId, host) {
 
 async function snap(a, tab) {
   const tabId = await tabOf(tab);
-  const opts = { all: !!a.all, scope: a.scope || null, filter: a.filter || null, diff: !!a.diff, force: !!a.force || !!a.full, media: !!a.media };
+  const opts = { all: !!a.all, scope: a.scope || null, filter: a.filter || null, diff: !!a.diff, force: !!a.force || !!a.full || !!a.links, media: !!a.media, links: !!a.links };
   opts.plain = !a.full && !a.frame && !opts.all && !opts.scope && !opts.filter && !opts.diff && !opts.force && !opts.media;
   if (a.frame) {
     const fid = await frameId(tabId, a.frame);
@@ -287,7 +314,6 @@ async function expect(a, tab) {
 
 function wrap(code) {
   if (/\breturn\b/.test(code)) return "(async()=>{" + code + "\n})()";
-  if (/\bawait\b/.test(code) && !/;\s*\S/.test(code.trim().replace(/;\s*$/, ""))) return "(async()=>{return (" + code.trim().replace(/;\s*$/, "") + ")\n})()";
   if (/(^|[;{}\n])\s*(const|let|class)\s/.test(code)) return "{" + code + "\n}";
   return code;
 }
@@ -296,7 +322,8 @@ async function js(a, tab) {
   const tabId = await tabOf(tab);
   await guard(tabId, "js");
   await C.attach(tabId);
-  const r = await C.send(tabId, "Runtime.evaluate", { expression: wrap(a.code), awaitPromise: true, returnByValue: true, userGesture: true, timeout: 15000 });
+  const replMode = /\bawait\b/.test(a.code) && !/\breturn\b/.test(a.code);
+  const r = await C.send(tabId, "Runtime.evaluate", { expression: wrap(a.code), awaitPromise: true, returnByValue: true, userGesture: true, replMode, timeout: 15000 });
   if (r.exceptionDetails) {
     const d = r.exceptionDetails;
     throw new Error("js: " + String((d.exception && d.exception.description) || d.text).split("\n")[0]);
@@ -453,7 +480,7 @@ async function downloads() {
   return items.map((d) => {
     const st = d.state === "complete" ? "done" : d.state === "interrupted" ? "failed" : Math.round((d.bytesReceived / Math.max(1, d.totalBytes)) * 100) + "%";
     const size = d.fileSize > 0 ? " " + (d.fileSize / 1048576).toFixed(1) + " MB" : "";
-    return st + size + " " + (d.filename || d.url);
+    return st + size + " " + (d.filename || T.short(d.url, 80));
   }).join("\n");
 }
 

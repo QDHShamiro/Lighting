@@ -6,9 +6,11 @@ import subprocess
 import time
 
 from lighting import defaults as D
-from lighting.common import Fail, Pending, cap, hit, is_url, outfile, parse_ms, plain_links, ref_kind, terms, win_path
+from lighting.common import (Fail, Pending, best_only, cap, hit, is_url, note, outfile, parse_ms, plain_links, ref_kind,
+                             terms, tiers, win_path)
 
 REF_RE = re.compile(r"^(?:f\d+\.)?e\d+$")
+EMBED = re.compile(r"^https?://(?:www\.)?(?:youtube\.com|youtube-nocookie\.com)/embed/([\w-]{6,})/?(?:\?(.*))?$", re.I)
 IMAGE_EXT = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp")
 _reloaded = set()
 
@@ -107,6 +109,7 @@ def ensure_host(ctx, want=None):
 NEW_TAB = re.compile(r"new tab (t\d+) opened from (t\d+)")
 SESSION_FREE = {"config", "abort", "reload-extension", "ping", "close-url", "tabs", "downloads", "cleanup", "keep",
                 "tab", "record-start", "record-stop", "record-status"}
+REOPEN = {"snap", "text", "shot", "frames", "expect"}
 
 
 def session_tab(ctx, cmd, args):
@@ -120,6 +123,11 @@ def session_tab(ctx, cmd, args):
         return ctx.tabs[0] if ctx.tabs else None
     if not ctx.tabs:
         last = getattr(ctx, "closed_url", None)
+        if last and cmd in REOPEN:
+            call(ctx, "open", {"url": last, "new": True, "quiet": True}, D.LOAD_TIMEOUT + 10)
+            if ctx.tabs:
+                note(ctx, "reopened %s: Lighting had closed this session's tab after an earlier reply" % last[:80])
+                return ctx.tabs[0]
         if last:
             raise Fail("this session has no tab: its tabs were closed after an earlier reply (last page %s)" % last[:80],
                        "lighting open %s" % last)
@@ -197,6 +205,14 @@ def normalize_url(u):
     return "https://" + u
 
 
+def watch_url(url):
+    m = EMBED.match(url or "")
+    if not m:
+        return None
+    start = re.search(r"(?:^|&)start=(\d+)", m.group(2) or "")
+    return "https://www.youtube.com/watch?v=%s%s" % (m.group(1), "&t=%ss" % start.group(1) if start else "")
+
+
 def leak_check(ctx, url, flags):
     from urllib.parse import urlsplit
     parts = urlsplit(url)
@@ -217,6 +233,10 @@ def cmd_open(ctx, pos, flags):
     if url.split(":", 1)[0].lower() not in D.WEB_SCHEMES:
         from lighting import desktop
         return desktop.cmd_launch(ctx, [url], flags)
+    watch = watch_url(url)
+    if watch:
+        url = watch
+        note(ctx, "opened the embed link as its watch page (YouTube shows Error 153 for embeds opened directly)")
     leak_check(ctx, url, flags)
     if flags.get("text"):
         head = out(ctx, "open", {"url": url, "new": bool(flags.get("new")), "quiet": True}, D.LOAD_TIMEOUT + 10)
@@ -319,7 +339,7 @@ def cmd_call(ctx, pos, flags):
 
 def cmd_snap(ctx, pos, flags):
     args = {"all": bool(flags.get("all")), "diff": bool(flags.get("diff")), "force": bool(flags.get("force")),
-            "media": bool(flags.get("media")), "full": bool(flags.get("full"))}
+            "media": bool(flags.get("media")), "full": bool(flags.get("full")), "links": bool(flags.get("links"))}
     if flags.get("f"):
         args["filter"] = flags["f"]
     scope = flags.get("s") or (pos[0] if pos and REF_RE.match(pos[0]) else None)
@@ -330,7 +350,7 @@ def cmd_snap(ctx, pos, flags):
     limit = None if flags.get("all") else D.SNAP_LINES
     msg = call(ctx, "snap", args, 30)
     text = msg.get("out", "")
-    if not (scope or any(flags.get(k) for k in ("f", "all", "diff", "force", "media", "full", "frame"))):
+    if not (scope or any(flags.get(k) for k in ("f", "all", "diff", "force", "media", "full", "frame", "links"))):
         text = trimmed(ctx, text)
     return cap(text, "snap", lines=limit or 100000)
 
@@ -624,7 +644,12 @@ def cmd_upload(ctx, pos, flags):
 
 
 def cmd_tabs(ctx, pos, flags):
-    return out(ctx, "tabs", {}, 15, lines=80)
+    text = call(ctx, "tabs", {}, 15).get("out", "")
+    if flags.get("f"):
+        filt = terms(flags["f"])
+        rows = [(tiers(filt, l), l) for l in text.split("\n") if l.strip()]
+        text = "\n".join(best_only([r for r in rows if any(r[0])])) or 'no tab matches "%s"' % flags["f"]
+    return cap(text, "tabs", lines=80)
 
 
 def cmd_tab(ctx, pos, flags):
@@ -695,7 +720,7 @@ def cmd_shot(ctx, pos, flags):
         if box[2] > box[0] and box[3] > box[1]:
             img = img.crop(box)
     res = save_image(ctx, img, "web-" + (ref or "view"), bool(flags.get("if-changed")),
-                     int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
+                     int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH), threshold(flags))
     if flags.get("marks"):
         res += "\n%d orange labels = e-refs (label 12 -> lighting click e12)" % msg.get("marks", 0)
     return res
@@ -799,16 +824,29 @@ def image_note(ctx, raw):
     return save_image(ctx, img, "image", False, int(ctx.cfg.get("shot_width") or D.SHOT_WIDTH))
 
 
-def save_image(ctx, img, key, if_changed, width):
+def threshold(flags):
+    raw = flags.get("threshold")
+    if raw in (None, False):
+        return 0.0
+    try:
+        return max(0.0, min(100.0, float(str(raw).rstrip("%")) if raw is not True else 2.0))
+    except ValueError:
+        raise Fail("--threshold needs a percent of the picture", "lighting shot --threshold 2")
+
+
+def save_image(ctx, img, key, if_changed, width, threshold=0.0):
     from PIL import Image
-    import hashlib
     if img.width > width:
         img = img.resize((width, max(1, round(img.height * width / img.width))), Image.LANCZOS)
-    thumb = img.convert("L").resize((48, 27)).point(lambda v: v // 24 * 24)
-    digest = hashlib.md5(thumb.tobytes()).hexdigest()
-    if if_changed and ctx.last_shot.get(key) == digest:
-        return "unchanged since the last shot of %s (no new image)" % key
-    ctx.last_shot[key] = digest
+    raw = img.convert("L").resize((48, 27)).point(lambda v: v // 24 * 24).tobytes()
+    old = ctx.last_shot.get(key)
+    if (if_changed or threshold) and isinstance(old, bytes) and len(old) == len(raw):
+        moved = sum(1 for a, b in zip(old, raw) if a != b) * 100.0 / len(raw)
+        if moved <= threshold:
+            if not moved:
+                return "unchanged since the last shot of %s (no new image)" % key
+            return "unchanged since the last shot of %s (%.1f%% moved, under --threshold %g; no new image)" % (key, moved, threshold)
+    ctx.last_shot[key] = raw
     path = outfile("shot-" + key, "jpg")
     img.convert("RGB").save(path, "JPEG", quality=D.JPEG_QUALITY)
     ctx.image = str(path)

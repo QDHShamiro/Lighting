@@ -12,7 +12,7 @@ Runbook for Claude Code: building, verifying and changing Lighting without redis
 bin/lighting.exe                               Rust client (client/), on Claude's PATH through the plugin bin/ dir
 .mcp.json                                      MCP server: lighting.exe mcp (1 tool)
 skills/lighting/                               SKILL.md + references/, loaded on description match
-commands/                                      /lighting:setup, :status, :bench
+commands/                                      /lighting:setup, :status, :bench, :doctor
 hooks/hooks.json                               Stop hook: `lighting done --quiet` after every Claude reply
 tests/test_units.py                            unit tests, plain asserts (python tests/test_units.py or pytest)
 docs/                                          demo.gif (rendered from a real run's output) + frames-example.jpg (CC0 clip), used by the README
@@ -139,7 +139,11 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - Brain (`brain.py`, `~/.lighting/brain.json`): `observe` runs after every command next to `routines.observe` (only the worker thread touches it). Learned per page key (host + up to 4 path segments, numbers/hashes/long slugs -> `#`) and per host (or `app:<exe>`): element name (lowercase, digits -> `#`, `...` cut) -> [score, last use, role, label], score halves every 30 days. The first load builds it from `episodes.jsonl`; `focused`/`screen`/refs/`#hints` are not names. Saved at most every 30 s and on `stop` (one file write per command would cost ~14 ms, see above). Blocklisted hosts are never learned; `no_learn` (selftest, bench) stops learning but not trimming, so `bench --real` measures what users get.
 - Trimming: a page key with 3+ uses (else its host with 10+) is known; the top `snap_top` (15) names are kept by exact or substring match (4+ chars), alert/dialog/status lines and every non-element line always stay, deltas (`changed since your last snap`) are never trimmed, and nothing changes unless 3+ learned controls are shown and 5+ are hidden. Simulated on the recorded episodes: github.com/QDHShamiro/Lighting 450 -> 117 tokens, its pull list 433 -> 180, unknown sites unchanged.
 - Self-correction in `run_one`: on `eN is gone` the ref's role and name from the last snapshot of that tab (`ctx.refnames`, names cut with `...` are skipped) are retried once as a text target with `--role`; the extension's stale guard still refuses it when the URL changed. A miss (`nothing matches/called`, `no field called`) followed within 90 s by a success of the same command on the same page key is a fix; used automatically from the 2nd time, named in the error after the 1st. Retries never act twice: all those errors are raised before acting.
-- `improve` reads `log.jsonl` (+ `.old.jsonl`), groups errors by shape (quoted text, refs, numbers replaced), flags bursts (10+ within 10 min = a loop) and maps shapes to advice (`ADVICE`). `suggest` (UserPromptSubmit) adds the weekly summary when 7 days passed (`improve.json`) and 10+ commands failed.
+- `improve` reads `log.jsonl` (+ `.old.jsonl`), groups errors by shape (quoted text, refs, numbers replaced), flags bursts (10+ within 10 min = a loop) and maps shapes to advice (`ADVICE`). `suggest` (UserPromptSubmit) adds the weekly summary when 7 days passed (`improve.json`) and 10+ commands failed. `read_log(since)` compares the fixed `{"t": "..."` prefix as text before parsing, so only the last 14 days are decoded (733 -> 269 ms on 26k lines).
+- `doctor` runs locally (client `LOCAL` list, `cli.py`, `mcp.py`), never through the daemon's worker: it must work when the daemon is hung, and asking the daemon from inside its own worker would deadlock. When `client-root` points to another root that has `doctor.py`, it re-runs itself from there (`LIGHTING_DOCTOR_ROOT` stops the loop), so the MCP server of an older plugin copy checks the Lighting that really runs. The daemon answers the hidden `doctor-info` (pid, version, root, hotkey, trace, hosts with `hostpid`, which `host.py` adds to its hello). Slow parts run in threads from the start (MCP probe through `lighting.exe mcp`, GitHub release check, Windows OCR import); rows are sorted by `AREAS` when printed. ~2.3 s on a loaded PC, most of it Python start.
+- `procs.py` lists processes with Toolhelp32 and reads command lines with `NtQueryInformationProcess(60)` (`PROCESS_QUERY_LIMITED_INFORMATION` is enough), no PowerShell/WMIC (WMIC is gone on Windows 11 24H2+). Daemon and host are two processes each (uv launcher + real interpreter, same command line): `tops()` keeps the launcher, `top_of()` walks up from the real pid. Stuck = a `done`/`suggest` client older than 60 s or any client but `mcp`/`doctor` older than 1 h; extra daemons are those not containing the daemon's pid (test daemons from `USERNAME=ltest`); orphan hosts are hosts older than 60 s not linked to a connected `hostpid`. `taskkill /T /F` on the top process.
+- The daemon prints `lighting daemon started <version> <time> pid <n>` to `daemon.log` after the pipe is open (not before: a second daemon that cannot get the pipe exits and must not hide the first one's errors); `doctor` counts tracebacks after the last marker.
+- The client reads hook JSON for `done --quiet`/`suggest` in a thread and waits at most 1 s (`HOOK_INPUT_WAIT`): with an open but silent stdin (an agent's shell) the old blocking read hung forever.
 
 ## 3. Build order when changing things
 
@@ -155,7 +159,8 @@ claude plugin validate .
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate skills
 claude plugin validate commands
-python tests/test_units.py     # 42/42
+python tests/test_units.py     # 47/47
+lighting doctor                # 0 problems (memory/errors warnings depend on the PC and the log)
 cd client && cargo test && cargo clippy --release --all-targets
 lighting selftest              # must print 135/135 passed (134/134 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
 lighting bench
@@ -211,6 +216,8 @@ For routines: do one task twice with different values, `lighting routine learn`,
 | `lighting` hangs until timeout in a pipe | daemon inherited a pipe handle (the caller's, or one the caller inherited, e.g. from rtk) | client spawns the daemon with an explicit handle list |
 | A console window pops up when the daemon starts | `DETACHED_PROCESS` voids `CREATE_NO_WINDOW` for the launcher's child | spawn with `HIDDEN` flags only |
 | `launch calc` opens OpenOffice Calc | fuzzy Start menu match won | Win+R names come before the fuzzy match |
+| Anything else, or not sure | | `lighting doctor`, then `lighting doctor --fix` |
+| Everything slow, even `lighting status` (~1 s) | the PC is out of memory (`doctor` memory line names the biggest programs) | close programs; not a Lighting bug |
 
 ## 7. Hard rules
 

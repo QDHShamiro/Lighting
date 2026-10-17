@@ -388,6 +388,26 @@ def test_same_steps_as_a_saved_routine_are_not_learned_again():
         routines.path("x-go").unlink()
 
 
+def test_navigation_only_routines_are_not_learned():
+    import time
+
+    class C:
+        class d:
+            events = []
+
+    step = lambda c, a, u: {"cmd": c, "args": a, "flags": {}, "where": {"kind": "web", "url": u, "title": "T"}}
+    h, o, o2 = "http://127.0.0.1:8769/", "http://127.0.0.1:8769/outer.html", "http://127.0.0.1:8769/outer2.html"
+    ep = lambda steps: {"steps": steps, "via": None, "start": step("open", [""], h)["where"], "cost": 300, "t0": time.time()}
+    a = ep([step("open", [h], h), step("open", [h], h), step("open", [o], o)])
+    b = ep([step("open", [h], h), step("open", [o], o), step("open", [h], h), step("open", [o2], o2),
+            step("run", ["selftest-rec", "email=x"], o2)])
+    blk = routines.align(a["steps"], b["steps"])
+    assert blk is not None
+    body = routines.compact(routines.build(a["steps"], b, blk)["steps"], [])
+    assert all(s["cmd"] in routines.NAV_ONLY for s in body)
+    assert routines.learn(C(), b, [a]) is None
+
+
 def test_json_shape():
     from lighting.browser import shape
     s = shape({"items": [{"id": 1, "name": "a"}], "total": 2, "meta": {"q": "x"}})
@@ -509,12 +529,40 @@ def test_desktop_alias_and_routing_without_a_tab():
         commands.app = keep
 
 
+def test_quick_keys_wait_less():
+    from lighting import desktop
+    assert all(desktop.quick_key(k) for k in ("tab", "shift+tab", "End", "x", "pgdn", "backspace"))
+    assert not any(desktop.quick_key(k) for k in ("enter", "ctrl+a", "alt+f4", "f5", "win+r", "ctrl+shift+tab"))
+
+
 def test_repeated_failures_get_a_note():
     from lighting import commands
     c = commands.Context(type("F", (), {"events": []})(), "s1")
     outs = [commands.repeated(c, ["read", "w12"], "err: window w12 is gone (closed)") for _ in range(3)]
     assert "\n!" not in outs[0] and "\n!" not in outs[1] and "3 times in a row" in outs[2]
     assert "\n!" not in commands.repeated(c, ["read", "w12"], "err: other")
+
+
+def test_repeated_failures_are_braked():
+    from lighting import commands
+    from lighting import defaults as D
+    from lighting.common import Pending, Said
+    c = commands.Context(type("F", (), {"events": []})(), "s2")
+    outs = [commands.repeated(c, ["snap"], "err: this session has no tab yet") for _ in range(D.REPEAT_BRAKE_AT + 1)]
+    assert all(isinstance(o, str) for o in outs[:D.REPEAT_BRAKE_AT - 1])
+    first, second = outs[-2], outs[-1]
+    assert isinstance(first, Pending) and isinstance(second, Pending)
+    assert second.deadline - first.deadline > 0.5
+    assert first.poll(False) is None
+    try:
+        first.poll(True)
+    except Said as e:
+        assert e.text().startswith("err: this session has no tab yet") and "STOP" in e.text()
+    else:
+        raise AssertionError("the braked failure did not answer")
+    assert isinstance(commands.repeated(c, ["snap"], "err: other"), str)
+    hooks = [commands.repeated(c, ["suggest"], "err: broken", False) for _ in range(D.REPEAT_BRAKE_AT + 2)]
+    assert all(isinstance(o, str) for o in hooks)
 
 
 def test_running_reads_bytes():
@@ -737,10 +785,74 @@ def test_brain_boots_from_episodes():
     assert json.loads(D.BRAIN.read_text("utf-8"))["v"] == 1
 
 
+def test_embeds_tabs_filter_and_shot_threshold():
+    from PIL import Image
+    from lighting import browser, commands
+    assert browser.watch_url("https://www.youtube.com/embed/dQw4w9WgXcQ?start=42&rel=0") == \
+        "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s"
+    assert browser.watch_url("https://www.youtube-nocookie.com/embed/abcdefgh") == "https://www.youtube.com/watch?v=abcdefgh"
+    assert browser.watch_url("https://www.youtube.com/watch?v=abcdefgh") is None
+    c = commands.Context(type("F", (), {"events": []})())
+    keep = browser.call
+    browser.call = lambda ctx, cmd, args=None, timeout=0, want=None, tab=None: {
+        "out": "t1 L1 GitHub - github.com/QDHShamiro\nt2 a YouTube - youtube.com\nt3 Spotify - open.spotify.com"}
+    try:
+        assert browser.cmd_tabs(c, [], {"f": "youtube"}) == "t2 a YouTube - youtube.com"
+        assert browser.cmd_tabs(c, [], {"f": "zzz"}) == 'no tab matches "zzz"'
+    finally:
+        browser.call = keep
+    a = Image.new("RGB", (480, 270), "white")
+    b = a.copy()
+    b.paste((0, 0, 0), (0, 0, 20, 10))
+    assert browser.save_image(c, a, "k", True, 480).startswith("shot ")
+    assert "no new image" in browser.save_image(c, a.copy(), "k", True, 480)
+    assert browser.save_image(c, b, "k", True, 480).startswith("shot ")
+    assert "under --threshold 2" in browser.save_image(c, a, "k", False, 480, 2.0)
+    assert browser.threshold({"threshold": True}) == 2.0 and browser.threshold({"threshold": "5%"}) == 5.0
+
+
+def test_doctor():
+    import json
+    import time
+    from lighting import brain, doctor, procs
+    from lighting import defaults as D
+    py = lambda pid, ppid, cmd, age=5.0: {"pid": pid, "ppid": ppid, "exe": "pythonw.exe", "cmd": cmd, "age": age}
+    cl = lambda pid, args, age: {"pid": pid, "ppid": 1, "exe": "lighting.exe", "cmd": '"C:\\x\\lighting.exe" ' + args, "age": age}
+    ps = [py(10, 1, "pythonw.exe -X utf8 -m lighting daemon"), py(11, 10, "pythonw.exe -X utf8 -m lighting daemon"),
+          py(20, 1, "pythonw.exe -m lighting daemon"), py(21, 20, "pythonw.exe -m lighting daemon"),
+          py(30, 2, "python.exe host.py chrome-extension://x/", 500), py(31, 30, "python.exe host.py", 500),
+          py(40, 3, "python.exe host.py chrome-extension://y/", 500),
+          cl(50, "done --quiet", 300), cl(51, "mcp", 90000), cl(52, "open x", 20), cl(53, "doctor", 2), cl(54, "wait x", 4000)]
+    c = procs.classify(ps, 11, [31])
+    assert c["extra"] == [20] and c["orphans"] == [40] and c["hosts"] == 2
+    assert sorted(p for p, _, _ in c["hung"]) == [50, 54]
+    assert procs.classify(ps, 11, None)["orphans"] == []
+    assert procs.client_args('"C:\\a b\\lighting.exe" done --quiet') == ["done", "--quiet"]
+    assert doctor.newer("2.0.0", "1.10.3") and not doctor.newer("1.1.0", "1.1.0") and doctor.newer("v1.2", "1.1.9")
+    text = json.dumps({"mcpServers": {"lighting": {"command": "C:\\Users\\a\\.lighting\\bin\\lighting.exe"}}})
+    assert [x.replace("\\\\", "\\") for x in doctor.EXE_PATH.findall(text)] == ["C:\\Users\\a\\.lighting\\bin\\lighting.exe"]
+    rows = [(doctor.OK, "daemon", "fine", "", ()), (doctor.WARN, "procs", "stuck", "ends them", ("kill",)),
+            (doctor.FAIL, "browser", "not connected", "lighting setup brave", ())]
+    out = doctor.render(rows).splitlines()
+    assert out[2] == "warn procs   stuck -> lighting doctor --fix (ends them)"
+    assert out[3] == "FAIL browser not connected -> fix: lighting setup brave"
+    assert out[-1] == "1 problem, 1 warning, 1 ok | lighting doctor --fix repairs 1"
+    D.DAEMON_LOG.write_text("Traceback (most recent call last)\nOldError: x\n%s 1.1.0\nTraceback (most recent call last)\n"
+                            "  File \"a.py\"\nKeyError: 'tab'\n" % D.DAEMON_STARTED, "utf-8")
+    assert doctor.daemon_errors() == (1, "KeyError: 'tab'")
+    now = time.time()
+    stamp = lambda s: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - s))
+    D.LOG.write_text("\n".join(json.dumps({"t": stamp(s), "cmd": "click", "ok": s < 100}) for s in (30 * 86400, 9 * 86400, 50, 10)), "utf-8")
+    assert [r["cmd"] for r in brain.read_log(now - 14 * 86400)] == ["click"] * 3
+    s = brain.summary(7, now)
+    assert (s["runs"], s["failed"], s["prev_runs"]) == (2, 0, 1)
+    assert doctor.plural(2, "process") == "2 processes" and doctor.span(7300) == "2 h"
+
+
 def test_skill_and_mcp_budget():
     from lighting import mcp
     skill = (ROOT / "skills" / "lighting" / "SKILL.md").read_bytes()
-    assert len(skill) <= 3300, "SKILL.md grew to %d bytes (budget 3300)" % len(skill)
+    assert len(skill) <= 3100, "SKILL.md grew to %d bytes (budget 3100)" % len(skill)
     assert len(mcp.DESCRIPTION) <= 700, "MCP description grew to %d chars" % len(mcp.DESCRIPTION)
 
 
