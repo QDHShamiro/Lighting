@@ -13,7 +13,7 @@ run() {
   local name="$1"; shift
   say "== $name"
   local out
-  out=$(timeout 600 "$@" 2>&1)
+  out=$(perl -e "alarm shift; exec @ARGV" 600 "$@" 2>&1)
   local code=$?
   printf '%s\n' "$out" | tee -a "$LOG"
   say "-- exit $code"
@@ -70,5 +70,5 @@ run "snap" lighting snap
 run "selftest" lighting selftest
 run "shot screen" lighting shot screen
 cp "$HOME"/.lighting/out/*.jpg "$SHOTS/" 2> /dev/null
-run "mcp ping" bash -c 'printf "%s\n" "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}" "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"lighting\",\"arguments\":{\"cmd\":\"ping\"}}}" | timeout 20 lighting mcp'
+run "mcp ping" bash -c 'printf "%s\n" "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}" "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"lighting\",\"arguments\":{\"cmd\":\"ping\"}}}" | perl -e "alarm 20; exec @ARGV" lighting mcp'
 run "daemon log tail" tail -40 "$HOME/.lighting/daemon.log"
