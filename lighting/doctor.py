@@ -579,6 +579,18 @@ class Doctor:
 
     def focus(self):
         if not D.WIN:
+            acc = (self.info or {}).get("access") or {}
+            missing = [k for k, v in acc.items() if v is False]
+            if acc.get("error"):
+                self.add(FAIL, "focus", "desktop access does not load: %s" % acc["error"], "lighting setup")
+            elif missing and D.MAC:
+                self.add(FAIL, "focus", "macOS blocks %s for the Lighting daemon: no app control" % " and ".join(missing),
+                         "System Settings > Privacy & Security: allow your terminal app (and Brave/Chrome), then lighting stop")
+            elif missing:
+                self.add(WARN, "focus", "missing: %s" % ", ".join(missing),
+                         "sudo apt install gir1.2-atspi-2.0 xclip (Wayland: ydotool wl-clipboard)")
+            elif acc:
+                self.add(OK, "focus", "desktop access: " + ", ".join(sorted(acc)))
             return
         from lighting import win
         hwnd = u32.GetForegroundWindow()

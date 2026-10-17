@@ -414,6 +414,8 @@ def setup(manual=False, browser=None):
             print("Claude Code: LIGHTING_CLIENT=%s in ~/.claude/settings.json (MCP and hooks use it, restart Claude Code)" % D.CLIENT)
         if D.LOCAL_BIN.as_posix() not in os.environ.get("PATH", ""):
             print("note: %s is not on your PATH, add it to your shell profile" % D.LOCAL_BIN)
+        for line in access_lines():
+            print(line)
     connected = connected_lines()
     if not connected and not manual and browsers:
         how = {"windows": "Windows UI Automation", "macos": "macOS Accessibility", "linux": "AT-SPI"}[D.OS]
@@ -434,6 +436,27 @@ def setup(manual=False, browser=None):
     print("  3. Load unpacked -> %s" % D.EXT)
     print("extension id %s | then run: lighting status" % (ext_id or "?"))
     return 0
+
+
+def access_lines():
+    from lighting import boot
+    try:
+        res = boot.request({"argv": ["doctor-info"]}, 20)
+    except (OSError, SystemExit, TimeoutError, ValueError):
+        return []
+    acc = (res.get("info") or {}).get("access") or {}
+    missing = [k for k, v in acc.items() if v is False]
+    if not missing:
+        return ["desktop access: ok (%s)" % ", ".join(sorted(acc))] if acc else []
+    if D.MAC:
+        try:
+            boot.request({"argv": ["access-prompt"]}, 20)
+        except (OSError, SystemExit, TimeoutError, ValueError):
+            pass
+        return ["macOS asks for %s: allow it for your terminal app (and Brave/Chrome) in System Settings >"
+                " Privacy & Security, then run lighting stop" % " and ".join(missing)]
+    return ["missing for desktop apps: %s (sudo apt install gir1.2-atspi-2.0 xclip; Wayland: ydotool wl-clipboard)"
+            % ", ".join(missing)]
 
 
 def claude_env(path=None):

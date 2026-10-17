@@ -1,20 +1,22 @@
 {
   "name": "lighting",
   "version": "1.1.0",
-  "description": "Drive your real browser and the Windows desktop from Claude Code with compact text snapshots instead of screenshots, and replay learned tasks in one call.",
+  "description": "Drive your real browser and any app on Windows, macOS or Linux from Claude Code with compact text snapshots instead of screenshots, and replay learned tasks in one call.",
   "author": {
     "name": "QDHShamiro",
     "url": "https://github.com/QDHShamiro"
   },
   "homepage": "https://github.com/QDHShamiro/Lighting#readme",
   "repository": "https://github.com/QDHShamiro/Lighting",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": [
     "browser",
     "automation",
     "desktop",
     "windows",
-    "ui-automation",
+    "macos",
+    "linux",
+    "accessibility",
     "ocr",
     "tokens",
     "brave",

@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/routines-self--learning-1B3A66?style=flat-square&labelColor=0A1A30" alt="Self-learning routines">
   <img src="https://img.shields.io/badge/selftest-135%2F135-1B3A66?style=flat-square&labelColor=0A1A30" alt="135/135 selftest">
   <img src="https://img.shields.io/badge/platform-windows-1B3A66?style=flat-square&labelColor=0A1A30" alt="Windows">
-  <img src="https://img.shields.io/badge/license-MIT-1B3A66?style=flat-square&labelColor=0A1A30" alt="MIT license">
+  <img src="https://img.shields.io/badge/license-Apache--2.0-1B3A66?style=flat-square&labelColor=0A1A30" alt="Apache 2.0 license">
   <br>
   <img src="https://img.shields.io/badge/first%20look%20at%20a%20page-%E2%88%9297%25%20tokens-1E7BEF?style=flat-square&labelColor=0A1A30" alt="-97% tokens per page">
   <img src="https://img.shields.io/badge/click%20result-%E2%88%9298%25%20tokens-1E7BEF?style=flat-square&labelColor=0A1A30" alt="-98% tokens per click">
@@ -482,4 +482,6 @@ claude plugin validate .
 
 ## License
 
-MIT. Bundles [Defuddle](https://github.com/kepano/defuddle) (MIT, see `extension/defuddle.LICENSE.txt`).
+Apache License 2.0 from version 2.0.0 (see `LICENSE` and `NOTICE`; up to 1.1.0 it was MIT). The name and the logo are
+not covered by the license, see `TRADEMARKS.md`. Security reports and what Lighting may do: `SECURITY.md`.
+Bundles [Defuddle](https://github.com/kepano/defuddle) (MIT, see `extension/defuddle.LICENSE.txt`).

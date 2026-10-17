@@ -249,7 +249,8 @@ def when_idle(ctx, name, pos, flags):
     return Pending(poll, D.BUSY_WAIT_S, 0.15)
 
 
-QUIET_CMDS = {"done", "suggest", "ping", "status", "log", "version", "help", "config", "brain", "improve", "doctor-info"}
+QUIET_CMDS = {"done", "suggest", "ping", "status", "log", "version", "help", "config", "brain", "improve", "doctor-info",
+              "access-prompt"}
 
 
 def run(ctx, msg):
@@ -738,14 +739,27 @@ def cmd_doctor_info(ctx, pos, flags):
               "alive": bool(h.alive), "hostpid": h.info.get("hostpid"), "up": now - h.connected} for h in list(d.hosts)]
     return {"out": "", "code": 0, "info": {"pid": os.getpid(), "version": D.version(), "root": str(D.ROOT),
                                            "up": now - d.started, "hotkey": bool(d.hotkey), "trace": TRACE,
-                                           "sessions": len(d.ctxs), "waits": len(d.waits), "hosts": hosts}}
+                                           "sessions": len(d.ctxs), "waits": len(d.waits), "hosts": hosts,
+                                           "access": access()}}
+
+
+def access(prompt=False):
+    try:
+        from lighting import win
+        return win.access(prompt) if hasattr(win, "access") else {}
+    except Exception as e:
+        return {"error": str(e)[:120]}
+
+
+def cmd_access_prompt(ctx, pos, flags):
+    return {"out": ", ".join("%s %s" % (k, "ok" if v else "missing") for k, v in access(True).items()), "code": 0}
 
 
 SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status, "config": cmd_config,
           "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload,
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
           "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest, "brain": cmd_brain,
-          "improve": cmd_improve, "doctor-info": cmd_doctor_info}
+          "improve": cmd_improve, "doctor-info": cmd_doctor_info, "access-prompt": cmd_access_prompt}
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
          "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys",
          "listen", "unread", "net", "tools"}

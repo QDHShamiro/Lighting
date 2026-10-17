@@ -683,3 +683,20 @@ def listen_input(q, stop, ready, injected=False):
     while not stop.is_set():
         Quartz.CFRunLoopRunInMode(Quartz.kCFRunLoopDefaultMode, 0.25, False)
     Quartz.CGEventTapEnable(tap, False)
+
+
+def access(prompt=False):
+    if prompt:
+        try:
+            AS.AXIsProcessTrustedWithOptions({"AXTrustedCheckOptionPrompt": True})
+        except Exception:
+            pass
+        try:
+            Quartz.CGRequestScreenCaptureAccess()
+        except Exception:
+            pass
+    try:
+        screen = bool(Quartz.CGPreflightScreenCaptureAccess())
+    except Exception:
+        screen = True
+    return {"accessibility": trusted(), "screen recording": screen}

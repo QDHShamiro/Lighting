@@ -725,3 +725,17 @@ def listen_input(q, stop, ready, injected=False):
 
 def terminal_app():
     return next((t for t in ("gnome-terminal", "ptyxis", "konsole", "x-terminal-emulator", "xterm") if shutil.which(t)), "xterm")
+
+
+def access(prompt=False):
+    out = {"display": bool(display()) or WAYLAND}
+    try:
+        from lighting import uia_linux
+        uia_linux.A()
+        out["at-spi"] = True
+    except Exception:
+        out["at-spi"] = False
+    if WAYLAND:
+        out["ydotool"] = bool(shutil.which("ydotool"))
+    out["clipboard tool"] = clip_tool(True) is not None
+    return out
