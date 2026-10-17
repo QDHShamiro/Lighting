@@ -50,7 +50,7 @@ def start(ctx, rest, flags):
     if web_line:
         parts.append("browser tab " + web_line)
     if desk:
-        parts.append("Windows apps")
+        parts.append("desktop apps")
     return 'recording "%s" (%s) -> do the steps now, then: lighting record stop [name=value ...]' % (name, " + ".join(parts))
 
 

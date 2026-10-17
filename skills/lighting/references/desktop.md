@@ -18,7 +18,7 @@
 - Browser windows hide the web page part (use the web commands for the page); `--web` includes it.
 - Apps without accessible controls (games, canvas UIs): `lighting read w3` runs Windows OCR and prints `o4 "Play" @960,420`. `--lang de` or `--lang en` picks the OCR language (default English, switch with `lighting config ocr_lang de`).
 - `lighting shot w3` saves a small JPEG of just that window. Read it only if you really need pixels.
-- `lighting shot screen --seconds 10` (or `shot w3 --seconds 10`) films the screen or a window: an MP4 (H.264, 15 fps, 1280 px wide, up to 60 s) to send to the user, for example to a phone.
+- `lighting shot screen --seconds 10` (or `shot w3 --seconds 10`) films the screen or a window: an MP4 (H.264, 15 fps, 1280 px wide, up to 60 s) to send to the user, for example to a phone. A window is filmed by itself, also while other windows cover it (`--screen-area` films its screen area instead).
 
 ## Act
 - `click d5` uses the control's own action (Invoke, Toggle, Select, Expand) in the background. The user's mouse and focus stay where they are.

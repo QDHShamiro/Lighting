@@ -1,5 +1,6 @@
 import os
 import re
+import threading
 import time
 
 from lighting import defaults as D
@@ -952,14 +953,33 @@ def cmd_video(ctx, pos, flags):
     exe = audio.ffmpeg()
     if not exe:
         raise Fail("a video needs ffmpeg", D.FFMPEG_HINT)
-    _, (x0, y0, x1, y1) = region(ctx, pos or ["screen"])
-    size = "%dx%d" % ((x1 - x0) // 2 * 2, (y1 - y0) // 2 * 2)
+    hwnd, (x0, y0, x1, y1) = region(ctx, pos or ["screen"])
+    width = int(flags.get("width") or D.VIDEO_WIDTH)
     out = outfile("video", "mp4")
-    proc = subprocess.Popen(
-        [exe, "-y", "-loglevel", "error"] + win.video_input(x0, y0, size, D.VIDEO_FPS) + ["-t", str(secs),
-         "-vf", "scale='min(%d,iw)':-2" % int(flags.get("width") or D.VIDEO_WIDTH), "-c:v", "libx264",
-         "-preset", "veryfast", "-crf", str(D.VIDEO_CRF), "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(out)],
-        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, creationflags=audio.HIDDEN)
+    encode = ["-c:v", "libx264", "-preset", "veryfast", "-crf", str(D.VIDEO_CRF), "-pix_fmt", "yuv420p", "-movflags",
+              "+faststart", str(out)]
+    first = win.print_window(hwnd) if hwnd and not flags.get("screen-area") else None
+    how = ""
+    if first is not None:
+        k = min(1.0, width / float(first.width))
+        size = (max(2, int(first.width * k) // 2 * 2), max(2, int(first.height * k) // 2 * 2))
+        proc = subprocess.Popen(
+            [exe, "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", "%dx%d" % size, "-r",
+             str(D.VIDEO_FPS), "-i", "-", "-t", str(secs)] + encode,
+            stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, creationflags=audio.HIDDEN)
+        threading.Thread(target=feed_frames, args=(proc, hwnd, first, size, secs), daemon=True).start()
+        size = "%dx%d" % size
+        how = ", window only, also when covered"
+    else:
+        size = "%dx%d" % ((x1 - x0) // 2 * 2, (y1 - y0) // 2 * 2)
+        inp = win.video_input(x0, y0, size, D.VIDEO_FPS)
+        pre = ""
+        if "-vf" in inp:
+            i = inp.index("-vf")
+            pre, inp = inp[i + 1] + ",", inp[:i] + inp[i + 2:]
+        proc = subprocess.Popen(
+            [exe, "-y", "-loglevel", "error"] + inp + ["-t", str(secs), "-vf", pre + "scale='min(%d,iw)':-2" % width] + encode,
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, creationflags=audio.HIDDEN)
 
     def poll(last):
         if proc.poll() is None:
@@ -972,9 +992,33 @@ def cmd_video(ctx, pos, flags):
             raise Fail("video failed: %s" % (err.splitlines() or ["ffmpeg exit %d" % proc.returncode])[-1][:200])
         n = out.stat().st_size
         mb = "%.1f MB" % (n / 1e6) if n >= 1e6 else "%d KB" % max(1, round(n / 1e3))
-        return "video %s (%d s, %s, %s)" % (str(out).replace("\\", "/"), secs, size, mb)
+        return "video %s (%d s, %s, %s%s)" % (str(out).replace("\\", "/"), secs, size, mb, how)
 
     return Pending(poll, secs + 30, 0.5)
+
+
+def feed_frames(proc, hwnd, first, size, secs):
+    from PIL import Image
+    step = 1.0 / D.VIDEO_FPS
+    last, t0 = first, time.time()
+    try:
+        for i in range(int(secs * D.VIDEO_FPS)):
+            due = t0 + i * step
+            wait = due - time.time()
+            if wait > 0:
+                time.sleep(wait)
+            if time.time() - due < step:
+                img = win.print_window(hwnd) if win.alive(hwnd) else None
+                last = img if img is not None else last
+            frame = last if last.size == size else last.resize(size, Image.BILINEAR)
+            proc.stdin.write(frame.convert("RGB").tobytes())
+    except (OSError, ValueError):
+        pass
+    finally:
+        try:
+            proc.stdin.close()
+        except OSError:
+            pass
 
 
 def cmd_clip(ctx, pos, flags):

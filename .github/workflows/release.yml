@@ -5,40 +5,92 @@ on:
     tags: ["v*"]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
+  clients:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            name: lighting.exe
+          - os: macos-latest
+            name: lighting-macos
+          - os: ubuntu-24.04
+            name: lighting-linux-x64
+          - os: ubuntu-24.04-arm
+            name: lighting-linux-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        working-directory: client
+        shell: bash
+        run: cargo build --release --locked && cp target/release/lighting.exe ../${{ matrix.name }}
+      - name: Build (macOS universal)
+        if: runner.os == 'macOS'
+        working-directory: client
+        run: |
+          rustup target add x86_64-apple-darwin aarch64-apple-darwin
+          cargo build --release --locked --target aarch64-apple-darwin
+          cargo build --release --locked --target x86_64-apple-darwin
+          lipo -create -output ../${{ matrix.name }} target/aarch64-apple-darwin/release/lighting target/x86_64-apple-darwin/release/lighting
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        working-directory: client
+        run: cargo build --release --locked && cp target/release/lighting ../${{ matrix.name }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}
+
   release:
-    runs-on: windows-latest
+    needs: clients
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v4
       - name: Tag matches the plugin version
-        shell: bash
         run: |
-          v=$(python -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+          v=$(python3 -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
           test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME but plugin.json says $v"; exit 1; }
-      - name: Build the client from this tag
-        working-directory: client
-        run: cargo build --release --locked
-      - name: Assets and checksums
-        shell: bash
+      - uses: actions/download-artifact@v4
+        with:
+          path: built
+          merge-multiple: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Assets
         run: |
           mkdir dist
-          cp client/target/release/lighting.exe dist/lighting.exe
+          chmod +x built/lighting-*
+          cp built/* dist/
+          cp built/lighting.exe built/lighting-macos bin/
+          python3 mcpb/build.py "$PWD/dist/lighting.mcpb"
           git archive --format=zip -o "dist/lighting-$GITHUB_REF_NAME.zip" HEAD
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*
+      - name: Checksums
+        run: |
           cd dist
-          sha256sum lighting.exe "lighting-$GITHUB_REF_NAME.zip" > SHA256SUMS.txt
-          echo "$(sha256sum ../bin/lighting.exe | cut -d' ' -f1)  bin/lighting.exe (the file in the repo at this tag)" >> SHA256SUMS.txt
+          sha256sum * > SHA256SUMS.txt
+          for f in lighting.exe lighting-macos lighting-linux-x64 lighting-linux-arm64; do
+            git -C .. show "HEAD:bin/$f" > "/tmp/$f" 2> /dev/null && echo "$(sha256sum "/tmp/$f" | cut -d' ' -f1)  bin/$f (the file in the repo at this tag)" >> SHA256SUMS.txt
+          done
           cat SHA256SUMS.txt
       - name: Release notes from CHANGELOG.md
-        shell: bash
         run: |
           awk -v v="${GITHUB_REF_NAME#v}" 'index($0, "## [" v "]") == 1 {on=1; next} on && index($0, "## [") == 1 {exit} on' CHANGELOG.md > notes.md
           printf '\n### Checksums (SHA-256)\n```\n' >> notes.md
           cat dist/SHA256SUMS.txt >> notes.md
-          printf '```\nVerify on Windows: `certutil -hashfile bin\\lighting.exe SHA256`\n' >> notes.md
+          printf '```\nEvery file here has a GitHub build attestation: `gh attestation verify <file> -R QDHShamiro/Lighting`\n' >> notes.md
       - name: Publish
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" dist/* --title "Lighting $GITHUB_REF_NAME" --notes-file notes.md

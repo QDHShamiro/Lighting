@@ -13,3 +13,5 @@ target/
 graphify-out/
 .claude/
 bin/*.old
+mcpb/stage/
+mcpb/*.mcpb

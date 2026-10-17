@@ -37,6 +37,8 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
 - `bench --real --runs 3` reports the median of several runs; plain `bench` also measures a call through MCP.
 
 ### Changed
+- `shot w3 --seconds 10` films the window itself, also while other windows cover it (frames from the window, not
+  the screen); `--screen-area` films the screen area as before. Works the same on Windows, macOS and Linux (X11).
 - `done` from the Stop hook paints the group green at once and closes the session's tabs and apps 20 s later;
   any command of that session in between keeps them. A background loop no longer loses its tab when a reply ends.
 - When the user is typing or moving the mouse, desktop actions wait up to 10 s for a pause (without blocking other

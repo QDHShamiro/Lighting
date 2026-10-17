@@ -1,0 +1,41 @@
+name: registry
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to list in the MCP Registry, e.g. v2.0.0
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - name: Fill server.json from the release
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          url="https://github.com/QDHShamiro/Lighting/releases/download/$TAG/lighting.mcpb"
+          curl -fsSL -o lighting.mcpb "$url"
+          sha=$(sha256sum lighting.mcpb | cut -d' ' -f1)
+          python3 - "$TAG" "$url" "$sha" <<'EOF'
+          import json, sys
+          tag, url, sha = sys.argv[1:]
+          data = json.load(open("server.json"))
+          data["version"] = tag.lstrip("v")
+          data["packages"][0].update(identifier=url, fileSha256=sha)
+          json.dump(data, open("server.json", "w"), indent=2)
+          print(json.dumps(data, indent=2))
+          EOF
+      - name: Publish
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
