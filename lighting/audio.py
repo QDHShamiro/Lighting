@@ -15,7 +15,7 @@ from lighting.common import Fail, Pending, cap, is_url
 
 GROQ = ("GROQ_API_KEY", "https://api.groq.com/openai/v1/audio/transcriptions", "whisper-large-v3-turbo", "groq")
 OPENAI = ("OPENAI_API_KEY", "https://api.openai.com/v1/audio/transcriptions", "whisper-1", "openai")
-HIDDEN = 0x08000000
+HIDDEN = 0x08000000 if sys.platform == "win32" else 0
 WATCH_ENV = Path.home() / ".config" / "watch" / ".env"
 TAG = re.compile(r"<[^>]+>")
 NOISE = re.compile(r"^\W*(?:(?:intro |outro |background |upbeat |sad |soft )?(?:music|musik|applause|applaus|laughter|"

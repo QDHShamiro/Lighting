@@ -7,12 +7,17 @@ from lighting import pointer
 from lighting import win
 from lighting.common import Busy, Fail, best_only, cap, note, ref_kind, terms, tiers
 
-BROWSER_EXES = {"brave.exe", "chrome.exe", "msedge.exe", "opera.exe", "vivaldi.exe"}
+BROWSER_EXES = {"brave.exe", "chrome.exe", "msedge.exe", "opera.exe", "vivaldi.exe",
+                "brave browser", "google chrome", "microsoft edge", "chromium", "opera", "vivaldi",
+                "brave", "chrome", "msedge", "chromium-browser", "google-chrome", "brave-browser"}
 CHROMIUM_CLASS = "Chrome_WidgetWin_1"
-TERMINALS = {"CASCADIA_HOSTING_WINDOW_CLASS", "ConsoleWindowClass", "mintty", "VirtualConsoleClass", "PuTTY"}
-SHELL_CLASSES = {"Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd"}
+TERMINALS = {"CASCADIA_HOSTING_WINDOW_CLASS", "ConsoleWindowClass", "mintty", "VirtualConsoleClass", "PuTTY", "terminal"}
+SHELL_CLASSES = {"Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "desktop"}
 AGENT_EXES = {"windowsterminal.exe", "openconsole.exe", "conhost.exe", "cmd.exe", "powershell.exe", "pwsh.exe",
-              "mintty.exe", "wezterm-gui.exe", "alacritty.exe", "code.exe", "cursor.exe", "windsurf.exe", "claude.exe"}
+              "mintty.exe", "wezterm-gui.exe", "alacritty.exe", "code.exe", "cursor.exe", "windsurf.exe", "claude.exe",
+              "terminal", "iterm2", "ghostty", "wezterm-gui", "alacritty", "kitty", "warp", "code", "cursor", "windsurf",
+              "claude", "gnome-terminal-server", "konsole", "xterm", "tilix", "terminator", "ptyxis",
+              "xfce4-terminal", "foot"}
 
 
 class AppState:
@@ -175,20 +180,18 @@ def snapshot(ctx, hwnd, flags):
                    "start the terminal as administrator, or use lighting read / shot")
     skip = None
     if is_browser(hwnd) and not flags.get("web"):
-        root = uia.api()[0].ElementFromHandle(hwnd)
-        skip = uia.document_rect(root)
+        skip = uia.page_rect(hwnd)
     root, items = uia.collect(hwnd, with_text=bool(flags.get("text")), skip_rect=skip)
     if len(items) < 3 and win.class_of(hwnd) == CHROMIUM_CLASS:
         time.sleep(0.4)
         root, items = uia.collect(hwnd, with_text=bool(flags.get("text")), skip_rect=skip)
     from lighting import keys
-    U = uia.api()[1]
     filt = terms(flags.get("f"))
     lines, refs, row, ft, pairs = [], {}, None, {}, []
     for el in items:
         role, name, extra = uia.describe(el)
         name, extra = BIDI.sub("", name), BIDI.sub("", extra)
-        ak = uia.cached(el, U.UIA_AcceleratorKeyPropertyId) or uia.cached(el, U.UIA_AccessKeyPropertyId)
+        ak = uia.shortcut(el)
         hinted = keys.from_name(name)
         if hinted:
             pairs.append(hinted)
@@ -291,7 +294,7 @@ def cmd_focus(ctx, pos, flags):
         raise Fail("focus needs a window", "lighting focus w2")
     hwnd = target(ctx, pos)
     ok = pointer.front(hwnd)
-    return ("ok " if ok else "err: Windows refused to switch, ") + header(ctx, hwnd)
+    return ("ok " if ok else "err: the system refused to switch, ") + header(ctx, hwnd)
 
 
 _apps = {"t": 0.0, "list": []}
@@ -309,17 +312,7 @@ def start_apps(fresh=False):
         except (OSError, ValueError):
             pass
     if fresh or not _apps["list"]:
-        import subprocess
-        script = ("[Console]::OutputEncoding=[Text.Encoding]::UTF8; "
-                  "Get-StartApps | Select-Object Name,AppID | ConvertTo-Json -Compress")
-        res = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-                             capture_output=True, timeout=30, creationflags=0x08000000)
-        try:
-            data = json.loads(res.stdout.decode("utf-8", "replace") or "[]")
-        except ValueError:
-            data = []
-        data = data if isinstance(data, list) else [data]
-        _apps["list"] = [(a.get("Name") or "", a.get("AppID") or "") for a in data if a.get("AppID")]
+        _apps["list"] = win.app_list()
         _apps["t"] = time.time()
         try:
             cache.write_text(json.dumps(_apps["list"]), "utf-8")
@@ -347,6 +340,8 @@ def find_app(name):
 def run_name(name):
     if not re.fullmatch(r"[\w.-]+", name):
         return None
+    if not D.WIN:
+        return win.run_name(name)
     exe = name if name.lower().endswith(".exe") else name + ".exe"
     root = os.environ.get("SystemRoot") or r"C:\Windows"
     if any(os.path.isfile(os.path.join(d, exe)) for d in (os.path.join(root, "System32"), root)):
@@ -407,23 +402,23 @@ def cmd_launch(ctx, pos, flags):
     if os.path.exists(path):
         if path.lower().endswith(RUNNABLE) and not flags.get("yes"):
             raise Fail("%s runs a program" % os.path.basename(path), "lighting launch \"%s\" --yes (only if the user asked for it)" % path)
-        os.startfile(path)
+        win.open_target(path)
         what = hint = os.path.splitext(os.path.basename(path))[0]
     elif uri:
         scheme = spec.split(":", 1)[0].lower()
         if scheme in D.RISKY_SCHEMES and not flags.get("yes"):
             raise Fail("%s: links can run programs or open remote files" % scheme,
                        'only if the user asked for it: lighting launch "%s" --yes' % spec[:60])
-        os.startfile(spec)
+        win.open_target(spec)
         what, hint = spec, spec.split(":", 1)[0]
     else:
         app = find_app(spec)
         exe = None if app and app[0].lower() == spec.lower() else run_name(spec)
         if exe:
-            os.startfile(exe)
+            win.open_target(exe)
             what = hint = spec
         elif app:
-            os.startfile("shell:AppsFolder\\" + app[1])
+            win.start_app(app)
             what = hint = app[0]
         else:
             raise Fail('no app named "%s" in the start menu' % spec, "lighting launch <name as in the start menu>, a URI or a path")
@@ -577,11 +572,7 @@ def element(ctx, ref):
 
 def center(el):
     from lighting import uia
-    try:
-        r = el.CurrentBoundingRectangle
-        l, t, rr, b = r.left, r.top, r.right, r.bottom
-    except Exception:
-        l, t, rr, b = uia.rect_of(el)
+    l, t, rr, b = uia.live_rect(el)
     if rr - l < 1:
         raise Fail("element has no position on screen", "lighting snap")
     return (l + rr) // 2, (t + b) // 2
@@ -685,11 +676,8 @@ FIELD_ROLES = ("edit", "combobox", "document", "spinner")
 def focused_in(hwnd):
     from lighting import uia
     for attempt in (1, 2):
-        try:
-            el = uia.api()[0].GetFocusedElement()
-        except Exception:
-            el = None
-        if el is not None and (el.CurrentProcessId == win.pid_of(hwnd) or win.foreground() == hwnd):
+        el = uia.focused()
+        if el is not None and (uia.pid_of(el) == win.pid_of(hwnd) or win.foreground() == hwnd):
             return el
         if attempt == 1:
             if not pointer.wait_idle():
@@ -755,14 +743,11 @@ def put_text(ctx, hwnd, el, label, text, flags):
     terminal = win.class_of(hwnd) in TERMINALS
 
     def paste():
-        try:
-            el.SetFocus()
-        except Exception:
-            pass
+        uia.focus(el)
         if not flags.get("append") and not terminal:
-            win.press("ctrl+a")
+            win.press(win.SELECT_ALL)
         win.clip_set(text)
-        win.press("ctrl+v")
+        win.press(getattr(win, "PASTE_TERMINAL", win.PASTE) if terminal else win.PASTE)
         time.sleep(0.08)
         for k in keys:
             settle_ui(hwnd, 0.35, 1.0)
@@ -866,19 +851,18 @@ def region(ctx, pos):
     if pos and pos[0] == "screen":
         return None, win.virtual_screen()
     hwnd = target(ctx, pos)
-    if win.user32.IsIconic(hwnd):
+    if win.minimized(hwnd):
         raise Fail("%s is minimized, nothing to capture" % wref(ctx, hwnd), "lighting focus %s" % wref(ctx, hwnd))
     return hwnd, win.rect(hwnd)
 
 
 def grab(box, hwnd=None):
-    from PIL import ImageGrab
     if hwnd and hwnd != win.foreground():
         img = win.print_window(hwnd)
         if img is not None:
             return img
     pointer.hide()
-    return ImageGrab.grab(bbox=box, all_screens=True)
+    return win.screen_grab(box)
 
 
 def cmd_read(ctx, pos, flags):
@@ -914,12 +898,10 @@ def cmd_shot(ctx, pos, flags):
 
 def app_text(hwnd):
     from lighting import uia
-    U = uia.api()[1]
     parts = []
     for el in uia.collect(hwnd, with_text=True)[1]:
-        for pid in (U.UIA_NamePropertyId, U.UIA_ValueValuePropertyId):
-            v = uia.cached(el, pid)
-            if isinstance(v, str) and v.strip():
+        for v in uia.texts(el):
+            if v.strip():
                 parts.append(" ".join(v.split()))
     return " ".join(parts)
 
@@ -943,7 +925,7 @@ def cmd_wait(ctx, pos, flags):
                 return True
         except Exception:
             pass
-        if not (gone or time.time() - last[0] >= D.APP_WAIT_OCR_S) or win.user32.IsIconic(hwnd):
+        if not (gone or time.time() - last[0] >= D.APP_WAIT_OCR_S) or win.minimized(hwnd):
             return None
         last[0] = time.time()
         return want in " ".join(t for t, *_ in ocr.recognize(grab(win.rect(hwnd), hwnd), ctx.cfg.get("ocr_lang"))).lower()
@@ -969,13 +951,12 @@ def cmd_video(ctx, pos, flags):
         raise Fail("a video films the screen or a window", "lighting shot screen --seconds %d  (a browser: lighting windows -f brave, then shot w<N> --seconds %d)" % (secs, secs))
     exe = audio.ffmpeg()
     if not exe:
-        raise Fail("a video needs ffmpeg", "winget install Gyan.FFmpeg")
+        raise Fail("a video needs ffmpeg", D.FFMPEG_HINT)
     _, (x0, y0, x1, y1) = region(ctx, pos or ["screen"])
     size = "%dx%d" % ((x1 - x0) // 2 * 2, (y1 - y0) // 2 * 2)
     out = outfile("video", "mp4")
     proc = subprocess.Popen(
-        [exe, "-y", "-loglevel", "error", "-f", "gdigrab", "-framerate", str(D.VIDEO_FPS), "-offset_x", str(x0),
-         "-offset_y", str(y0), "-video_size", size, "-i", "desktop", "-t", str(secs),
+        [exe, "-y", "-loglevel", "error"] + win.video_input(x0, y0, size, D.VIDEO_FPS) + ["-t", str(secs),
          "-vf", "scale='min(%d,iw)':-2" % int(flags.get("width") or D.VIDEO_WIDTH), "-c:v", "libx264",
          "-preset", "veryfast", "-crf", str(D.VIDEO_CRF), "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(out)],
         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, creationflags=audio.HIDDEN)

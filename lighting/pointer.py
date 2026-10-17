@@ -78,7 +78,7 @@ def _loop():
 
 
 def show(x, y):
-    if not D.config().get("pointer", True):
+    if not D.WIN or not D.config().get("pointer", True):
         return
     if not _started:
         _started.append(True)
@@ -87,6 +87,8 @@ def show(x, y):
 
 
 def recording(on):
+    if not D.WIN:
+        return
     if not _started:
         _started.append(True)
         threading.Thread(target=_loop, daemon=True).start()
@@ -111,17 +113,12 @@ def wait_idle():
 def front(hwnd):
     if win.set_foreground(hwnd):
         return True
-    try:
-        from lighting import uia
-        uia.api()[0].ElementFromHandle(hwnd).SetFocus()
+    from lighting import uia
+    if uia.focus_window(hwnd):
         time.sleep(0.06)
         if win.foreground() == hwnd:
             return True
-    except Exception:
-        pass
-    win.user32.ShowWindow(hwnd, 6)
-    time.sleep(0.05)
-    win.user32.ShowWindow(hwnd, 9)
+    win.restore_cycle(hwnd)
     time.sleep(0.12)
     return win.foreground() == hwnd or win.set_foreground(hwnd)
 
@@ -169,7 +166,7 @@ def with_focus(hwnd, fn, stay=False):
         raise Busy(BUSY, "retry in a moment")
     prev = win.foreground()
     if not front(hwnd):
-        raise Fail("Windows refused to bring the window to the front, keys were not sent",
+        raise Fail("the system refused to bring the window to the front, keys were not sent",
                    "click the window once, or use click/type on d-refs (background)")
     try:
         return fn()

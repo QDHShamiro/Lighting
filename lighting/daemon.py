@@ -1,7 +1,6 @@
 import collections
 import ctypes
 import json
-import ctypes.wintypes as W
 import os
 import queue
 import sys
@@ -299,6 +298,14 @@ class Daemon:
             return {"out": "err: %s: %s" % (type(e).__name__, str(e)[:300]), "code": 1}
 
     def hotkey_loop(self):
+        if not D.WIN:
+            try:
+                from lighting import win
+                win.hotkey_loop(self)
+            except Exception:
+                pass
+            return
+        import ctypes.wintypes as W
         user32 = ctypes.windll.user32
         if not user32.RegisterHotKey(None, 1, D.HOTKEY_MODS | 0x4000, D.HOTKEY_VK):
             return
@@ -310,9 +317,8 @@ class Daemon:
 
     def serve(self):
         D.HOME.mkdir(parents=True, exist_ok=True)
-        try:
-            listener = Listener(D.PIPE, family="AF_PIPE")
-        except OSError:
+        listener = listen()
+        if listener is None:
             return
         ipc.token()
         D.PIDFILE.write_text(str(os.getpid()), "utf-8")
@@ -337,6 +343,31 @@ class Daemon:
             threading.Thread(target=self.handle, args=(conn,), daemon=True).start()
 
 
+def listen():
+    if D.WIN:
+        try:
+            return Listener(D.PIPE, family="AF_PIPE")
+        except OSError:
+            return None
+    try:
+        ipc.connect().close()
+        return None
+    except OSError:
+        pass
+    try:
+        os.unlink(D.PIPE)
+    except OSError:
+        pass
+    os.chmod(D.HOME, 0o700)
+    old = os.umask(0o177)
+    try:
+        return Listener(D.PIPE, family="AF_UNIX")
+    except OSError:
+        return None
+    finally:
+        os.umask(old)
+
+
 def warm_apps():
     try:
         from lighting import desktop
@@ -357,12 +388,13 @@ def cleanup_out():
 
 
 def main():
-    try:
-        ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
-    except (AttributeError, OSError):
-        pass
-    try:
-        ctypes.windll.winmm.timeBeginPeriod(1)
-    except (AttributeError, OSError):
-        pass
+    if D.WIN:
+        try:
+            ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
+        except (AttributeError, OSError):
+            pass
+        try:
+            ctypes.windll.winmm.timeBeginPeriod(1)
+        except (AttributeError, OSError):
+            pass
     Daemon().serve()

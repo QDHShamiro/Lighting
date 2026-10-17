@@ -36,7 +36,11 @@ def start(ctx, rest, flags):
             web_line = None
     desk = None
     if not flags.get("web"):
-        from lighting.deskrec import DeskRecorder
+        from lighting import defaults as D
+        if D.WIN:
+            from lighting.deskrec import DeskRecorder
+        else:
+            from lighting.win import DeskRecorder
         desk = DeskRecorder(minutes=int(flags.get("max") or 15), injected=bool(flags.get("injected"))).start()
     if web_line is None and desk is None:
         raise Fail("nothing to record", "open a page first (lighting open <url>) or leave out --web")

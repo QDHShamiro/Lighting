@@ -65,8 +65,11 @@ def encode_fast(res):
     return ("%d\x00%s\x00%s" % (res.get("code", 0), res.get("image") or "", res.get("out", ""))).encode("utf-8")
 
 
+FAMILY = "AF_PIPE" if D.WIN else "AF_UNIX"
+
+
 def connect():
-    return Client(D.PIPE, family="AF_PIPE")
+    return Client(D.PIPE, family=FAMILY)
 
 
 def request(payload, timeout=D.CLIENT_TIMEOUT):

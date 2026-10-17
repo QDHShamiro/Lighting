@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/lighting.exe\" done --quiet",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" done --quiet",
             "timeout": 15,
             "async": true
           }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/lighting.exe\" suggest",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" suggest",
             "timeout": 5
           }
         ]

@@ -607,7 +607,7 @@ def mcp_probe(box, n=20):
     import statistics
     try:
         p = subprocess.Popen([str(D.ROOT / "bin" / "lighting.exe"), "mcp"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                             stderr=subprocess.DEVNULL, creationflags=0x08000000)
+                             stderr=subprocess.DEVNULL, creationflags=D.NO_WINDOW)
 
         def ask(i, method, params):
             p.stdin.write((json.dumps({"jsonrpc": "2.0", "id": i, "method": method, "params": params}) + "\n").encode("utf-8"))

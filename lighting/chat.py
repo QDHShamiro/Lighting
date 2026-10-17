@@ -15,7 +15,8 @@ TIME_RE = re.compile(r"\b(\d{1,2}:\d{2})(?:\s*[ap]\.?m\.?)?\b", re.I)
 DAY_RE = re.compile(r"\d{4}|heute|gestern|today|yesterday", re.I)
 LINK_RE = re.compile(r"https?://|www\.|discord\.gg/|\b[\w-]+\.(com|de|net|org|gg|io|me|ly|to)/", re.I)
 TREEITEM = 50024
-CHAT_EXES = ("discord.exe", "slack.exe", "whatsapp.exe", "ms-teams.exe", "telegram.exe", "signal.exe")
+CHAT_EXES = ("discord.exe", "slack.exe", "whatsapp.exe", "ms-teams.exe", "telegram.exe", "signal.exe", "discord", "slack",
+             "whatsapp", "microsoft teams", "teams", "telegram", "telegram desktop", "signal")
 UNREAD_DM = re.compile(r"^(.*?)[\s,]*\b(\d+)\s+(?:ungelesene nachricht(?:en)?|unread messages?)\b", re.I)
 UNREAD_AT = re.compile(r"^(\d+)\s+(?:erwähnung(?:en)?|mentions?)\W*\s*(.+)$", re.I)
 UNREAD_ANY = re.compile(r"^(?:ungelesene nachrichten|unread messages?),\s*(.+)$", re.I)
@@ -23,32 +24,19 @@ STATUS = re.compile(r",\s*(?:sprachanruf aktiv|bildschirmübertragung aktiv|voic
                     r"live|streamt).*$", re.I)
 MEMO = D.HOME / "chat.json"
 _chats = {}
-_conds = {}
-
-
-def api():
-    from lighting import uia
-    return uia.api()
-
-
-def cond(ctype):
-    if ctype not in _conds:
-        u, U = api()
-        _conds[ctype] = u.CreateTrueCondition() if ctype is None else u.CreatePropertyCondition(U.UIA_ControlTypePropertyId, ctype)
-    return _conds[ctype]
-
-
 def props(el):
     from lighting import uia
-    U = api()[1]
-    return (uia.cached(el, U.UIA_ControlTypePropertyId), " ".join((uia.cached(el, U.UIA_NamePropertyId) or "").split()),
-            uia.cached(el, U.UIA_AutomationIdPropertyId) or "")
+    return uia.props(el)
 
 
 def find_all(el, scope, ctype):
     from lighting import uia
-    arr = el.FindAllBuildCache(scope, cond(ctype), uia._state["cache"])
-    return [arr.GetElement(i) for i in range(arr.Length)]
+    return uia.find_all(el, scope, ctype)
+
+
+def root_of(hwnd):
+    from lighting import uia
+    return uia.root_of(hwnd)
 
 
 def area(el):
@@ -95,7 +83,7 @@ def resolve(ctx, spec):
 
 
 def message_list(hwnd):
-    root = api()[0].ElementFromHandle(hwnd)
+    root = root_of(hwnd)
     lists = find_all(root, 4, LIST)
     if not lists:
         raise Fail("no message list in %s" % win.text_of(hwnd)[:50],
@@ -309,7 +297,7 @@ def chat_window(ctx, spec):
 def cmd_unread(ctx, pos, flags):
     from lighting import desktop
     hwnd = chat_window(ctx, pos[0] if pos else None)
-    root = api()[0].ElementFromHandle(hwnd)
+    root = root_of(hwnd)
     names = [props(el)[1] for el in find_all(root, 4, TREEITEM) + find_all(root, 4, ITEM)]
     dms, mentions, others = unread_of(names)
     head = "unread [%s] %s" % (desktop.wref(ctx, hwnd), win.text_of(hwnd)[:50])
@@ -323,7 +311,7 @@ def cmd_unread(ctx, pos, flags):
 
 
 def composer(hwnd):
-    root = api()[0].ElementFromHandle(hwnd)
+    root = root_of(hwnd)
     wl, wt, wr, wb = win.rect(hwnd)
     best = None
     for el in find_all(root, 4, EDIT) + find_all(root, 4, DOC):

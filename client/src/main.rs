@@ -1,33 +1,49 @@
 use std::env;
-use std::ffi::{c_void, OsStr};
-use std::fs::{self, File, OpenOptions};
+use std::fs;
 use std::io::{self, IsTerminal, Read, Write};
-use std::mem::{size_of, zeroed};
-use std::os::windows::ffi::OsStrExt;
-use std::os::windows::io::{AsRawHandle, RawHandle};
 use std::path::{Path, PathBuf};
 use std::process::{self, Command};
-use std::ptr::{null, null_mut};
 use std::sync::mpsc;
 use std::thread::{self, sleep};
 use std::time::{Duration, Instant};
 
-const HIDDEN: u32 = 0x0000_0200 | 0x0800_0000;
-const BREAKAWAY: u32 = 0x0100_0000;
-const EXTENDED_STARTUPINFO: u32 = 0x0008_0000;
-const USE_STD_HANDLES: u32 = 0x0000_0100;
-const HANDLE_LIST: usize = 0x0002_0002;
-const ERROR_PIPE_BUSY: i32 = 231;
 const HOOK_INPUT_WAIT: Duration = Duration::from_millis(1000);
 const HOOK_INPUT_MAX: u64 = 64 * 1024;
 const LOCAL: &[&str] = &[
     "", "help", "-h", "--help", "--version", "daemon", "host", "mcp", "setup", "uninstall", "install", "doctor",
 ];
 
+#[cfg(windows)]
+const PY: &str = "python.exe";
+#[cfg(windows)]
+const PYW: &str = "pythonw.exe";
+#[cfg(windows)]
+const VENV_BIN: &str = "Scripts";
+#[cfg(not(windows))]
+const PY: &str = "python3";
+#[cfg(not(windows))]
+const PYW: &str = "python3";
+#[cfg(not(windows))]
+const VENV_BIN: &str = "bin";
+
+enum Conn {
+    #[cfg_attr(not(windows), allow(dead_code))]
+    Busy,
+    Missing,
+}
+
+fn user() -> String {
+    env::var("USERNAME")
+        .or_else(|_| env::var("USER"))
+        .unwrap_or_else(|_| "user".into())
+        .to_lowercase()
+}
+
 fn home() -> PathBuf {
+    let base = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
     match env::var_os("LIGHTING_HOME") {
         Some(h) if !h.is_empty() => PathBuf::from(h),
-        _ => PathBuf::from(env::var_os("USERPROFILE").unwrap_or_default()).join(".lighting"),
+        _ => PathBuf::from(env::var_os(base).unwrap_or_default()).join(".lighting"),
     }
 }
 
@@ -51,11 +67,43 @@ fn root(home: &Path) -> PathBuf {
 }
 
 fn norm(s: &str) -> String {
-    s.trim().replace('/', "\\").trim_end_matches('\\').to_lowercase()
+    if cfg!(windows) {
+        s.trim().replace('/', "\\").trim_end_matches('\\').to_lowercase()
+    } else {
+        s.trim().trim_end_matches('/').to_string()
+    }
 }
 
 fn scripts(home: &Path, exe: &str) -> PathBuf {
-    home.join("venv").join("Scripts").join(exe)
+    home.join("venv").join(VENV_BIN).join(exe)
+}
+
+fn find_uv() -> Option<PathBuf> {
+    let name = if cfg!(windows) { "uv.exe" } else { "uv" };
+    let mut dirs: Vec<PathBuf> = env::var_os("PATH").map(|p| env::split_paths(&p).collect()).unwrap_or_default();
+    let base = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
+    if let Some(h) = env::var_os(base) {
+        let h = PathBuf::from(h);
+        dirs.push(h.join(".local").join("bin"));
+        dirs.push(h.join(".cargo").join("bin"));
+    }
+    if let Some(l) = env::var_os("LOCALAPPDATA") {
+        dirs.push(PathBuf::from(l).join("Microsoft").join("WinGet").join("Links"));
+    }
+    dirs.into_iter().map(|d| d.join(name)).find(|p| p.is_file())
+}
+
+fn install_uv() -> Option<PathBuf> {
+    eprintln!("lighting: uv is missing, installing it (one time, from astral.sh) ...");
+    let status = if cfg!(windows) {
+        Command::new("winget")
+            .args(["install", "--id", "astral-sh.uv", "-e", "--silent", "--accept-package-agreements", "--accept-source-agreements"])
+            .status()
+    } else {
+        Command::new("sh").args(["-c", "curl -LsSf https://astral.sh/uv/install.sh | sh"]).status()
+    };
+    status.ok()?;
+    find_uv()
 }
 
 fn mtime(p: &Path) -> Option<std::time::SystemTime> {
@@ -69,7 +117,7 @@ fn ready(home: &Path, root: &Path) -> bool {
         (Some(s), Some(f)) => s >= f,
         (None, Some(_)) => false,
     };
-    scripts(home, "pythonw.exe").exists()
+    scripts(home, PYW).exists()
         && fresh(root.join("requirements.txt"))
         && fresh(root.join(".claude-plugin").join("plugin.json"))
         && fs::read_to_string(home.join("client-root"))
@@ -78,13 +126,17 @@ fn ready(home: &Path, root: &Path) -> bool {
 }
 
 fn python(home: &Path, root: &Path, args: &[String]) -> ! {
-    let py = scripts(home, "python.exe");
+    let py = scripts(home, PY);
     let mut cmd = if py.exists() {
         let mut c = Command::new(&py);
         c.args(["-X", "utf8", "-m", "lighting"]);
         c
     } else {
-        let mut c = Command::new("uv");
+        let Some(uv) = find_uv().or_else(install_uv) else {
+            eprintln!("lighting: needs uv: https://docs.astral.sh/uv/getting-started/installation/");
+            process::exit(127)
+        };
+        let mut c = Command::new(uv);
         c.args(["run", "--quiet", "--no-project", "--python", ">=3.11", "python", "-X", "utf8", "-m", "lighting"]);
         c
     };
@@ -102,149 +154,245 @@ fn python(home: &Path, root: &Path, args: &[String]) -> ! {
     }
 }
 
-#[repr(C)]
-struct StartupInfoEx {
-    cb: u32,
-    reserved: *mut u16,
-    desktop: *mut u16,
-    title: *mut u16,
-    geometry: [u32; 7],
-    flags: u32,
-    show_window: u16,
-    reserved2_size: u16,
-    reserved2: *mut u8,
-    std_input: RawHandle,
-    std_output: RawHandle,
-    std_error: RawHandle,
-    attributes: *mut c_void,
-}
+#[cfg(windows)]
+mod win {
+    use super::*;
+    use std::ffi::{c_void, OsStr};
+    use std::fs::{File, OpenOptions};
+    use std::mem::{size_of, zeroed};
+    use std::os::windows::ffi::OsStrExt;
+    use std::os::windows::io::{AsRawHandle, RawHandle};
+    use std::ptr::{null, null_mut};
 
-#[repr(C)]
-struct ProcessInfo {
-    process: RawHandle,
-    thread: RawHandle,
-    ids: [u32; 2],
-}
+    const HIDDEN: u32 = 0x0000_0200 | 0x0800_0000;
+    const BREAKAWAY: u32 = 0x0100_0000;
+    const EXTENDED_STARTUPINFO: u32 = 0x0008_0000;
+    const USE_STD_HANDLES: u32 = 0x0000_0100;
+    const HANDLE_LIST: usize = 0x0002_0002;
+    const ERROR_PIPE_BUSY: i32 = 231;
 
-#[link(name = "kernel32")]
-extern "system" {
-    fn SetHandleInformation(handle: RawHandle, mask: u32, flags: u32) -> i32;
-    fn InitializeProcThreadAttributeList(list: *mut c_void, count: u32, flags: u32, size: *mut usize) -> i32;
-    fn UpdateProcThreadAttribute(
-        list: *mut c_void,
+    #[repr(C)]
+    struct StartupInfoEx {
+        cb: u32,
+        reserved: *mut u16,
+        desktop: *mut u16,
+        title: *mut u16,
+        geometry: [u32; 7],
         flags: u32,
-        attribute: usize,
-        value: *const c_void,
-        size: usize,
-        previous: *mut c_void,
-        returned: *mut usize,
-    ) -> i32;
-    fn DeleteProcThreadAttributeList(list: *mut c_void);
-    fn CreateProcessW(
-        application: *const u16,
-        command: *mut u16,
-        process_attributes: *const c_void,
-        thread_attributes: *const c_void,
-        inherit: i32,
-        flags: u32,
-        environment: *const c_void,
-        directory: *const u16,
-        startup: *const StartupInfoEx,
-        info: *mut ProcessInfo,
-    ) -> i32;
-    fn CloseHandle(handle: RawHandle) -> i32;
-}
+        show_window: u16,
+        reserved2_size: u16,
+        reserved2: *mut u8,
+        std_input: RawHandle,
+        std_output: RawHandle,
+        std_error: RawHandle,
+        attributes: *mut c_void,
+    }
 
-fn wide(s: &OsStr) -> Vec<u16> {
-    s.encode_wide().chain(Some(0)).collect()
-}
+    #[repr(C)]
+    struct ProcessInfo {
+        process: RawHandle,
+        thread: RawHandle,
+        ids: [u32; 2],
+    }
 
-fn start_daemon(home: &Path, root: &Path) {
-    let _ = fs::create_dir_all(home);
-    let Ok(log) = OpenOptions::new().create(true).append(true).open(home.join("daemon.log")) else {
-        return;
-    };
-    let handle = log.as_raw_handle();
-    env::set_var("PYTHONPATH", root);
-    env::set_var("LIGHTING_ROOT", root);
-    let line = format!("\"{}\" -X utf8 -m lighting daemon", scripts(home, "pythonw.exe").display());
-    let mut command = wide(OsStr::new(&line));
-    let directory = wide(home.as_os_str());
-    unsafe {
-        let mut size = 0usize;
-        InitializeProcThreadAttributeList(null_mut(), 1, 0, &mut size);
-        let mut buffer = vec![0usize; size / size_of::<usize>() + 1];
-        let list = buffer.as_mut_ptr() as *mut c_void;
-        if SetHandleInformation(handle, 1, 1) == 0 || InitializeProcThreadAttributeList(list, 1, 0, &mut size) == 0 {
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn SetHandleInformation(handle: RawHandle, mask: u32, flags: u32) -> i32;
+        fn InitializeProcThreadAttributeList(list: *mut c_void, count: u32, flags: u32, size: *mut usize) -> i32;
+        fn UpdateProcThreadAttribute(
+            list: *mut c_void,
+            flags: u32,
+            attribute: usize,
+            value: *const c_void,
+            size: usize,
+            previous: *mut c_void,
+            returned: *mut usize,
+        ) -> i32;
+        fn DeleteProcThreadAttributeList(list: *mut c_void);
+        fn CreateProcessW(
+            application: *const u16,
+            command: *mut u16,
+            process_attributes: *const c_void,
+            thread_attributes: *const c_void,
+            inherit: i32,
+            flags: u32,
+            environment: *const c_void,
+            directory: *const u16,
+            startup: *const StartupInfoEx,
+            info: *mut ProcessInfo,
+        ) -> i32;
+        fn CloseHandle(handle: RawHandle) -> i32;
+    }
+
+    fn wide(s: &OsStr) -> Vec<u16> {
+        s.encode_wide().chain(Some(0)).collect()
+    }
+
+    pub fn start_daemon(home: &Path, root: &Path) {
+        let _ = fs::create_dir_all(home);
+        let Ok(log) = OpenOptions::new().create(true).append(true).open(home.join("daemon.log")) else {
             return;
-        }
-        let handles = [handle];
-        let listed = UpdateProcThreadAttribute(
-            list,
-            0,
-            HANDLE_LIST,
-            handles.as_ptr() as *const c_void,
-            size_of::<RawHandle>(),
-            null_mut(),
-            null_mut(),
-        );
-        if listed != 0 {
-            let mut startup: StartupInfoEx = zeroed();
-            startup.cb = size_of::<StartupInfoEx>() as u32;
-            startup.flags = USE_STD_HANDLES;
-            startup.std_output = handle;
-            startup.std_error = handle;
-            startup.attributes = list;
-            for flags in [HIDDEN | BREAKAWAY, HIDDEN] {
-                let mut info: ProcessInfo = zeroed();
-                let flags = flags | EXTENDED_STARTUPINFO;
-                let ok = CreateProcessW(
-                    null(),
-                    command.as_mut_ptr(),
-                    null(),
-                    null(),
-                    1,
-                    flags,
-                    null(),
-                    directory.as_ptr(),
-                    &startup,
-                    &mut info,
-                );
-                if ok != 0 {
-                    CloseHandle(info.process);
-                    CloseHandle(info.thread);
-                    break;
+        };
+        let handle = log.as_raw_handle();
+        env::set_var("PYTHONPATH", root);
+        env::set_var("LIGHTING_ROOT", root);
+        let line = format!("\"{}\" -X utf8 -m lighting daemon", scripts(home, PYW).display());
+        let mut command = wide(OsStr::new(&line));
+        let directory = wide(home.as_os_str());
+        unsafe {
+            let mut size = 0usize;
+            InitializeProcThreadAttributeList(null_mut(), 1, 0, &mut size);
+            let mut buffer = vec![0usize; size / size_of::<usize>() + 1];
+            let list = buffer.as_mut_ptr() as *mut c_void;
+            if SetHandleInformation(handle, 1, 1) == 0 || InitializeProcThreadAttributeList(list, 1, 0, &mut size) == 0 {
+                return;
+            }
+            let handles = [handle];
+            let listed = UpdateProcThreadAttribute(
+                list,
+                0,
+                HANDLE_LIST,
+                handles.as_ptr() as *const c_void,
+                size_of::<RawHandle>(),
+                null_mut(),
+                null_mut(),
+            );
+            if listed != 0 {
+                let mut startup: StartupInfoEx = zeroed();
+                startup.cb = size_of::<StartupInfoEx>() as u32;
+                startup.flags = USE_STD_HANDLES;
+                startup.std_output = handle;
+                startup.std_error = handle;
+                startup.attributes = list;
+                for flags in [HIDDEN | BREAKAWAY, HIDDEN] {
+                    let mut info: ProcessInfo = zeroed();
+                    let flags = flags | EXTENDED_STARTUPINFO;
+                    let ok = CreateProcessW(
+                        null(),
+                        command.as_mut_ptr(),
+                        null(),
+                        null(),
+                        1,
+                        flags,
+                        null(),
+                        directory.as_ptr(),
+                        &startup,
+                        &mut info,
+                    );
+                    if ok != 0 {
+                        CloseHandle(info.process);
+                        CloseHandle(info.thread);
+                        break;
+                    }
                 }
             }
+            DeleteProcThreadAttributeList(list);
         }
-        DeleteProcThreadAttributeList(list);
+    }
+
+    fn pipe_name() -> String {
+        let user = user();
+        format!(r"\\.\pipe\lighting-{user}")
+    }
+
+    fn open_pipe() -> io::Result<File> {
+        OpenOptions::new().read(true).write(true).open(pipe_name())
+    }
+
+
+        pub fn exchange_once(_home: &Path, req: &[u8]) -> Result<Vec<u8>, Conn> {
+            match open_pipe() {
+                Ok(mut f) => {
+                    let mut buf = Vec::new();
+                    if f.write_all(req).is_ok() && f.read_to_end(&mut buf).is_ok() {
+                        return Ok(buf);
+                    }
+                    Ok(Vec::new())
+                }
+                Err(e) if e.raw_os_error() == Some(ERROR_PIPE_BUSY) => Err(Conn::Busy),
+                Err(_) => Err(Conn::Missing),
+            }
+        }
+}
+
+#[cfg(not(windows))]
+mod nix {
+    use super::*;
+    use std::fs::OpenOptions;
+    use std::os::unix::net::UnixStream;
+    use std::os::unix::process::CommandExt;
+    use std::process::Stdio;
+
+    extern "C" {
+        fn setsid() -> i32;
+        fn close(fd: i32) -> i32;
+    }
+
+    fn sock(home: &Path) -> PathBuf {
+        home.join(format!("lighting-{}.sock", user()))
+    }
+
+    pub fn start_daemon(home: &Path, root: &Path) {
+        let _ = fs::create_dir_all(home);
+        let Ok(log) = OpenOptions::new().create(true).append(true).open(home.join("daemon.log")) else {
+            return;
+        };
+        let Ok(err) = log.try_clone() else { return };
+        let mut cmd = Command::new(scripts(home, PYW));
+        cmd.args(["-X", "utf8", "-m", "lighting", "daemon"])
+            .env("PYTHONPATH", root)
+            .env("LIGHTING_ROOT", root)
+            .current_dir(home)
+            .stdin(Stdio::null())
+            .stdout(log)
+            .stderr(err);
+        unsafe {
+            cmd.pre_exec(|| {
+                setsid();
+                for fd in 3..256 {
+                    close(fd);
+                }
+                Ok(())
+            });
+        }
+        let _ = cmd.spawn();
+    }
+
+    pub fn exchange_once(home: &Path, req: &[u8]) -> Result<Vec<u8>, Conn> {
+        let mut s = UnixStream::connect(sock(home)).map_err(|_| Conn::Missing)?;
+        let mut framed = Vec::with_capacity(req.len() + 4);
+        framed.extend_from_slice(&(req.len() as u32).to_be_bytes());
+        framed.extend_from_slice(req);
+        let mut head = [0u8; 4];
+        if s.write_all(&framed).is_err() || s.read_exact(&mut head).is_err() {
+            return Ok(Vec::new());
+        }
+        let n = u32::from_be_bytes(head) as usize;
+        let mut buf = vec![0u8; n];
+        if s.read_exact(&mut buf).is_err() {
+            return Ok(Vec::new());
+        }
+        Ok(buf)
     }
 }
 
-fn pipe_name() -> String {
-    let user = env::var("USERNAME").unwrap_or_else(|_| "user".into()).to_lowercase();
-    format!(r"\\.\pipe\lighting-{user}")
-}
-
-fn open_pipe() -> io::Result<File> {
-    OpenOptions::new().read(true).write(true).open(pipe_name())
-}
+#[cfg(not(windows))]
+use nix::{exchange_once, start_daemon};
+#[cfg(windows)]
+use win::{exchange_once, start_daemon};
 
 fn exchange(home: &Path, root: &Path, req: &[u8], idle: Option<&str>) -> Vec<u8> {
     let deadline = Instant::now() + Duration::from_secs(12);
     let mut spawned = false;
     loop {
-        match open_pipe() {
-            Ok(mut f) => {
-                let mut buf = Vec::new();
-                if f.write_all(req).is_ok() && f.read_to_end(&mut buf).is_ok() && !buf.is_empty() {
-                    return buf;
-                }
+        match exchange_once(home, req) {
+            Ok(buf) if !buf.is_empty() => return buf,
+            Ok(_) => {
                 eprintln!("lighting: daemon closed the connection, see {}", home.join("daemon.log").display());
                 process::exit(1);
             }
             Err(e) => {
-                let busy = e.raw_os_error() == Some(ERROR_PIPE_BUSY);
+                let busy = matches!(e, Conn::Busy);
                 if !busy && !spawned {
                     if let Some(text) = idle {
                         return format!("0\0\0{text}").into_bytes();

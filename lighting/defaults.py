@@ -1,14 +1,27 @@
 import json
 import os
+import platform
+import sys
 from pathlib import Path
 
+WIN = sys.platform == "win32"
+MAC = sys.platform == "darwin"
+LINUX = not WIN and not MAC
+OS = "windows" if WIN else "macos" if MAC else "linux"
 ROOT = Path(os.environ.get("LIGHTING_ROOT") or Path(__file__).resolve().parent.parent).resolve()
 HOME = Path(os.environ.get("LIGHTING_HOME") or Path.home() / ".lighting")
 VENV = HOME / "venv"
-PY = VENV / "Scripts" / "python.exe"
-PYW = VENV / "Scripts" / "pythonw.exe"
+PY = VENV / "Scripts" / "python.exe" if WIN else VENV / "bin" / "python3"
+PYW = VENV / "Scripts" / "pythonw.exe" if WIN else PY
 STAMP = VENV / ".lighting-stamp"
-PIPE = "\\\\.\\pipe\\lighting-" + os.environ.get("USERNAME", "user").lower()
+USER = (os.environ.get("USERNAME") or os.environ.get("USER") or "user").lower()
+PIPE = "\\\\.\\pipe\\lighting-" + USER if WIN else str(HOME / ("lighting-%s.sock" % USER))
+ARCH = "arm64" if platform.machine().lower() in ("arm64", "aarch64") else "x64"
+CLIENT = "lighting.exe" if WIN else "lighting-macos" if MAC else "lighting-linux-" + ARCH
+CLIENT_NAME = "lighting.exe" if WIN else "lighting"
+LOCAL_BIN = Path.home() / ".local" / "bin"
+NO_WINDOW = 0x08000000 if WIN else 0
+FFMPEG_HINT = "winget install Gyan.FFmpeg" if WIN else "brew install ffmpeg" if MAC else "sudo apt install ffmpeg"
 KEY = HOME / "key"
 OUT = HOME / "out"
 LOG = HOME / "log.jsonl"
@@ -19,7 +32,7 @@ CONFIG = HOME / "config.json"
 BLOCKLIST = HOME / "blocklist.txt"
 EXT = HOME / "extension"
 BIN = HOME / "bin"
-HOST_BAT = HOME / "host.bat"
+HOST_BAT = HOME / ("host.bat" if WIN else "host.sh")
 HOST_PY = HOME / "host.py"
 HOST_NAME = "dev.qdhshamiro.lighting"
 HOST_JSON = HOME / (HOST_NAME + ".json")
@@ -32,12 +45,36 @@ BROWSER_KEYS = {
     "edge": r"Software\Microsoft\Edge\NativeMessagingHosts",
     "chromium": r"Software\Chromium\NativeMessagingHosts",
 }
-BROWSER_EXES = {
-    "brave": [r"BraveSoftware\Brave-Browser\Application\brave.exe"],
-    "chrome": [r"Google\Chrome\Application\chrome.exe"],
-    "edge": [r"Microsoft\Edge\Application\msedge.exe"],
+_SUPPORT = Path.home() / "Library" / "Application Support"
+_CONFIG = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+BROWSER_DIRS = {
+    "brave": _SUPPORT / "BraveSoftware" / "Brave-Browser" if MAC else _CONFIG / "BraveSoftware" / "Brave-Browser",
+    "chrome": _SUPPORT / "Google" / "Chrome" if MAC else _CONFIG / "google-chrome",
+    "edge": _SUPPORT / "Microsoft Edge" if MAC else _CONFIG / "microsoft-edge",
+    "chromium": _SUPPORT / "Chromium" if MAC else _CONFIG / "chromium",
 }
-BROWSER_ORDER = ["brave", "chrome", "edge"]
+if WIN:
+    BROWSER_EXES = {
+        "brave": [r"BraveSoftware\Brave-Browser\Application\brave.exe"],
+        "chrome": [r"Google\Chrome\Application\chrome.exe"],
+        "edge": [r"Microsoft\Edge\Application\msedge.exe"],
+    }
+elif MAC:
+    BROWSER_EXES = {
+        "brave": ["/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"],
+        "chrome": ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"],
+        "edge": ["/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"],
+        "chromium": ["/Applications/Chromium.app/Contents/MacOS/Chromium"],
+    }
+else:
+    BROWSER_EXES = {
+        "brave": ["brave-browser", "brave"],
+        "chrome": ["google-chrome", "google-chrome-stable"],
+        "edge": ["microsoft-edge", "microsoft-edge-stable"],
+        "chromium": ["chromium", "chromium-browser"],
+    }
+BROWSER_ORDER = ["brave", "chrome", "edge"] + ([] if WIN else ["chromium"])
+BROWSER_PROCS = {"brave": "brave", "chrome": "chrome", "edge": "msedge", "chromium": "chromium"} if LINUX else {}
 
 CLIENT_TIMEOUT = 180.0
 CALL_TIMEOUT = 20.0
