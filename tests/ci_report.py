@@ -27,6 +27,10 @@ def main(path, label):
     m = re.findall(r"(\d+)/(\d+) passed", text)
     if m:
         print("::notice title=%s selftest::%s/%s passed" % (label, m[-1][0], m[-1][1]))
+    bad = [(a, b) for a, b in m if a != b]
+    if not m or bad:
+        print("::error title=%s::%s" % (label, "; ".join("%s/%s passed" % x for x in bad) or "no test result in the log"))
+        return 1
     return 0
 
 

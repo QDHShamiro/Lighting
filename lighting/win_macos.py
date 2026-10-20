@@ -318,9 +318,15 @@ def set_foreground(hwnd):
         ax_do(el, "AXRaise")
         ax_set(el, "AXMain", True)
     deadline = time.time() + 0.6
+    nudged = False
     while time.time() < deadline:
         if foreground() == hwnd:
             return True
+        if not nudged and time.time() > deadline - 0.45:
+            ax_set(AS.AXUIElementCreateApplication(w["pid"]), "AXFrontmost", True)
+            if el is not None:
+                ax_do(el, "AXRaise")
+            nudged = True
         time.sleep(0.03)
     return foreground() == hwnd
 

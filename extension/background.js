@@ -697,7 +697,7 @@ async function route(cmd, a, tab) {
       const tabs = (await T.groupTabs(a.group)).filter((t) => !only || only.has(t.id));
       const own = await T.ownWindows();
       const last = await chrome.windows.getLastFocused().catch(() => null);
-      const looked = (t) => t.active && (!own.has(t.windowId) || (last && last.focused && last.id === t.windowId));
+      const looked = (t) => t.active && (!own.has(t.windowId) || (last && last.focused && last.id === t.windowId && T.userPicked(t.windowId)));
       const shut = a.close === false ? [] : tabs.filter((t) => !looked(t)).map((t) => t.id);
       if (shut.length) await chrome.tabs.remove(shut).catch(() => {});
       if (shut.includes(T.getTarget())) T.setTarget(null);
@@ -803,6 +803,7 @@ chrome.downloads.onChanged.addListener(async (d) => {
 });
 
 chrome.windows.onFocusChanged.addListener((id) => {
+  T.noteFocus(id);
   post({ event: "focus", focused: id !== chrome.windows.WINDOW_ID_NONE });
 });
 
