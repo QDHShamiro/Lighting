@@ -35,6 +35,9 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
 - `lighting brain` (what it learned), `brain forget <site|app:x.exe>`, `brain reset --yes`, `config brain off`.
 - `lighting improve [days]`: a self-check of the last days (top errors with what to do, loops, what the brain saved);
   once a week a 3-line summary comes with the first prompt.
+- `lighting demo [--fast]`: a ~30 s run for new users and screen recordings on a made-up shop page served from this
+  computer (open, find, fill, select, check, click, table), with the time and token size of every answer and the
+  page's own text size for comparison. Nothing is learned from it.
 - `upload` works on file inputs inside cross-origin frames (`f134.e2`, files up to 8 MB).
 - `claude --model m --effort e` starts the new Claude session with that model and effort.
 - `windows -f x` with exactly one match chooses that window, so `press`/`type`/`click` without a ref go there.

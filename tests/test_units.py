@@ -874,6 +874,40 @@ def test_listen_relative_file():
     assert audio.cmd_listen(ctx, [os.path.join(folder, "clip.mp3")], {})[0] == os.path.join(folder, "clip.mp3")
 
 
+def test_demo_offline():
+    import types
+    import urllib.request
+    from lighting import browser, demo
+    from lighting.common import Fail
+    seen = []
+
+    def fake(ctx, argv):
+        seen.append(argv)
+        if argv[0] == "open":
+            page = urllib.request.urlopen(argv[1], timeout=5).read().decode("utf-8")
+            assert "Start free trial" in page
+            return "[t1] Lighting demo - %s" % argv[1], "open", argv[1:]
+        if argv[0] == "check":
+            raise Fail("nothing matches", "lighting snap")
+        if argv[0] == "js":
+            return "400", "js", argv[1:]
+        return "ok", argv[0], argv[1:]
+
+    old_run, old_any = commands.run_one, browser.any_browser
+    commands.run_one, browser.any_browser = fake, lambda c: True
+    try:
+        ctx = types.SimpleNamespace(no_learn=False)
+        out = demo.run(ctx, [], {"fast": True})
+    finally:
+        commands.run_one, browser.any_browser = old_run, old_any
+    assert ctx.no_learn is False
+    assert [a[0] for a in seen] == ["open", "snap", "fill", "select", "check", "click", "table", "js"], seen
+    assert "$ lighting open <demo page> --new" in out and "127.0.0.1" not in out, out
+    assert '$ lighting fill "Name=Ada Lovelace" Email=ada@example.com' in out, out
+    assert out.splitlines()[0].startswith("Lighting demo: 7 commands on a made-up shop page") and "pauses" not in out.splitlines()[0]
+    assert out.rstrip().endswith("the page itself is ~101 tokens of text; 1 failed (lighting doctor)"), out[-200:]
+
+
 PHONE_SCREEN = """<?xml version='1.0' encoding='UTF-8'?>
 <hierarchy rotation="0">
 <node class="android.widget.FrameLayout" package="com.android.settings" bounds="[0,0][1080,2400]">

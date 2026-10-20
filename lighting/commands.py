@@ -636,7 +636,7 @@ def cmd_log(ctx, pos, flags):
                     pass
         except OSError:
             return "log is empty"
-        rows = [r for r in rows if not r.get("x") and r.get("cmd") not in ("selftest", "bench", "done", "ext-reload")]
+        rows = [r for r in rows if not r.get("x") and r.get("cmd") not in ("selftest", "bench", "demo", "done", "ext-reload")]
         rows = rows[-(int(pos[0]) if pos and pos[0].isdigit() else 2000):]
         return cap(log_stats(rows), "log-stats", lines=40) if rows else "log is empty"
     try:
@@ -694,6 +694,11 @@ def cmd_selftest(ctx, pos, flags):
 def cmd_bench(ctx, pos, flags):
     from lighting import selftest
     return selftest.bench(ctx, pos, flags)
+
+
+def cmd_demo(ctx, pos, flags):
+    from lighting import demo
+    return demo.run(ctx, pos, flags)
 
 
 def cmd_run(ctx, pos, flags):
@@ -759,7 +764,7 @@ def cmd_access_prompt(ctx, pos, flags):
 
 
 SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status, "config": cmd_config,
-          "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload,
+          "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "demo": cmd_demo, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload,
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
           "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest, "brain": cmd_brain,
           "improve": cmd_improve, "doctor-info": cmd_doctor_info, "access-prompt": cmd_access_prompt}
