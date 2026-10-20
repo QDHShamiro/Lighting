@@ -143,28 +143,68 @@ def dump(ctx):
     return ET.fromstring(xml[start:end + len("</hierarchy>")])
 
 
-def describe(node):
+def own_text(node):
+    return " ".join((node.get("text") or node.get("content-desc") or "").split())
+
+
+def kind(node):
     cls = (node.get("class") or "").rsplit(".", 1)[-1]
-    role = ROLES.get(cls, "button" if node.get("clickable") == "true" else "text")
-    name = " ".join((node.get("text") or node.get("content-desc") or "").split())
-    if not name and node.get("resource-id"):
+    if cls in ROLES:
+        return ROLES[cls]
+    if node.get("checkable") == "true":
+        return "checkbox"
+    return "button" if node.get("clickable") == "true" or node.get("long-clickable") == "true" else "text"
+
+
+def is_control(node):
+    return (node.get("clickable") == "true" or node.get("checkable") == "true" or node.get("long-clickable") == "true"
+            or kind(node) in ("edit", "slider"))
+
+
+def inner(node, out, toggles):
+    for kid in node.findall("node"):
+        if kid.get("checkable") == "true":
+            toggles.append(kid)
+        elif is_control(kid) and own_text(kid):
+            continue
+        t = own_text(kid)
+        if t and t not in out:
+            out.append(t)
+        inner(kid, out, toggles)
+
+
+def describe(node):
+    role = kind(node)
+    name = own_text(node)
+    texts, toggles = [], []
+    if role not in ("edit",):
+        inner(node, texts, toggles)
+    if not name and texts:
+        name = texts[0]
+    sub = texts[1] if len(texts) > 1 and texts[0] == name else ""
+    check = node if node.get("checkable") == "true" else (toggles[0] if toggles else None)
+    if check is not None:
+        role = "checkbox" if role in ("button", "text", "checkbox") else role
+    if not name and node.get("resource-id") and role != "text":
         name = "#" + node.get("resource-id").rsplit("/", 1)[-1]
     extra = ""
-    if node.get("checkable") == "true":
-        extra += " [x]" if node.get("checked") == "true" else " [ ]"
+    if check is not None:
+        extra += " [x]" if check.get("checked") == "true" else " [ ]"
     if role == "edit":
         hint = node.get("hint") or ""
         if node.get("password") == "true":
             extra += " =***"
         elif hint and hint != name:
-            extra += ' (%s)' % hint[:30]
+            extra += " (%s)" % hint[:30]
+        if node.get("focused") == "true":
+            extra += " (focused)"
     if node.get("selected") == "true":
         extra += " *"
     if node.get("enabled") == "false":
         extra += " (disabled)"
-    if node.get("focused") == "true" and role == "edit":
-        extra += " (focused)"
-    return role, name, extra
+    if sub and len(sub) <= 60:
+        extra += " - " + sub
+    return role, name, extra, toggles
 
 
 def snapshot(ctx, flags):
@@ -172,28 +212,45 @@ def snapshot(ctx, flags):
     root = dump(ctx)
     st.refs = {}
     filt = terms(flags.get("f"))
-    lines, n, app = [], 0, ""
-    for node in root.iter("node"):
+    lines, app = [], ""
+    seen = set()
+
+    def visit(node, inside):
+        nonlocal app
         app = app or node.get("package") or ""
-        role, name, extra = describe(node)
         l, t, r, b = bounds(node.get("bounds"))
-        if r - l < 4 or b - t < 4:
-            continue
-        useful = node.get("clickable") == "true" or node.get("checkable") == "true" or role in ("edit", "slider") \
-            or node.get("scrollable") == "true" or (role == "text" and name)
-        if not useful or (not name and role == "text"):
-            continue
-        n += 1
-        ref = "p%d" % n
-        st.refs[ref] = ((l + r) // 2, (t + b) // 2, name, role)
+        big = r - l >= 4 and b - t >= 4
+        control = is_control(node) and id(node) not in seen
+        mine = inside
+        if big and control:
+            role, name, extra, toggles = describe(node)
+            seen.update(id(x) for x in toggles)
+            if name or role in ("edit", "slider"):
+                x, y = (l + r) // 2, (t + b) // 2
+                if toggles and node.get("checkable") != "true":
+                    tl, tt, tr, tb = bounds(toggles[0].get("bounds"))
+                    if tr - tl >= 4 and tb - tt >= 4:
+                        x, y = (tl + tr) // 2, (tt + tb) // 2
+                add(role, name, extra, x, y)
+                mine = True
+        elif big and not inside and id(node) not in seen and node.get("scrollable") != "true":
+            name = own_text(node)
+            if name:
+                add("text", name, "", (l + r) // 2, (t + b) // 2)
+        for kid in node.findall("node"):
+            visit(kid, mine)
+
+    def add(role, name, extra, x, y):
+        ref = "p%d" % (len(st.refs) + 1)
+        st.refs[ref] = (x, y, name, role)
         label = name if len(name) <= 60 else name[:57] + "..."
-        if node.get("scrollable") == "true" and not name:
-            label, role = "scrollable area", "list"
         line = "%s %s%s%s" % (ref, role, ' "%s"' % label.replace('"', "'") if label else "", extra)
-        t_ = tiers(filt, name, role, extra) if filt else None
-        if t_ is not None and not any(t_):
-            continue
-        lines.append((t_, line))
+        tier = tiers(filt, name, role, extra) if filt else None
+        if tier is None or any(tier):
+            lines.append((tier, line))
+
+    for top in root.findall("node"):
+        visit(top, False)
     rows = best_only(lines) if filt else [l for _, l in lines]
     head = "[phone %s] %s (%d controls)" % (st.serial, app, len(st.refs))
     return cap(head + "\n" + ("\n".join(rows) or "(nothing found)"), "phone-snap", lines=D.SNAP_LINES)

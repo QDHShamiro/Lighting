@@ -1,13 +1,25 @@
 # Changelog
 
-Versions follow semver. Every release on GitHub carries `lighting.exe` built from the tag by CI,
-a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in the repo at that tag).
+Versions follow semver. Every release on GitHub carries the clients (`lighting.exe`, `lighting-macos`,
+`lighting-linux-x64`, `lighting-linux-arm64`) built from the tag by CI, `lighting.mcpb`, a source zip and
+`SHA256SUMS.txt` (including the hash of each `bin/` client in the repo at that tag).
 
 ## [2.0.0] - unreleased
 
 Built from 1,831 failed commands in the log since 1.1.0: most came from a few loops that kept hitting the same wall.
 
 ### Added
+- macOS and Linux (X11) work like Windows: desktop apps through the accessibility APIs (AX, AT-SPI) with OCR as a
+  fallback, windows, keys, video of one window, a Unix socket instead of the named pipe, native host manifests per
+  OS, the process list without `tasklist`, and `uv` installs itself. A Rust client is built for macOS (universal),
+  Linux x64 and Linux arm64. Every push is tested on GitHub's macOS and Linux runners.
+- `lighting phone ...` controls an Android phone over adb: `devices`, `snap [-f x]` (the screen as `p1`, `p2` refs;
+  a settings row with a switch shows as one `checkbox` and a tap hits the switch), `tap`, `type`, `key`, `swipe`,
+  `shot`, `launch`, `open`, `apps`. `phone setup` downloads Google's platform-tools.
+- `lighting.mcpb`, a one-click bundle for Claude Desktop, and an entry in the official MCP registry (`server.json`),
+  both published by the release workflow.
+- Lighting is licensed under Apache-2.0 (was MIT), with `NOTICE`, `TRADEMARKS.md` (name and logo stay reserved) and
+  `SECURITY.md`.
 - `routine schedule <name> daily 08:00` (or `weekly mon 09:30`, `hourly`, `every 30m`) runs a routine on a
   schedule through the Windows Task Scheduler, launchd on macOS or a systemd user timer on Linux, without a window;
   `routine schedules` lists them, `routine unschedule <name>` (and `routine rm`) removes them.

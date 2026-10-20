@@ -863,8 +863,43 @@ def test_skill_and_mcp_budget():
     assert len(mcp.DESCRIPTION) <= 700, "MCP description grew to %d chars" % len(mcp.DESCRIPTION)
 
 
+PHONE_SCREEN = """<?xml version='1.0' encoding='UTF-8'?>
+<hierarchy rotation="0">
+<node class="android.widget.FrameLayout" package="com.android.settings" bounds="[0,0][1080,2400]">
+<node class="android.widget.TextView" text="Settings" bounds="[40,100][400,200]"/>
+<node class="android.widget.ScrollView" scrollable="true" bounds="[0,200][1080,2000]">
+<node class="android.widget.LinearLayout" clickable="true" bounds="[0,200][1080,400]">
+<node class="android.widget.TextView" text="Wi-Fi" bounds="[40,220][300,300]"/>
+<node class="android.widget.TextView" text="Connected" bounds="[40,300][300,380]"/>
+<node class="android.widget.Switch" checkable="true" checked="true" clickable="true" bounds="[900,240][1040,360]"/>
+</node>
+<node class="android.widget.LinearLayout" clickable="true" bounds="[0,400][1080,600]">
+<node class="android.widget.TextView" text="Bluetooth" bounds="[40,420][300,500]"/>
+</node>
+</node>
+<node class="android.widget.EditText" hint="Search settings" clickable="true" bounds="[40,2000][1040,2100]"/>
+</node>
+</hierarchy>"""
+
+
+def test_phone_snapshot():
+    import types
+    import xml.etree.ElementTree as ET
+    from lighting import android
+    ctx = types.SimpleNamespace()
+    android.dump = lambda c: ET.fromstring(PHONE_SCREEN)
+    out = android.snapshot(ctx, {}).splitlines()
+    assert out[0] == "[phone None] com.android.settings (4 controls)", out[0]
+    assert out[1:] == ['p1 text "Settings"', 'p2 checkbox "Wi-Fi" [x] - Connected', 'p3 button "Bluetooth"',
+                       "p4 edit (Search settings)"], out
+    assert android.state(ctx).refs["p2"][:2] == (970, 300), android.state(ctx).refs["p2"]
+    assert android.state(ctx).refs["p3"][:2] == (540, 500), android.state(ctx).refs["p3"]
+    only = android.snapshot(ctx, {"f": "wi-fi"}).splitlines()
+    assert only[1:] == ['p2 checkbox "Wi-Fi" [x] - Connected'], only
+
+
 if __name__ == "__main__":
-    tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
+    tests =[(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
     failed = 0
     for name, fn in tests:
         try:
