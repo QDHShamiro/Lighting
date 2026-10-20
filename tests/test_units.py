@@ -874,6 +874,17 @@ def test_listen_relative_file():
     assert audio.cmd_listen(ctx, [os.path.join(folder, "clip.mp3")], {})[0] == os.path.join(folder, "clip.mp3")
 
 
+def test_linux_key_names():
+    try:
+        import Xlib.XK
+    except ImportError:
+        return
+    from lighting import win_linux as w
+    assert w.keysym_of("Control_L") == 0xffe3 and w.keysym_of("ISO_Level3_Shift") == 0xfe03
+    assert w.keysym_of("TAB") == 0xff09 and w.keysym_of("volup") == 0x1008ff13 and w.keysym_of("A") == 0x41
+    assert all(w.keysym_of(w.MODSYMS.get(k, k)) for k in list(w.KEYSYMS) + list(w.MODSYMS))
+
+
 def test_demo_offline():
     import types
     import urllib.request

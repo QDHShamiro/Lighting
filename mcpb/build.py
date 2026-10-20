@@ -5,7 +5,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-KEEP = ["lighting", "extension", "skills", "requirements.txt", "LICENSE", "NOTICE", "README.md", ".claude-plugin/plugin.json"]
+KEEP = ["lighting", "extension", "skills", "requirements.txt", "LICENSE", "NOTICE", "README.md", ".claude-plugin/plugin.json",
+        "tests/fixture.html"]
 CLIENTS = ["lighting.exe", "lighting-macos"]
 
 

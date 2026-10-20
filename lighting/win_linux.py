@@ -370,8 +370,16 @@ def combo_parts(combo):
 
 def keysym_of(name):
     from Xlib import XK
-    n = KEYSYMS.get(name.lower(), name if len(name) == 1 else name.capitalize())
-    sym = XK.string_to_keysym(n)
+    if "groups" not in _x:
+        for group in ("xkb", "xf86"):
+            XK.load_keysym_group(group)
+        _x["groups"] = True
+    n = KEYSYMS.get(name.lower())
+    sym = XK.string_to_keysym(n) if n else XK.string_to_keysym(name)
+    if not sym and (n or name).startswith("XF86") and not (n or name).startswith("XF86_"):
+        sym = XK.string_to_keysym("XF86_" + (n or name)[4:])
+    if not sym and not n and len(name) > 1:
+        sym = XK.string_to_keysym(name.capitalize())
     if not sym and len(name) == 1:
         sym = ord(name) if ord(name) < 0x100 else 0x01000000 + ord(name)
     if not sym:

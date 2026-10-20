@@ -5,7 +5,7 @@
 <h1 align="center">Lighting</h1>
 
 <p align="center">
-  <em>Your real browser and every Windows app, as a few lines of text.</em>
+  <em>Your real browser and every app on your computer, as a few lines of text.</em>
   <br>
   <sub>by <a href="https://github.com/QDHShamiro">QDHShamiro</a></sub>
 </p>
@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/mcp-any%20client-1B3A66?style=flat-square&labelColor=0A1A30" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-1B3A66?style=flat-square&labelColor=0A1A30" alt="Self-learning routines">
   <img src="https://img.shields.io/badge/selftest-135%2F135-1B3A66?style=flat-square&labelColor=0A1A30" alt="135/135 selftest">
-  <img src="https://img.shields.io/badge/platform-windows-1B3A66?style=flat-square&labelColor=0A1A30" alt="Windows">
+  <img src="https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-1B3A66?style=flat-square&labelColor=0A1A30" alt="Windows, macOS, Linux">
   <img src="https://img.shields.io/badge/license-Apache--2.0-1B3A66?style=flat-square&labelColor=0A1A30" alt="Apache 2.0 license">
   <br>
   <img src="https://img.shields.io/badge/first%20look%20at%20a%20page-%E2%88%9297%25%20tokens-1E7BEF?style=flat-square&labelColor=0A1A30" alt="-97% tokens per page">
@@ -75,7 +75,7 @@ One call. Everything clickable has a ref. A click answers in one line (**13-53**
 
 ## Quick start
 
-Windows 10/11, [uv](https://docs.astral.sh/uv/getting-started/installation/) and Brave, Chrome or Edge. In Claude Code:
+Windows 10/11, macOS or Linux, and Brave, Chrome or Edge ([uv](https://docs.astral.sh/uv/getting-started/installation/) installs itself if it is missing). In Claude Code:
 
 ```
 /plugin marketplace add QDHShamiro/Lighting
@@ -102,7 +102,8 @@ None of that is what the AI needs. It needs to know what it can click, and wheth
 | | |
 |---|---|
 | 🌐 **Your real browser** | Brave, Chrome or Edge with all your logins, through a small extension. Lighting's tabs live in their own orange "Lighting" group, in the background. |
-| 🪟 **Every Windows app** | UI Automation for normal apps, OCR for games and canvas UIs. Clicks and typing go through in the background; your mouse stays where it is. |
+| 🖥️ **Every app** | The accessibility tree for normal apps (UI Automation on Windows, AX on macOS, AT-SPI on Linux), OCR for games and canvas UIs. On Windows clicks and typing go through in the background; your mouse stays where it is. |
+| 📱 **Your Android phone** | `lighting phone snap` lists what is on the screen, `phone tap p3` taps it, over USB debugging. |
 | 🧠 **Learns your tasks** | Do something twice and it becomes a routine that runs in one call ([how](#the-second-time-is-one-call)). |
 | 🎞️ **Sees images and video** | `snap --media` lists images, `shot e57` shows one, `frames e40` turns a whole video into one contact sheet. |
 | 🧹 **Cleans up after itself** | When the AI finishes its reply, what it opened closes again. The tab group's color is a status light: orange working, red stopped, green done. |
@@ -126,8 +127,9 @@ ok e3 -> github.com/QDHShamiro/Lighting/issues
 ```
   your AI ──Bash──→ lighting.exe (Rust) ──┐
   your AI ──MCP───→ lighting mcp ─────────┴─→ daemon ──┬─→ extension ──→ your open browser
-                                                       ├─→ UI Automation ──→ Windows apps
-                                                       └─→ Windows OCR ──→ games, canvas UIs
+                                                       ├─→ UI Automation / AX / AT-SPI ──→ desktop apps
+                                                       ├─→ OCR ──→ games, canvas UIs
+                                                       └─→ adb ──→ Android phone
 ```
 
 Only visible, usable elements are listed. Hidden text never reaches the model, links under the
@@ -269,14 +271,14 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | | Lighting | Claude in Chrome | Playwright MCP | agent-browser |
 |---|---|---|---|---|
 | Your real browser profile and logins | ✅ | ✅ | with its extension, Chrome and Edge ([3]) | a copy of a profile, or attached over CDP ([2]) |
-| Windows apps (UI Automation + OCR) | ✅ | – | – | – |
+| Desktop apps (accessibility tree + OCR) | ✅ Windows, macOS, Linux | – | – | – |
 | Tokens for a first look at a page | **~440** (measured) | ~15,850: screenshot + page text (measured) | 15,000-30,000 on dense pages ([1]) | no number published ([2]) |
 | Repeated tasks | learned routines, one call | saved shortcuts | – | – |
 | A whole video as one image | ✅ `frames` | – | – | – |
-| Headless, CI, Linux, macOS | ❌ Windows, real browser | desktop Chrome, no headless | ✅ | ✅ |
+| Headless, CI | ❌ real browser only | desktop Chrome, no headless | ✅ | ✅ |
 
-`–` means not built in as far as the public docs say. Lighting is the wrong tool for headless tests, CI or
-Linux/macOS: take Playwright there. It is built for the other case: an agent on your Windows PC that has to use
+`–` means not built in as far as the public docs say. Lighting is the wrong tool for headless tests or CI: take
+Playwright there. It is built for the other case: an agent on your computer (Windows, macOS or Linux) that has to use
 your logged-in browser and your apps, cheaply.
 
 [1]: https://lite.ego.app/article/playwright-mcp-token-problem
@@ -285,6 +287,10 @@ your logged-in browser and your apps, cheaply.
 
 ## What's new
 
+- **2.0.0** macOS and Linux, Android phones (`lighting phone`), and a brain: on pages it knows, `snap` shows the
+  controls you actually use (this repo's page ~450 → ~117 tokens). `lighting improve` checks the last days for
+  errors and loops, `lighting doctor --fix` repairs the setup, routines run on a schedule, `lighting demo` shows it
+  all in 30 s. A one-click bundle for Claude Desktop, an entry in the MCP registry, Apache-2.0.
 - **1.1.0** Sessions keep their tabs and windows through updates and restarts; `wait "text" w3` waits in any
   app; a repeated `snap` shows only what changed (`--full` for all); `frames --small`; routines learn whole values
   with clean names and skip one-off tasks.
@@ -312,7 +318,7 @@ All changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Install
 
-Requirements: Windows 10/11, [uv](https://docs.astral.sh/uv/getting-started/installation/), and Brave, Chrome or Edge.
+Requirements: Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. [uv](https://docs.astral.sh/uv/getting-started/installation/) installs itself if it is missing.
 
 **Claude Code**
 
@@ -395,14 +401,21 @@ args = ["mcp"]
 | Clean up | `done` (close what Lighting opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) · `config window off` (tabs in your window, not an own one) |
 | Images, video | `snap --media` (images get refs, captions as names) · `shot e57` (look at one image) · `frames e40 [--scenes] [--from 1:30 --to 2:00] [--live]` (the whole video as one contact sheet, captions included) · `read <image url>` |
 
-**Windows desktop**
+**Desktop (Windows, macOS, Linux)**
 
 | | |
 |---|---|
 | Start | `launch spotify` · `launch "spotify:search:SOS"` · `launch calc` (Win+R names and Store apps too) · `close w4` · `close "app:Rechner"` |
-| Look | `windows` · `snap w2` (UI Automation) · `read w2` (OCR) · `shot w2` (even when covered) · `shot screen --seconds 10` (a short video) |
+| Look | `windows` · `snap app:spotify` · `snap w2` (accessibility tree) · `read w2` (OCR) · `shot w2` (even when covered) · `shot screen --seconds 10` (a short video) |
 | Act | `click d5` · `click "Save"` · `click o3` (OCR text, real click, cursor goes back) · `type "Search" text` · `type focused text` · `press ctrl+s` · `clip get\|set` |
 | Claude | `claude "task" --yes` (new terminal tab: Claude with Remote Control, the task sent once it is ready) · `--dir E:/proj` · `--no-remote` |
+
+**Android phone** (USB debugging on, then `lighting phone setup` downloads Google's platform-tools)
+
+| | |
+|---|---|
+| Look | `phone devices` · `phone snap [-f word]` (`p1`, `p2` refs) · `phone shot` · `phone apps [-f word]` |
+| Act | `phone tap p3\|"Wi-Fi"` (`--long`) · `phone type "text" --enter` · `phone key back\|home\|enter` · `phone swipe up` · `phone launch spotify` · `phone open <url>` |
 
 **Routines**
 
@@ -412,7 +425,7 @@ args = ["mcp"]
 | Teach | learned by itself on repeat · `routine save <name> [param=value]` · `record start <name>` … `record stop [param=value]` |
 | Tidy | `routine rm\|rename <name>` · `routine forget` (task history) · `config learn off` |
 
-Clicks and typing go through UI Automation in the background, your mouse stays where it is.
+On Windows clicks and typing go through UI Automation in the background, your mouse stays where it is.
 `do "fill Email=a@b.c; click Continue; expect Welcome"` runs several steps in one call.
 `lighting help` lists everything.
 
@@ -426,17 +439,19 @@ Clicks and typing go through UI Automation in the background, your mouse stays w
 - A URL with a long query to a site not opened yet needs `--yes`, so injected instructions cannot quietly send data out.
 - Secrets come from environment variables (`--env VAR`) and are never logged.
 - **Ctrl+Alt+End** stops everything immediately.
-- Every push runs CI (unit tests, all modules compile, extension parses, client builds with clippy clean). Every release carries `lighting.exe` built by CI from the tag and `SHA256SUMS.txt`, which also lists the hash of `bin/lighting.exe` in the repo: check yours with `certutil -hashfile bin\lighting.exe SHA256`, or build it yourself with `cd client && cargo build --release`.
+- Every push runs CI (unit tests, all modules compile, extension parses, client builds with clippy clean). Every release carries the clients built by CI from the tag (`lighting.exe`, `lighting-macos`, `lighting-linux-x64`, `lighting-linux-arm64`), each with a GitHub build attestation (`gh attestation verify <file> -R QDHShamiro/Lighting`), and `SHA256SUMS.txt`, which also lists the hash of each client in the repo's `bin/`: check yours with `certutil -hashfile bin\lighting.exe SHA256` (Windows) or `shasum -a 256 bin/lighting-macos`, or build it yourself with `cd client && cargo build --release`. Pushes also run the self-test on GitHub's macOS and Linux machines.
 
 <details>
 <summary><b>Files it creates, and how to remove it</b></summary>
 
-Everything lives in `%USERPROFILE%\.lighting\`: the Python venv, the extension copy, the native host,
+Everything lives in `~/.lighting/` (`%USERPROFILE%\.lighting\` on Windows): the Python venv, the extension copy, the native host,
 `bin\lighting.exe`, the pipe key, the blocklist, a 24 h output cache and the action log (typed text
 and secrets are never logged). Routines live in `routines\`, the last 300 tasks they are learned from
 in `episodes.jsonl` (typed text included so routines can replay it; `--env` secrets are stored as
-`@secret`; `lighting routine forget` clears it, `lighting config learn off` stops it). Registry: the
-native messaging host keys for Brave, Chrome, Edge and Chromium, and `.lighting\bin` in your user `Path`.
+`@secret`; `lighting routine forget` clears it, `lighting config learn off` stops it). On Windows the registry gets the
+native messaging host keys for Brave, Chrome, Edge and Chromium, and `.lighting\bin` goes into your user `Path`. On
+macOS and Linux the host manifests go into each browser's `NativeMessagingHosts` folder and `lighting` into
+`~/.local/bin`.
 
 ```
 lighting uninstall          # registry keys off, daemon stopped
@@ -469,7 +484,12 @@ lighting uninstall --purge  # also removes ~/.lighting except the venv
 
 ## Limits
 
-- Windows only. Firefox is not supported (no `debugger` extension API).
+- Firefox is not supported (no `debugger` extension API). No iPhone.
+- macOS: the terminal (and the browser, for the extension link) needs Accessibility and Screen Recording in System
+  Settings > Privacy & Security. `setup` says when one is missing.
+- Linux is tested on X11. Under Wayland windows come from AT-SPI only, and filming a window needs X11. OCR needs
+  tesseract (`sudo apt install tesseract-ocr`).
+- macOS and Linux run on GitHub's machines in every push; they have had less real-world use than Windows.
 - Cross-origin iframes: snapshot with `--frame host`, clicks there are DOM clicks.
 - Apps running as administrator only take input when the terminal runs as administrator too.
 

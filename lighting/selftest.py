@@ -313,20 +313,27 @@ def sessions_check(ctx, base):
     a, b = commands.Context(ctx.d, "selftest-a"), commands.Context(ctx.d, "selftest-b")
     a.no_learn = b.no_learn = True
     run = lambda c, *argv: commands.run(c, {"argv": list(argv)}).get("out", "")
+    from lighting import browser
+    replies, track = [], browser.track
+    browser.track = lambda c, cmd, msg: (replies.append("%s %s created=%s tab=%s" % (
+        c.sid, cmd, msg.get("created"), (msg.get("where") or {}).get("tab"))), track(c, cmd, msg))[1]
     try:
         run(a, "open", base + "second")
         run(b, "open", base + "quiet")
+        browser.track = track
         seen = [run(a, "snap", "--force"), run(b, "done"), run(a, "snap", "--force")]
         run(b, "open", base + "quiet")
         seen += [run(b, "keep"), run(b, "snap", "--force")]
     finally:
+        browser.track = track
         run(b, "close")
         run(a, "done")
         run(b, "done")
     good = ("Second" in seen[0] and seen[1].startswith("closed 1 tab") and "Second" in seen[2]
             and seen[3].startswith("kept 1 tab") and "Quiet" in seen[4])
     detail = " / ".join(s.split("\n")[0] for s in seen)
-    return good, detail if good else detail + " | a=%s/%s b=%s/%s" % (a.tabs, sorted(a.owned), b.tabs, sorted(b.owned))
+    return good, detail if good else "%s | a=%s/%s b=%s/%s | %s" % (
+        "; ".join(replies), a.tabs, sorted(a.owned), b.tabs, sorted(b.owned), detail)
 
 
 def reopen_check(ctx, base):
