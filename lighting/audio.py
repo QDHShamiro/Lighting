@@ -319,6 +319,8 @@ def start(job, head):
 def cmd_listen(ctx, pos, flags):
     from lighting import browser
     target = pos[0] if pos else None
+    if target and not os.path.isabs(target) and ctx.cwd and os.path.exists(os.path.join(ctx.cwd, target)):
+        target = os.path.join(ctx.cwd, target)
     try:
         lo, hi = browser.seconds(flags.get("from")), browser.seconds(flags.get("to"))
     except ValueError:

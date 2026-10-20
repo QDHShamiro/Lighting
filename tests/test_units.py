@@ -863,6 +863,17 @@ def test_skill_and_mcp_budget():
     assert len(mcp.DESCRIPTION) <= 700, "MCP description grew to %d chars" % len(mcp.DESCRIPTION)
 
 
+def test_listen_relative_file():
+    import types
+    from lighting import audio
+    folder = tempfile.mkdtemp(prefix="lighting-listen-")
+    Path(folder, "clip.mp3").write_bytes(b"x")
+    ctx = types.SimpleNamespace(cwd=folder, cfg={})
+    audio.start = lambda job, head: (job["file"], job["url"], head)
+    assert audio.cmd_listen(ctx, ["clip.mp3"], {}) == (os.path.join(folder, "clip.mp3"), None, "[file] clip.mp3")
+    assert audio.cmd_listen(ctx, [os.path.join(folder, "clip.mp3")], {})[0] == os.path.join(folder, "clip.mp3")
+
+
 PHONE_SCREEN = """<?xml version='1.0' encoding='UTF-8'?>
 <hierarchy rotation="0">
 <node class="android.widget.FrameLayout" package="com.android.settings" bounds="[0,0][1080,2400]">
