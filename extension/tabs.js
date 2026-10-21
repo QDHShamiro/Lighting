@@ -141,7 +141,8 @@ export function noteFocus(id) {
 }
 
 export function userPicked(id) {
-  return born[id] === undefined || (focusedAt[id] !== undefined && focusedAt[id] - born[id] >= FOCUS_GRACE_MS);
+  if (focusedAt[id] === undefined) return false;
+  return born[id] === undefined || focusedAt[id] - born[id] >= FOCUS_GRACE_MS;
 }
 
 async function loadWins() {
