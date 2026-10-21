@@ -197,7 +197,7 @@ def overview(root):
     top = c.execute("select s.name, s.path, s.line, count(*) n, (select count(*) from symbols x where x.low = s.low "
                     "and x.kind = s.kind) same from symbols s join refs r on r.low = s.low "
                     "where s.kind in ('class', 'interface', 'struct', 'enum', 'trait', 'record', 'object') "
-                    "group by s.low order by n desc limit ?", (D.CODE_TOP,)).fetchall()
+                    "and length(s.name) > 2 group by s.low order by n desc limit ?", (D.CODE_TOP,)).fetchall()
     if top:
         lines.append("most used types: " + ", ".join(
             "%s (%s)" % (r["name"], "%d classes with this name" % r["same"] if r["same"] > 1 else "%s:%d" % (r["path"], r["line"]))

@@ -123,6 +123,14 @@ def monorepo(root):
     return _roots[root]
 
 
+@functools.lru_cache(maxsize=1)
+def scratch_dirs():
+    import tempfile
+    home = Path.home()
+    return [Path(tempfile.gettempdir()).resolve(), home / "AppData", home / ".claude", home / ".cache", home / ".local",
+            home / "Downloads", home / ".lighting"]
+
+
 @functools.lru_cache(maxsize=8192)
 def project_of(cwd):
     if not cwd:
@@ -141,9 +149,10 @@ def project_of(cwd):
         except OSError:
             break
     if root is None:
-        if p == home:
+        found = next((d for d in chain if d != home and built(d)), None)
+        if found is None and (p == home or any(s == p or s in p.parents for s in scratch_dirs())):
             return ""
-        found = next((d for d in chain if d != home and built(d)), p)
+        found = found or p
         return found.name or str(found)
     if p != root and monorepo(root):
         child = root / p.relative_to(root).parts[0]
@@ -155,7 +164,7 @@ def project_of(cwd):
 def project_of_files(paths):
     seen = {}
     for f in paths:
-        name = project_of(str(Path(f).parent)) if f else ""
+        name = project_of(str(Path(f).parent)) if f and Path(f).is_absolute() else ""
         if name:
             seen[name] = seen.get(name, 0) + 1
     return max(seen, key=seen.get) if seen else ""

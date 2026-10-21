@@ -34,7 +34,7 @@ def ident(text):
 def line(r):
     body = M.oneline((r["body"] or "").split("\n")[0], 70) if r["body"] and r["kind"] != "session" else ""
     where = SOURCE_TAGS.get(r["source"], "")
-    head = "#%d %s %s%s%s: %s" % (r["id"], M.day(r["updated"]), r["kind"], " [%s]" % r["project"] if r.get("other") else "",
+    head = "#%d %s %s%s%s: %s" % (r["id"], M.day(r["updated"]), r["kind"], " [%s]" % r["project"] if r.get("other") and r["project"] else "",
                                   " (%s)" % where if where else "", M.oneline(r["title"], D.MEM_LINE))
     return head + (" | " + body if body and body.lower() not in head.lower() else "")
 

@@ -301,22 +301,36 @@ def fold_work_state(entries):
     return lists
 
 
+def claude_mem_projects():
+    src = Path.home() / ".claude-mem" / "claude-mem.db"
+    if not src.exists():
+        return {}
+    db = sqlite3.connect("file:%s?mode=ro" % src.as_posix(), uri=True)
+    try:
+        return {"cm:o:%d" % i: p or "" for i, p in db.execute("select id, project from observations")}
+    except sqlite3.Error:
+        return {}
+    finally:
+        db.close()
+
+
 def reproject():
-    if M.meta("projects_v2"):
+    if M.meta("projects_v4"):
         return 0
-    home, fixes = Path.home().name, []
-    for r in M.rows("select id, project, files from notes where source in ('import', 'session', 'user')"):
+    home, fixes, first = Path.home().name, [], claude_mem_projects()
+    for r in M.rows("select id, project, files, origin from notes where source in ('import', 'session', 'user')"):
         try:
             files = json.loads(r["files"] or "[]")
         except ValueError:
             files = []
-        project = M.project_of_files(files) or ("" if r["project"] == home else r["project"])
+        was = first.get(r["origin"], r["project"])
+        project = M.project_of_files(files) or ("" if was == home else was)
         if project != r["project"]:
             fixes.append((project, r["id"]))
     M.many("update notes set project = ? where id = ?", fixes)
     M.write("update sessions set project = '' where project = ?", (home,))
     M.write("update todos set project = '' where project = ?", (home,))
-    M.meta("projects_v2", time.time())
+    M.meta("projects_v4", time.time())
     return len(fixes)
 
 
