@@ -294,6 +294,16 @@ export async function click(a, tab) {
   if (!a.yes && risky(r.name)) throw new Error('confirm: "' + trunc(r.name, 50) + '" looks irreversible -> rerun with --yes');
   const bt = await chrome.tabs.get(tabId);
   const before = bt.url;
+  const over = FRAME_REF.test(f.ref) && !a.force ? await page(tabId, "act.frameHit", [r.x, r.y], 0).catch(() => null) : null;
+  if (over && over.covered) {
+    const nav = T.watchNav(tabId);
+    const done = await page(tabId, "act.domClick", [f.ref]);
+    if (done && done.gone) {
+      nav.stop();
+      throw new Error(f.ref + " is gone (page changed) -> try: lighting snap");
+    }
+    return after(tabId, nav, before, (a.text ? " " + f.ref : "") + " (clicked inside the frame: " + over.covered + " lies over it)", null, 100, bt.title, { ref: f.ref, line: r.line });
+  }
   await point(tabId, r.x, r.y);
   mark("point");
   const nav = T.watchNav(tabId);

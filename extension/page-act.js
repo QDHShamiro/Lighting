@@ -533,5 +533,18 @@
     return { name: clean(nameOf(el)), role: L.roleOf(el), tag: el.tagName, desc: describe(el), hint: L.hintOf(el) };
   }
 
-  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info, viewSize, frameBox };
+  function frameHit(x, y) {
+    const el = document.elementFromPoint(x, y);
+    if (!el) return { covered: "the edge of the window" };
+    return { covered: el.tagName === "IFRAME" || el.tagName === "FRAME" ? null : describe(el) };
+  }
+
+  function domClick(r) {
+    const el = get(r);
+    if (!el) return { gone: true };
+    el.click();
+    return { ok: true };
+  }
+
+  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info, viewSize, frameBox, frameHit, domClick };
 })();
