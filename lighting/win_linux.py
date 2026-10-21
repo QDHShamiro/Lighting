@@ -727,7 +727,7 @@ def listen_input(q, stop, ready, injected=False):
 
     th = threading.Thread(target=lambda: data.record_enable_context(ctx, cb), daemon=True)
     th.start()
-    if not ready.wait(1.0):
+    if not ready.wait(3.0):
         ready.set()
     stop.wait()
     ctl.record_disable_context(ctx)

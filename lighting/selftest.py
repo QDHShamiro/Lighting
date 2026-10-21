@@ -173,7 +173,9 @@ def browser(r, base):
     data = sites.load()
     data.pop("127.0.0.1", None)
     D.SITES.write_text(__import__("json").dumps(data, indent=1), "utf-8")
-    r.step("page loads JSON", ["open", base + "data", "--new"], lambda o, e: not e and "data: 1 JSON call (lighting net)" in o)
+    r.step("page loads JSON", ["open", base + "data", "--new"],
+           lambda o, e: not e and ("data: 1 JSON call (lighting net)" in o or "loading" in o))
+    r.step("JSON arrives", ["wait", "Items 40"], lambda o, e: not e)
     r.step("net lists it", ["net"], lambda o, e: not e and re.search(r"n1 GET 127\.0\.0\.1:\d+/api/items \(json \d+ KB\)", o))
     r.step("net shows its shape", ["net", "1"], lambda o, e: not e and "items[] (40) {id: 0" in o and "total: 40" in o)
     r.step("webmcp tools", ["tools"], lambda o, e: not e and ("no WebMCP tools" in o or "(" in o))
