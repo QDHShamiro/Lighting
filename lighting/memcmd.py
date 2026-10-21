@@ -275,6 +275,11 @@ def on_prompt(ctx, prompt):
 WIKI_HELP = "lighting wiki | wiki accept <n> [folder] | wiki drop <n> | wiki show <n>"
 
 
+def cmd_code(ctx, pos, flags):
+    from lighting import codemap
+    return codemap.cmd_code(ctx, pos, flags)
+
+
 def cmd_wiki(ctx, pos, flags):
     sub = pos[0].lower() if pos else ""
     found = vault.drafts()

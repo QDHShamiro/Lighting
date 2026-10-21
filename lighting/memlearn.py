@@ -231,7 +231,8 @@ def work(now):
     except (OSError, ValueError) as e:
         _st["error"] = "vault: %s" % e
     due = M.due_sessions(time.time() + D.MEM_QUIET_S if now else None) if c.get("memory_learn") or now else []
-    if not due and not M.unembedded(1):
+    from lighting import codemap
+    if not due and not M.unembedded(1) and not codemap.active_roots():
         return
     if not (MM.api("chat") or MM.ready("chat")) or not (MM.api("embed") or MM.ready("embed")):
         if c.get("memory_learn"):
@@ -250,9 +251,20 @@ def work(now):
                     (time.time() + D.MEM_RETRY_S, row["id"]))
             _st["error"] = "%s: %s" % (row["id"][:8], e)
     try:
-        embed_some()
+        if not embed_some():
+            code_some()
     except MM.NotReady as e:
         _st["error"] = str(e)
+
+
+def code_some():
+    from lighting import codemap
+    for root in codemap.active_roots():
+        if games.running():
+            return
+        codemap.refresh(root)
+        if codemap.embed_some(root, 40):
+            return
 
 
 def loop():

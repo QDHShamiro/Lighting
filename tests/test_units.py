@@ -1181,6 +1181,28 @@ def test_vault_index_and_projects():
     assert M.project_of_files([str(repo / "A" / "src" / "x.java")] * 2 + [str(repo / "C" / "y.java")]) == "A"
 
 
+def test_code_map():
+    import types
+    from lighting import codemap
+    repo = Path(tempfile.mkdtemp(prefix="lighting-code-"))
+    (repo / "src").mkdir()
+    (repo / "pyproject.toml").write_text("[project]\nname='x'\n", "utf-8")
+    (repo / "src" / "shop.py").write_text(
+        "class Wallet:\n    def take(self, n):\n        return n\n\n\ndef buy(w):\n    return w.take(5)\n", "utf-8")
+    (repo / "src" / "Main.java").write_text(
+        "class Main {\n  void run() { new Wallet(); buy(null); }\n}\n", "utf-8")
+    ctx = types.SimpleNamespace(cwd=str(repo / "src"))
+    over = codemap.cmd_code(ctx, [], {})
+    assert "1 python files" in over and "1 java files" in over, over
+    out = codemap.cmd_code(ctx, ["buy"], {})
+    assert "src/shop.py:6 function buy" in out and "src/Main.java:2 in run" in out, out
+    assert "src/shop.py:7 in buy" in codemap.cmd_code(ctx, ["callers", "take"], {})
+    assert "close names" in codemap.cmd_code(ctx, ["wall"], {})
+    (repo / "src" / "Main.java").unlink()
+    assert codemap.refresh(codemap.root_for(str(repo))) == 1
+    assert "Main.java" not in codemap.cmd_code(ctx, ["buy"], {})
+
+
 def test_nested_pending_keeps_waiting():
     import collections
     import types

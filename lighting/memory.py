@@ -224,6 +224,17 @@ def note(nid):
     return one("select * from notes where id = ?", (nid,))
 
 
+def meta_json(key, value=None):
+    if value is None:
+        raw = meta(key)
+        try:
+            return json.loads(raw) if raw else None
+        except ValueError:
+            return None
+    meta(key, json.dumps(value))
+    return value
+
+
 def drop_cache():
     _db["ids"] = None
 
