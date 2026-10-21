@@ -2,6 +2,7 @@ import json
 import re
 import threading
 import time
+from pathlib import Path
 
 from lighting import defaults as D
 from lighting import memory as M
@@ -158,10 +159,30 @@ def cmd_todo(ctx, pos, flags):
     return "\n".join(todo_list(rows)) if rows else "no open to-dos (lighting todo add \"task\")"
 
 
-def start_text(here):
+def project_lines(here):
+    r = M.one("select body from notes where source = 'vault' and kind = 'project' and project = ? "
+              "order by updated desc limit 1", (here,)) if here else None
+    text = [x.strip() for x in (r["body"] if r else "").splitlines() if x.strip() and not x.startswith(("#", "---"))]
+    return ["About: " + M.oneline(" ".join(text[:3]), 220)] if text else []
+
+
+def commits(cwd):
+    import subprocess
+    try:
+        out = subprocess.run(["git", "-C", cwd, "log", "-%d" % D.MEM_START_COMMITS, "--format=%h %ad %s", "--date=format:%m-%d"],
+                             capture_output=True, timeout=3, creationflags=0x08000000 if D.WIN else 0)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    rows = out.stdout.decode("utf-8", "replace").splitlines() if out.returncode == 0 else []
+    return ["Last commits:"] + ["  " + M.oneline(x, 100) for x in rows] if rows else []
+
+
+def start_text(here, cwd=""):
     c = M.counts()
-    lines = ['Lighting memory (%s): lighting recall "<words>" searches %d notes, lighting remember "<fact>" keeps one, '
-             'lighting todo tracks work.' % (here or "global", c["n"])]
+    lines = ['Lighting memory (%s): lighting recall "<words>" searches %d notes (vault, session notes and Claude '
+             'memory included), lighting remember "<fact>" keeps one, lighting todo tracks work.'
+             % (here or "no project", c["n"])]
+    lines += project_lines(here)
     rows = M.todos(here)[: D.MEM_START_TODOS]
     if rows:
         lines.append("Open to-dos:")
@@ -170,9 +191,16 @@ def start_text(here):
     if recent:
         lines.append("Last sessions:")
         for s in recent:
-            nxt = " Next: " + M.oneline(s["next"], 70) if s["next"] else ""
+            nxt = " Open: " + M.oneline(s["next"], 90) if s["next"] else ""
             lines.append("  %s %s: %s%s" % (M.day(s["last"]), M.oneline(s["title"] or "-", 50),
                                              M.oneline(s["summary"], 100), nxt))
+    if here and cwd:
+        lines += commits(cwd)
+    rules = M.rows("select id, title from notes where kind = 'rule' and source = 'vault' and project = ? "
+                   "order by updated desc limit ?", (here, D.MEM_START_RULES)) if here else []
+    if rules:
+        lines.append("Project rules:")
+        lines += ["  #%d %s" % (r["id"], M.oneline(r["title"], D.MEM_LINE)) for r in rules]
     mine = M.rows("select * from notes where source = 'user' and project in (?, '') order by updated desc limit ?",
                   (here, D.MEM_START_NOTES))
     if mine:
@@ -204,7 +232,10 @@ def cmd_hook(ctx, pos, flags):
     if event == "start":
         from lighting import memlearn
         memlearn.start()
-        return start_text(here)
+        return start_text(here, cwd)
+    if event == "compact":
+        from lighting import memlearn
+        threading.Thread(target=memlearn.tick, args=(True,), daemon=True).start()
     return ""
 
 
@@ -246,9 +277,13 @@ def cmd_memory(ctx, pos, flags):
         cfg["memory"] = sub == "on"
         D.save_config(cfg)
         return "memory %s" % sub
+    if sub == "import" and len(pos) >= 2 and pos[1].lower() == "context-engine":
+        n = memlearn.import_context_engine([Path(flags["dir"])] if flags.get("dir") else None)
+        return "copied %d Context Engine session notes into %s/Sessions (the originals stay)" % (
+            n, vault.root().as_posix())
     if sub == "import":
         if len(pos) < 2 or pos[1].lower() != "claude-mem":
-            raise Fail("import from where?", "lighting memory import claude-mem [--file path]")
+            raise Fail("import from where?", "lighting memory import claude-mem [--file path] | import context-engine")
         n, s, t = memlearn.import_claude_mem(flags.get("file"))
         return "imported %d notes, %d session summaries, %d open to-dos from claude-mem (vectors follow in the " \
                "background)" % (n, s, t)

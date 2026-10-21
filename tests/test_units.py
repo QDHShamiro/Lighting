@@ -1135,6 +1135,20 @@ def test_vault_index_and_projects():
             pass
         (base / "Projects" / "Aurora.md").unlink()
         assert vault.index() == 1 and not M.rows("select id from notes where title = 'Aurora'")
+        record = {"title": "Fix: build/JDK?", "summary": "Raised release to 21\n- pom updated", "why": "",
+                  "rejected": "JDK 17 toolchain", "next": "Deploy"}
+        first = vault.write_session("abcdef1234", "Aurora", record, 1760000000)
+        assert first.parent.name == "Aurora" and first.name.endswith(" abcdef12.md") and "/" not in first.stem
+        text = first.read_text("utf-8")
+        assert "## Done\n- Raised release to 21\n- pom updated" in text and "## Why" not in text
+        assert "## Tried and rejected\n- JDK 17 toolchain" in text and "## Left open\n- Deploy" in text
+        second = vault.write_session("abcdef1234", "Aurora", dict(record, title="Renamed"), 1760000000)
+        assert not first.exists() and second.exists()
+        old = Path(tempfile.mkdtemp(prefix="lighting-ce-")) / ".claude" / "memory" / "sessions"
+        old.mkdir(parents=True)
+        (old / "Session_Context_x_1.md").write_text("# Aurora: player fix\nSession: 1", "utf-8")
+        from lighting import memlearn
+        assert memlearn.import_context_engine([old]) == 1 and memlearn.import_context_engine([old]) == 0
     finally:
         vault.claude_dirs = real_dirs
         cfg["vault"] = ""

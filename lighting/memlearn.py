@@ -18,12 +18,17 @@ SYSTEM = (
     "non-obvious facts (paths, ports, commands, versions, accounts; never passwords, keys or tokens) and what is "
     "still open. Skip routine steps, file listings and what anyone sees in the code. Each note stands alone: name "
     "the project or tool it is about. Write English, short and concrete. At most %d notes; fewer is fine, none is "
-    "fine." % D.MEM_NOTES_PER_CHUNK)
+    "fine. Also keep the session record up to date, merged with the record so far: summary = what changed and "
+    "where, why = the reasons behind the decisions, rejected = what was tried and dropped and why, next = what is "
+    "left open. Say what and why, never how; one short line per point." % D.MEM_NOTES_PER_CHUNK)
+RECORD = ("summary", "why", "rejected", "next")
 SCHEMA = {
     "type": "object",
     "properties": {
         "title": {"type": "string"},
         "summary": {"type": "string"},
+        "why": {"type": "string"},
+        "rejected": {"type": "string"},
         "next": {"type": "string"},
         "notes": {"type": "array", "maxItems": D.MEM_NOTES_PER_CHUNK, "items": {
             "type": "object",
@@ -31,7 +36,7 @@ SCHEMA = {
                            "body": {"type": "string"}, "files": {"type": "array", "items": {"type": "string"}}},
             "required": ["kind", "title", "body"]}},
     },
-    "required": ["title", "summary", "next", "notes"],
+    "required": ["title", "summary", "why", "rejected", "next", "notes"],
 }
 REMINDER = re.compile(r"(?s)<(system-reminder|local-command-caveat)>.*?</\1>")
 TAG = re.compile(r"</?[a-zA-Z][\w-]*(?:\s[^<>]*)?>")
@@ -137,25 +142,27 @@ def learn(row):
         M.write("update sessions set offset = ?, learned = ?, status = 'done', title = coalesce(nullif(?, ''), title) "
                 "where id = ?", (end, time.time(), title, sid))
         return 0
-    summary = {"title": title or row["title"], "summary": row["summary"], "next": row["next"]}
+    summary = dict({k: row[k] or "" for k in RECORD}, title=title or row["title"])
     added = 0
     for part in chunks(text):
         if games.running():
             raise MM.NotReady("a game started")
-        user = "Project: %s\nSession title: %s\nSummary so far: %s\n\nSession log:\n%s" % (
-            project, summary["title"] or "-", summary["summary"] or "-", part)
+        so_far = "\n".join("%s: %s" % (k, summary[k]) for k in RECORD if summary[k]) or "-"
+        user = "Project: %s\nSession title: %s\nRecord so far:\n%s\n\nSession log:\n%s" % (
+            project or "-", summary["title"] or "-", so_far, part)
         out = parse(MM.chat(SYSTEM, user, SCHEMA))
         for n in out.get("notes") or []:
             if n.get("title"):
                 kind = n.get("kind") if n.get("kind") in KINDS else "fact"
                 _, new = M.merge_note(project, kind, n["title"], n.get("body", ""), n.get("files") or [], sid)
                 added += new
-        summary = {"title": title or out.get("title") or summary["title"], "summary": out.get("summary", ""),
-                   "next": out.get("next", "")}
-    M.write("update sessions set offset = ?, learned = ?, status = 'done', tries = 0, title = ?, summary = ?, next = ? "
-            "where id = ?", (end, time.time(), M.oneline(summary["title"], 120), M.scrub(summary["summary"]),
-                             M.scrub(summary["next"]), sid))
-    M.session_note(sid, project, summary["title"], M.scrub(summary["summary"]), M.scrub(summary["next"]))
+        summary = dict({k: M.scrub(str(out.get(k) or "")) for k in RECORD},
+                       title=title or out.get("title") or summary["title"])
+    M.write("update sessions set offset = ?, learned = ?, status = 'done', tries = 0, title = ?, summary = ?, why = ?, "
+            "rejected = ?, next = ? where id = ?", (end, time.time(), M.oneline(summary["title"], 120),
+                                                    *[summary[k] for k in RECORD], sid))
+    if not vault.write_session(sid, project, summary, row["started"] or time.time()):
+        M.session_note(sid, project, summary["title"], summary["summary"], summary["next"])
     _st["learned"] += added
     return added
 
@@ -327,6 +334,49 @@ def import_claude_mem(path=None):
     db.close()
     M.meta("imported_claude_mem", time.time())
     return len(notes), len(sess), todos
+
+
+def context_dirs():
+    import string
+    found = []
+    for letter in string.ascii_uppercase:
+        drive = Path("%s:/" % letter)
+        if D.WIN and drive.exists():
+            for pattern in ("*/.claude/memory/sessions", "*/*/.claude/memory/sessions", "*/*/*/.claude/memory/sessions"):
+                try:
+                    found += [p for p in drive.glob(pattern) if p.is_dir()]
+                except OSError:
+                    continue
+    home = Path.home() / ".claude" / "memory" / "sessions"
+    if home.is_dir() and home not in found:
+        found.append(home)
+    return found
+
+
+def known_projects():
+    names = {r["project"] for r in M.rows("select distinct project from notes where project != ''")}
+    return sorted((n for n in names if len(n) >= 4), key=len, reverse=True)
+
+
+def import_context_engine(dirs=None):
+    names, copied = known_projects(), 0
+    for d in dirs or context_dirs():
+        owner = d.parent.parent.parent
+        project = "" if owner == Path.home() else M.project_of(str(owner))
+        for f in d.glob("*.md"):
+            try:
+                text = f.read_text("utf-8", errors="replace")
+            except OSError:
+                continue
+            name = project or next((n for n in names if re.search(r"(?i)(?<![\w-])%s(?![\w-])" % re.escape(n),
+                                                                   text[:400])), "")
+            dest = vault.root() / "Sessions" / vault.safe_name(name or "general", 80) / f.name
+            if dest.exists():
+                continue
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(text, "utf-8")
+            copied += 1
+    return copied
 
 
 def state():

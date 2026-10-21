@@ -12,6 +12,7 @@ KIND_DIRS = [("knowledge/mistakes", "mistake"), ("knowledge/patterns", "pattern"
              ("archive", "archive"), ("notes", "note")]
 SKIP = {".obsidian", ".obsidian-mcp", ".trash", "templates", ".git"}
 FILE_SOURCES = ("vault", "claude")
+SECTIONS = [("summary", "Done"), ("why", "Why"), ("rejected", "Tried and rejected"), ("next", "Left open")]
 
 
 def root():
@@ -49,7 +50,8 @@ def vault_project(rel, meta):
         return meta["project"].strip("[]").split("/")[-1]
     parts = rel.split("/")
     if parts[0].lower() in ("projects", "sessions") and len(parts) >= 2:
-        return Path(parts[1]).stem if len(parts) == 2 else parts[1]
+        name = Path(parts[1]).stem if len(parts) == 2 else parts[1]
+        return "" if name == "general" else name
     return ""
 
 
@@ -119,6 +121,37 @@ def index():
     n = index_source("vault", [root()], False) + index_source("claude", claude_dirs(), True)
     M.meta("vault_indexed", t)
     return n
+
+
+def safe_name(text, n=60):
+    s = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', " ", text or "").strip(" .")
+    return " ".join(s.split())[:n].strip(" .") or "session"
+
+
+def session_file(sid, project):
+    folder = root() / "Sessions" / safe_name(project or "general", 80)
+    old = next(iter(folder.glob("* %s.md" % sid[:8])), None) if folder.is_dir() else None
+    return folder, old
+
+
+def write_session(sid, project, record, started):
+    folder, old = session_file(sid, project)
+    title = M.oneline(record.get("title") or "session", 120)
+    lines = ["# " + title, "Session: %s   Date: %s   Project: %s" % (
+        sid[:8], time.strftime("%Y-%m-%d", time.localtime(started)), project or "-"), ""]
+    for key, head in SECTIONS:
+        text = (record.get(key) or "").strip()
+        if text:
+            lines += ["## " + head] + [("- " + x.lstrip("-* ").strip()) for x in text.splitlines() if x.strip()] + [""]
+    path = folder / ("%s %s %s.md" % (time.strftime("%Y-%m-%d", time.localtime(started)), safe_name(title), sid[:8]))
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(lines), "utf-8")
+        if old and old != path:
+            old.unlink()
+    except OSError:
+        return None
+    return path
 
 
 def path_of(row):

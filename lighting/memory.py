@@ -29,13 +29,16 @@ create trigger if not exists notes_au after update of title, body on notes begin
 create table if not exists sessions(id text primary key, project text, cwd text, transcript text default '',
   started real, last real, ended integer default 0, offset integer default 0, learned real default 0,
   title text default '', summary text default '', next text default '', status text default 'open',
-  tries integer default 0, retry_at real default 0, source text default 'live');
+  tries integer default 0, retry_at real default 0, source text default 'live', why text default '',
+  rejected text default '');
 create index if not exists sessions_project on sessions(project, last);
 create table if not exists todos(id integer primary key, project text, list text default '', task text,
   status text default 'todo', note text default '', created real, updated real, origin text default '');
 create index if not exists todos_project on todos(project, status);
 create table if not exists meta(k text primary key, v text);
 """
+MIGRATE = ["alter table sessions add column why text default ''",
+           "alter table sessions add column rejected text default ''"]
 OPEN = ("todo", "doing")
 TOKEN = re.compile(r"[^\W_][\w.-]*", re.U)
 SECRET = [
@@ -59,6 +62,11 @@ def conn():
         c.execute("pragma journal_mode=wal")
         c.execute("pragma synchronous=normal")
         c.executescript(SCHEMA)
+        for sql in MIGRATE:
+            try:
+                c.execute(sql)
+            except sqlite3.OperationalError:
+                pass
         _db["conn"] = c
     return _db["conn"]
 
