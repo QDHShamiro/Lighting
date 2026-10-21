@@ -698,11 +698,15 @@ def listen_input(q, stop, ready, injected=False):
         "client_started": False, "client_died": False}])
     names = {}
     for ours, xname in reversed(list(KEYSYMS.items())):
-        sym = XK.string_to_keysym(xname)
-        if sym:
-            names[sym] = ours
+        try:
+            names[keysym_of(xname)] = ours
+        except ValueError:
+            pass
 
     def cb(reply):
+        if reply.category == record.StartOfData:
+            ready.set()
+            return
         if reply.category != record.FromServer or reply.client_swapped or not len(reply.data):
             return
         buf = reply.data
@@ -721,9 +725,10 @@ def listen_input(q, stop, ready, injected=False):
                 low = (XK.keysym_to_string(base) or "").lower()
                 q.put(("k", names.get(base) or (low if len(low) == 1 else ""), s if len(s) == 1 else "", mods, t))
 
-    ready.set()
     th = threading.Thread(target=lambda: data.record_enable_context(ctx, cb), daemon=True)
     th.start()
+    if not ready.wait(1.0):
+        ready.set()
     stop.wait()
     ctl.record_disable_context(ctx)
     ctl.flush()

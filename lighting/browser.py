@@ -427,8 +427,14 @@ def cmd_search(ctx, pos, flags):
         found = call(ctx, "search-field", {})
     if not found.get("ref"):
         raise Fail("no search field on this page", "lighting snap -f search, then type e<N> words --enter")
+    before = (ctx.where or {}).get("url")
     res = cmd_type(ctx, [found["ref"], words], dict(flags, enter=True, nolearn=True))
-    learned = sites.learn((ctx.where or {}).get("url"), words)
+    url = (ctx.where or {}).get("url")
+    deadline = time.time() + D.SEARCH_NAV_S
+    while url == before and time.time() < deadline:
+        time.sleep(0.1)
+        url = (call(ctx, "where").get("where") or {}).get("url") or url
+    learned = sites.learn(url, words)
     return res + ("\n! learned the search URL of %s: next time search jumps there directly" % sites.host_of(learned)
                   if learned else "")
 

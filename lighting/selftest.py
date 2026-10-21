@@ -393,8 +393,12 @@ def chat_app(r):
             time.sleep(0.1)
         r.step("chat inbox quiet", ["inbox", "Lighting Test Chat", "--timeout", "1s"],
                lambda o, e: not e and o.startswith("nothing new in 1 s"))
-        r.step("chat reply --wait (race)", ["reply", "Lighting Test Chat", "hello from selftest", "--wait", "--timeout", "6s"],
-               lambda o, e: not e and o.startswith("sent to") and "peer: ok, 19 chars" in o and "me: hello" not in o)
+        chat = next((w for w in win.windows() if w["title"] == "Lighting Test Chat"), None)
+        if D.MAC and os.environ.get("CI") and chat and not win.set_foreground(chat["hwnd"]):
+            r.rows.append("SKIP chat reply --wait (race) (this macOS machine keeps other apps from coming to the front)")
+        else:
+            r.step("chat reply --wait (race)", ["reply", "Lighting Test Chat", "hello from selftest", "--wait", "--timeout", "6s"],
+                   lambda o, e: not e and o.startswith("sent to") and "peer: ok, 19 chars" in o and "me: hello" not in o)
         r.step("chat link needs --yes", ["reply", "Lighting Test Chat", "see https://example.com"], lambda o, e: e and "--yes" in o)
         r.step("chat inbox after answer", ["inbox", "Lighting Test Chat", "--timeout", "1s"],
                lambda o, e: not e and o.startswith("nothing new"))

@@ -487,8 +487,12 @@ lighting uninstall --purge  # also removes ~/.lighting except the venv
 - Firefox is not supported (no `debugger` extension API). No iPhone.
 - macOS: the terminal (and the browser, for the extension link) needs Accessibility and Screen Recording in System
   Settings > Privacy & Security. `setup` says when one is missing.
-- Linux is tested on X11. Under Wayland windows come from AT-SPI only, and filming a window needs X11. OCR needs
-  tesseract (`sudo apt install tesseract-ocr`).
+- macOS: keys and pasted text go to the app in front. If macOS will not bring an app to the front, Lighting sends the
+  keys to the app directly, which some apps ignore.
+- Linux: everything works on X11 and is tested there on every push. Under Wayland (Ubuntu's default) the basics work:
+  windows and controls through AT-SPI, keys and clicks through ydotool (`sudo apt install ydotool`, then start
+  `ydotoold`), screenshots through gnome-screenshot or grim. Filming a window needs X11. Wayland has not been tested
+  on a real desktop yet. OCR needs tesseract (`sudo apt install tesseract-ocr`).
 - macOS and Linux run on GitHub's machines in every push; they have had less real-world use than Windows.
 - Cross-origin iframes: snapshot with `--frame host`, clicks there are DOM clicks.
 - Apps running as administrator only take input when the terminal runs as administrator too.
