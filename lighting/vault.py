@@ -13,6 +13,15 @@ KIND_DIRS = [("knowledge/mistakes", "mistake"), ("knowledge/patterns", "pattern"
 SKIP = {".obsidian", ".obsidian-mcp", ".trash", "templates", ".git"}
 FILE_SOURCES = ("vault", "claude")
 SECTIONS = [("summary", "Done"), ("why", "Why"), ("rejected", "Tried and rejected"), ("next", "Left open")]
+WIKI_KINDS = ("mistake", "rule", "pattern")
+BUILTIN = {
+    "mistake": "## Problem\n## Cause\n## Fix\n## Rule\n",
+    "rule": "## Rule\n## Why\n## When it applies\n",
+    "pattern": "## Pattern\n## When to use\n## Example\n",
+}
+HOMES = {"mistake": "Knowledge/Mistakes", "pattern": "Knowledge/Patterns", "rule": "Rules"}
+INDEXES = {"mistake": "Knowledge/INDEX.md", "pattern": "Knowledge/INDEX.md", "rule": "Rules/INDEX.md"}
+SECTION_OF = {"mistake": "Mistakes", "pattern": "Patterns"}
 
 
 def root():
@@ -152,6 +161,91 @@ def write_session(sid, project, record, started):
     except OSError:
         return None
     return path
+
+
+def inbox():
+    return root() / (D.config().get("vault_inbox") or "Inbox")
+
+
+def template(kind):
+    p = root() / "Templates" / ("%s.md" % kind)
+    try:
+        text = p.read_text("utf-8")
+    except OSError:
+        return BUILTIN[kind], [h for h in re.findall(r"(?m)^##\s+(.+)$", BUILTIN[kind])]
+    return text, [h.strip() for h in re.findall(r"(?m)^##\s+(.+)$", text)]
+
+
+def render(kind, title, sections, project, sid):
+    heads = template(kind)[1]
+    lines = ["---", "type: %s" % kind, "date: %s" % time.strftime("%Y-%m-%d"), "project: %s" % (project or "-"),
+             "draft: true", "session: %s" % sid[:8], "---", "# " + title, ""]
+    for h in heads:
+        value = (sections.get(h) or "").strip()
+        if value:
+            lines += ["## " + h, value, ""]
+    if project:
+        lines.append("[[Projects/%s]]" % project)
+    return "\n".join(lines) + "\n"
+
+
+def write_draft(kind, title, sections, project, sid):
+    folder = inbox()
+    path = folder / ("%s %s %s.md" % (time.strftime("%Y-%m-%d"), kind, safe_name(title)))
+    if path.exists():
+        return None
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        path.write_text(render(kind, title, sections, project, sid), "utf-8")
+    except OSError:
+        return None
+    return path
+
+
+def drafts():
+    folder = inbox()
+    return sorted(folder.glob("*.md")) if folder.is_dir() else []
+
+
+def accept(path, folder=None):
+    text = path.read_text("utf-8")
+    meta, _ = front(text)
+    kind = meta.get("type") or "note"
+    dest_dir = root() / (folder or HOMES.get(kind, "Notes"))
+    dest = dest_dir / (re.sub(r"^\d{4}-\d{2}-\d{2} \w+ ", "", path.stem) + ".md")
+    if dest.exists():
+        raise ValueError("%s already exists" % dest.relative_to(root()).as_posix())
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest.write_text(re.sub(r"(?m)^draft: true\n", "", text, count=1), "utf-8")
+    path.unlink()
+    register(dest, kind, meta.get("project", "-"))
+    return dest
+
+
+def register(dest, kind, project):
+    rel = dest.relative_to(root()).with_suffix("").as_posix()
+    head = HEAD.search(dest.read_text("utf-8"))
+    line = "- [[%s]] — %s (%s%s)" % (rel, head.group(1).strip() if head else dest.stem, kind,
+                                    ", " + project if project and project != "-" else "")
+    index = root() / INDEXES.get(kind, "Knowledge/INDEX.md")
+    if not index.exists():
+        return
+    text = index.read_text("utf-8")
+    section = SECTION_OF.get(kind)
+    m = re.search(r"(?m)^## %s\s*$" % re.escape(section), text) if section else None
+    if m:
+        end = text.find("\n## ", m.end())
+        end = len(text) if end < 0 else end
+        text = text[:end].rstrip("\n") + "\n" + line + "\n" + text[end:]
+    else:
+        text = text.rstrip("\n") + "\n" + line + "\n"
+    index.write_text(text, "utf-8")
+
+
+def drop(path):
+    trash = root() / ".trash"
+    trash.mkdir(exist_ok=True)
+    path.replace(trash / path.name)
 
 
 def path_of(row):

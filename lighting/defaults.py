@@ -212,6 +212,7 @@ BUILD_FILES = ("pom.xml", "build.gradle", "build.gradle.kts", "Cargo.toml", "pac
                "requirements.txt", "go.mod", "setup.py", "composer.json", "Gemfile", "CMakeLists.txt", "Makefile")
 MONOREPO_MIN = 3
 VAULT_BODY = 12000
+WIKI_PER_SESSION = 2
 MEM_EMBED_BATCH = 32
 MEM_EMBED_CHARS = 1200
 MEM_QUERY_PREFIX = "Instruct: Given a question, find the notes that answer it\nQuery: "
@@ -280,6 +281,7 @@ CONFIG_DEFAULTS = {
     "memory_embed": "",
     "models_dir": "",
     "vault": "",
+    "vault_inbox": "Inbox",
 }
 
 RISK_WORDS = [

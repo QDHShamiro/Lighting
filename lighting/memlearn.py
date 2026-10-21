@@ -20,7 +20,15 @@ SYSTEM = (
     "the project or tool it is about. Write English, short and concrete. At most %d notes; fewer is fine, none is "
     "fine. Also keep the session record up to date, merged with the record so far: summary = what changed and "
     "where, why = the reasons behind the decisions, rejected = what was tried and dropped and why, next = what is "
-    "left open. Say what and why, never how; one short line per point." % D.MEM_NOTES_PER_CHUNK)
+    "left open. Say what and why, never how; one short line per point. Set wiki only on a note that deserves a "
+    "permanent page in the user's knowledge base: mistake = an error with its root cause and fix, rule = a fixed "
+    "rule the user gave, pattern = a reusable way of doing something; leave it empty for everything else."
+    % D.MEM_NOTES_PER_CHUNK)
+DRAFT_SYSTEM = (
+    "Write one page for the user's knowledge base from the note and the session context. Fill each section with "
+    "1 to 4 short lines in the language of the section headings; leave a section empty when the note says nothing "
+    "for it. Concrete names, versions and commands, never passwords, keys or tokens. The title says the lesson in "
+    "a few words.")
 RECORD = ("summary", "why", "rejected", "next")
 SCHEMA = {
     "type": "object",
@@ -33,7 +41,8 @@ SCHEMA = {
         "notes": {"type": "array", "maxItems": D.MEM_NOTES_PER_CHUNK, "items": {
             "type": "object",
             "properties": {"kind": {"type": "string", "enum": KINDS}, "title": {"type": "string"},
-                           "body": {"type": "string"}, "files": {"type": "array", "items": {"type": "string"}}},
+                           "body": {"type": "string"}, "files": {"type": "array", "items": {"type": "string"}},
+                           "wiki": {"type": "string", "enum": [""] + list(vault.WIKI_KINDS)}},
             "required": ["kind", "title", "body"]}},
     },
     "required": ["title", "summary", "why", "rejected", "next", "notes"],
@@ -143,7 +152,7 @@ def learn(row):
                 "where id = ?", (end, time.time(), title, sid))
         return 0
     summary = dict({k: row[k] or "" for k in RECORD}, title=title or row["title"])
-    added = 0
+    added, wiki = 0, []
     for part in chunks(text):
         if games.running():
             raise MM.NotReady("a game started")
@@ -156,8 +165,12 @@ def learn(row):
                 kind = n.get("kind") if n.get("kind") in KINDS else "fact"
                 _, new = M.merge_note(project, kind, n["title"], n.get("body", ""), n.get("files") or [], sid)
                 added += new
+                if n.get("wiki") in vault.WIKI_KINDS:
+                    wiki.append(n)
         summary = dict({k: M.scrub(str(out.get(k) or "")) for k in RECORD},
                        title=title or out.get("title") or summary["title"])
+    for n in wiki[: D.WIKI_PER_SESSION]:
+        draft(n, project, sid, summary)
     M.write("update sessions set offset = ?, learned = ?, status = 'done', tries = 0, title = ?, summary = ?, why = ?, "
             "rejected = ?, next = ? where id = ?", (end, time.time(), M.oneline(summary["title"], 120),
                                                     *[summary[k] for k in RECORD], sid))
@@ -165,6 +178,24 @@ def learn(row):
         M.session_note(sid, project, summary["title"], summary["summary"], summary["next"])
     _st["learned"] += added
     return added
+
+
+def draft(n, project, sid, record):
+    for r in M.search(n["title"], project=project, limit=5, fts_only=True):
+        if r["source"] == "vault" and M.similar(r["title"], n["title"]) >= D.MEM_DUP_SIM:
+            return None
+    heads = vault.template(n["wiki"])[1]
+    schema = {"type": "object", "required": ["title", "sections"], "properties": {
+        "title": {"type": "string"},
+        "sections": {"type": "object", "required": heads, "properties": {h: {"type": "string"} for h in heads}}}}
+    user = "Project: %s\nKind: %s\nNote: %s\n%s\n\nSession: %s\n%s" % (
+        project or "-", n["wiki"], n["title"], n.get("body", ""), record.get("title", ""), record.get("summary", ""))
+    try:
+        out = parse(MM.chat(DRAFT_SYSTEM, user, schema))
+    except (ValueError, KeyError, TypeError):
+        return None
+    sections = {h: M.scrub(str(v)) for h, v in (out.get("sections") or {}).items()}
+    return vault.write_draft(n["wiki"], M.oneline(M.scrub(out.get("title") or n["title"]), 100), sections, project, sid)
 
 
 def embed_some(seconds=50):

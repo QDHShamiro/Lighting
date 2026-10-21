@@ -1149,6 +1149,24 @@ def test_vault_index_and_projects():
         (old / "Session_Context_x_1.md").write_text("# Aurora: player fix\nSession: 1", "utf-8")
         from lighting import memlearn
         assert memlearn.import_context_engine([old]) == 1 and memlearn.import_context_engine([old]) == 0
+        (base / "Templates" / "mistake.md").write_text("---\ntype: mistake\n---\n# <T>\n## Fehler\n## Ursache\n## Fix\n",
+                                                      "utf-8")
+        (base / "Knowledge" / "INDEX.md").write_text("# INDEX\n\n## Mistakes\n- [[a]] old\n\n## Patterns\n", "utf-8")
+        p = vault.write_draft("mistake", "JDK 25 breaks Maven", {"Fehler": "CME", "Ursache": "JAVA_HOME 25", "Fix": ""},
+                              "Aurora", "abcdef1234")
+        text = p.read_text("utf-8")
+        assert "draft: true" in text and "## Ursache\nJAVA_HOME 25" in text and "## Fix" not in text
+        assert "1 mistake [Aurora]" in memcmd.cmd_wiki(ctx, [], {})
+        assert "wiki drafts wait" in memcmd.start_text("", "")
+        out = memcmd.cmd_wiki(ctx, ["accept", "1"], {})
+        dest = base / "Knowledge" / "Mistakes" / "JDK 25 breaks Maven.md"
+        assert "Knowledge/Mistakes/JDK 25 breaks Maven.md" in out and dest.exists() and not p.exists()
+        assert "draft: true" not in dest.read_text("utf-8")
+        index = (base / "Knowledge" / "INDEX.md").read_text("utf-8")
+        assert index.index("[[Knowledge/Mistakes/JDK 25 breaks Maven]]") < index.index("## Patterns"), index
+        q = vault.write_draft("rule", "Never Fable", {"Rule": "no"}, "", "abcdef1234")
+        assert "dropped" in memcmd.cmd_wiki(ctx, ["drop", "1"], {}) and not q.exists()
+        assert (base / ".trash" / q.name).exists() and memcmd.cmd_wiki(ctx, [], {}).startswith("no drafts")
     finally:
         vault.claude_dirs = real_dirs
         cfg["vault"] = ""

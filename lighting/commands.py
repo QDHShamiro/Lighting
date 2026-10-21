@@ -797,10 +797,10 @@ SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
           "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest, "brain": cmd_brain,
           "improve": cmd_improve, "doctor-info": cmd_doctor_info, "access-prompt": cmd_access_prompt}
-SYSTEM.update({name: memcmd(name) for name in ("remember", "recall", "forget", "todo", "memory", "hook")})
+SYSTEM.update({name: memcmd(name) for name in ("remember", "recall", "forget", "todo", "memory", "hook", "wiki")})
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
          "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys",
-         "listen", "watch", "unread", "net", "tools", "recall", "todo", "memory"}
+         "listen", "watch", "unread", "net", "tools", "recall", "todo", "memory", "code"}
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}
 APP_ONLY = {"windows", "focus", "clip", "launch"}
 CHAT = {"inbox", "reply", "unread"}

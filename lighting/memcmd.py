@@ -206,6 +206,9 @@ def start_text(here, cwd=""):
     if mine:
         lines.append("Remembered:")
         lines += ["  #%d %s" % (r["id"], M.oneline(r["title"], D.MEM_LINE)) for r in mine]
+    waiting = len(vault.drafts())
+    if waiting:
+        lines.append("%d wiki drafts wait for a yes or no: lighting wiki" % waiting)
     if c["q"]:
         from lighting import memmodel as MM
         if not (MM.api("chat") or MM.ready("chat")):
@@ -267,6 +270,38 @@ def on_prompt(ctx, prompt):
         if len(out) >= D.MEM_HINTS:
             break
     return ["Lighting memory may help (lighting recall <id>): " + " | ".join(out)] if out else []
+
+
+WIKI_HELP = "lighting wiki | wiki accept <n> [folder] | wiki drop <n> | wiki show <n>"
+
+
+def cmd_wiki(ctx, pos, flags):
+    sub = pos[0].lower() if pos else ""
+    found = vault.drafts()
+    if not sub:
+        if not found:
+            return "no drafts wait in %s" % vault.inbox().as_posix()
+        lines = ["%d drafts wait in %s (lighting wiki accept <n> | drop <n> | show <n>):"
+                 % (len(found), vault.inbox().as_posix())]
+        for i, p in enumerate(found, 1):
+            meta = vault.front(p.read_text("utf-8", errors="replace"))[0]
+            lines.append("  %d %s [%s]: %s" % (i, meta.get("type", "note"), meta.get("project", "-"), p.stem))
+        return "\n".join(lines)
+    if sub not in ("accept", "drop", "show"):
+        raise Fail("unknown wiki command '%s'" % sub, WIKI_HELP)
+    if len(pos) < 2 or not pos[1].isdigit() or not 1 <= int(pos[1]) <= len(found):
+        raise Fail("which draft? 1 to %d" % len(found) if found else "no drafts wait", WIKI_HELP)
+    path = found[int(pos[1]) - 1]
+    if sub == "show":
+        return path.read_text("utf-8", errors="replace")
+    if sub == "drop":
+        vault.drop(path)
+        return "dropped %s (in the vault's .trash)" % path.name
+    try:
+        dest = vault.accept(path, " ".join(pos[2:]) or None)
+    except (OSError, ValueError) as e:
+        raise Fail(str(e), WIKI_HELP)
+    return "accepted -> %s (registered in its INDEX)" % dest.relative_to(vault.root()).as_posix()
 
 
 def cmd_memory(ctx, pos, flags):
