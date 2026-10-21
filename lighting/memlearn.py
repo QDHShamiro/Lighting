@@ -11,14 +11,16 @@ from lighting import memmodel as MM
 from lighting import memory as M
 from lighting import vault
 
-KINDS = ["decision", "preference", "bugfix", "feature", "fact", "discovery", "change", "open"]
+KINDS = ["decision", "preference", "bugfix", "feature", "fact", "discovery", "change"]
 SYSTEM = (
     "You keep the long-term memory of a coding assistant. From the session log, keep only what helps in a FUTURE "
     "session: decisions with their reason, the user's preferences and rules, bugs fixed with the root cause, "
-    "non-obvious facts (paths, ports, commands, versions, accounts; never passwords, keys or tokens) and what is "
-    "still open. Skip routine steps, file listings and what anyone sees in the code. Each note stands alone: name "
-    "the project or tool it is about. Write English, short and concrete. At most %d notes; fewer is fine, none is "
-    "fine. Also keep the session record up to date, merged with the record so far: summary = what changed and "
+    "non-obvious facts (paths, ports, commands, versions, accounts; never passwords, keys or tokens). Skip routine "
+    "steps, file listings, what anyone sees in the code, progress and status (counts, timings, test or CI runs, "
+    "what is running right now) and plans; what is still open goes into next, never into a note. Each note stands "
+    "alone: its title starts with the project or tool, like 'Lighting: hints need words and meaning'. Write "
+    "English, short and concrete. At most %d notes; fewer is fine, none is fine. Also keep the session record up "
+    "to date, merged with the record so far: summary = what changed and "
     "where, why = the reasons behind the decisions, rejected = what was tried and dropped and why, next = what is "
     "left open. Say what and why, never how; one short line per point. Set wiki only on a note that deserves a "
     "permanent page in the user's knowledge base: mistake = an error with its root cause and fix, rule = a fixed "
