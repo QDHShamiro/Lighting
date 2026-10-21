@@ -1,3 +1,4 @@
+import functools
 import json
 import re
 import sqlite3
@@ -95,17 +96,61 @@ def meta(key, value=None):
     return value
 
 
+_roots = {}
+
+
+def built(d):
+    try:
+        return any((d / f).exists() for f in D.BUILD_FILES)
+    except OSError:
+        return False
+
+
+def monorepo(root):
+    if root not in _roots:
+        try:
+            _roots[root] = sum(1 for c in root.iterdir() if c.is_dir() and built(c)) >= D.MONOREPO_MIN
+        except OSError:
+            _roots[root] = False
+    return _roots[root]
+
+
+@functools.lru_cache(maxsize=8192)
 def project_of(cwd):
     if not cwd:
         return ""
     p = Path(cwd)
-    for d in [p, *p.parents]:
+    home = Path.home()
+    chain = [p, *p.parents]
+    root = None
+    for d in chain:
+        if d == home:
+            break
         try:
             if (d / ".git").exists():
-                return d.name or str(d)
+                root = d
+                break
         except OSError:
             break
-    return p.name or str(p)
+    if root is None:
+        if p == home:
+            return ""
+        found = next((d for d in chain if d != home and built(d)), p)
+        return found.name or str(found)
+    if p != root and monorepo(root):
+        child = root / p.relative_to(root).parts[0]
+        if built(child):
+            return child.name
+    return root.name or str(root)
+
+
+def project_of_files(paths):
+    seen = {}
+    for f in paths:
+        name = project_of(str(Path(f).parent)) if f else ""
+        if name:
+            seen[name] = seen.get(name, 0) + 1
+    return max(seen, key=seen.get) if seen else ""
 
 
 def scrub(text):
@@ -147,7 +192,7 @@ def add_note(project, kind, title, body="", files=(), source="user", session="",
 
 def merge_note(project, kind, title, body, files=(), session=""):
     for r in search(title, project=project, limit=3, fts_only=True):
-        if r["project"] == project and similar(r["title"], title) >= D.MEM_DUP_SIM:
+        if r["project"] == project and r["source"] not in ("vault", "claude") and similar(r["title"], title) >= D.MEM_DUP_SIM:
             text = body if len(body or "") > len(r["body"] or "") else r["body"]
             write("update notes set title = ?, body = ?, kind = ?, updated = ?, session = ? where id = ?",
                   (oneline(scrub(title), 200), scrub(text), kind or r["kind"], time.time(), session, r["id"]))
@@ -171,7 +216,14 @@ def note(nid):
     return one("select * from notes where id = ?", (nid,))
 
 
+def drop_cache():
+    _db["ids"] = None
+
+
 def forget(nid):
+    r = note(nid)
+    if r and r["source"] in ("vault", "claude"):
+        raise ValueError("#%d is the file %s: edit or delete the file itself" % (nid, (r["origin"] or "").split(":", 1)[-1]))
     with _lock:
         c = conn()
         n = c.execute("delete from notes where id = ?", (nid,)).rowcount

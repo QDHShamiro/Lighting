@@ -31,6 +31,7 @@ IMPROVE = HOME / "improve.json"
 MEMORY = HOME / "memory"
 MEMORY_DB = MEMORY / "memory.db"
 MODELS = HOME / "models"
+VAULT = HOME / "vault"
 CONFIG = HOME / "config.json"
 BLOCKLIST = HOME / "blocklist.txt"
 EXT = HOME / "extension"
@@ -205,6 +206,10 @@ MEM_RRF_K = 60
 MEM_PROJECT_BOOST = 1.3
 MEM_DUP_SIM = 0.7
 MEM_VEC_DIM = 256
+BUILD_FILES = ("pom.xml", "build.gradle", "build.gradle.kts", "Cargo.toml", "package.json", "pyproject.toml",
+               "requirements.txt", "go.mod", "setup.py", "composer.json", "Gemfile", "CMakeLists.txt", "Makefile")
+MONOREPO_MIN = 3
+VAULT_BODY = 12000
 MEM_EMBED_BATCH = 32
 MEM_EMBED_CHARS = 1200
 MEM_QUERY_PREFIX = "Instruct: Given a question, find the notes that answer it\nQuery: "
@@ -272,6 +277,7 @@ CONFIG_DEFAULTS = {
     "memory_model": "",
     "memory_embed": "",
     "models_dir": "",
+    "vault": "",
 }
 
 RISK_WORDS = [

@@ -9,6 +9,7 @@ from lighting import defaults as D
 from lighting import games
 from lighting import memmodel as MM
 from lighting import memory as M
+from lighting import vault
 
 KINDS = ["decision", "preference", "bugfix", "feature", "fact", "discovery", "change", "open"]
 SYSTEM = (
@@ -68,7 +69,7 @@ def condense(path, offset):
         f.seek(offset)
         data = f.read()
     end = data.rfind(b"\n") + 1
-    parts, title = [], ""
+    parts, title, paths = [], "", []
     for raw in data[:end].splitlines():
         try:
             d = json.loads(raw)
@@ -90,9 +91,14 @@ def condense(path, offset):
                 if text:
                     parts.append(("USER: " if t == "user" else "CLAUDE: ") + cut(text, D.MEM_TEXT))
             elif k == "tool_use":
-                parts.append("TOOL " + tool_line(c.get("name"), c.get("input") or {}))
+                a = c.get("input") or {}
+                parts.append("TOOL " + tool_line(c.get("name"), a))
+                f = a.get("file_path") or a.get("notebook_path") or a.get("path")
+                if isinstance(f, str) and re.match(r"^(?:[A-Za-z]:[\\/]|/)", f):
+                    paths += [f] * (3 if c.get("name") in ("Edit", "Write", "NotebookEdit") else 1)
             elif k == "tool_result" and c.get("is_error"):
                 parts.append("ERROR: " + cut(result_text(c), D.MEM_TOOL_TEXT))
+    condense.paths = paths
     return M.scrub("\n".join(parts)), offset + end, title
 
 
@@ -124,7 +130,9 @@ def learn(row):
         M.write("update sessions set status = 'done' where id = ?", (row["id"],))
         return 0
     text, end, title = condense(row["transcript"], row["offset"])
-    sid, project = row["id"], row["project"]
+    sid, project = row["id"], M.project_of_files(condense.paths) or row["project"]
+    if project != row["project"]:
+        M.write("update sessions set project = ? where id = ?", (project, sid))
     if len(text) < D.MEM_MIN_CHARS:
         M.write("update sessions set offset = ?, learned = ?, status = 'done', title = coalesce(nullif(?, ''), title) "
                 "where id = ?", (end, time.time(), title, sid))
@@ -179,6 +187,11 @@ def work(now):
     c = D.config()
     if not c.get("memory") or MM.reap():
         return
+    try:
+        reproject()
+        vault.index()
+    except (OSError, ValueError) as e:
+        _st["error"] = "vault: %s" % e
     due = M.due_sessions(time.time() + D.MEM_QUIET_S if now else None) if c.get("memory_learn") or now else []
     if not due and not M.unembedded(1):
         return
@@ -236,6 +249,25 @@ def fold_work_state(entries):
     return lists
 
 
+def reproject():
+    if M.meta("projects_v2"):
+        return 0
+    home, fixes = Path.home().name, []
+    for r in M.rows("select id, project, files from notes where source in ('import', 'session', 'user')"):
+        try:
+            files = json.loads(r["files"] or "[]")
+        except ValueError:
+            files = []
+        project = M.project_of_files(files) or ("" if r["project"] == home else r["project"])
+        if project != r["project"]:
+            fixes.append((project, r["id"]))
+    M.many("update notes set project = ? where id = ?", fixes)
+    M.write("update sessions set project = '' where project = ?", (home,))
+    M.write("update todos set project = '' where project = ?", (home,))
+    M.meta("projects_v2", time.time())
+    return len(fixes)
+
+
 def import_claude_mem(path=None):
     src = Path(path) if path else Path.home() / ".claude-mem" / "claude-mem.db"
     if not src.exists():
@@ -243,6 +275,7 @@ def import_claude_mem(path=None):
     db = sqlite3.connect("file:%s?mode=ro" % src.as_posix(), uri=True)
     have = {r[0] for r in M.rows("select origin from notes where origin like 'cm:%' "
                                  "union select origin from todos where origin like 'cm:%'")}
+    home = Path.home().name
     notes = []
     for oid, project, kind, title, sub, facts, narr, fr, fm, t in db.execute(
             "select id, project, type, title, subtitle, facts, narrative, files_read, files_modified, created_at_epoch "
@@ -259,12 +292,14 @@ def import_claude_mem(path=None):
         except ValueError:
             files = []
         when = (t or 0) / 1000
+        project = M.project_of_files(files) or ("" if project == home else project)
         notes.append((project or "", kind or "note", M.oneline(M.scrub(title), 200), M.scrub(body.strip()),
                       json.dumps(files)[:2000], "import", "", when, when, "cm:o:%d" % oid))
     sess = []
     for sid, project, req, done, learned, nxt, t in db.execute(
             "select id, project, request, completed, learned, next_steps, created_at_epoch from session_summaries"):
         when = (t or 0) / 1000
+        project = "" if project == home else project
         summary = M.scrub(" ".join(x for x in (done, learned) if x))
         if summary and "cm:s:%d" % sid not in have:
             notes.append((project or "", "session", M.oneline(req or "session", 200),

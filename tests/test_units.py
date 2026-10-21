@@ -1102,6 +1102,53 @@ def test_games_paths():
     assert not games.is_game("C:/Windows/explorer.exe")
 
 
+def test_vault_index_and_projects():
+    import types
+    from lighting import defaults as D, memcmd, memory as M, vault
+    base = Path(tempfile.mkdtemp(prefix="lighting-vault-"))
+    (base / "Knowledge" / "Mistakes").mkdir(parents=True)
+    (base / "Templates").mkdir()
+    (base / "Projects").mkdir()
+    (base / "Knowledge" / "Mistakes" / "jdk.md").write_text(
+        "---\ntags: [java]\n---\n# Build needs JDK 21\nMaven fails with release 21 on JDK 17.", "utf-8")
+    (base / "Projects" / "Aurora.md").write_text("# Aurora\nMusic app, Supabase.", "utf-8")
+    (base / "Templates" / "mistake.md").write_text("# Template", "utf-8")
+    cfg = D.config()
+    cfg["vault"] = str(base)
+    D.save_config(cfg)
+    vault.claude_dirs, real_dirs = (lambda: []), vault.claude_dirs
+    try:
+        assert vault.index() == 2
+        rows = {r["title"]: r for r in M.rows("select * from notes where source = 'vault'")}
+        assert set(rows) == {"Build needs JDK 21", "Aurora"}
+        assert rows["Build needs JDK 21"]["kind"] == "mistake" and rows["Aurora"]["project"] == "Aurora"
+        assert vault.index() == 0
+        ctx = types.SimpleNamespace(cwd=str(base), sid="s", told={})
+        out = memcmd.cmd_recall(ctx, ["maven", "jdk"], {"all": True})
+        assert "(vault)" in out and "JDK 21" in out, out
+        nid = rows["Build needs JDK 21"]["id"]
+        assert "Knowledge/Mistakes/jdk.md" in memcmd.cmd_recall(ctx, [str(nid)], {})
+        try:
+            memcmd.cmd_forget(ctx, [str(nid)], {})
+            raise AssertionError("forget removed a vault file note")
+        except commands.Fail:
+            pass
+        (base / "Projects" / "Aurora.md").unlink()
+        assert vault.index() == 1 and not M.rows("select id from notes where title = 'Aurora'")
+    finally:
+        vault.claude_dirs = real_dirs
+        cfg["vault"] = ""
+        D.save_config(cfg)
+    assert M.project_of(str(Path.home())) == ""
+    repo = Path(tempfile.mkdtemp(prefix="lighting-mono-"))
+    (repo / ".git").mkdir()
+    for name in ("A", "B", "C"):
+        (repo / name / "src").mkdir(parents=True)
+        (repo / name / "pom.xml").write_text("<project/>", "utf-8")
+    assert M.project_of(str(repo / "B" / "src")) == "B"
+    assert M.project_of_files([str(repo / "A" / "src" / "x.java")] * 2 + [str(repo / "C" / "y.java")]) == "A"
+
+
 def test_nested_pending_keeps_waiting():
     import collections
     import types

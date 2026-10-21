@@ -5,11 +5,13 @@ import time
 
 from lighting import defaults as D
 from lighting import memory as M
+from lighting import vault
 from lighting.common import Fail
 
 SAY = re.compile(r"(?is)^\s*(?:bitte\s+|please\s+)?(?:merk(?:e)?\s+dir|notier(?:e)?\s+dir|remember)\b[\s,:;-]*"
                  r"(?:(?:bitte|please)\s+)?(?:dass\s+|that\s+)?(.+)")
 TODO_HELP = 'lighting todo | todo add "task" [--list name] | todo done|doing|drop|todo <id> | todo note <id> "text"'
+SOURCE_TAGS = {"vault": "vault", "claude": "claude memory"}
 MEMORY_HELP = "lighting memory [learn | import claude-mem | model | on | off]"
 
 
@@ -30,8 +32,9 @@ def ident(text):
 
 def line(r):
     body = M.oneline((r["body"] or "").split("\n")[0], 70) if r["body"] and r["kind"] != "session" else ""
-    head = "#%d %s %s%s: %s" % (r["id"], M.day(r["updated"]), r["kind"], " [%s]" % r["project"] if r.get("other") else "",
-                                M.oneline(r["title"], D.MEM_LINE))
+    where = SOURCE_TAGS.get(r["source"], "")
+    head = "#%d %s %s%s%s: %s" % (r["id"], M.day(r["updated"]), r["kind"], " [%s]" % r["project"] if r.get("other") else "",
+                                  " (%s)" % where if where else "", M.oneline(r["title"], D.MEM_LINE))
     return head + (" | " + body if body and body.lower() not in head.lower() else "")
 
 
@@ -79,7 +82,7 @@ def cmd_recall(ctx, pos, flags):
         if not r:
             raise Fail("no note #%s" % pos[0].lstrip("#"), 'lighting recall "<words>"')
         M.touch([r["id"]])
-        files = ", ".join(json.loads(r["files"] or "[]")[:8])
+        files = vault.path_of(r) or ", ".join(json.loads(r["files"] or "[]")[:8])
         return "#%d %s %s [%s, %s, %s]\n%s%s%s" % (
             r["id"], time.strftime("%Y-%m-%d", time.localtime(r["updated"])), r["kind"], r["project"] or "global",
             r["source"], r["session"][:8] or "-", r["title"], "\n" + r["body"] if r["body"] else "",
@@ -99,7 +102,10 @@ def cmd_recall(ctx, pos, flags):
 def cmd_forget(ctx, pos, flags):
     if not pos:
         raise Fail("forget needs a note number", "lighting forget 42")
-    n = M.forget(ident(pos[0]))
+    try:
+        n = M.forget(ident(pos[0]))
+    except ValueError as e:
+        raise Fail(str(e))
     return "forgot #%s" % pos[0].lstrip("#") if n else "no note #%s" % pos[0].lstrip("#")
 
 
