@@ -196,8 +196,9 @@ check caught it.)
 ## It remembers
 
 Every new session starts from zero, so the AI asks again, searches again, decides again. Lighting keeps
-a memory on your computer and starts each session with about 500 tokens of it: the open to-dos, the
-last sessions in one line each, and what you asked it to keep.
+a memory on your computer and starts each session with a few hundred tokens of it: what the project is, the
+open to-dos, the last sessions with what is still open, the last commits, the project's rules and what you
+asked it to keep.
 
 ```
 you      merk dir, dass Brave der einzige Browser ist
@@ -214,8 +215,33 @@ claude   lighting todo add "Release 2.0" --list lighting
 - **Finds by meaning.** Search mixes words and meaning, so "why did the build fail" finds the note
   that says "JDK 21 is needed".
 - **Speaks up.** A prompt that clearly fits old notes of the same project shows their numbers, never more than two.
+- **Writes the notes for you.** After a session, the local model writes its note into your vault (done, why,
+  tried and rejected, left open), one Markdown file per session under `Sessions/<project>/`. No tokens spent on it.
+- **Keeps a wiki with you.** A mistake with its cause, a rule you gave or a reusable pattern becomes a draft in
+  the vault's inbox, filled along your own templates. `lighting wiki accept 1` files it and adds it to the index,
+  `wiki drop 1` throws it away; nothing lands in your wiki unchecked.
+- **Reads your vault.** Point it at an Obsidian vault (`lighting config vault <folder>`) and `recall` searches
+  your notes, the session notes and Claude Code's own memory files together. They stay plain Markdown.
 - **Stays yours.** One SQLite file in `~/.lighting/memory`. Nothing is uploaded, keys and passwords
-  are cut out before anything is stored. Coming from claude-mem: `lighting memory import claude-mem`.
+  are cut out before anything is stored. Coming from claude-mem: `lighting memory import claude-mem`; from
+  Context Engine: `lighting memory import context-engine`.
+
+## It knows your code
+
+`lighting code` keeps a map of every project you work in: where each class and function is defined and who calls
+it, for Java, Python, Rust, TypeScript, JavaScript, C#, Go, Kotlin, C/C++ and more. Only changed files are read
+again, so it is current on every call, with nothing to install per repo.
+
+```
+claude   lighting code withdraw
+         defined:
+           src/main/java/dev/luis/asyncAuction/economy/VaultHook.java:37 method withdraw in VaultHook
+         called from (1):
+           src/main/java/dev/luis/asyncAuction/listener/AuctionListener.java:516 in finalizeBuy
+```
+
+Without a name, `lighting code` gives the overview: languages, folders, the most used types and the entry points.
+The search by meaning is built in the background by the same local model, only for projects you work in.
 
 ## Built for Claude
 
