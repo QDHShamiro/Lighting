@@ -165,6 +165,9 @@ def route(ctx, name, pos, flags):
     if name == "watch":
         from lighting import watch
         return watch.cmd_watch(ctx, pos, flags)
+    if name == "voice":
+        from lighting import voice_discord
+        return voice_discord.cmd_voice(ctx, pos, flags)
     if name == "phone":
         from lighting import android
         return android.cmd_phone(ctx, pos, flags)
