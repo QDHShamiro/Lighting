@@ -93,8 +93,13 @@ def cmd_suggest(ctx, pos, flags):
     except (ValueError, AttributeError):
         prompt = raw
     note_prompt(ctx.prompts, prompt)
-    from lighting import brain
-    tip = brain.weekly_tip()
+    from lighting import brain, memcmd
+    try:
+        mem = memcmd.on_prompt(ctx, prompt)
+    except Exception:
+        mem = []
+    weekly = brain.weekly_tip()
+    tip = "\n".join(mem + ([weekly] if weekly else []))
     stems = {stem(w) for w in words(prompt)}
     if len(stems) < 2:
         return tip

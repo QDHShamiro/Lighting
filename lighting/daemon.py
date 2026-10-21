@@ -238,6 +238,11 @@ class Daemon:
         finally:
             conn.close()
         if res.get("shutdown"):
+            try:
+                from lighting import memmodel
+                memmodel.stop_all()
+            except Exception:
+                pass
             os._exit(0)
 
     def context(self, commands, sid):
@@ -335,6 +340,11 @@ class Daemon:
         threading.Thread(target=self.worker, daemon=True).start()
         threading.Thread(target=self.hotkey_loop, daemon=True).start()
         threading.Thread(target=warm_apps, daemon=True).start()
+        try:
+            from lighting import memlearn
+            memlearn.start()
+        except Exception:
+            pass
         while True:
             try:
                 conn = listener.accept()

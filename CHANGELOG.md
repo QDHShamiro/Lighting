@@ -9,6 +9,15 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 Built from 1,831 failed commands in the log since 1.1.0: most came from a few loops that kept hitting the same wall.
 
 ### Added
+- Memory: Lighting remembers across sessions, on this PC only. `remember "fact"`, `recall "words"` (words and meaning
+  mixed, one line per note, `recall 42` in full), `forget 42`, to-do lists (`todo add "task" --list x`,
+  `todo doing|done|drop 12`, `todo note 12 "..."`). A session starts with a summary of about 500 tokens (open
+  to-dos, the last sessions, what the user asked to keep). "merk dir ..." or "remember ..." in a prompt is saved by
+  the hook at once, and up to 3 notes that fit a prompt are named. Finished sessions are learned in the background by
+  a local model: Lighting downloads llama.cpp, Qwen3.5 (4B, or 2B under 12 GB RAM) and Qwen3-Embedding with
+  checksums, runs them at low priority and never while a game runs (full screen, Minecraft, Steam and Epic games).
+  Any OpenAI-compatible server works instead (`config memory_api`). `memory import claude-mem` moves notes, session
+  summaries and open to-dos over. `lighting.exe` and the extension carry the Lighting icon.
 - `lighting voice` (Windows): an AI joins a Discord call when the user asks (`voice join "Friends"`), hears with Groq,
   answers with Gemini and speaks with edge-tts through VB-Cable. It always says that it is an AI and listens, leaves
   when someone says "KI raus", keeps no transcript of the others and uses a persona only in the call it was written for.

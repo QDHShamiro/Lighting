@@ -483,12 +483,14 @@ fn main() {
     let root = root(&home);
     let first = args.first().map(String::as_str).unwrap_or("");
     let quiet = args.iter().any(|a| a == "--quiet");
-    let silent = first == "done" || first == "suggest";
+    let event = args.get(1).map(String::as_str).unwrap_or("");
+    let silent = first == "done" || first == "suggest" || first == "hook";
     let idle = match first {
         "stop" => Some("lighting daemon not running"),
         "done" if quiet => Some(""),
         "done" => Some("nothing to close"),
         "suggest" => Some(""),
+        "hook" if event != "start" => Some(""),
         _ => None,
     };
     if LOCAL.contains(&first) || !ready(&home, &root) {
@@ -498,7 +500,8 @@ fn main() {
         python(&home, &root, &args);
     }
     let mut hook_input = String::new();
-    if ((first == "suggest" && args.len() == 1) || (first == "done" && quiet)) && !io::stdin().is_terminal() {
+    let hook = first == "hook" && args.len() == 2;
+    if ((first == "suggest" && args.len() == 1) || (first == "done" && quiet) || hook) && !io::stdin().is_terminal() {
         hook_input = read_hook_input();
     }
     let mut sid = env::var("CLAUDE_CODE_SESSION_ID").unwrap_or_default();
@@ -553,7 +556,7 @@ fn main() {
         req.push('\0');
         req.push_str(a);
     }
-    if first == "suggest" && !hook_input.is_empty() {
+    if (first == "suggest" || hook) && !hook_input.is_empty() {
         req.push('\0');
         req.push_str(&hook_input.replace('\0', " "));
     }

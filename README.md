@@ -190,6 +190,30 @@ spotify-wiedergeben search= | 2/2 ok, 1.4 s, saved ~181 tokens | launch spotify:
 (The failed `github-issues` run was a repo that does not exist: it clicked the global Issues link, the
 check caught it.)
 
+## It remembers
+
+Every new session starts from zero, so the AI asks again, searches again, decides again. Lighting keeps
+a memory on your computer and starts each session with about 500 tokens of it: the open to-dos, the
+last sessions in one line each, and what you asked it to keep.
+
+```
+you      merk dir, dass Brave der einzige Browser ist
+         Lighting memory saved #14905: "Brave der einzige Browser ist"
+claude   lighting recall "game pause localai"
+         #13529 10-18 feature: Pause Mode Detection: Query Game State for Paused Execution | Added paused() …
+         #13555 10-18 change: SPEC.md Updated: Gaming Behavior Changed to Pause Mode | …
+claude   lighting todo add "Release 2.0" --list lighting
+```
+
+- **Learns by itself.** When a session ends, a local model reads it and keeps the decisions, fixes,
+  facts and what is still open. Lighting downloads the model itself (Qwen3.5 with llama.cpp) and never
+  runs it while you play a game.
+- **Finds by meaning.** Search mixes words and meaning, so "why did the build fail" finds the note
+  that says "JDK 21 is needed".
+- **Speaks up.** A prompt that fits old notes shows their numbers, never more than three.
+- **Stays yours.** One SQLite file in `~/.lighting/memory`. Nothing is uploaded, keys and passwords
+  are cut out before anything is stored. Coming from claude-mem: `lighting memory import claude-mem`.
+
 ## Built for Claude
 
 Every step of an AI agent costs a model round of 1-5 seconds, and everything a tool prints stays in the
@@ -274,6 +298,7 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | Desktop apps (accessibility tree + OCR) | ✅ Windows, macOS, Linux | – | – | – |
 | Tokens for a first look at a page | **~440** (measured) | ~15,850: screenshot + page text (measured) | 15,000-30,000 on dense pages ([1]) | no number published ([2]) |
 | Repeated tasks | learned routines, one call | saved shortcuts | – | – |
+| Memory across sessions | ✅ on your computer, learned by a local model | – | – | – |
 | A whole video as one image | ✅ `frames` | – | – | – |
 | Headless, CI | ❌ real browser only | desktop Chrome, no headless | ✅ | ✅ |
 
@@ -287,9 +312,10 @@ your logged-in browser and your apps, cheaply.
 
 ## What's new
 
-- **2.0.0** `lighting watch` (any video in one call: chapters, speech, screen text and scenes in one image), macOS
-  and Linux, Android phones (`lighting phone`), and a brain: on pages it knows, `snap` shows the
-  controls you actually use (this repo's page ~450 → ~117 tokens). `lighting improve` checks the last days for
+- **2.0.0** A memory across sessions (`recall`, `remember`, `todo`, a start summary of ~500 tokens, learned by a
+  local model that Lighting downloads itself), `lighting watch` (any video in one call: chapters, speech, screen
+  text and scenes in one image), macOS and Linux, Android phones (`lighting phone`), and a brain: on pages it
+  knows, `snap` shows the controls you actually use (this repo's page ~450 → ~117 tokens). `lighting improve` checks the last days for
   errors and loops, `lighting doctor --fix` repairs the setup, routines run on a schedule, `lighting demo` shows it
   all in 30 s. A one-click bundle for Claude Desktop, an entry in the MCP registry, Apache-2.0.
 - **1.1.0** Sessions keep their tabs and windows through updates and restarts; `wait "text" w3` waits in any
@@ -426,6 +452,15 @@ args = ["mcp"]
 | Use | `routines [-f word]` · `run <name> param=value` · `routine show <name>` |
 | Teach | learned by itself on repeat · `routine save <name> [param=value]` · `record start <name>` … `record stop [param=value]` |
 | Tidy | `routine rm\|rename <name>` · `routine forget` (task history) · `config learn off` |
+
+**Memory** (one file on your computer, `~/.lighting/memory`)
+
+| | |
+|---|---|
+| Keep | `remember "fact" [--kind decision] [--global]` · "merk dir …" / "remember …" in a prompt · learned from finished sessions |
+| Find | `recall "words" [--all]` · `recall 42` (in full) · `forget 42` |
+| To-dos | `todo [--all]` · `todo add "task" --list x` · `todo doing\|done\|drop 12` · `todo note 12 "text"` |
+| Model | `memory` (state) · `memory model` (download) · `memory learn` · `memory import claude-mem` · `config memory_api <url>` · `memory off` |
 
 On Windows clicks and typing go through UI Automation in the background, your mouse stays where it is.
 `do "fill Email=a@b.c; click Continue; expect Welcome"` runs several steps in one call.

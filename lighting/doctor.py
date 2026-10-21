@@ -242,8 +242,8 @@ class Doctor:
 
     def check(self):
         for step in (self.install, self.client, self.files, self.daemon, self.procs, self.browser, self.claude,
-                     self.agents, self.ocr, self.sound, self.data, self.disk, self.memory, self.errors, self.focus, self.mcp,
-                     self.update):
+                     self.agents, self.ocr, self.sound, self.data, self.disk, self.memory, self.notes, self.errors,
+                     self.focus, self.mcp, self.update):
             try:
                 step()
             except Exception as e:
@@ -547,6 +547,24 @@ class Doctor:
             self.add(WARN, "disk", "daemon.log is %d MB" % log, "empties it", "log")
         if len(self.rows) == n:
             self.add(OK, "disk", "%.0f GB free on %s, out %d MB, daemon.log %.1f MB" % (free, D.HOME.anchor, out, log))
+
+    def notes(self):
+        if not D.config().get("memory"):
+            self.add(OK, "notes", "memory is off (lighting memory on)")
+            return
+        from lighting import memmodel as MM
+        from lighting import memory as M
+        try:
+            c = M.counts()
+        except Exception as e:
+            self.add(FAIL, "notes", "the memory database cannot be read: %s" % str(e)[:100], "lighting memory")
+            return
+        state = MM.status()
+        if c["q"] and not (MM.api("chat") or MM.ready("chat")):
+            self.add(WARN, "notes", "%d sessions wait, the local model is missing (%s)" % (c["q"], state),
+                     "lighting memory model")
+        else:
+            self.add(OK, "notes", "%d notes, %d open to-dos, %d sessions to learn | %s" % (c["n"], c["t"], c["q"], state))
 
     def memory(self):
         load, free = memory_load()

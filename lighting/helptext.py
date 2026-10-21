@@ -28,6 +28,9 @@ chat    inbox <w|"title"> [--from name] [--since id] [--timeout 5m]   reply <w|"
 keys    keys [app|site] [-f x]   keys add <app> "ctrl+k=what"   keys rm <app> <key>
 brain   brain (what Lighting learned)   brain forget <site|app:x.exe>   brain reset --yes   improve [days] (self-check)
         known pages show the controls you use there; snap --full shows all   config brain off
+memory  remember "fact" [--kind decision] [--global]   recall "words" [--all] | recall <id>   forget <id>
+        todo [--all] [--list x]   todo add "task" [--list x]   todo done|doing|drop <id>   todo note <id> "text"
+        memory (state)   memory learn   memory model (local AI, downloads itself)   memory import claude-mem   memory off
 routine routines [-f x]   run <name|words> [param=value ...] [--yes]   routine show|save|rm|rename|forget <name>
         record start [name] [--web|--desktop]   record stop [name] [param=value ...]   record cancel|status
         routine schedule <name> daily 08:00|weekly mon 09:30|hourly|every 30m [param=value]   routine schedules|unschedule

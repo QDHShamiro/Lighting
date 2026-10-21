@@ -864,7 +864,7 @@ def test_doctor():
 def test_skill_and_mcp_budget():
     from lighting import mcp
     skill = (ROOT / "skills" / "lighting" / "SKILL.md").read_bytes()
-    assert len(skill) <= 3100, "SKILL.md grew to %d bytes (budget 3100)" % len(skill)
+    assert len(skill) <= 3500, "SKILL.md grew to %d bytes (budget 3500)" % len(skill)
     assert len(mcp.DESCRIPTION) <= 700, "MCP description grew to %d chars" % len(mcp.DESCRIPTION)
 
 
@@ -1023,6 +1023,80 @@ def test_phone_snapshot():
     assert android.state(ctx).refs["p3"][:2] == (540, 500), android.state(ctx).refs["p3"]
     only = android.snapshot(ctx, {"f": "wi-fi"}).splitlines()
     assert only[1:] == ['p2 checkbox "Wi-Fi" [x] - Connected'], only
+
+
+def test_memory_store_and_search():
+    import types
+    from lighting import memcmd, memory as M
+    ctx = types.SimpleNamespace(cwd=tempfile.mkdtemp(prefix="lighting-proj-"), sid="s-test", told={})
+    here = M.project_of(ctx.cwd)
+    nid = memcmd.remember(ctx, "The release needs JDK 21. token=abcdef1234567890")
+    assert "[secret]" in (M.note(nid)["title"] + M.note(nid)["body"])
+    M.add_note("other", "fact", "Brave is the only browser", source="session")
+    out = memcmd.cmd_recall(ctx, ["jdk", "release"], {})
+    assert out.startswith("#%d " % nid), out
+    assert "#%d" % nid in memcmd.cmd_recall(ctx, [str(nid)], {})
+    first, new = M.merge_note(here, "fact", "The release needs JDK 21 now", "longer body")
+    assert first == nid and not new
+    said = memcmd.on_prompt(ctx, "merk dir, dass Spotify nie geschlossen wird")
+    assert said and "saved #" in said[0]
+    assert memcmd.on_prompt(ctx, "Merkel war Kanzlerin") == []
+    tid = int(memcmd.cmd_todo(ctx, ["add", "Ship", "it"], {"list": "rel"}).split("#")[1].split()[0])
+    assert "Ship it" in memcmd.cmd_todo(ctx, [], {})
+    assert "is done" in memcmd.cmd_todo(ctx, ["done", str(tid)], {})
+    assert "Ship it" not in memcmd.cmd_todo(ctx, [], {})
+    assert memcmd.cmd_forget(ctx, [str(nid)], {}) == "forgot #%d" % nid
+    assert "Spotify" in memcmd.start_text(here)
+
+
+def test_memory_condense_transcript():
+    import json
+    from lighting import memlearn
+    rows = [
+        {"type": "ai-title", "aiTitle": "Fix the build"},
+        {"type": "user", "message": {"content": "<system-reminder>skip me</system-reminder>why does the build fail?"}},
+        {"type": "user", "isMeta": True, "message": {"content": "meta text"}},
+        {"type": "assistant", "message": {"content": [{"type": "thinking", "thinking": "hidden"},
+                                                      {"type": "tool_use", "name": "Bash",
+                                                       "input": {"command": "mvn package"}}]}},
+        {"type": "user", "message": {"content": [{"type": "tool_result", "is_error": True,
+                                                  "content": "release version 21 not supported"},
+                                                 {"type": "tool_result", "content": "fine output"}]}},
+        {"type": "assistant", "message": {"content": [{"type": "text", "text": "It needs JDK 21."}]}},
+    ]
+    path = Path(tempfile.mkdtemp(prefix="lighting-tr-")) / "t.jsonl"
+    path.write_text("".join(json.dumps(r) + chr(10) for r in rows) + '{"type": "user", "mess', "utf-8")
+    text, end, title = memlearn.condense(str(path), 0)
+    assert title == "Fix the build"
+    assert text.split(chr(10)) == ["USER: why does the build fail?", "TOOL Bash: mvn package",
+                                   "ERROR: release version 21 not supported", "CLAUDE: It needs JDK 21."], text
+    assert end < path.stat().st_size
+    assert memlearn.condense(str(path), end)[0] == ""
+    assert len(memlearn.chunks("a" * 10 + chr(10) + "b" * 10)) == 1
+    assert memlearn.parse('noise {"notes": []} tail') == {"notes": []}
+
+
+def test_memory_work_state_fold():
+    from lighting import memlearn
+    lists = memlearn.fold_work_state([
+        ("p", "rel", '{"task": "a", "status": "todo"}', 1),
+        ("p", "rel", '{"task": "a", "status": "doing", "note": "half"}', 2),
+        ("p", "rel", '{"task": "b", "status": "done"}', 3),
+        ("p", "old", '{"task": "c", "status": "todo"}', 4),
+        ("p", "old", '{"status": "done"}', 5),
+    ])
+    assert lists[("p", "rel")]["items"]["a"]["status"] == "doing"
+    assert lists[("p", "rel")]["items"]["a"]["note"] == "half"
+    assert lists[("p", "old")]["closed"]
+
+
+def test_games_paths():
+    from lighting import games
+    assert games.is_game("C:/Program Files (x86)/Steam/steamapps/common/Rust/RustClient.exe")
+    assert games.is_game("D:/Games/FortniteClient-Win64-Shipping.exe")
+    assert not games.is_game("C:/Program Files (x86)/Steam/steam.exe")
+    assert not games.is_game("C:/Program Files/Epic Games/Launcher/Portal/EpicGamesLauncher.exe")
+    assert not games.is_game("C:/Windows/explorer.exe")
 
 
 if __name__ == "__main__":

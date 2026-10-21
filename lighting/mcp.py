@@ -11,7 +11,8 @@ DESCRIPTION = (
     "press Enter | text | read <url> | do \"a; b\" | windows | snap w2 | click d5 | read w2 (OCR) | watch <video url|file|e40> | "
     "reply \"@Name\" \"hi\" --wait | inbox \"@Name\" | listen (sound) | keys. Refs: e web, d app, o screen text, "
     "w window, t tab. "
-    "-f after an action shows its result. Repeated task: run <name or words>. More: help"
+    "-f after an action shows its result. Repeated task: run <name or words>. "
+    "Memory: recall \"words\" | remember \"fact\" | todo add \"task\". More: help"
 )
 TOOL = {
     "name": "lighting",

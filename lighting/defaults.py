@@ -28,6 +28,9 @@ LOG = HOME / "log.jsonl"
 SESSIONS = HOME / "sessions.json"
 BRAIN = HOME / "brain.json"
 IMPROVE = HOME / "improve.json"
+MEMORY = HOME / "memory"
+MEMORY_DB = MEMORY / "memory.db"
+MODELS = HOME / "models"
 CONFIG = HOME / "config.json"
 BLOCKLIST = HOME / "blocklist.txt"
 EXT = HOME / "extension"
@@ -178,6 +181,65 @@ DOCTOR_DAEMON_MAX_MB = 1024
 DOCTOR_MCP_WAIT_S = 20
 DOCTOR_RECONNECT_S = 8
 DOCTOR_NET_S = 3
+MEM_QUIET_S = 600
+MEM_POLL_S = 60
+MEM_RETRY_S = 1800
+MEM_MAX_TRIES = 3
+MEM_CHUNK_CHARS = 24000
+MEM_MIN_CHARS = 600
+MEM_NOTES_PER_CHUNK = 6
+MEM_TEXT = 1500
+MEM_TOOL_TEXT = 240
+MEM_START_TODOS = 12
+MEM_START_SESSIONS = 4
+MEM_START_NOTES = 8
+MEM_LINE = 110
+MEM_HINTS = 3
+MEM_HINT_TERMS = 2
+MEM_HINT_SHARE = 0.4
+MEM_HINT_SIM = 0.62
+MEM_RECALL_MAX = 8
+MEM_RRF_K = 60
+MEM_PROJECT_BOOST = 1.3
+MEM_DUP_SIM = 0.7
+MEM_VEC_DIM = 256
+MEM_EMBED_BATCH = 32
+MEM_EMBED_CHARS = 1200
+MEM_QUERY_PREFIX = "Instruct: Given a question, find the notes that answer it\nQuery: "
+MEM_SERVER_IDLE_S = 300
+MEM_SERVER_BOOT_S = 120
+MEM_CTX = 16384
+MEM_EMBED_CTX = 4096
+MEM_ANSWER_TOKENS = 1500
+MEM_CALL_S = 600
+MEM_BIG_RAM_GB = 12
+LLAMA_RELEASES = "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=10"
+MEM_LLAMA_ASSETS = {
+    "windows-x64": [r"bin-win-vulkan-x64\.zip$", r"bin-win-cpu-x64\.zip$"],
+    "windows-arm64": [r"bin-win-vulkan-arm64\.zip$", r"bin-win-cpu-arm64\.zip$"],
+    "macos-arm64": [r"bin-macos-arm64\.(zip|tar\.gz)$"],
+    "macos-x64": [r"bin-macos-x64\.(zip|tar\.gz)$"],
+    "linux-x64": [r"bin-ubuntu-vulkan-x64\.(zip|tar\.gz)$", r"bin-ubuntu-x64\.(zip|tar\.gz)$"],
+    "linux-arm64": [r"bin-ubuntu-vulkan-arm64\.(zip|tar\.gz)$", r"bin-ubuntu-arm64\.(zip|tar\.gz)$"],
+}
+MEM_MODELS = {
+    "4b": {"repo": "unsloth/Qwen3.5-4B-MTP-GGUF", "file": "Qwen3.5-4B-UD-Q4_K_XL.gguf", "size": 2990664000,
+           "sha256": "d2bfbee4de17c74e6308a4dc750be4c2271f92ae2df1e28f5c5afa0dcdb6fccc"},
+    "2b": {"repo": "unsloth/Qwen3.5-2B-MTP-GGUF", "file": "Qwen3.5-2B-UD-Q4_K_XL.gguf", "size": 1384902048,
+           "sha256": "9f7b15d04cf2d5878c8122a7c181dbc09f050cd66080ce3374576e734ccb0910"},
+    "embed": {"repo": "Qwen/Qwen3-Embedding-0.6B-GGUF", "file": "Qwen3-Embedding-0.6B-Q8_0.gguf", "size": 639150592,
+              "sha256": "06507c7b42688469c4e7298b0a1e16deff06caf291cf0a5b278c308249c3e439"},
+}
+GAME_EXES = {"fortniteclient-win64-shipping.exe", "rocketleague.exe", "cs2.exe", "gta5.exe", "r5apex.exe",
+             "robloxplayerbeta.exe", "valorant-win64-shipping.exe", "leagueoflegends.exe", "overwatch.exe",
+             "eldenring.exe", "cod.exe", "destiny2.exe", "dota2.exe"}
+GAME_SUFFIXES = ("-win64-shipping.exe",)
+GAME_PATHS = ("/steamapps/common/", "/epic games/")
+GAME_PATH_SKIP = ("/epic games/launcher/", "/epic online services/", "eosoverlay", "epicgameslauncher", "webhelper",
+                  "easyanticheat", "battleye", "crashreport", "launcher", "cefsubprocess", "redist", "/steam/steam.exe",
+                  "/steam/bin/")
+GAME_FULLSCREEN = (2, 3)
+GAME_MINECRAFT = ("minecraft", ("javaw.exe", "java.exe", "java"))
 RELEASES_URL = "https://api.github.com/repos/QDHShamiro/Lighting/releases/latest"
 DAEMON_STARTED = "lighting daemon started"
 POINTER_MS = 1200
@@ -198,6 +260,15 @@ CONFIG_DEFAULTS = {
     "window": True,
     "brain": True,
     "snap_top": BRAIN_TOP,
+    "memory": True,
+    "memory_learn": True,
+    "memory_api": "",
+    "memory_api_model": "",
+    "memory_api_embed": "",
+    "memory_server": "",
+    "memory_model": "",
+    "memory_embed": "",
+    "models_dir": "",
 }
 
 RISK_WORDS = [

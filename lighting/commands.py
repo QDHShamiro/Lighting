@@ -9,7 +9,8 @@ from lighting.common import Busy, Fail, Pending, Said, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
-          "reload", "since", "seconds", "dir", "name", "model", "effort", "threshold", "runs"}
+          "reload", "since", "seconds", "dir", "name", "model", "effort", "threshold", "runs", "kind", "list",
+          "project"}
 TRACE = (D.HOME / "trace").exists()
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
          "-m": "media"}
@@ -737,6 +738,13 @@ def cmd_suggest(ctx, pos, flags):
     return recall.cmd_suggest(ctx, pos, flags)
 
 
+def memcmd(name):
+    def run(ctx, pos, flags):
+        from lighting import memcmd as mc
+        return getattr(mc, "cmd_" + name)(ctx, pos, flags)
+    return run
+
+
 def cmd_brain(ctx, pos, flags):
     from lighting import brain
     return brain.cmd_brain(ctx, pos, flags)
@@ -774,9 +782,10 @@ SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
           "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest, "brain": cmd_brain,
           "improve": cmd_improve, "doctor-info": cmd_doctor_info, "access-prompt": cmd_access_prompt}
+SYSTEM.update({name: memcmd(name) for name in ("remember", "recall", "forget", "todo", "memory", "hook")})
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
          "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys",
-         "listen", "watch", "unread", "net", "tools"}
+         "listen", "watch", "unread", "net", "tools", "recall", "todo", "memory"}
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}
 APP_ONLY = {"windows", "focus", "clip", "launch"}
 CHAT = {"inbox", "reply", "unread"}
