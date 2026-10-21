@@ -503,6 +503,11 @@ def test_suggest_needs_the_app():
          "steps": [{"cmd": "open", "args": ["https://panel.dolphinsmp.net/app"]}]}
     assert not recall.fits(stems("schaue bei mir spotify udn website alles"), r)
     assert recall.fits(stems("schaue im panel nach dem host"), r)
+    focus = {"name": "brave-orange-weg", "tags": ["design", "terminal"],
+             "steps": [{"cmd": "focus", "args": ["app:brave"]}, {"cmd": "press", "args": ["{text}"]}]}
+    assert recall.routine_words(focus)[1] == "brave"
+    assert not recall.fits(stems("mache Lighting zu einer app mit terminal design"), focus)
+    assert recall.fits(stems("in brave das orange design weg"), focus)
 
 
 def test_desktop_alias_and_routing_without_a_tab():

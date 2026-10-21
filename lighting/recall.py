@@ -41,7 +41,10 @@ def routine_words(r):
     first = (r.get("steps") or [{}])[0]
     app = app_word(first.get("where"))
     if not app and first.get("args"):
-        app = re.sub(r"^(?:[a-z]+://)?(?:www\.)?", "", first["args"][0].lower()).split("/")[0].split(".")[0].split(":")[0]
+        arg = first["args"][0].lower()
+        if arg.startswith("app:"):
+            arg = arg[4:].split()[0] if arg[4:].split() else ""
+        app = re.sub(r"^(?:[a-z]+://)?(?:www\.)?", "", arg).split("/")[0].split(".")[0].split(":")[0]
     ws = set(words(r.get("name", "").replace("-", " ")) + list(r.get("tags") or []))
     return {stem(w) for w in ws if w}, stem(app) if app else ""
 
