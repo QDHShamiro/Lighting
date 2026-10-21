@@ -546,5 +546,17 @@
     return { ok: true };
   }
 
-  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info, viewSize, frameBox, frameHit, domClick };
+  function armClick() {
+    S.clickedAt = 0;
+    document.addEventListener("click", () => {
+      S.clickedAt = Date.now();
+    }, { capture: true, once: true });
+    return { ok: true };
+  }
+
+  function clickSeen() {
+    return { seen: !!S.clickedAt };
+  }
+
+  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info, viewSize, frameBox, frameHit, domClick, armClick, clickSeen };
 })();

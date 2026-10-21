@@ -306,6 +306,8 @@ export async function click(a, tab) {
   }
   await point(tabId, r.x, r.y);
   mark("point");
+  const framed = FRAME_REF.test(f.ref) && !a.force && !a.button && !a.count;
+  if (framed) await page(tabId, "act.armClick", [f.ref]).catch(() => {});
   const nav = T.watchNav(tabId);
   const dlg = await dispatch(tabId, I.click(tabId, r.x, r.y, { button: a.button, count: a.count }));
   mark("click");
@@ -313,7 +315,19 @@ export async function click(a, tab) {
     nav.stop();
     return "ok" + (a.text ? " " + f.ref : "") + ", then " + dlg;
   }
-  const res = await after(tabId, nav, before, a.text ? " " + f.ref : "", a.trace ? mark : null, leavesPage(r, before) ? 3000 : 100, bt.title, { ref: f.ref, line: r.line });
+  let missed = "";
+  if (framed) {
+    let seen = null;
+    for (let i = 0; i < 3 && !(seen && seen.seen); i++) {
+      if (i) await new Promise((res) => setTimeout(res, 60));
+      seen = await page(tabId, "act.clickSeen", [f.ref]).catch(() => null);
+    }
+    if (seen && !seen.seen) {
+      const done = await page(tabId, "act.domClick", [f.ref]).catch(() => null);
+      if (done && done.ok) missed = " (the click did not reach the frame, so it was made inside it)";
+    }
+  }
+  const res = await after(tabId, nav, before, (a.text ? " " + f.ref : "") + missed, a.trace ? mark : null, leavesPage(r, before) ? 3000 : 100, bt.title, { ref: f.ref, line: r.line });
   return a.trace ? res + "\ntrace: " + marks.join(", ") + " | input: " + I.timings.join(", ") : res;
 }
 

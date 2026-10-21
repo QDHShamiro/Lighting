@@ -9,6 +9,9 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 Built from 1,831 failed commands in the log since 1.1.0: most came from a few loops that kept hitting the same wall.
 
 ### Added
+- `lighting voice` (Windows): an AI joins a Discord call when the user asks (`voice join "Friends"`), hears with Groq,
+  answers with Gemini and speaks with edge-tts through VB-Cable. It always says that it is an AI and listens, leaves
+  when someone says "KI raus", keeps no transcript of the others and uses a persona only in the call it was written for.
 - `lighting watch <link|file|e40>`: Claude watches a video in one call. The first answer is an overview: title,
   length, chapters, the speech (captions first, else speech-to-text) as a skim with times, the text on screen and
   12 scenes in one image (~50 image tokens per scene instead of one image per frame). On YouTube the scenes come from
