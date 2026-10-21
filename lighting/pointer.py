@@ -78,7 +78,7 @@ def _loop():
 
 
 def show(x, y):
-    if not D.WIN or not D.config().get("pointer", True):
+    if not D.WIN or not D.config().get("pointer", True) or not in_front(x, y):
         return
     if not _started:
         _started.append(True)
@@ -110,6 +110,31 @@ def wait_idle():
     return True
 
 
+def front_ok():
+    from lighting import games
+    mode = D.config().get("focus") or "never"
+    if mode == "never" or games.running():
+        return False
+    return mode == "idle" or win.idle_ms() >= D.AWAY_MS
+
+
+def background(hwnd):
+    return D.WIN and bool(hwnd) and not front_ok()
+
+
+def in_front(x, y):
+    fg = win.foreground()
+    if not fg:
+        return False
+    l, t, r, b = win.rect(fg)
+    return l <= x <= r and t <= y <= b
+
+
+def calm(hwnd):
+    if win.foreground() == hwnd and not wait_idle():
+        raise Busy(BUSY, "retry in a moment")
+
+
 def front(hwnd):
     if win.set_foreground(hwnd):
         return True
@@ -124,6 +149,13 @@ def front(hwnd):
 
 
 def blitz_click(x, y, button="left", count=1, hwnd=None):
+    if background(hwnd) and hasattr(win, "bg_click"):
+        calm(hwnd)
+        show(x, y)
+        win.bg_click(hwnd, x, y, button, count)
+        from lighting import deskrec
+        deskrec.background_click(x, y, button == "right", hwnd)
+        return None
     show(x, y)
     if not wait_idle():
         raise Busy(BUSY, "retry in a moment")
@@ -142,6 +174,10 @@ def blitz_click(x, y, button="left", count=1, hwnd=None):
 
 
 def blitz_drag(a, b, hwnd=None):
+    if background(hwnd) and hasattr(win, "bg_drag"):
+        calm(hwnd)
+        win.bg_drag(hwnd, a, b)
+        return
     show(*a)
     if not wait_idle():
         raise Busy(BUSY, "retry in a moment")
@@ -162,6 +198,10 @@ def blitz_drag(a, b, hwnd=None):
 
 
 def with_focus(hwnd, fn, stay=False):
+    if background(hwnd):
+        calm(hwnd)
+        with win.keys_to(hwnd):
+            return fn()
     if not wait_idle():
         raise Busy(BUSY, "retry in a moment")
     prev = win.foreground()

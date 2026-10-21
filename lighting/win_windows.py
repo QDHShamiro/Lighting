@@ -1,6 +1,8 @@
+import contextlib
 import ctypes
 import ctypes.wintypes as W
 import os
+import threading
 import time
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -37,6 +39,12 @@ class LASTINPUTINFO(ctypes.Structure):
     _fields_ = [("cbSize", W.UINT), ("dwTime", W.DWORD)]
 
 
+class GUITHREADINFO(ctypes.Structure):
+    _fields_ = [("cbSize", W.DWORD), ("flags", W.DWORD), ("hwndActive", W.HWND), ("hwndFocus", W.HWND),
+                ("hwndCapture", W.HWND), ("hwndMenuOwner", W.HWND), ("hwndMoveSize", W.HWND),
+                ("hwndCaret", W.HWND), ("rcCaret", W.RECT)]
+
+
 WNDENUMPROC = ctypes.WINFUNCTYPE(W.BOOL, W.HWND, W.LPARAM)
 user32.EnumWindows.argtypes = [WNDENUMPROC, W.LPARAM]
 user32.GetWindowTextW.argtypes = [W.HWND, W.LPWSTR, ctypes.c_int]
@@ -63,6 +71,14 @@ user32.VkKeyScanW.restype = ctypes.c_short
 user32.MapVirtualKeyW.argtypes = [W.UINT, W.UINT]
 user32.MapVirtualKeyW.restype = W.UINT
 user32.PostMessageW.argtypes = [W.HWND, W.UINT, W.WPARAM, W.LPARAM]
+user32.GetGUIThreadInfo.argtypes = [W.DWORD, ctypes.POINTER(GUITHREADINFO)]
+user32.ChildWindowFromPointEx.argtypes = [W.HWND, W.POINT, W.UINT]
+user32.ChildWindowFromPointEx.restype = W.HWND
+user32.ScreenToClient.argtypes = [W.HWND, ctypes.POINTER(W.POINT)]
+user32.FindWindowExW.argtypes = [W.HWND, W.HWND, W.LPCWSTR, W.LPCWSTR]
+user32.FindWindowExW.restype = W.HWND
+user32.IsChild.argtypes = [W.HWND, W.HWND]
+user32.SetWindowPos.argtypes = [W.HWND, W.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, W.UINT]
 user32.OpenClipboard.argtypes = [W.HWND]
 user32.GetClipboardData.argtypes = [W.UINT]
 user32.GetClipboardData.restype = W.HANDLE
@@ -345,6 +361,8 @@ def press(combo, scancode=False):
     vk, shift_state = vk_of(main)
     if vk is None:
         raise ValueError("unknown key '%s'" % main)
+    if getattr(_bg, "hwnd", None):
+        return bg_press(_bg.hwnd, combo, mods, vk, main)
     if shift_state & 1 and 0x10 not in mods:
         mods.append(0x10)
     if shift_state & 2 and 0x11 not in mods:
@@ -358,6 +376,8 @@ def press(combo, scancode=False):
 
 
 def type_unicode(text):
+    if getattr(_bg, "hwnd", None):
+        return bg_type(_bg.hwnd, text)
     seq = []
     for ch in text:
         code = ord(ch)
@@ -371,6 +391,111 @@ def type_unicode(text):
             seq.append(INPUT(1, _U(ki=KEYBDINPUT(0, u, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0, 0))))
     for i in range(0, len(seq), 200):
         send(seq[i:i + 200])
+
+
+_bg = threading.local()
+CHAR_KEYS = {0x0D: "\r", 0x09: "\t", 0x08: "\b", 0x1B: "\x1b", 0x20: " "}
+SHIFTS = {0x10, 0xA0, 0xA1}
+BG_MOUSE = {"left": (0x201, 0x202, 0x203, 1), "right": (0x204, 0x205, 0x206, 2), "middle": (0x207, 0x208, 0x209, 0x10)}
+EDIT_KEYS = {"a": (0x00B1, 0, -1), "c": (0x0301, 0, 0), "v": (0x0302, 0, 0), "x": (0x0300, 0, 0), "z": (0x0304, 0, 0)}
+CHROMIUM_HOSTS = {"Chrome_RenderWidgetHostHWND", "Chrome_WidgetWin_1", "Chrome_WidgetWin_0"}
+FRONT_HINT = "Lighting does not take the screen from the user; lighting config focus away allows it while they are away"
+
+
+@contextlib.contextmanager
+def keys_to(hwnd):
+    _bg.hwnd = hwnd
+    try:
+        yield
+    finally:
+        _bg.hwnd = None
+
+
+def focus_child(hwnd):
+    info = GUITHREADINFO()
+    info.cbSize = ctypes.sizeof(GUITHREADINFO)
+    tid = user32.GetWindowThreadProcessId(hwnd, None)
+    if tid and user32.GetGUIThreadInfo(tid, ctypes.byref(info)) and info.hwndFocus and (
+            info.hwndFocus == hwnd or user32.IsChild(hwnd, info.hwndFocus)):
+        return info.hwndFocus
+    return user32.FindWindowExW(hwnd, None, "Chrome_RenderWidgetHostHWND", None) or hwnd
+
+
+def xy_param(x, y):
+    return ((y & 0xFFFF) << 16) | (x & 0xFFFF)
+
+
+def child_at(hwnd, x, y):
+    cur = hwnd
+    while True:
+        pt = W.POINT(int(x), int(y))
+        user32.ScreenToClient(cur, ctypes.byref(pt))
+        nxt = user32.ChildWindowFromPointEx(cur, pt, 0x0001 | 0x0004)
+        if not nxt or nxt == cur:
+            return cur, pt.x, pt.y
+        cur = nxt
+
+
+def bg_key(target, vk, up):
+    lp = 1 | (user32.MapVirtualKeyW(vk, 0) << 16) | ((1 << 24) if vk in EXTENDED else 0)
+    user32.PostMessageW(target, 0x0101 if up else 0x0100, vk, lp | ((3 << 30) if up else 0))
+
+
+def bg_press(hwnd, combo, mods, vk, main):
+    target = focus_child(hwnd)
+    edit = EDIT_KEYS.get(main.lower()) if mods == [0x11] and class_of(target) not in CHROMIUM_HOSTS else None
+    if edit:
+        user32.PostMessageW(target, edit[0], edit[1], edit[2])
+        return
+    if [m for m in mods if m not in SHIFTS] or (mods and len(main) != 1):
+        raise ValueError("%s needs the window in front, and %s" % (combo, FRONT_HINT))
+    ch = (main.upper() if mods else main) if len(main) == 1 else CHAR_KEYS.get(vk)
+    bg_key(target, vk, False)
+    if ch:
+        user32.PostMessageW(target, 0x0102, ord(ch), 1)
+    bg_key(target, vk, True)
+
+
+def bg_type(hwnd, text):
+    target = focus_child(hwnd)
+    for ch in text.replace("\r\n", "\n").replace("\n", "\r"):
+        code = ord(ch)
+        units = [0xD800 + ((code - 0x10000) >> 10), 0xDC00 + ((code - 0x10000) & 0x3FF)] if code > 0xFFFF else [code]
+        for u in units:
+            user32.PostMessageW(target, 0x0102, u, 1)
+
+
+def bg_click(hwnd, x, y, button="left", count=1):
+    target, cx, cy = child_at(hwnd, x, y)
+    down, up, double, mk = BG_MOUSE[button]
+    lp = xy_param(cx, cy)
+    user32.PostMessageW(target, 0x0200, 0, lp)
+    for i in range(count):
+        user32.PostMessageW(target, double if i else down, mk, lp)
+        user32.PostMessageW(target, up, 0, lp)
+
+
+def bg_drag(hwnd, a, b, steps=12):
+    target, ax, ay = child_at(hwnd, *a)
+    bx, by = ax + int(b[0] - a[0]), ay + int(b[1] - a[1])
+    user32.PostMessageW(target, 0x0201, 1, xy_param(ax, ay))
+    for i in range(1, steps + 1):
+        user32.PostMessageW(target, 0x0200, 1, xy_param(ax + (bx - ax) * i // steps, ay + (by - ay) * i // steps))
+        time.sleep(0.012)
+    user32.PostMessageW(target, 0x0202, 0, xy_param(bx, by))
+
+
+def bg_wheel(hwnd, x, y, delta):
+    target = child_at(hwnd, x, y)[0]
+    user32.PostMessageW(target, 0x020A, ctypes.c_uint16(int(delta)).value << 16, xy_param(int(x), int(y)))
+
+
+def select_all_in(hwnd):
+    user32.PostMessageW(hwnd, 0x00B1, 0, -1)
+
+
+def put_behind(hwnd, front):
+    user32.SetWindowPos(hwnd, front or 1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010)
 
 
 def clip_get():
@@ -507,11 +632,11 @@ def app_list():
 
 
 def open_target(target):
-    os.startfile(target)
+    os.startfile(target, show_cmd=4)
 
 
 def start_app(app):
-    os.startfile("shell:AppsFolder\\" + app[1])
+    os.startfile("shell:AppsFolder\\" + app[1], show_cmd=4)
 
 
 def screen_grab(box):

@@ -146,6 +146,8 @@ LISTEN_CHARS = 1800
 IDLE_MS = 300
 BLITZ_WAIT_MS = 800
 BUSY_WAIT_S = 10
+AWAY_MS = 60000
+FOCUS_MODES = ("never", "away", "idle")
 DONE_GRACE_S = 20
 REPEAT_NOTE_AT = 3
 REPEAT_BRAKE_AT = 5
@@ -258,6 +260,7 @@ CONFIG_DEFAULTS = {
     "cleanup": True,
     "audio": "auto",
     "window": True,
+    "focus": "never",
     "brain": True,
     "snap_top": BRAIN_TOP,
     "memory": True,

@@ -18,6 +18,11 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
   checksums, runs them at low priority and never while a game runs (full screen, Minecraft, Steam and Epic games).
   Any OpenAI-compatible server works instead (`config memory_api`). `memory import claude-mem` moves notes, session
   summaries and open to-dos over. `lighting.exe` and the extension carry the Lighting icon.
+- Lighting never takes the screen from the user (Windows): no window comes to the front, the cursor does not move,
+  not even out of a full-screen game. Clicks, typing, keys and the wheel go to the app window in the background as
+  window messages; Ctrl+A/C/V/X/Z work there too, other shortcuts say they need the window in front. Launched apps
+  and the self-test windows open without taking focus, and if an app grabs it anyway Lighting gives it back.
+  `config focus away` allows the old way while the user has been away for a minute, `config focus idle` always.
 - `lighting voice` (Windows): an AI joins a Discord call when the user asks (`voice join "Friends"`), hears with Groq,
   answers with Gemini and speaks with edge-tts through VB-Cable. It always says that it is an AI and listens, leaves
   when someone says "KI raus", keeps no transcript of the others and uses a persona only in the call it was written for.

@@ -189,6 +189,9 @@ def act(el, how=None):
                     p.Expand()
                     return "expanded"
             elif step == "focus":
+                from lighting import pointer
+                if not pointer.front_ok():
+                    return None
                 el.SetFocus()
                 return "focused"
             elif step == "legacy":
@@ -334,6 +337,21 @@ def focus(el):
         return True
     except Exception:
         return False
+
+
+def native_of(el):
+    uia, U = api()
+    try:
+        return cached(el, U.UIA_NativeWindowHandlePropertyId) or el.CurrentNativeWindowHandle or 0
+    except Exception:
+        return 0
+
+
+def from_handle(hwnd):
+    try:
+        return api()[0].ElementFromHandle(hwnd)
+    except Exception:
+        return None
 
 
 def focus_window(hwnd):

@@ -294,6 +294,8 @@ def cmd_focus(ctx, pos, flags):
     if not pos:
         raise Fail("focus needs a window", "lighting focus w2")
     hwnd = target(ctx, pos)
+    if pointer.background(hwnd) and win.foreground() != hwnd:
+        return "ok (target set, the window stays where it is: %s) " % win.FRONT_HINT + header(ctx, hwnd)
     ok = pointer.front(hwnd)
     return ("ok " if ok else "err: the system refused to switch, ") + header(ctx, hwnd)
 
@@ -426,6 +428,9 @@ def cmd_launch(ctx, pos, flags):
     hwnd = wait_window(before, fg0, int(flags.get("timeout") or 10000), hint, owner_of(wins0, hint) is not None)
     if not hwnd:
         return "ok (started %s, no window yet) -> try: lighting windows" % what
+    if pointer.background(hwnd) and fg0 and win.alive(fg0) and win.foreground() != fg0:
+        win.put_behind(hwnd, fg0)
+        win.set_foreground(fg0)
     st = state(ctx)
     if hwnd not in before:
         if not st.launched:
@@ -458,6 +463,7 @@ def cleanup(ctx):
     st = state(ctx)
     wins = {h: name for h, name in st.launched.items() if win.alive(h)}
     front0, st.launched, st.front0 = st.front0, {}, None
+    fg = win.foreground()
     for h in wins:
         win.close(h)
     deadline = time.time() + 1.5
@@ -469,7 +475,7 @@ def cleanup(ctx):
         st.hwnd = None
         if ctx.target and ctx.target[0] == "app":
             ctx.target = None
-    if closed and front0 and win.alive(front0):
+    if closed and front0 and win.alive(front0) and fg in wins and not win.alive(fg):
         win.set_foreground(front0)
     return closed, [wins[h] for h in left]
 
@@ -681,6 +687,12 @@ def focused_in(hwnd):
         if el is not None and (uia.pid_of(el) == win.pid_of(hwnd) or win.foreground() == hwnd):
             return el
         if attempt == 1:
+            if pointer.background(hwnd):
+                child = win.focus_child(hwnd)
+                el = uia.from_handle(child) if child and child != hwnd else None
+                if el is not None:
+                    return el
+                break
             if not pointer.wait_idle():
                 raise Busy(pointer.BUSY, "retry in a moment")
             if pointer.front(hwnd):
@@ -739,9 +751,21 @@ def put_text(ctx, hwnd, el, label, text, flags):
         full = (uia.get_value(el) or "") + text if flags.get("append") else text
         if uia.set_value(el, full):
             return "ok %s (typed %s in background)" % (label, shown)
-    saved = win.clip_get()
-
     terminal = win.class_of(hwnd) in TERMINALS
+    if pointer.background(hwnd):
+        pointer.calm(hwnd)
+        native = uia.native_of(el)
+        if not native:
+            win.bg_click(hwnd, *center(el))
+        if native and not flags.get("append") and not terminal:
+            win.select_all_in(native)
+        with win.keys_to(native or hwnd):
+            win.type_unicode(text)
+            for k in keys:
+                settle_ui(hwnd, 0.35, 1.0)
+                win.press(k)
+        return "ok %s (typed %s in background%s)" % (label, shown, "".join(" +" + k for k in keys))
+    saved = win.clip_get()
 
     def paste():
         uia.focus(el)
@@ -825,6 +849,10 @@ def cmd_scroll(ctx, pos, flags):
         l, t, r, b = win.rect(hwnd)
         x, y = (l + r) // 2, (t + b) // 2
     pointer.show(x, y)
+    if pointer.background(hwnd):
+        pointer.calm(hwnd)
+        win.bg_wheel(hwnd, x, y, -360 if down else 360)
+        return "ok (wheel %s in background)" % ("down" if down else "up")
 
     def wheel():
         saved = win.cursor()

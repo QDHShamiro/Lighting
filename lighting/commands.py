@@ -337,6 +337,9 @@ def poll_pending(ctx, p):
         out, code = "err: %s: %s" % (type(e).__name__, str(e)[:300]), 1
     finally:
         ctx.target, ctx.where, ctx.last_target = saved
+    if isinstance(out, Pending):
+        p.poll, p.deadline, p.interval, p.due = out.poll, out.deadline, out.interval, out.due
+        return None
     if out is None and not last:
         p.due = time.time() + p.interval
         return None
@@ -350,6 +353,9 @@ def drain(ctx, out):
         time.sleep(max(0.0, out.due - time.time()))
         last = time.time() >= out.deadline
         res = out.poll(last)
+        if isinstance(res, Pending):
+            out = res
+            continue
         if res is None and not last:
             out.due = time.time() + out.interval
             continue
@@ -498,6 +504,10 @@ def close_later(ctx):
 def cleanup_now(ctx, quiet, scope):
     if ctx.sid and ctx.tabs and ctx.tabs[0] in ctx.owned and ctx.where and ctx.where.get("kind") == "web":
         ctx.closed_url = ctx.where.get("url")
+    if D.WIN:
+        from lighting import desktop, win
+        fg = win.foreground()
+        scope = dict(scope, front=bool(fg) and desktop.is_browser(fg))
     replies = browsers(ctx, "cleanup", scope)
     tabs = sum(r.get("closed") or 0 for r in replies)
     viewed = sum(r.get("kept") or 0 for r in replies)
@@ -516,7 +526,9 @@ def cleanup_now(ctx, quiet, scope):
         ["%s (%s)" % (plural(len(closed), "app"), ", ".join(closed))] if closed else [])
     lines = ["closed " + ", ".join(parts) if parts else "nothing to close"]
     if viewed:
-        lines.append("left %s open that the user is looking at" % plural(viewed, "tab"))
+        why = {w for r in replies for w in r.get("why") or []}
+        lines.append("left %s open that the user is looking at%s" % (plural(viewed, "tab"), (
+            " (in the user's own window)" if "yours" in why else " (the user brought it to the front)" if why else "")))
     if left:
         lines.append("still open, it may ask to save: " + ", ".join(left))
     return "\n".join(lines)
@@ -567,8 +579,9 @@ def cmd_status(ctx, pos, flags):
         lines.append("target %s %s" % (ctx.target[0], ctx.target[1]))
     cfg = ctx.cfg
     onoff = lambda k: "on" if cfg.get(k, True) else "off"
-    lines.append("pointer %s | cleanup %s | own window %s | browser pref %s | out %s" % (
-        onoff("pointer"), onoff("cleanup"), onoff("window"), cfg.get("browser"), D.OUT.as_posix()))
+    lines.append("pointer %s | cleanup %s | own window %s | focus %s | browser pref %s | out %s" % (
+        onoff("pointer"), onoff("cleanup"), onoff("window"), cfg.get("focus") or "never", cfg.get("browser"),
+        D.OUT.as_posix()))
     return "\n".join(lines)
 
 
@@ -589,6 +602,8 @@ def cmd_config(ctx, pos, flags):
         val = int(raw)
     else:
         val = raw
+    if key == "focus" and val not in D.FOCUS_MODES:
+        raise Fail("focus is one of %s" % ", ".join(D.FOCUS_MODES), "lighting config focus never")
     cfg[key] = val
     D.save_config(cfg)
     ctx.cfg = cfg

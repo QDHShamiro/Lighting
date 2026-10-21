@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/codex-plugin-1B3A66?style=flat-square&labelColor=0A1A30" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-1B3A66?style=flat-square&labelColor=0A1A30" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-1B3A66?style=flat-square&labelColor=0A1A30" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-135%2F135-1B3A66?style=flat-square&labelColor=0A1A30" alt="135/135 selftest">
+  <img src="https://img.shields.io/badge/selftest-145%2F145-1B3A66?style=flat-square&labelColor=0A1A30" alt="145/145 selftest">
   <img src="https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-1B3A66?style=flat-square&labelColor=0A1A30" alt="Windows, macOS, Linux">
   <img src="https://img.shields.io/badge/license-Apache--2.0-1B3A66?style=flat-square&labelColor=0A1A30" alt="Apache 2.0 license">
   <br>
@@ -155,6 +155,9 @@ Each Claude session works in its own browser window (your logged-in profile) wit
 `Lighting #1`, `Lighting #2`, ..., so your tabs stay yours and parallel sessions never mix
 (`lighting config window off` puts the tabs into your window instead).
 
+It never pulls you out of what you are doing: on Windows no window comes to the front and your cursor stays
+where it is, even in a full-screen game. Clicks and typing reach the app in the background.
+
 When the AI finishes its reply, the tabs and apps it opened close again and the window you were in
 comes back to the front (`lighting done`, run by a Claude Code hook). A tab you are looking at stays,
 an app that was open before stays, an app with unsaved work is only asked to close. `lighting keep`
@@ -284,7 +287,7 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **135/135** (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (28/28), `cargo test` in `client/`.
+- `lighting selftest`: **145/145** on Windows, 145/145 on Linux, 144/144 on macOS (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (61/61), `cargo test` in `client/`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - `lighting demo` shows Lighting in about 30 s on a made-up shop page served from your own computer (open, find, fill, pick, tick, click, read a table), with the time and size of every answer. `--fast` skips the pauses that are there for screen recordings.
 - Filling and submitting a form: ~160 ms.
@@ -425,7 +428,7 @@ args = ["mcp"]
 | Wait | `wait "text" \| url:/x \| 1500 [--gone]` · `expect "text"` · `wait "Done" w3` (in an app) |
 | Data | `table e8` · `fetch /api/me --pick login` (with your cookies) · `js` |
 | Tabs | `tabs` · `tab t3` · `close` · `back` · `reload` · `dialog accept\|dismiss` · `dismiss` (cookie banners) · `viewport 390x844` |
-| Clean up | `done` (close what Lighting opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) · `config window off` (tabs in your window, not an own one) |
+| Clean up | `done` (close what Lighting opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) · `config window off` (tabs in your window, not an own one) · `config focus away` (may take the front when you are away; default never) |
 | Video | `watch <link\|file\|e40>` (overview: chapters, speech, screen text, scenes in one image) · `watch ... --from 4:05 --to 6:00` (closer) · `--at 1:23,2:45` (exact frames, readable code) · `--text` · `--full` · `listen` (speech only) · `frames e40 [--scenes] [--live]` (a video on the page as one contact sheet) |
 | Images | `snap --media` (images get refs, captions as names) · `shot e57` (look at one image) · `read <image url>` |
 

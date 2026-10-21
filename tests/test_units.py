@@ -174,6 +174,9 @@ class FakeWin:
     def set_foreground(self, h):
         self.front = h
 
+    def foreground(self):
+        return 1
+
 
 class Ctx:
     target = None
@@ -1097,6 +1100,23 @@ def test_games_paths():
     assert not games.is_game("C:/Program Files (x86)/Steam/steam.exe")
     assert not games.is_game("C:/Program Files/Epic Games/Launcher/Portal/EpicGamesLauncher.exe")
     assert not games.is_game("C:/Windows/explorer.exe")
+
+
+def test_nested_pending_keeps_waiting():
+    import collections
+    import types
+    from lighting import commands
+    from lighting.common import Pending
+    inner = Pending(lambda last: "answer", 5, 0.0)
+    outer = Pending(lambda last: inner, 5, 0.0)
+    assert commands.drain(types.SimpleNamespace(d=types.SimpleNamespace(abort=__import__("threading").Event())),
+                          outer) == "answer"
+    d = types.SimpleNamespace(abort_gen=0, events=collections.deque())
+    ctx = types.SimpleNamespace(d=d, target=None, where=None, last_target=None, image=None, notes=[], no_learn=True)
+    p = Pending(lambda last: Pending(lambda last: "answer", 5, 0.0), 5, 0.0)
+    p.meta = ("reply", ["reply", "x", "y", "--wait"], 0.0)
+    assert commands.poll_pending(ctx, p) is None
+    assert commands.poll_pending(ctx, p)["out"] == "answer"
 
 
 def test_memory_download_resumes():

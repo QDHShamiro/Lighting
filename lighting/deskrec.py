@@ -79,6 +79,14 @@ def app_key(exe, title):
     return stem
 
 
+_live = []
+
+
+def background_click(x, y, right=False, hwnd=None):
+    for rec in list(_live):
+        rec.q.put(("m", int(x), int(y), right, time.time(), hwnd))
+
+
 class DeskRecorder:
     def __init__(self, minutes=15, injected=False):
         self.minutes = minutes
@@ -101,12 +109,16 @@ class DeskRecorder:
         self.hook_thread.start()
         self.work_thread.start()
         self.ready.wait(3)
+        if self.injected:
+            _live.append(self)
         self.timer = threading.Timer(self.minutes * 60, self._unhook)
         self.timer.daemon = True
         self.timer.start()
         return self
 
     def stop(self):
+        if self in _live:
+            _live.remove(self)
         if self.timer:
             self.timer.cancel()
         self._unhook()
@@ -211,11 +223,26 @@ class DeskRecorder:
         except Exception:
             return "other"
 
-    def _click(self, x, y, right, t):
-        root = user32.GetAncestor(user32.WindowFromPoint(W.POINT(x, y)), 2)
+    def _at(self, hwnd, x, y):
+        el = self.uia.ElementFromHandle(win.child_at(hwnd, x, y)[0])
+        walker = self.uia.ControlViewWalker
+        for _ in range(8):
+            cur = walker.GetFirstChildElement(el)
+            while cur:
+                r = cur.CurrentBoundingRectangle
+                if r.left <= x < r.right and r.top <= y < r.bottom:
+                    break
+                cur = walker.GetNextSiblingElement(cur)
+            if not cur:
+                return el
+            el = cur
+        return el
+
+    def _click(self, x, y, right, t, hwnd=None):
+        root = user32.GetAncestor(hwnd, 2) if hwnd else user32.GetAncestor(user32.WindowFromPoint(W.POINT(x, y)), 2)
         if self._skip(root):
             return
-        el = self.uia.ElementFromPoint(self.U.tagPOINT(x, y))
+        el = self._at(hwnd, x, y) if hwnd else self.uia.ElementFromPoint(self.U.tagPOINT(x, y))
         walker = self.uia.ControlViewWalker
         pick, text_name = None, ""
         cur = el

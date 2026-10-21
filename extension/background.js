@@ -723,11 +723,12 @@ async function route(cmd, a, tab) {
       const tabs = (await T.groupTabs(a.group)).filter((t) => !only || only.has(t.id));
       const own = await T.ownWindows();
       const last = await chrome.windows.getLastFocused().catch(() => null);
-      const looked = (t) => t.active && (!own.has(t.windowId) || (last && last.focused && last.id === t.windowId && T.userPicked(t.windowId)));
+      const looked = (t) => t.active && (!own.has(t.windowId) || (a.front !== false && last && last.focused && last.id === t.windowId && T.userPicked(t.windowId)));
       const shut = a.close === false ? [] : tabs.filter((t) => !looked(t)).map((t) => t.id);
       if (shut.length) await chrome.tabs.remove(shut).catch(() => {});
       if (shut.includes(T.getTarget())) T.setTarget(null);
-      return { out: "", closed: shut.length, kept: tabs.length - shut.length, shut: shut.map((id) => "t" + T.sid(id)) };
+      const why = tabs.filter((t) => !shut.includes(t.id)).map((t) => (own.has(t.windowId) ? "front" : "yours"));
+      return { out: "", closed: shut.length, kept: tabs.length - shut.length, why, shut: shut.map((id) => "t" + T.sid(id)) };
     }
     case "keep": {
       const only = Array.isArray(a.only) ? new Set(a.only.map((x) => T.rid(x)).filter((x) => x !== null)) : null;

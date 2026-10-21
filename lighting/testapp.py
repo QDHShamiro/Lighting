@@ -14,6 +14,7 @@ user32.CreateWindowExW.argtypes = [W.DWORD, W.LPCWSTR, W.LPCWSTR, W.DWORD, ctype
 user32.CreateWindowExW.restype = W.HWND
 user32.SetWindowTextW.argtypes = [W.HWND, W.LPCWSTR]
 user32.SendMessageW.argtypes = [W.HWND, W.UINT, W.WPARAM, W.LPARAM]
+user32.SetWindowPos.argtypes = [W.HWND, W.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, W.UINT]
 user32.SendMessageW.restype = LRESULT
 kernel32.GetModuleHandleW.restype = W.HMODULE
 user32.LoadCursorW.argtypes = [W.HINSTANCE, W.LPVOID]
@@ -48,7 +49,7 @@ def main():
     wndproc = WNDPROC(proc)
     wc = WNDCLASSW(0, wndproc, 0, 0, inst, None, user32.LoadCursorW(None, 32512), 16, None, "LightingTestApp")
     user32.RegisterClassW(ctypes.byref(wc))
-    hwnd = user32.CreateWindowExW(0, "LightingTestApp", "Lighting Test App", 0x10CF0000, 200, 200, 460, 260,
+    hwnd = user32.CreateWindowExW(0x08040000, "LightingTestApp", "Lighting Test App", 0x00CF0000, 200, 200, 460, 260,
                                   None, None, inst, None)
     font = gdi32.GetStockObject(17)
     child = 0x50000000
@@ -63,7 +64,7 @@ def main():
     make("BUTTON", "Go", 0x00010000, 90, 64, 100, 32, 101)
     make("BUTTON", "Remember me", 0x00010003, 210, 64, 200, 32, 102)
     state["status"] = make("STATIC", "Status: ready", 0, 20, 120, 400, 24, 103)
-    user32.ShowWindow(hwnd, 5)
+    user32.SetWindowPos(hwnd, 1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040)
     msg = W.MSG()
     while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
         if not user32.IsDialogMessageW(hwnd, ctypes.byref(msg)):
@@ -101,7 +102,7 @@ def chat():
     wndproc = WNDPROC(proc)
     wc = WNDCLASSW(0, wndproc, 0, 0, inst, None, user32.LoadCursorW(None, 32512), 16, None, "LightingTestChat")
     user32.RegisterClassW(ctypes.byref(wc))
-    hwnd = user32.CreateWindowExW(0, "LightingTestChat", "Lighting Test Chat", 0x10CF0000, 260, 240, 640, 360,
+    hwnd = user32.CreateWindowExW(0x08040000, "LightingTestChat", "Lighting Test Chat", 0x00CF0000, 260, 240, 640, 360,
                                   None, None, inst, None)
     font = gdi32.GetStockObject(17)
 
@@ -121,7 +122,7 @@ def chat():
     for room in ("Friends, 3 unread messages", "2 mentions General", "Unread messages, News", "Quiet room"):
         buf = ctypes.create_unicode_buffer(room)
         user32.SendMessageW(rooms, 0x0180, 0, ctypes.addressof(buf))
-    user32.ShowWindow(hwnd, 5)
+    user32.SetWindowPos(hwnd, 1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040)
     msg = W.MSG()
     while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
         if not user32.IsDialogMessageW(hwnd, ctypes.byref(msg)):
