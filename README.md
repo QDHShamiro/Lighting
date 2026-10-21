@@ -212,8 +212,8 @@ claude   lighting todo add "Release 2.0" --list lighting
 - **Learns by itself.** When a session ends, a local model reads it and keeps the decisions, fixes,
   facts and what is still open. Lighting downloads the model itself (Qwen3.5 with llama.cpp) and never
   runs it while you play a game.
-- **Finds by meaning.** Search mixes words and meaning, so "why did the build fail" finds the note
-  that says "JDK 21 is needed".
+- **Finds by meaning.** Search mixes words and meaning, in any language: "welcher port für geyser" finds the
+  English note "Geyser Bedrock 20165, Simple Voice Chat 20166".
 - **Speaks up.** A prompt that clearly fits old notes of the same project shows their numbers, never more than two.
 - **Writes the notes for you.** After a session, the local model writes its note into your vault (done, why,
   tried and rejected, left open), one Markdown file per session under `Sessions/<project>/`. No tokens spent on it.
