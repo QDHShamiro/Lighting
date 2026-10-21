@@ -264,7 +264,7 @@ def browser(r, base):
                   lambda o, e: not e and re.search(r"^f\d+\.e\d+ button", o, re.M))
     found = re.search(r"^(f\d+\.e\d+) button", fout, re.M)
     r.step("click in other-site frame", ["click", found.group(1) if found else "f0.e0"], ok)
-    r.step("frame click landed", ["snap", "--frame", "localhost"], lambda o, e: not e and "Frame clicked" in o)
+    r.fn("frame click landed", lambda: landed(r.ctx, ["snap", "--frame", "localhost", "--full"], "Frame clicked"))
     r.step("wait sees control names", ["wait", "checks all green", "--timeout", "2000"], ok)
     r.step("filter falls back to text", ["snap", "-f", "Fact"], lambda o, e: not e and "this text does" in o and '"Fact' in o)
     r.step("shot element", ["shot", "e1"], lambda o, e: not e and ".jpg" in o)
@@ -308,32 +308,38 @@ def browser(r, base):
     r.step("close kept tab", ["close", dref, "--force"], ok)
 
 
+def landed(ctx, argv, want, tries=10):
+    from lighting import commands
+    out = ""
+    for _ in range(tries):
+        out = commands.run(ctx, {"argv": argv}).get("out", "")
+        if want in out:
+            return True, out
+        time.sleep(0.15)
+    return False, out
+
+
 def sessions_check(ctx, base):
     from lighting import commands
     a, b = commands.Context(ctx.d, "selftest-a"), commands.Context(ctx.d, "selftest-b")
     a.no_learn = b.no_learn = True
     run = lambda c, *argv: commands.run(c, {"argv": list(argv)}).get("out", "")
-    from lighting import browser
-    replies, track = [], browser.track
-    browser.track = lambda c, cmd, msg: (replies.append("%s %s created=%s tab=%s" % (
-        c.sid, cmd, msg.get("created"), (msg.get("where") or {}).get("tab"))), track(c, cmd, msg))[1]
     try:
         run(a, "open", base + "second")
         run(b, "open", base + "quiet")
-        browser.track = track
         seen = [run(a, "snap", "--force"), run(b, "done"), run(a, "snap", "--force")]
         run(b, "open", base + "quiet")
         seen += [run(b, "keep"), run(b, "snap", "--force")]
     finally:
-        browser.track = track
         run(b, "close")
         run(a, "done")
         run(b, "done")
     good = ("Second" in seen[0] and seen[1].startswith("closed 1 tab") and "Second" in seen[2]
             and seen[3].startswith("kept 1 tab") and "Quiet" in seen[4])
-    detail = " / ".join(s.split("\n")[0] for s in seen)
-    return good, detail if good else "%s | a=%s/%s b=%s/%s | %s" % (
-        "; ".join(replies), a.tabs, sorted(a.owned), b.tabs, sorted(b.owned), detail)
+    if good:
+        return good, " / ".join(s.split("\n")[0] for s in seen)
+    return good, "%s | a=%s/%s b=%s/%s" % (" / ".join(s.replace("\n", " ; ") for s in seen), a.tabs, sorted(a.owned),
+                                         b.tabs, sorted(b.owned))
 
 
 def reopen_check(ctx, base):

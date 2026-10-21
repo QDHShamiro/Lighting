@@ -1,3 +1,4 @@
+import contextlib
 import ctypes
 import os
 import shutil
@@ -353,8 +354,24 @@ def set_cursor(x, y):
     Quartz.CGAssociateMouseAndMouseCursorPosition(True)
 
 
+_to_pid = threading.local()
+
+
 def post(ev):
-    Quartz.CGEventPost(Quartz.kCGHIDEventTap, ev)
+    pid = getattr(_to_pid, "pid", None)
+    if pid:
+        Quartz.CGEventPostToPid(pid, ev)
+    else:
+        Quartz.CGEventPost(Quartz.kCGHIDEventTap, ev)
+
+
+@contextlib.contextmanager
+def keys_to(hwnd):
+    _to_pid.pid = pid_of(hwnd)
+    try:
+        yield
+    finally:
+        _to_pid.pid = None
 
 
 def mouse_event(kind, button, pos=None, clicks=1):

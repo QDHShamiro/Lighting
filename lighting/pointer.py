@@ -166,8 +166,11 @@ def with_focus(hwnd, fn, stay=False):
         raise Busy(BUSY, "retry in a moment")
     prev = win.foreground()
     if not front(hwnd):
-        raise Fail("the system refused to bring the window to the front, keys were not sent",
-                   "click the window once, or use click/type on d-refs (background)")
+        if not hasattr(win, "keys_to"):
+            raise Fail("the system refused to bring the window to the front, keys were not sent",
+                       "click the window once, or use click/type on d-refs (background)")
+        with win.keys_to(hwnd):
+            return fn()
     try:
         return fn()
     finally:
