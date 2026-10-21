@@ -11,6 +11,7 @@ einer er es for from für geht gib hab habe hast hat he hey hi i ich ihr im in i
 machen mal me mein meine mich mir mit my nach nicht noch nur oder of on or please sag so soll the then to um und uns
 unter vom von vor was we wie will wir with wo you zu zum zur über lighting claude okay ok jetzt schnell einfach
 auch alle alles aber also hier dort mehr sehr gut kurz neu neue schau schaue guck gucke check checke look see
+warum wieso weshalb welche welcher welches welchen wann wer wen wem woher wohin womit wofür
 this that these those what when where why how have has had get got want need just also more some any all
 """.split())
 TOKEN = re.compile(r"[@#]|[^\W\d_][\w-]*", re.U)
