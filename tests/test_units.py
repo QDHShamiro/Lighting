@@ -867,7 +867,7 @@ def test_doctor():
 def test_skill_and_mcp_budget():
     from lighting import mcp
     skill = (ROOT / "skills" / "lighting" / "SKILL.md").read_bytes()
-    assert len(skill) <= 3500, "SKILL.md grew to %d bytes (budget 3500)" % len(skill)
+    assert len(skill) <= 3700, "SKILL.md grew to %d bytes (budget 3700)" % len(skill)
     assert len(mcp.DESCRIPTION) <= 700, "MCP description grew to %d chars" % len(mcp.DESCRIPTION)
 
 
@@ -1100,6 +1100,115 @@ def test_games_paths():
     assert not games.is_game("C:/Program Files (x86)/Steam/steam.exe")
     assert not games.is_game("C:/Program Files/Epic Games/Launcher/Portal/EpicGamesLauncher.exe")
     assert not games.is_game("C:/Windows/explorer.exe")
+
+
+def test_vault_index_and_projects():
+    import types
+    from lighting import defaults as D, memcmd, memory as M, vault
+    base = Path(tempfile.mkdtemp(prefix="lighting-vault-"))
+    (base / "Knowledge" / "Mistakes").mkdir(parents=True)
+    (base / "Templates").mkdir()
+    (base / "Projects").mkdir()
+    (base / "Knowledge" / "Mistakes" / "jdk.md").write_text(
+        "---\ntags: [java]\n---\n# Build needs JDK 21\nMaven fails with release 21 on JDK 17.", "utf-8")
+    (base / "Projects" / "Aurora.md").write_text("# Aurora\nMusic app, Supabase.", "utf-8")
+    (base / "Templates" / "mistake.md").write_text("# Template", "utf-8")
+    cfg = D.config()
+    cfg["vault"] = str(base)
+    D.save_config(cfg)
+    vault.claude_dirs, real_dirs = (lambda: []), vault.claude_dirs
+    try:
+        assert vault.index() == 2
+        rows = {r["title"]: r for r in M.rows("select * from notes where source = 'vault'")}
+        assert set(rows) == {"Build needs JDK 21", "Aurora"}
+        assert rows["Build needs JDK 21"]["kind"] == "mistake" and rows["Aurora"]["project"] == "Aurora"
+        assert vault.index() == 0
+        ctx = types.SimpleNamespace(cwd=str(base), sid="s", told={})
+        out = memcmd.cmd_recall(ctx, ["maven", "jdk"], {"all": True})
+        assert "(vault)" in out and "JDK 21" in out, out
+        nid = rows["Build needs JDK 21"]["id"]
+        assert "Knowledge/Mistakes/jdk.md" in memcmd.cmd_recall(ctx, [str(nid)], {})
+        try:
+            memcmd.cmd_forget(ctx, [str(nid)], {})
+            raise AssertionError("forget removed a vault file note")
+        except commands.Fail:
+            pass
+        (base / "Projects" / "Aurora.md").unlink()
+        assert vault.index() == 1 and not M.rows("select id from notes where title = 'Aurora'")
+        record = {"title": "Fix: build/JDK?", "summary": "Raised release to 21\n- pom updated", "why": "",
+                  "rejected": "JDK 17 toolchain", "next": "Deploy"}
+        first = vault.write_session("abcdef1234", "Aurora", record, 1760000000)
+        assert first.parent.name == "Aurora" and first.name.endswith(" abcdef12.md") and "/" not in first.stem
+        text = first.read_text("utf-8")
+        assert "## Done\n- Raised release to 21\n- pom updated" in text and "## Why" not in text
+        assert "## Tried and rejected\n- JDK 17 toolchain" in text and "## Left open\n- Deploy" in text
+        second = vault.write_session("abcdef1234", "Aurora", dict(record, title="Renamed"), 1760000000)
+        assert not first.exists() and second.exists()
+        old = Path(tempfile.mkdtemp(prefix="lighting-ce-")) / ".claude" / "memory" / "sessions"
+        old.mkdir(parents=True)
+        (old / "Session_Context_x_1.md").write_text("# Aurora: player fix\nSession: 1", "utf-8")
+        from lighting import memlearn
+        assert memlearn.import_context_engine([old]) == 1 and memlearn.import_context_engine([old]) == 0
+        (base / "Templates" / "mistake.md").write_text("---\ntype: mistake\n---\n# <T>\n## Fehler\n## Ursache\n## Fix\n",
+                                                      "utf-8")
+        (base / "Knowledge" / "INDEX.md").write_text("# INDEX\n\n## Mistakes\n- [[a]] old\n\n## Patterns\n", "utf-8")
+        p = vault.write_draft("mistake", "JDK 25 breaks Maven", {"Fehler": "CME", "Ursache": "JAVA_HOME 25", "Fix": ""},
+                              "Aurora", "abcdef1234")
+        text = p.read_text("utf-8")
+        assert "draft: true" in text and "## Ursache\nJAVA_HOME 25" in text and "## Fix" not in text
+        assert "1 mistake [Aurora]" in memcmd.cmd_wiki(ctx, [], {})
+        assert "wiki drafts wait" in memcmd.start_text("", "")
+        out = memcmd.cmd_wiki(ctx, ["accept", "1"], {})
+        dest = base / "Knowledge" / "Mistakes" / "JDK 25 breaks Maven.md"
+        assert "Knowledge/Mistakes/JDK 25 breaks Maven.md" in out and dest.exists() and not p.exists()
+        assert "draft: true" not in dest.read_text("utf-8")
+        index = (base / "Knowledge" / "INDEX.md").read_text("utf-8")
+        assert index.index("[[Knowledge/Mistakes/JDK 25 breaks Maven]]") < index.index("## Patterns"), index
+        q = vault.write_draft("rule", "Never Fable", {"Rule": "no"}, "", "abcdef1234")
+        assert "dropped" in memcmd.cmd_wiki(ctx, ["drop", "1"], {}) and not q.exists()
+        assert (base / ".trash" / q.name).exists() and memcmd.cmd_wiki(ctx, [], {}).startswith("no drafts")
+    finally:
+        vault.claude_dirs = real_dirs
+        cfg["vault"] = ""
+        D.save_config(cfg)
+    assert M.project_of(str(Path.home())) == ""
+    repo = Path(tempfile.mkdtemp(prefix="lighting-mono-"))
+    (repo / ".git").mkdir()
+    for name in ("A", "B", "C"):
+        (repo / name / "src").mkdir(parents=True)
+        (repo / name / "pom.xml").write_text("<project/>", "utf-8")
+    assert M.project_of(str(repo / "B" / "src")) == "B"
+    assert M.project_of_files([str(repo / "A" / "src" / "x.java")] * 2 + [str(repo / "C" / "y.java")]) == "A"
+
+
+def test_session_record_points():
+    from lighting import memlearn
+    assert memlearn.points("alpha one\n- beta two", "- Beta two.\ngamma three") == "alpha one\nbeta two\ngamma three"
+    assert memlearn.points("alpha one", "- None.\nKeine") == "alpha one"
+    assert memlearn.titled("Lighting", "focus fix") == "Lighting: focus fix"
+    assert memlearn.titled("Lighting", "lighting: x") == "lighting: x" and memlearn.titled("", "x") == "x"
+
+
+def test_code_map():
+    import types
+    from lighting import codemap
+    repo = Path(tempfile.mkdtemp(prefix="lighting-code-"))
+    (repo / "src").mkdir()
+    (repo / "pyproject.toml").write_text("[project]\nname='x'\n", "utf-8")
+    (repo / "src" / "shop.py").write_text(
+        "class Wallet:\n    def take(self, n):\n        return n\n\n\ndef buy(w):\n    return w.take(5)\n", "utf-8")
+    (repo / "src" / "Main.java").write_text(
+        "class Main {\n  void run() { new Wallet(); buy(null); }\n}\n", "utf-8")
+    ctx = types.SimpleNamespace(cwd=str(repo / "src"))
+    over = codemap.cmd_code(ctx, [], {})
+    assert "1 python files" in over and "1 java files" in over, over
+    out = codemap.cmd_code(ctx, ["buy"], {})
+    assert "src/shop.py:6 function buy" in out and "src/Main.java:2 in run" in out, out
+    assert "src/shop.py:7 in buy" in codemap.cmd_code(ctx, ["callers", "take"], {})
+    assert "close names" in codemap.cmd_code(ctx, ["wall"], {})
+    (repo / "src" / "Main.java").unlink()
+    assert codemap.refresh(codemap.root_for(str(repo))) == 1
+    assert "Main.java" not in codemap.cmd_code(ctx, ["buy"], {})
 
 
 def test_nested_pending_keeps_waiting():

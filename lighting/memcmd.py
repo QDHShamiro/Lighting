@@ -2,14 +2,17 @@ import json
 import re
 import threading
 import time
+from pathlib import Path
 
 from lighting import defaults as D
 from lighting import memory as M
+from lighting import vault
 from lighting.common import Fail
 
 SAY = re.compile(r"(?is)^\s*(?:bitte\s+|please\s+)?(?:merk(?:e)?\s+dir|notier(?:e)?\s+dir|remember)\b[\s,:;-]*"
                  r"(?:(?:bitte|please)\s+)?(?:dass\s+|that\s+)?(.+)")
 TODO_HELP = 'lighting todo | todo add "task" [--list name] | todo done|doing|drop|todo <id> | todo note <id> "text"'
+SOURCE_TAGS = {"vault": "vault", "claude": "claude memory"}
 MEMORY_HELP = "lighting memory [learn | import claude-mem | model | on | off]"
 
 
@@ -30,8 +33,9 @@ def ident(text):
 
 def line(r):
     body = M.oneline((r["body"] or "").split("\n")[0], 70) if r["body"] and r["kind"] != "session" else ""
-    head = "#%d %s %s%s: %s" % (r["id"], M.day(r["updated"]), r["kind"], " [%s]" % r["project"] if r.get("other") else "",
-                                M.oneline(r["title"], D.MEM_LINE))
+    where = SOURCE_TAGS.get(r["source"], "")
+    head = "#%d %s %s%s%s: %s" % (r["id"], M.day(r["updated"]), r["kind"], " [%s]" % r["project"] if r.get("other") and r["project"] else "",
+                                  " (%s)" % where if where else "", M.oneline(r["title"], D.MEM_LINE))
     return head + (" | " + body if body and body.lower() not in head.lower() else "")
 
 
@@ -79,7 +83,7 @@ def cmd_recall(ctx, pos, flags):
         if not r:
             raise Fail("no note #%s" % pos[0].lstrip("#"), 'lighting recall "<words>"')
         M.touch([r["id"]])
-        files = ", ".join(json.loads(r["files"] or "[]")[:8])
+        files = vault.path_of(r) or ", ".join(json.loads(r["files"] or "[]")[:8])
         return "#%d %s %s [%s, %s, %s]\n%s%s%s" % (
             r["id"], time.strftime("%Y-%m-%d", time.localtime(r["updated"])), r["kind"], r["project"] or "global",
             r["source"], r["session"][:8] or "-", r["title"], "\n" + r["body"] if r["body"] else "",
@@ -99,7 +103,10 @@ def cmd_recall(ctx, pos, flags):
 def cmd_forget(ctx, pos, flags):
     if not pos:
         raise Fail("forget needs a note number", "lighting forget 42")
-    n = M.forget(ident(pos[0]))
+    try:
+        n = M.forget(ident(pos[0]))
+    except ValueError as e:
+        raise Fail(str(e))
     return "forgot #%s" % pos[0].lstrip("#") if n else "no note #%s" % pos[0].lstrip("#")
 
 
@@ -152,10 +159,30 @@ def cmd_todo(ctx, pos, flags):
     return "\n".join(todo_list(rows)) if rows else "no open to-dos (lighting todo add \"task\")"
 
 
-def start_text(here):
+def project_lines(here):
+    r = M.one("select body from notes where source = 'vault' and kind = 'project' and project = ? "
+              "order by updated desc limit 1", (here,)) if here else None
+    text = [x.strip() for x in (r["body"] if r else "").splitlines() if x.strip() and not x.startswith(("#", "---"))]
+    return ["About: " + M.oneline(" ".join(text[:3]), 220)] if text else []
+
+
+def commits(cwd):
+    import subprocess
+    try:
+        out = subprocess.run(["git", "-C", cwd, "log", "-%d" % D.MEM_START_COMMITS, "--format=%h %ad %s", "--date=format:%m-%d"],
+                             capture_output=True, timeout=3, creationflags=0x08000000 if D.WIN else 0)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    rows = out.stdout.decode("utf-8", "replace").splitlines() if out.returncode == 0 else []
+    return ["Last commits:"] + ["  " + M.oneline(x, 100) for x in rows] if rows else []
+
+
+def start_text(here, cwd=""):
     c = M.counts()
-    lines = ['Lighting memory (%s): lighting recall "<words>" searches %d notes, lighting remember "<fact>" keeps one, '
-             'lighting todo tracks work.' % (here or "global", c["n"])]
+    lines = ['Lighting memory (%s): lighting recall "<words>" searches %d notes (vault, session notes and Claude '
+             'memory included), lighting remember "<fact>" keeps one, lighting todo tracks work.'
+             % (here or "no project", c["n"])]
+    lines += project_lines(here)
     rows = M.todos(here)[: D.MEM_START_TODOS]
     if rows:
         lines.append("Open to-dos:")
@@ -164,14 +191,24 @@ def start_text(here):
     if recent:
         lines.append("Last sessions:")
         for s in recent:
-            nxt = " Next: " + M.oneline(s["next"], 70) if s["next"] else ""
+            nxt = " Open: " + M.oneline(s["next"], 90) if s["next"] else ""
             lines.append("  %s %s: %s%s" % (M.day(s["last"]), M.oneline(s["title"] or "-", 50),
                                              M.oneline(s["summary"], 100), nxt))
+    if here and cwd:
+        lines += commits(cwd)
+    rules = M.rows("select id, title from notes where kind = 'rule' and source = 'vault' and project = ? "
+                   "order by updated desc limit ?", (here, D.MEM_START_RULES)) if here else []
+    if rules:
+        lines.append("Project rules:")
+        lines += ["  #%d %s" % (r["id"], M.oneline(r["title"], D.MEM_LINE)) for r in rules]
     mine = M.rows("select * from notes where source = 'user' and project in (?, '') order by updated desc limit ?",
                   (here, D.MEM_START_NOTES))
     if mine:
         lines.append("Remembered:")
         lines += ["  #%d %s" % (r["id"], M.oneline(r["title"], D.MEM_LINE)) for r in mine]
+    waiting = len(vault.drafts())
+    if waiting:
+        lines.append("%d wiki drafts wait for a yes or no: lighting wiki" % waiting)
     if c["q"]:
         from lighting import memmodel as MM
         if not (MM.api("chat") or MM.ready("chat")):
@@ -198,7 +235,10 @@ def cmd_hook(ctx, pos, flags):
     if event == "start":
         from lighting import memlearn
         memlearn.start()
-        return start_text(here)
+        return start_text(here, cwd)
+    if event == "compact":
+        from lighting import memlearn
+        threading.Thread(target=memlearn.tick, args=(True,), daemon=True).start()
     return ""
 
 
@@ -232,6 +272,43 @@ def on_prompt(ctx, prompt):
     return ["Lighting memory may help (lighting recall <id>): " + " | ".join(out)] if out else []
 
 
+WIKI_HELP = "lighting wiki | wiki accept <n> [folder] | wiki drop <n> | wiki show <n>"
+
+
+def cmd_code(ctx, pos, flags):
+    from lighting import codemap
+    return codemap.cmd_code(ctx, pos, flags)
+
+
+def cmd_wiki(ctx, pos, flags):
+    sub = pos[0].lower() if pos else ""
+    found = vault.drafts()
+    if not sub:
+        if not found:
+            return "no drafts wait in %s" % vault.inbox().as_posix()
+        lines = ["%d drafts wait in %s (lighting wiki accept <n> | drop <n> | show <n>):"
+                 % (len(found), vault.inbox().as_posix())]
+        for i, p in enumerate(found, 1):
+            meta = vault.front(p.read_text("utf-8", errors="replace"))[0]
+            lines.append("  %d %s [%s]: %s" % (i, meta.get("type", "note"), meta.get("project", "-"), p.stem))
+        return "\n".join(lines)
+    if sub not in ("accept", "drop", "show"):
+        raise Fail("unknown wiki command '%s'" % sub, WIKI_HELP)
+    if len(pos) < 2 or not pos[1].isdigit() or not 1 <= int(pos[1]) <= len(found):
+        raise Fail("which draft? 1 to %d" % len(found) if found else "no drafts wait", WIKI_HELP)
+    path = found[int(pos[1]) - 1]
+    if sub == "show":
+        return path.read_text("utf-8", errors="replace")
+    if sub == "drop":
+        vault.drop(path)
+        return "dropped %s (in the vault's .trash)" % path.name
+    try:
+        dest = vault.accept(path, " ".join(pos[2:]) or None)
+    except (OSError, ValueError) as e:
+        raise Fail(str(e), WIKI_HELP)
+    return "accepted -> %s (registered in its INDEX)" % dest.relative_to(vault.root()).as_posix()
+
+
 def cmd_memory(ctx, pos, flags):
     from lighting import memlearn, memmodel as MM
     sub = pos[0].lower() if pos else ""
@@ -240,9 +317,13 @@ def cmd_memory(ctx, pos, flags):
         cfg["memory"] = sub == "on"
         D.save_config(cfg)
         return "memory %s" % sub
+    if sub == "import" and len(pos) >= 2 and pos[1].lower() == "context-engine":
+        n = memlearn.import_context_engine([Path(flags["dir"])] if flags.get("dir") else None)
+        return "copied %d Context Engine session notes into %s/Sessions (the originals stay)" % (
+            n, vault.root().as_posix())
     if sub == "import":
         if len(pos) < 2 or pos[1].lower() != "claude-mem":
-            raise Fail("import from where?", "lighting memory import claude-mem [--file path]")
+            raise Fail("import from where?", "lighting memory import claude-mem [--file path] | import context-engine")
         n, s, t = memlearn.import_claude_mem(flags.get("file"))
         return "imported %d notes, %d session summaries, %d open to-dos from claude-mem (vectors follow in the " \
                "background)" % (n, s, t)

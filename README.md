@@ -196,8 +196,9 @@ check caught it.)
 ## It remembers
 
 Every new session starts from zero, so the AI asks again, searches again, decides again. Lighting keeps
-a memory on your computer and starts each session with about 500 tokens of it: the open to-dos, the
-last sessions in one line each, and what you asked it to keep.
+a memory on your computer and starts each session with a few hundred tokens of it: what the project is, the
+open to-dos, the last sessions with what is still open, the last commits, the project's rules and what you
+asked it to keep.
 
 ```
 you      merk dir, dass Brave der einzige Browser ist
@@ -214,8 +215,33 @@ claude   lighting todo add "Release 2.0" --list lighting
 - **Finds by meaning.** Search mixes words and meaning, in any language: "welcher port für geyser" finds the
   English note "Geyser Bedrock 20165, Simple Voice Chat 20166".
 - **Speaks up.** A prompt that clearly fits old notes of the same project shows their numbers, never more than two.
+- **Writes the notes for you.** After a session, the local model writes its note into your vault (done, why,
+  tried and rejected, left open), one Markdown file per session under `Sessions/<project>/`. No tokens spent on it.
+- **Keeps a wiki with you.** A mistake with its cause, a rule you gave or a reusable pattern becomes a draft in
+  the vault's inbox, filled along your own templates. `lighting wiki accept 1` files it and adds it to the index,
+  `wiki drop 1` throws it away; nothing lands in your wiki unchecked.
+- **Reads your vault.** Point it at an Obsidian vault (`lighting config vault <folder>`) and `recall` searches
+  your notes, the session notes and Claude Code's own memory files together. They stay plain Markdown.
 - **Stays yours.** One SQLite file in `~/.lighting/memory`. Nothing is uploaded, keys and passwords
-  are cut out before anything is stored. Coming from claude-mem: `lighting memory import claude-mem`.
+  are cut out before anything is stored. Coming from claude-mem: `lighting memory import claude-mem`; from
+  Context Engine: `lighting memory import context-engine`.
+
+## It knows your code
+
+`lighting code` keeps a map of every project you work in: where each class and function is defined and who calls
+it, for Java, Python, Rust, TypeScript, JavaScript, C#, Go, Kotlin, C/C++ and more. Only changed files are read
+again, so it is current on every call, with nothing to install per repo.
+
+```
+claude   lighting code withdraw
+         defined:
+           src/main/java/dev/luis/asyncAuction/economy/VaultHook.java:37 method withdraw in VaultHook
+         called from (1):
+           src/main/java/dev/luis/asyncAuction/listener/AuctionListener.java:516 in finalizeBuy
+```
+
+Without a name, `lighting code` gives the overview: languages, folders, the most used types and the entry points.
+The search by meaning is built in the background by the same local model, only for projects you work in.
 
 ## Built for Claude
 
@@ -287,7 +313,7 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **145/145** on Windows, 145/145 on Linux, 144/144 on macOS (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (61/61), `cargo test` in `client/`.
+- `lighting selftest`: **145/145** on Windows, 145/145 on Linux, 144/144 on macOS (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (64/64), `cargo test` in `client/`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - `lighting demo` shows Lighting in about 30 s on a made-up shop page served from your own computer (open, find, fill, pick, tick, click, read a table), with the time and size of every answer. `--fast` skips the pauses that are there for screen recordings.
 - Filling and submitting a form: ~160 ms.
@@ -302,6 +328,8 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | Tokens for a first look at a page | **~440** (measured) | ~15,850: screenshot + page text (measured) | 15,000-30,000 on dense pages ([1]) | no number published ([2]) |
 | Repeated tasks | learned routines, one call | saved shortcuts | – | – |
 | Memory across sessions | ✅ on your computer, learned by a local model | – | – | – |
+| Session notes and a wiki in your Obsidian vault | ✅ written by the local model, you confirm | – | – | – |
+| Code map: definitions, callers, search by meaning | ✅ `lighting code` | – | – | – |
 | A whole video as one image | ✅ `frames` | – | – | – |
 | Headless, CI | ❌ real browser only | desktop Chrome, no headless | ✅ | ✅ |
 
@@ -315,6 +343,10 @@ your logged-in browser and your apps, cheaply.
 
 ## What's new
 
+- **2.1.0** One tool instead of four: session notes that write themselves into your vault, wiki drafts you accept
+  with one command, `recall` over your notes, the vault and Claude Code's memory, and `lighting code`, a code map
+  with callers and search by meaning. On real questions from the old tools' own data: 19 of 20 answered with
+  13,511 tokens (claude-mem: 8 of 20 with 39,401), code 9 of 10 (Graphify: 2 of 10).
 - **2.0.0** A memory across sessions (`recall`, `remember`, `todo`, a start summary of ~500 tokens, learned by a
   local model that Lighting downloads itself), `lighting watch` (any video in one call: chapters, speech, screen
   text and scenes in one image), macOS and Linux, Android phones (`lighting phone`), and a brain: on pages it

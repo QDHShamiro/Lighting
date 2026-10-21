@@ -1,3 +1,4 @@
+import functools
 import json
 import re
 import sqlite3
@@ -28,13 +29,16 @@ create trigger if not exists notes_au after update of title, body on notes begin
 create table if not exists sessions(id text primary key, project text, cwd text, transcript text default '',
   started real, last real, ended integer default 0, offset integer default 0, learned real default 0,
   title text default '', summary text default '', next text default '', status text default 'open',
-  tries integer default 0, retry_at real default 0, source text default 'live');
+  tries integer default 0, retry_at real default 0, source text default 'live', why text default '',
+  rejected text default '');
 create index if not exists sessions_project on sessions(project, last);
 create table if not exists todos(id integer primary key, project text, list text default '', task text,
   status text default 'todo', note text default '', created real, updated real, origin text default '');
 create index if not exists todos_project on todos(project, status);
 create table if not exists meta(k text primary key, v text);
 """
+MIGRATE = ["alter table sessions add column why text default ''",
+           "alter table sessions add column rejected text default ''"]
 OPEN = ("todo", "doing")
 TOKEN = re.compile(r"[^\W_][\w.-]*", re.U)
 SECRET = [
@@ -58,6 +62,11 @@ def conn():
         c.execute("pragma journal_mode=wal")
         c.execute("pragma synchronous=normal")
         c.executescript(SCHEMA)
+        for sql in MIGRATE:
+            try:
+                c.execute(sql)
+            except sqlite3.OperationalError:
+                pass
         _db["conn"] = c
     return _db["conn"]
 
@@ -95,17 +104,70 @@ def meta(key, value=None):
     return value
 
 
+_roots = {}
+
+
+def built(d):
+    try:
+        return any((d / f).exists() for f in D.BUILD_FILES)
+    except OSError:
+        return False
+
+
+def monorepo(root):
+    if root not in _roots:
+        try:
+            _roots[root] = sum(1 for c in root.iterdir() if c.is_dir() and built(c)) >= D.MONOREPO_MIN
+        except OSError:
+            _roots[root] = False
+    return _roots[root]
+
+
+@functools.lru_cache(maxsize=1)
+def scratch_dirs():
+    import tempfile
+    home = Path.home()
+    return [Path(tempfile.gettempdir()).resolve(), home / "AppData", home / ".claude", home / ".cache", home / ".local",
+            home / "Downloads", home / ".lighting"]
+
+
+@functools.lru_cache(maxsize=8192)
 def project_of(cwd):
     if not cwd:
         return ""
     p = Path(cwd)
-    for d in [p, *p.parents]:
+    home = Path.home()
+    chain = [p, *p.parents]
+    root = None
+    for d in chain:
+        if d == home:
+            break
         try:
             if (d / ".git").exists():
-                return d.name or str(d)
+                root = d
+                break
         except OSError:
             break
-    return p.name or str(p)
+    if root is None:
+        found = next((d for d in chain if d != home and built(d)), None)
+        if found is None and (p == home or any(s == p or s in p.parents for s in scratch_dirs())):
+            return ""
+        found = found or p
+        return found.name or str(found)
+    if p != root and monorepo(root):
+        child = root / p.relative_to(root).parts[0]
+        if built(child):
+            return child.name
+    return root.name or str(root)
+
+
+def project_of_files(paths):
+    seen = {}
+    for f in paths:
+        name = project_of(str(Path(f).parent)) if f and Path(f).is_absolute() else ""
+        if name:
+            seen[name] = seen.get(name, 0) + 1
+    return max(seen, key=seen.get) if seen else ""
 
 
 def scrub(text):
@@ -147,7 +209,7 @@ def add_note(project, kind, title, body="", files=(), source="user", session="",
 
 def merge_note(project, kind, title, body, files=(), session=""):
     for r in search(title, project=project, limit=3, fts_only=True):
-        if r["project"] == project and similar(r["title"], title) >= D.MEM_DUP_SIM:
+        if r["project"] == project and r["source"] not in ("vault", "claude") and similar(r["title"], title) >= D.MEM_DUP_SIM:
             text = body if len(body or "") > len(r["body"] or "") else r["body"]
             write("update notes set title = ?, body = ?, kind = ?, updated = ?, session = ? where id = ?",
                   (oneline(scrub(title), 200), scrub(text), kind or r["kind"], time.time(), session, r["id"]))
@@ -171,7 +233,25 @@ def note(nid):
     return one("select * from notes where id = ?", (nid,))
 
 
+def meta_json(key, value=None):
+    if value is None:
+        raw = meta(key)
+        try:
+            return json.loads(raw) if raw else None
+        except ValueError:
+            return None
+    meta(key, json.dumps(value))
+    return value
+
+
+def drop_cache():
+    _db["ids"] = None
+
+
 def forget(nid):
+    r = note(nid)
+    if r and r["source"] in ("vault", "claude"):
+        raise ValueError("#%d is the file %s: edit or delete the file itself" % (nid, (r["origin"] or "").split(":", 1)[-1]))
     with _lock:
         c = conn()
         n = c.execute("delete from notes where id = ?", (nid,)).rowcount

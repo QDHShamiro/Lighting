@@ -31,6 +31,7 @@ IMPROVE = HOME / "improve.json"
 MEMORY = HOME / "memory"
 MEMORY_DB = MEMORY / "memory.db"
 MODELS = HOME / "models"
+VAULT = HOME / "vault"
 CONFIG = HOME / "config.json"
 BLOCKLIST = HOME / "blocklist.txt"
 EXT = HOME / "extension"
@@ -193,7 +194,9 @@ MEM_NOTES_PER_CHUNK = 6
 MEM_TEXT = 1500
 MEM_TOOL_TEXT = 240
 MEM_START_TODOS = 12
-MEM_START_SESSIONS = 4
+MEM_START_SESSIONS = 3
+MEM_START_COMMITS = 5
+MEM_START_RULES = 5
 MEM_START_NOTES = 8
 MEM_LINE = 110
 MEM_HINTS = 2
@@ -205,6 +208,22 @@ MEM_RRF_K = 60
 MEM_PROJECT_BOOST = 1.3
 MEM_DUP_SIM = 0.7
 MEM_VEC_DIM = 256
+BUILD_FILES = ("pom.xml", "build.gradle", "build.gradle.kts", "Cargo.toml", "package.json", "pyproject.toml",
+               "requirements.txt", "go.mod", "setup.py", "composer.json", "Gemfile", "CMakeLists.txt", "Makefile")
+MONOREPO_MIN = 3
+VAULT_BODY = 12000
+WIKI_PER_SESSION = 2
+KNOWN_PROJECT_NOTES = 100
+RECORD_LINES = 24
+CODE = HOME / "code"
+CODE_MAX_BYTES = 600_000
+CODE_TOP = 12
+CODE_FOLDERS = 10
+CODE_LIMIT = 10
+CODE_CALLERS = 12
+CODE_ALL_CALLERS = 60
+CODE_EMBED_LINES = 30
+CODE_ACTIVE_DAYS = 7
 MEM_EMBED_BATCH = 32
 MEM_EMBED_CHARS = 1200
 MEM_QUERY_PREFIX = "Instruct: Given a question, find the notes that answer it\nQuery: "
@@ -272,6 +291,8 @@ CONFIG_DEFAULTS = {
     "memory_model": "",
     "memory_embed": "",
     "models_dir": "",
+    "vault": "",
+    "vault_inbox": "Inbox",
 }
 
 RISK_WORDS = [
