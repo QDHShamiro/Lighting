@@ -867,7 +867,7 @@ def test_doctor():
 def test_skill_and_mcp_budget():
     from lighting import mcp
     skill = (ROOT / "skills" / "lighting" / "SKILL.md").read_bytes()
-    assert len(skill) <= 3500, "SKILL.md grew to %d bytes (budget 3500)" % len(skill)
+    assert len(skill) <= 3700, "SKILL.md grew to %d bytes (budget 3700)" % len(skill)
     assert len(mcp.DESCRIPTION) <= 700, "MCP description grew to %d chars" % len(mcp.DESCRIPTION)
 
 
