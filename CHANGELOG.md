@@ -109,6 +109,9 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
   `ctrl+a` still wait up to 0.6 s, and changes are still reported.
 
 ### Fixed
+- `upload` on a label, menu item or button now finds its file input (the label's control, a nearby hidden
+  input, or the only one on the page) instead of failing with "Node is not a file input element"; this also
+  works inside same-origin frames. Without one nearby it says so.
 - The daemon crashed in `open`/`tabs` when `tasklist` printed non-ASCII text (umlauts in the OEM code page).
 - `snap --frame host` right after `open` failed because the frame was not there yet; it now waits up to 3 s,
   accepts the start of the host and lists the frames that exist when none matches.
