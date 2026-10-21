@@ -259,24 +259,38 @@ def fetch(url, dest, size=None, sha=None):
                        % (dest.parent, dest.name))
     part = dest.with_name(dest.name + ".part")
     h = hashlib.sha256()
-    req = urllib.request.Request(url, headers={"User-Agent": "lighting"})
-    with urllib.request.urlopen(req, timeout=60, context=tls()) as r, open(part, "wb") as f:
-        total, done = int(r.headers.get("Content-Length") or size or 0), 0
-        while True:
-            if games.running():
-                raise NotReady("paused: a game started")
-            chunk = r.read(1 << 20)
-            if not chunk:
-                break
-            f.write(chunk)
-            h.update(chunk)
-            done += len(chunk)
-            _st["dl"] = (dest.name, done, total)
+    have = part.stat().st_size if part.exists() else 0
+    if size and have >= size:
+        have = 0
+    headers = {"User-Agent": "lighting"}
+    if have:
+        headers["Range"] = "bytes=%d-" % have
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=60, context=tls()) as r:
+            if r.status != 206:
+                have = 0
+            with open(part, "ab" if have else "wb") as f:
+                if have:
+                    with open(part, "rb") as old:
+                        for block in iter(lambda: old.read(1 << 20), b""):
+                            h.update(block)
+                total, done = have + int(r.headers.get("Content-Length") or (size or 0) - have), have
+                while True:
+                    if games.running():
+                        raise NotReady("paused: a game started, it goes on later")
+                    chunk = r.read(1 << 20)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    h.update(chunk)
+                    done += len(chunk)
+                    _st["dl"] = (dest.name, done, total)
+    finally:
+        _st["dl"] = None
     if sha and h.hexdigest() != sha:
         part.unlink(missing_ok=True)
         raise NotReady("%s arrived broken (checksum), it is downloaded again next time" % dest.name)
     part.replace(dest)
-    _st["dl"] = None
     return dest
 
 

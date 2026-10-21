@@ -35,6 +35,7 @@ SCHEMA = {
 REMINDER = re.compile(r"(?s)<(system-reminder|local-command-caveat)>.*?</\1>")
 TAG = re.compile(r"</?[a-zA-Z][\w-]*(?:\s[^<>]*)?>")
 _st = {"thread": None, "last": "", "learned": 0, "error": ""}
+_lock = threading.Lock()
 
 
 def cut(text, n):
@@ -162,11 +163,20 @@ def embed_some(seconds=50):
     return n
 
 
-def tick():
+def tick(now=False):
+    if not _lock.acquire(blocking=False):
+        return
+    try:
+        work(now)
+    finally:
+        _lock.release()
+
+
+def work(now):
     c = D.config()
     if not c.get("memory") or MM.reap():
         return
-    due = M.due_sessions() if c.get("memory_learn") else []
+    due = M.due_sessions(time.time() + D.MEM_QUIET_S if now else None) if c.get("memory_learn") or now else []
     if not due and not M.unembedded(1):
         return
     if not (MM.api("chat") or MM.ready("chat")) or not (MM.api("embed") or MM.ready("embed")):

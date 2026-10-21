@@ -1099,6 +1099,39 @@ def test_games_paths():
     assert not games.is_game("C:/Windows/explorer.exe")
 
 
+def test_memory_download_resumes():
+    import hashlib
+    import http.server
+    import threading
+    from lighting import memmodel as MM
+    blob = os.urandom(3 << 20)
+
+    class Ranged(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            start = int((self.headers.get("Range") or "bytes=0-")[6:].rstrip("-"))
+            self.send_response(206 if start else 200)
+            self.send_header("Content-Length", str(len(blob) - start))
+            self.end_headers()
+            self.wfile.write(blob[start:])
+
+        def log_message(self, *a):
+            pass
+
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Ranged)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    running, tls = MM.games.running, MM.tls
+    MM.games.running, MM.tls = (lambda: ""), (lambda: None)
+    try:
+        dest = Path(tempfile.mkdtemp(prefix="lighting-dl-")) / "m.gguf"
+        dest.with_name("m.gguf.part").write_bytes(blob[: 1 << 20])
+        url = "http://127.0.0.1:%d/m" % srv.server_address[1]
+        MM.fetch(url, dest, len(blob), hashlib.sha256(blob).hexdigest())
+        assert dest.read_bytes() == blob and MM._st["dl"] is None
+    finally:
+        MM.games.running, MM.tls = running, tls
+        srv.shutdown()
+
+
 if __name__ == "__main__":
     tests =[(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
     failed = 0

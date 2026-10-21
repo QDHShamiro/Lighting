@@ -248,9 +248,9 @@ def cmd_memory(ctx, pos, flags):
         started = MM.download_bg() if not (MM.ready("chat") and MM.ready("embed")) else False
         return MM.status() + (" | download started" if started else "")
     if sub == "learn":
-        M.write("update sessions set last = 0, retry_at = 0, tries = 0 where status = 'open' and transcript != ''")
+        M.write("update sessions set retry_at = 0, tries = 0 where status = 'open' and transcript != ''")
         memlearn.start()
-        threading.Thread(target=memlearn.tick, daemon=True).start()
+        threading.Thread(target=memlearn.tick, args=(True,), daemon=True).start()
         return "learning %d sessions in the background (lighting memory shows the state)" % M.counts()["q"]
     if sub:
         raise Fail("unknown memory command '%s'" % sub, MEMORY_HELP)
