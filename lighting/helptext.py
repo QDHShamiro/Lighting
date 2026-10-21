@@ -13,22 +13,30 @@ web     open <url> [-n] [-f "a|b"] [--text]   snap [-f "a|b"] [-s css|ref] [--al
         read <image url|file> (saved as JPEG to look at)
         dialog accept|dismiss [text]   downloads   console   net [n] [-f x] (JSON the page loaded)
         tools   call <tool> '{json}' [--yes] (WebMCP)   open <app link> (obsidian://, spotify:) starts the app
+video   watch <url|file|ref> [--from m:ss --to m:ss] [--at 1:23,2:45] [--text] [--full] [--count 12] [--lang de]
 sound   listen [ref|url|file] [--from m:ss --to m:ss] [--lang de] [--live] [--local]   frames <ref> --audio
+voice   voice join "Call" | here | leave | say "text" | status | watch on|off | set key=value | persona "Call"  (Windows)
 desktop windows [-f x] (one match = chosen)   launch <app|uri|path> [-f x]   focus <w>   close <w>   snap <w> [--web]
         click <d|o|"text">   type <d|"Field"|focused> <text> [--tab] [--enter]   press <keys>   read [w|screen]
         wait "text" [w] [--gone] [--timeout 60s] (in an app)
         shot [w|screen] [--seconds 10] (video)   clip [get|set <text>]   press playpause|volumeup (no window)
         claude ["prompt" --yes] [--dir path] [--name x] [--model m] [--effort e] [--no-remote]  new Claude tab with remote control
+phone   phone devices|setup   phone snap [-f x]   phone tap <p3|"text"> [--long]   phone type ["text"] [--enter]
+        phone key back|home|recent|enter   phone swipe up|down|left|right   phone shot   phone launch <app>   phone open <url>
 chat    inbox <w|"title"> [--from name] [--since id] [--timeout 5m]   reply <w|"title"> "text" [--wait] [--yes]
         unread [w|"title"] (unread DMs and mentions)
 keys    keys [app|site] [-f x]   keys add <app> "ctrl+k=what"   keys rm <app> <key>
 brain   brain (what Lighting learned)   brain forget <site|app:x.exe>   brain reset --yes   improve [days] (self-check)
         known pages show the controls you use there; snap --full shows all   config brain off
+memory  remember "fact" [--kind decision] [--global]   recall "words" [--all] | recall <id>   forget <id>
+        todo [--all] [--list x]   todo add "task" [--list x]   todo done|doing|drop <id>   todo note <id> "text"
+        memory (state)   memory learn   memory model (local AI, downloads itself)   memory import claude-mem   memory off
 routine routines [-f x]   run <name|words> [param=value ...] [--yes]   routine show|save|rm|rename|forget <name>
         record start [name] [--web|--desktop]   record stop [name] [param=value ...]   record cancel|status
-cleanup done [--quiet]   keep [t|w]   config cleanup on|off   config window on|off (own window per session)
+        routine schedule <name> daily 08:00|weekly mon 09:30|hourly|every 30m [param=value]   routine schedules|unschedule
+cleanup done [--quiet]   keep [t|w]   config cleanup on|off   config window on|off (own window per session)   config focus never|away|idle (take the front: never = default)
 system  do "cmd; cmd; ..."   status   stop   config [key value]   log [stats]   version
-        setup [--manual]   install <ai>   selftest [web|app|chat]   bench [--real [--runs 3]]   ext-reload   uninstall [--purge]
+        setup [--manual]   install <ai>   selftest [web|app|chat]   bench [--real [--runs 3]]   demo [--fast]   ext-reload   uninstall [--purge]
         doctor [--fix] [--offline]   checks every part of Lighting, --fix repairs what it safely can
 
 Any action takes -f "a|b" to show the matching lines of the result in the same call.

@@ -21,11 +21,41 @@ def signature():
     return req + "|" + str(D.ROOT) + "|" + D.version()
 
 
+def uv_paths():
+    home = os.path.expanduser("~")
+    names = ["uv.exe"] if D.WIN else ["uv"]
+    dirs = [os.path.join(home, ".local", "bin"), os.path.join(home, ".cargo", "bin")]
+    if D.WIN:
+        dirs.append(os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "WinGet", "Links"))
+    return [os.path.join(d, n) for d in dirs for n in names]
+
+
 def uv():
-    exe = shutil.which("uv")
+    exe = shutil.which("uv") or next((p for p in uv_paths() if os.path.isfile(p)), None)
+    if exe:
+        return exe
+    say("uv is missing, installing it (one time, from astral.sh) ...")
+    try:
+        if D.WIN:
+            subprocess.run(["winget", "install", "--id", "astral-sh.uv", "-e", "--silent",
+                            "--accept-package-agreements", "--accept-source-agreements"], check=False)
+        else:
+            subprocess.run(["sh", "-c", "curl -LsSf https://astral.sh/uv/install.sh | sh"], check=False)
+    except OSError:
+        pass
+    exe = shutil.which("uv") or next((p for p in uv_paths() if os.path.isfile(p)), None)
     if not exe:
-        raise SystemExit("lighting needs uv: https://docs.astral.sh/uv/getting-started/installation/")
+        raise SystemExit("lighting needs uv and could not install it: https://docs.astral.sh/uv/getting-started/installation/")
     return exe
+
+
+def venv_args():
+    if D.LINUX:
+        sysp = shutil.which("python3")
+        if sysp and subprocess.run([sysp, "-c", "import sys, gi; sys.exit(sys.version_info < (3, 11))"],
+                                   capture_output=True).returncode == 0:
+            return ["--python", sysp, "--system-site-packages"]
+    return ["--python", ">=3.11"]
 
 
 def ensure_venv():
@@ -43,7 +73,7 @@ def ensure_venv():
         say("installing dependencies (one time, ~20-60 s) ...")
         D.HOME.mkdir(parents=True, exist_ok=True)
         if not D.PY.exists():
-            subprocess.run([uv(), "venv", "--quiet", "--python", ">=3.11", str(D.VENV)], check=True)
+            subprocess.run([uv(), "venv", "--quiet"] + venv_args() + [str(D.VENV)], check=True)
         subprocess.run([uv(), "pip", "install", "--quiet", "--python", str(D.PY),
                         "-r", str(D.ROOT / "requirements.txt")], check=True)
     from lighting import install
@@ -76,9 +106,13 @@ def start_daemon():
     args = [str(exe), "-X", "utf8", "-m", "lighting", "daemon"]
     kw = dict(env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log, cwd=str(D.HOME), close_fds=True)
     try:
-        subprocess.Popen(args, creationflags=HIDDEN | BREAKAWAY, **kw)
-    except OSError:
-        subprocess.Popen(args, creationflags=HIDDEN, **kw)
+        if not D.WIN:
+            subprocess.Popen(args, start_new_session=True, **kw)
+            return
+        try:
+            subprocess.Popen(args, creationflags=HIDDEN | BREAKAWAY, **kw)
+        except OSError:
+            subprocess.Popen(args, creationflags=HIDDEN, **kw)
     finally:
         log.close()
 

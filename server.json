@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.QDHShamiro/lighting",
+  "title": "Lighting",
+  "description": "Your real logged-in browser and any app on your computer, as a few lines of text instead of screenshots.",
+  "repository": {
+    "url": "https://github.com/QDHShamiro/Lighting",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/QDHShamiro/Lighting",
+  "version": "0.0.0",
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/QDHShamiro/Lighting/releases/download/v0.0.0/lighting.mcpb",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

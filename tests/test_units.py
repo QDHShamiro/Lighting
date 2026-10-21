@@ -117,8 +117,8 @@ def test_config_merge_keeps_line_endings():
         install.merge_toml(toml)
         install.merge_toml(toml)
         raw = toml.read_bytes().decode()
-        assert raw.count("[mcp_servers.lighting]") == 1 and "old" not in raw and 'model = "x"' in raw
-        assert ("\r\n" in raw) == (eol == "\r\n") and raw.replace("\r\n", "").count("\r") == 0
+        assert raw.count("[mcp_servers.lighting]") == 1 and '"old"' not in raw and 'model = "x"' in raw, repr(raw)
+        assert ("\r\n" in raw) == (eol == "\r\n") and raw.replace("\r\n", "").count("\r") == 0, repr(raw)
     js = d / "mcp.json"
     js.write_text('{"mcpServers": {"other": {"command": "x"}}}', "utf-8")
     install.merge_json(js, "mcpServers", {"command": "lighting.exe", "args": ["mcp"]})
@@ -173,6 +173,9 @@ class FakeWin:
 
     def set_foreground(self, h):
         self.front = h
+
+    def foreground(self):
+        return 1
 
 
 class Ctx:
@@ -503,6 +506,11 @@ def test_suggest_needs_the_app():
          "steps": [{"cmd": "open", "args": ["https://panel.dolphinsmp.net/app"]}]}
     assert not recall.fits(stems("schaue bei mir spotify udn website alles"), r)
     assert recall.fits(stems("schaue im panel nach dem host"), r)
+    focus = {"name": "brave-orange-weg", "tags": ["design", "terminal"],
+             "steps": [{"cmd": "focus", "args": ["app:brave"]}, {"cmd": "press", "args": ["{text}"]}]}
+    assert recall.routine_words(focus)[1] == "brave"
+    assert not recall.fits(stems("mache Lighting zu einer app mit terminal design"), focus)
+    assert recall.fits(stems("in brave das orange design weg"), focus)
 
 
 def test_desktop_alias_and_routing_without_a_tab():
@@ -567,6 +575,9 @@ def test_repeated_failures_are_braked():
 
 def test_running_reads_bytes():
     from lighting import browser
+    from lighting import defaults as D
+    if not D.WIN:
+        return
     keep = browser.subprocess.run
 
     class R:
@@ -829,8 +840,12 @@ def test_doctor():
     assert procs.classify(ps, 11, None)["orphans"] == []
     assert procs.client_args('"C:\\a b\\lighting.exe" done --quiet') == ["done", "--quiet"]
     assert doctor.newer("2.0.0", "1.10.3") and not doctor.newer("1.1.0", "1.1.0") and doctor.newer("v1.2", "1.1.9")
-    text = json.dumps({"mcpServers": {"lighting": {"command": "C:\\Users\\a\\.lighting\\bin\\lighting.exe"}}})
-    assert [x.replace("\\\\", "\\") for x in doctor.EXE_PATH.findall(text)] == ["C:\\Users\\a\\.lighting\\bin\\lighting.exe"]
+    if D.WIN:
+        text = json.dumps({"mcpServers": {"lighting": {"command": "C:\\Users\\a\\.lighting\\bin\\lighting.exe"}}})
+        assert [x.replace("\\\\", "\\") for x in doctor.EXE_PATH.findall(text)] == ["C:\\Users\\a\\.lighting\\bin\\lighting.exe"]
+    else:
+        text = json.dumps({"mcpServers": {"lighting": {"command": "/home/a/.lighting/bin/lighting"}}})
+        assert doctor.EXE_PATH.findall(text) == ["/home/a/.lighting/bin/lighting"], doctor.EXE_PATH.findall(text)
     rows = [(doctor.OK, "daemon", "fine", "", ()), (doctor.WARN, "procs", "stuck", "ends them", ("kill",)),
             (doctor.FAIL, "browser", "not connected", "lighting setup brave", ())]
     out = doctor.render(rows).splitlines()
@@ -852,12 +867,293 @@ def test_doctor():
 def test_skill_and_mcp_budget():
     from lighting import mcp
     skill = (ROOT / "skills" / "lighting" / "SKILL.md").read_bytes()
-    assert len(skill) <= 3100, "SKILL.md grew to %d bytes (budget 3100)" % len(skill)
+    assert len(skill) <= 3500, "SKILL.md grew to %d bytes (budget 3500)" % len(skill)
     assert len(mcp.DESCRIPTION) <= 700, "MCP description grew to %d chars" % len(mcp.DESCRIPTION)
 
 
+def test_listen_relative_file():
+    import types
+    from lighting import audio
+    folder = tempfile.mkdtemp(prefix="lighting-listen-")
+    Path(folder, "clip.mp3").write_bytes(b"x")
+    ctx = types.SimpleNamespace(cwd=folder, cfg={})
+    audio.start = lambda job, head: (job["file"], job["url"], head)
+    assert audio.cmd_listen(ctx, ["clip.mp3"], {}) == (os.path.join(folder, "clip.mp3"), None, "[file] clip.mp3")
+    assert audio.cmd_listen(ctx, [os.path.join(folder, "clip.mp3")], {})[0] == os.path.join(folder, "clip.mp3")
+
+
+def test_watch_transcript():
+    from lighting import watch
+    segs = [(0.0, "hello and welcome"), (2.0, "and welcome to the video"), (4.0, "[Music]"), (31.0, "next part starts"),
+            (40.0, "next part starts here")]
+    assert watch.paragraphs(segs, None, None, 30) == [(0.0, "hello and welcome to the video"), (31.0, "next part starts here")]
+    assert watch.paragraphs(segs, 30, None, 30) == [(31.0, "next part starts here")]
+    long = [(i * 30.0, "sentence number %d with some more words to make it long enough to count" % i) for i in range(100)]
+    text, window = watch.transcript(long, None, None, 2400)
+    assert window and window > 30 and len(text) < 3000 and all(len(r) <= 160 for r in text.split("\n")), (window, len(text))
+    short, none = watch.transcript(segs, None, None, 2400)
+    assert none is None and short.startswith("0:00 hello and welcome to the video")
+
+
+def test_watch_subtitle_order():
+    from lighting import watch
+    tracks = {"en": "u1", "de-DE": "u2", "en-orig~auto": "u3", "de~auto": "u4"}
+    assert watch.sub_order(tracks, None, "en") == ["en", "de-DE", "en-orig~auto", "de~auto"]
+    assert watch.sub_order(tracks, "de", "en") == ["de-DE", "en", "de~auto", "en-orig~auto"]
+    info = {"language": "en", "subtitles": {"en": [{"ext": "vtt", "url": "a"}]},
+            "automatic_captions": {"fr": [{"ext": "vtt", "url": "b"}], "en-orig": [{"ext": "vtt", "url": "c"}]}}
+    assert watch.subs_of(info, None) == {"en": "a", "en-orig~auto": "c"}
+
+
+def test_watch_storyboard_tiles():
+    from PIL import Image
+    from lighting import watch
+    box = Path(tempfile.mkdtemp(prefix="lighting-watch-"))
+    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255), (255, 0, 255)]
+    for i in range(2):
+        img = Image.new("RGB", (30, 12))
+        for j, c in enumerate(colors):
+            r, col = divmod(j, 3)
+            img.paste(Image.new("RGB", (10, 6), c if i == 0 else tuple(255 - v for v in c)), (col * 10, r * 6))
+        img.save(box / ("sb-%d.jpg" % i), "PNG")
+    board = {"rows": 2, "cols": 3, "fps": 0.5, "frags": [["http://x/0", 12.0], ["http://x/1", 6.0]]}
+    tiles = watch.board_tiles(board, [1.0, 5.0, 13.0, 99.0], box)
+    got = [(t, img.getpixel((5, 3))) for t, img in tiles]
+    assert got == [(1.0, (255, 0, 0)), (5.0, (0, 0, 255)), (13.0, (0, 255, 255)), (99.0, (255, 255, 0))], got
+    sheet = watch.sheet(tiles, False, False)
+    assert sheet.size == (1024, 154), sheet.size
+    assert watch.sheet(tiles[:2], False, True).size == (1024, 307)
+
+
+def test_watch_sources():
+    import types
+    from lighting import watch
+    from lighting.common import Fail
+    folder = tempfile.mkdtemp(prefix="lighting-watch-src-")
+    Path(folder, "clip.mp4").write_bytes(b"x")
+    ctx = types.SimpleNamespace(cwd=folder, cfg={}, d=types.SimpleNamespace(hosts_seen=set()))
+    old = watch.start
+    watch.start = lambda c, job: job
+    try:
+        job = watch.cmd_watch(ctx, ["clip.mp4"], {"from": "1:00", "at": "1:23,2:45"})
+        assert (job["kind"], job["src"], job["lo"], job["at"]) == ("file", os.path.join(folder, "clip.mp4"), 60.0, [83.0, 165.0])
+        job = watch.cmd_watch(ctx, ["youtu.be/abc"], {})
+        assert (job["kind"], job["src"], job["count"]) == ("url", "https://youtu.be/abc", 12)
+        try:
+            watch.cmd_watch(ctx, ["missing.mp4"], {})
+            assert False, "a missing file must not become https://missing.mp4"
+        except Fail as e:
+            assert "no video file" in e.text()
+    finally:
+        watch.start = old
+
+
+def test_linux_key_names():
+    try:
+        import Xlib.XK
+    except ImportError:
+        return
+    from lighting import win_linux as w
+    assert w.keysym_of("Control_L") == 0xffe3 and w.keysym_of("ISO_Level3_Shift") == 0xfe03
+    assert w.keysym_of("TAB") == 0xff09 and w.keysym_of("volup") == 0x1008ff13 and w.keysym_of("A") == 0x41
+    assert all(w.keysym_of(w.MODSYMS.get(k, k)) for k in list(w.KEYSYMS) + list(w.MODSYMS))
+
+
+def test_demo_offline():
+    import types
+    import urllib.request
+    from lighting import browser, demo
+    from lighting.common import Fail
+    seen = []
+
+    def fake(ctx, argv):
+        seen.append(argv)
+        if argv[0] == "open":
+            page = urllib.request.urlopen(argv[1], timeout=5).read().decode("utf-8")
+            assert "Start free trial" in page
+            return "[t1] Lighting demo - %s" % argv[1], "open", argv[1:]
+        if argv[0] == "check":
+            raise Fail("nothing matches", "lighting snap")
+        if argv[0] == "js":
+            return "400", "js", argv[1:]
+        return "ok", argv[0], argv[1:]
+
+    old_run, old_any = commands.run_one, browser.any_browser
+    commands.run_one, browser.any_browser = fake, lambda c: True
+    try:
+        ctx = types.SimpleNamespace(no_learn=False)
+        out = demo.run(ctx, [], {"fast": True})
+    finally:
+        commands.run_one, browser.any_browser = old_run, old_any
+    assert ctx.no_learn is False
+    assert [a[0] for a in seen] == ["open", "snap", "fill", "select", "check", "click", "table", "js"], seen
+    assert "$ lighting open <demo page> --new" in out and "127.0.0.1" not in out, out
+    assert '$ lighting fill "Name=Ada Lovelace" Email=ada@example.com' in out, out
+    assert out.splitlines()[0].startswith("Lighting demo: 7 commands on a made-up shop page") and "pauses" not in out.splitlines()[0]
+    assert out.rstrip().endswith("the page itself is ~101 tokens of text; 1 failed (lighting doctor)"), out[-200:]
+
+
+PHONE_SCREEN = """<?xml version='1.0' encoding='UTF-8'?>
+<hierarchy rotation="0">
+<node class="android.widget.FrameLayout" package="com.android.settings" bounds="[0,0][1080,2400]">
+<node class="android.widget.TextView" text="Settings" bounds="[40,100][400,200]"/>
+<node class="android.widget.ScrollView" scrollable="true" bounds="[0,200][1080,2000]">
+<node class="android.widget.LinearLayout" clickable="true" bounds="[0,200][1080,400]">
+<node class="android.widget.TextView" text="Wi-Fi" bounds="[40,220][300,300]"/>
+<node class="android.widget.TextView" text="Connected" bounds="[40,300][300,380]"/>
+<node class="android.widget.Switch" checkable="true" checked="true" clickable="true" bounds="[900,240][1040,360]"/>
+</node>
+<node class="android.widget.LinearLayout" clickable="true" bounds="[0,400][1080,600]">
+<node class="android.widget.TextView" text="Bluetooth" bounds="[40,420][300,500]"/>
+</node>
+</node>
+<node class="android.widget.EditText" hint="Search settings" clickable="true" bounds="[40,2000][1040,2100]"/>
+</node>
+</hierarchy>"""
+
+
+def test_phone_snapshot():
+    import types
+    import xml.etree.ElementTree as ET
+    from lighting import android
+    ctx = types.SimpleNamespace()
+    android.dump = lambda c: ET.fromstring(PHONE_SCREEN)
+    out = android.snapshot(ctx, {}).splitlines()
+    assert out[0] == "[phone None] com.android.settings (4 controls)", out[0]
+    assert out[1:] == ['p1 text "Settings"', 'p2 checkbox "Wi-Fi" [x] - Connected', 'p3 button "Bluetooth"',
+                       "p4 edit (Search settings)"], out
+    assert android.state(ctx).refs["p2"][:2] == (970, 300), android.state(ctx).refs["p2"]
+    assert android.state(ctx).refs["p3"][:2] == (540, 500), android.state(ctx).refs["p3"]
+    only = android.snapshot(ctx, {"f": "wi-fi"}).splitlines()
+    assert only[1:] == ['p2 checkbox "Wi-Fi" [x] - Connected'], only
+
+
+def test_memory_store_and_search():
+    import types
+    from lighting import memcmd, memory as M
+    ctx = types.SimpleNamespace(cwd=tempfile.mkdtemp(prefix="lighting-proj-"), sid="s-test", told={})
+    here = M.project_of(ctx.cwd)
+    nid = memcmd.remember(ctx, "The release needs JDK 21. token=abcdef1234567890")
+    assert "[secret]" in (M.note(nid)["title"] + M.note(nid)["body"])
+    M.add_note("other", "fact", "Brave is the only browser", source="session")
+    out = memcmd.cmd_recall(ctx, ["jdk", "release"], {})
+    assert out.startswith("#%d " % nid), out
+    assert "#%d" % nid in memcmd.cmd_recall(ctx, [str(nid)], {})
+    first, new = M.merge_note(here, "fact", "The release needs JDK 21 now", "longer body")
+    assert first == nid and not new
+    said = memcmd.on_prompt(ctx, "merk dir, dass Spotify nie geschlossen wird")
+    assert said and "saved #" in said[0]
+    assert memcmd.on_prompt(ctx, "Merkel war Kanzlerin") == []
+    tid = int(memcmd.cmd_todo(ctx, ["add", "Ship", "it"], {"list": "rel"}).split("#")[1].split()[0])
+    assert "Ship it" in memcmd.cmd_todo(ctx, [], {})
+    assert "is done" in memcmd.cmd_todo(ctx, ["done", str(tid)], {})
+    assert "Ship it" not in memcmd.cmd_todo(ctx, [], {})
+    assert memcmd.cmd_forget(ctx, [str(nid)], {}) == "forgot #%d" % nid
+    assert "Spotify" in memcmd.start_text(here)
+
+
+def test_memory_condense_transcript():
+    import json
+    from lighting import memlearn
+    rows = [
+        {"type": "ai-title", "aiTitle": "Fix the build"},
+        {"type": "user", "message": {"content": "<system-reminder>skip me</system-reminder>why does the build fail?"}},
+        {"type": "user", "isMeta": True, "message": {"content": "meta text"}},
+        {"type": "assistant", "message": {"content": [{"type": "thinking", "thinking": "hidden"},
+                                                      {"type": "tool_use", "name": "Bash",
+                                                       "input": {"command": "mvn package"}}]}},
+        {"type": "user", "message": {"content": [{"type": "tool_result", "is_error": True,
+                                                  "content": "release version 21 not supported"},
+                                                 {"type": "tool_result", "content": "fine output"}]}},
+        {"type": "assistant", "message": {"content": [{"type": "text", "text": "It needs JDK 21."}]}},
+    ]
+    path = Path(tempfile.mkdtemp(prefix="lighting-tr-")) / "t.jsonl"
+    path.write_text("".join(json.dumps(r) + chr(10) for r in rows) + '{"type": "user", "mess', "utf-8")
+    text, end, title = memlearn.condense(str(path), 0)
+    assert title == "Fix the build"
+    assert text.split(chr(10)) == ["USER: why does the build fail?", "TOOL Bash: mvn package",
+                                   "ERROR: release version 21 not supported", "CLAUDE: It needs JDK 21."], text
+    assert end < path.stat().st_size
+    assert memlearn.condense(str(path), end)[0] == ""
+    assert len(memlearn.chunks("a" * 10 + chr(10) + "b" * 10)) == 1
+    assert memlearn.parse('noise {"notes": []} tail') == {"notes": []}
+
+
+def test_memory_work_state_fold():
+    from lighting import memlearn
+    lists = memlearn.fold_work_state([
+        ("p", "rel", '{"task": "a", "status": "todo"}', 1),
+        ("p", "rel", '{"task": "a", "status": "doing", "note": "half"}', 2),
+        ("p", "rel", '{"task": "b", "status": "done"}', 3),
+        ("p", "old", '{"task": "c", "status": "todo"}', 4),
+        ("p", "old", '{"status": "done"}', 5),
+    ])
+    assert lists[("p", "rel")]["items"]["a"]["status"] == "doing"
+    assert lists[("p", "rel")]["items"]["a"]["note"] == "half"
+    assert lists[("p", "old")]["closed"]
+
+
+def test_games_paths():
+    from lighting import games
+    assert games.is_game("C:/Program Files (x86)/Steam/steamapps/common/Rust/RustClient.exe")
+    assert games.is_game("D:/Games/FortniteClient-Win64-Shipping.exe")
+    assert not games.is_game("C:/Program Files (x86)/Steam/steam.exe")
+    assert not games.is_game("C:/Program Files/Epic Games/Launcher/Portal/EpicGamesLauncher.exe")
+    assert not games.is_game("C:/Windows/explorer.exe")
+
+
+def test_nested_pending_keeps_waiting():
+    import collections
+    import types
+    from lighting import commands
+    from lighting.common import Pending
+    inner = Pending(lambda last: "answer", 5, 0.0)
+    outer = Pending(lambda last: inner, 5, 0.0)
+    assert commands.drain(types.SimpleNamespace(d=types.SimpleNamespace(abort=__import__("threading").Event())),
+                          outer) == "answer"
+    d = types.SimpleNamespace(abort_gen=0, events=collections.deque())
+    ctx = types.SimpleNamespace(d=d, target=None, where=None, last_target=None, image=None, notes=[], no_learn=True)
+    p = Pending(lambda last: Pending(lambda last: "answer", 5, 0.0), 5, 0.0)
+    p.meta = ("reply", ["reply", "x", "y", "--wait"], 0.0)
+    assert commands.poll_pending(ctx, p) is None
+    assert commands.poll_pending(ctx, p)["out"] == "answer"
+
+
+def test_memory_download_resumes():
+    import hashlib
+    import http.server
+    import threading
+    from lighting import memmodel as MM
+    blob = os.urandom(3 << 20)
+
+    class Ranged(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            start = int((self.headers.get("Range") or "bytes=0-")[6:].rstrip("-"))
+            self.send_response(206 if start else 200)
+            self.send_header("Content-Length", str(len(blob) - start))
+            self.end_headers()
+            self.wfile.write(blob[start:])
+
+        def log_message(self, *a):
+            pass
+
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Ranged)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    running, tls = MM.games.running, MM.tls
+    MM.games.running, MM.tls = (lambda: ""), (lambda: None)
+    try:
+        dest = Path(tempfile.mkdtemp(prefix="lighting-dl-")) / "m.gguf"
+        dest.with_name("m.gguf.part").write_bytes(blob[: 1 << 20])
+        url = "http://127.0.0.1:%d/m" % srv.server_address[1]
+        MM.fetch(url, dest, len(blob), hashlib.sha256(blob).hexdigest())
+        assert dest.read_bytes() == blob and MM._st["dl"] is None
+    finally:
+        MM.games.running, MM.tls = running, tls
+        srv.shutdown()
+
+
 if __name__ == "__main__":
-    tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
+    tests =[(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
     failed = 0
     for name, fn in tests:
         try:

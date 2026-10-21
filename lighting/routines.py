@@ -907,6 +907,10 @@ def cmd_routine(ctx, pos, flags):
     if sub in ("rm", "delete"):
         r = load(need(rest, "rm"))
         path(r["name"]).unlink()
+        from lighting import schedule
+        if r["name"] in schedule.load():
+            schedule.remove(r["name"])
+            return "removed routine %s and its schedule" % r["name"]
         return "removed routine %s" % r["name"]
     if sub == "rename":
         if len(rest) < 2:
@@ -933,7 +937,14 @@ def cmd_routine(ctx, pos, flags):
     if sub == "learn":
         r = close(ctx)
         return "learned %s" % r["name"] if r else "nothing new to learn"
-    raise Fail("unknown routine command %s" % sub, "lighting routine list|show|save|rm|rename|forget")
+    if sub in ("schedule", "unschedule", "schedules"):
+        from lighting import schedule
+        if sub == "schedules":
+            return schedule.listing()
+        if sub == "unschedule":
+            return schedule.remove(need(rest, "unschedule"))
+        return schedule.add(need(rest, "schedule"), rest[1:])
+    raise Fail("unknown routine command %s" % sub, "lighting routine list|show|save|rm|rename|forget|schedule|schedules")
 
 
 def need(rest, what):

@@ -1,7 +1,7 @@
 import os
-import subprocess
 import time
 
+from lighting import browser
 from lighting import defaults as D
 from lighting import install
 from lighting import pointer
@@ -30,13 +30,12 @@ def wait(fn, seconds, step=0.25):
 
 
 def match(hwnd, auto_id, names, roles=None):
-    U = uia.api()[1]
     _, items = uia.collect(hwnd)
     for el in items:
-        aid = uia.cached(el, U.UIA_AutomationIdPropertyId) or ""
-        name = (uia.cached(el, U.UIA_NamePropertyId) or "").lower()
-        ctype = uia.cached(el, U.UIA_ControlTypePropertyId)
-        if roles and ctype not in roles:
+        aid = uia.auto_id(el)
+        role, name, _ = uia.describe(el)
+        name = name.lower()
+        if roles and role not in roles:
             continue
         if aid == auto_id or any(n in name for n in names):
             return el
@@ -44,15 +43,14 @@ def match(hwnd, auto_id, names, roles=None):
 
 
 def toggle_near(hwnd, names):
-    U = uia.api()[1]
     _, items = uia.collect(hwnd, with_text=True)
     labels, toggles = [], []
     for el in items:
-        name = (uia.cached(el, U.UIA_NamePropertyId) or "").lower()
-        aid = uia.cached(el, U.UIA_AutomationIdPropertyId) or ""
-        if aid == "devMode" and uia.cached(el, U.UIA_IsTogglePatternAvailablePropertyId):
+        name = uia.describe(el)[1].lower()
+        aid = uia.auto_id(el)
+        if aid == "devMode" and uia.toggleable(el):
             return el
-        if uia.cached(el, U.UIA_IsTogglePatternAvailablePropertyId):
+        if uia.toggleable(el):
             if any(n in name for n in names):
                 return el
             toggles.append(el)
@@ -72,17 +70,12 @@ def toggle_near(hwnd, names):
 
 
 def is_on(el):
-    U = uia.api()[1]
-    p = uia.pattern(el, U.UIA_TogglePatternId, U.IUIAutomationTogglePattern)
-    if p is not None:
-        return p.CurrentToggleState == 1
-    name = (uia.cached(el, U.UIA_NamePropertyId) or "").lower()
-    return None if not name else None
+    return uia.toggled(el)
 
 
 def center(el):
-    r = el.CurrentBoundingRectangle
-    return (r.left + r.right) // 2, (r.top + r.bottom) // 2
+    l, t, r, b = uia.live_rect(el)
+    return (l + r) // 2, (t + b) // 2
 
 
 def host_for(ctx, brand):
@@ -114,7 +107,7 @@ def open_page(hwnd, url):
         time.sleep(0.15)
         if not is_new_tab(hwnd):
             for _ in range(2):
-                win.press("ctrl+t")
+                win.press(win.MOD + "+t")
                 if wait(lambda: is_new_tab(hwnd), 2.5, 0.1):
                     break
                 pointer.front(hwnd)
@@ -122,7 +115,7 @@ def open_page(hwnd, url):
         if not is_new_tab(hwnd):
             raise Fail("could not open an empty tab, so nothing was typed (keyboard input blocked?)",
                        "click the browser window once, then run lighting setup again")
-        win.press("ctrl+l")
+        win.press(win.MOD + "+l")
         time.sleep(0.15)
         if not is_new_tab(hwnd):
             raise Fail("the empty tab lost focus, nothing was typed", "run lighting setup again")
@@ -137,9 +130,9 @@ def run(ctx, name, log):
     exe = install.browser_exe(name)
     if not exe:
         raise Fail("%s is not installed" % name)
-    exe_name = os.path.basename(exe).lower()
+    exe_name = D.BROWSER_PROCS.get(name) or os.path.basename(exe).lower()
     if not browser_window(exe_name):
-        subprocess.Popen([exe], creationflags=0x00000008 | 0x00000200, close_fds=True)
+        browser.start_browser(exe)
         host = wait(lambda: host_for(ctx, name), 8)
         if host:
             log("%s started, the extension was already installed" % name)
@@ -165,6 +158,8 @@ def run(ctx, name, log):
     before = {w["hwnd"] for w in win.windows(owned=True)}
 
     def dialog():
+        if not D.WIN:
+            return win.file_dialog(hwnd, before)
         for w in win.windows(owned=True):
             if w["hwnd"] not in before and w["cls"] == "#32770":
                 return w["hwnd"]
@@ -179,21 +174,10 @@ def run(ctx, name, log):
     if not dlg:
         raise Fail("the folder dialog did not open")
     log("folder dialog open, selecting %s" % D.EXT)
-    U = uia.api()[1]
-    _, items = uia.collect(dlg)
-    edits = [e for e in items if uia.cached(e, U.UIA_ControlTypePropertyId) == 50004]
-    edit = next((e for e in edits if (uia.cached(e, U.UIA_AutomationIdPropertyId) or "") in ("1152", "1148")), None)
-    edit = edit or next((e for e in edits if any(k in (uia.cached(e, U.UIA_NamePropertyId) or "").lower() for k in ("ordner", "folder"))), None)
-    edit = edit or (edits[-1] if edits else None)
-    if edit is None or not uia.set_value(edit, str(D.EXT)):
-        raise Fail("could not type the folder path into the dialog")
-    time.sleep(0.2)
-    buttons = [e for e in items if uia.cached(e, U.UIA_ControlTypePropertyId) == 50000]
-    ok = next((b for b in buttons if (uia.cached(b, U.UIA_AutomationIdPropertyId) or "") == "1"), None)
-    ok = ok or next((b for b in buttons if (uia.cached(b, U.UIA_NamePropertyId) or "").lower() in OK_NAMES), None)
-    if ok is None:
-        raise Fail("the dialog's select button was not found")
-    uia.act(ok)
+    if D.WIN:
+        pick_windows(dlg)
+    else:
+        pointer.with_focus(hwnd, lambda: win.choose_folder(dlg, str(D.EXT)), stay=True)
     host = wait(lambda: host_for(ctx, name), 20, 0.3)
     if not host:
         raise Fail("extension loaded, but it did not connect (check brave://extensions for errors)")
@@ -203,6 +187,23 @@ def run(ctx, name, log):
         pass
     log("extension loaded and connected")
     return host
+
+
+def pick_windows(dlg):
+    _, items = uia.collect(dlg)
+    edits = [e for e in items if uia.describe(e)[0] == "edit"]
+    edit = next((e for e in edits if uia.auto_id(e) in ("1152", "1148")), None)
+    edit = edit or next((e for e in edits if any(k in uia.describe(e)[1].lower() for k in ("ordner", "folder"))), None)
+    edit = edit or (edits[-1] if edits else None)
+    if edit is None or not uia.set_value(edit, str(D.EXT)):
+        raise Fail("could not type the folder path into the dialog")
+    time.sleep(0.2)
+    buttons = [e for e in items if uia.describe(e)[0] == "button"]
+    ok = next((b for b in buttons if uia.auto_id(b) == "1"), None)
+    ok = ok or next((b for b in buttons if uia.describe(b)[1].lower() in OK_NAMES), None)
+    if ok is None:
+        raise Fail("the dialog's select button was not found")
+    uia.act(ok)
 
 
 def cmd_autoload(ctx, pos, flags):

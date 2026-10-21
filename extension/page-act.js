@@ -423,9 +423,27 @@
     return { none: true };
   }
 
-  function mark(r, id) {
-    const el = get(r);
-    if (!el) return { gone: true };
+  function fileInput(el) {
+    const isFile = (x) => x && x.matches && x.matches("input[type=file]");
+    if (isFile(el)) return el;
+    const label = el.control !== undefined ? el : el.closest("label");
+    if (label && isFile(label.control)) return label.control;
+    const doc = el.ownerDocument || document;
+    const own = el.htmlFor || el.getAttribute("for");
+    if (own && isFile(doc.getElementById(own))) return doc.getElementById(own);
+    for (let p = el, i = 0; p && i < 4 && p !== doc.body; p = p.parentElement, i++) {
+      const inp = p.querySelector("input[type=file]");
+      if (inp) return inp;
+    }
+    const all = doc.querySelectorAll("input[type=file]");
+    return all.length === 1 ? all[0] : null;
+  }
+
+  function mark(r, id, file) {
+    const found = get(r);
+    if (!found) return { gone: true };
+    const el = file ? fileInput(found) : found;
+    if (!el) return { nofile: true };
     el.setAttribute("data-lt-mark", id);
     return { ok: true, tag: el.tagName, type: (el.type || "").toLowerCase() };
   }
@@ -533,5 +551,30 @@
     return { name: clean(nameOf(el)), role: L.roleOf(el), tag: el.tagName, desc: describe(el), hint: L.hintOf(el) };
   }
 
-  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info, viewSize, frameBox };
+  function frameHit(x, y) {
+    const el = document.elementFromPoint(x, y);
+    if (!el) return { covered: "the edge of the window" };
+    return { covered: el.tagName === "IFRAME" || el.tagName === "FRAME" ? null : describe(el) };
+  }
+
+  function domClick(r) {
+    const el = get(r);
+    if (!el) return { gone: true };
+    el.click();
+    return { ok: true };
+  }
+
+  function armClick() {
+    S.clickedAt = 0;
+    document.addEventListener("click", () => {
+      S.clickedAt = Date.now();
+    }, { capture: true, once: true });
+    return { ok: true };
+  }
+
+  function clickSeen() {
+    return { seen: !!S.clickedAt };
+  }
+
+  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info, viewSize, frameBox, frameHit, domClick, armClick, clickSeen };
 })();

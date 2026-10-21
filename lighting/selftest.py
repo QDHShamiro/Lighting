@@ -173,7 +173,9 @@ def browser(r, base):
     data = sites.load()
     data.pop("127.0.0.1", None)
     D.SITES.write_text(__import__("json").dumps(data, indent=1), "utf-8")
-    r.step("page loads JSON", ["open", base + "data", "--new"], lambda o, e: not e and "data: 1 JSON call (lighting net)" in o)
+    r.step("page loads JSON", ["open", base + "data", "--new"],
+           lambda o, e: not e and ("data: 1 JSON call (lighting net)" in o or "loading" in o))
+    r.step("JSON arrives", ["wait", "Items 40"], lambda o, e: not e)
     r.step("net lists it", ["net"], lambda o, e: not e and re.search(r"n1 GET 127\.0\.0\.1:\d+/api/items \(json \d+ KB\)", o))
     r.step("net shows its shape", ["net", "1"], lambda o, e: not e and "items[] (40) {id: 0" in o and "total: 40" in o)
     r.step("webmcp tools", ["tools"], lambda o, e: not e and ("no WebMCP tools" in o or "(" in o))
@@ -249,6 +251,10 @@ def browser(r, base):
     r.step("click role-less card", ["click", "Clickable card without role"], ok)
     r.step("card clicked", ["expect", "Card clicked"], ok)
     r.step("wait for late button", ["wait", "Appears later", "--timeout", "5000"], ok)
+    aout = r.step("find upload menu item", ["snap", "-f", "Upload avatar"], lambda o, e: not e and re.search(r"^e\d+ menuitem", o, re.M))
+    aref = re.search(r"^(e\d+) menuitem", aout, re.M)
+    r.step("upload through a label", ["upload", aref.group(1) if aref else "e0", str(script)], lambda o, e: not e and "1 file set" in o)
+    r.step("upload landed", ["expect", "Avatar: selftest.js"], ok)
     r.step("table as tsv", ["table", "#prices"], lambda o, e: not e and "Beta\t2.50" in o)
     r.step("type contenteditable", ["type", "Notes", "hello from lighting"], ok)
     r.step("notes text present", ["expect", "hello from lighting"], ok)
@@ -264,7 +270,7 @@ def browser(r, base):
                   lambda o, e: not e and re.search(r"^f\d+\.e\d+ button", o, re.M))
     found = re.search(r"^(f\d+\.e\d+) button", fout, re.M)
     r.step("click in other-site frame", ["click", found.group(1) if found else "f0.e0"], ok)
-    r.step("frame click landed", ["snap", "--frame", "localhost"], lambda o, e: not e and "Frame clicked" in o)
+    r.fn("frame click landed", lambda: landed(r.ctx, ["snap", "--frame", "localhost", "--full"], "Frame clicked"))
     r.step("wait sees control names", ["wait", "checks all green", "--timeout", "2000"], ok)
     r.step("filter falls back to text", ["snap", "-f", "Fact"], lambda o, e: not e and "this text does" in o and '"Fact' in o)
     r.step("shot element", ["shot", "e1"], lambda o, e: not e and ".jpg" in o)
@@ -308,6 +314,17 @@ def browser(r, base):
     r.step("close kept tab", ["close", dref, "--force"], ok)
 
 
+def landed(ctx, argv, want, tries=10):
+    from lighting import commands
+    out = ""
+    for _ in range(tries):
+        out = commands.run(ctx, {"argv": argv}).get("out", "")
+        if want in out:
+            return True, out
+        time.sleep(0.15)
+    return False, out
+
+
 def sessions_check(ctx, base):
     from lighting import commands
     a, b = commands.Context(ctx.d, "selftest-a"), commands.Context(ctx.d, "selftest-b")
@@ -325,7 +342,10 @@ def sessions_check(ctx, base):
         run(b, "done")
     good = ("Second" in seen[0] and seen[1].startswith("closed 1 tab") and "Second" in seen[2]
             and seen[3].startswith("kept 1 tab") and "Quiet" in seen[4])
-    return good, " / ".join(s.split("\n")[0] for s in seen)
+    if good:
+        return good, " / ".join(s.split("\n")[0] for s in seen)
+    return good, "%s | a=%s/%s b=%s/%s" % (" / ".join(s.replace("\n", " ; ") for s in seen), a.tabs, sorted(a.owned),
+                                         b.tabs, sorted(b.owned))
 
 
 def reopen_check(ctx, base):
@@ -360,7 +380,7 @@ def brake_check(ctx):
 def close_apps(win, title="Lighting Test App"):
     for w in win.windows():
         if w["title"] == title:
-            win.user32.PostMessageW(w["hwnd"], 0x0010, 0, 0)
+            win.close(w["hwnd"])
     deadline = time.time() + 3
     while time.time() < deadline and any(w["title"] == title for w in win.windows()):
         time.sleep(0.05)
@@ -372,15 +392,19 @@ def chat_app(r):
     close_apps(win, "Lighting Test Chat")
     env = dict(os.environ, PYTHONPATH=str(D.ROOT))
     exe = str(D.PYW if D.PYW.exists() else sys.executable)
-    subprocess.Popen([exe, "-m", "lighting.testapp", "chat"], env=env)
+    subprocess.Popen([exe, "-m", "lighting.testapp" if D.WIN else "lighting.testapp_unix", "chat"], env=env)
     try:
         deadline = time.time() + 8
         while time.time() < deadline and not any(w["title"] == "Lighting Test Chat" for w in win.windows()):
             time.sleep(0.1)
         r.step("chat inbox quiet", ["inbox", "Lighting Test Chat", "--timeout", "1s"],
                lambda o, e: not e and o.startswith("nothing new in 1 s"))
-        r.step("chat reply --wait (race)", ["reply", "Lighting Test Chat", "hello from selftest", "--wait", "--timeout", "6s"],
-               lambda o, e: not e and o.startswith("sent to") and "peer: ok, 19 chars" in o and "me: hello" not in o)
+        chat = next((w for w in win.windows() if w["title"] == "Lighting Test Chat"), None)
+        if D.MAC and os.environ.get("CI") and chat and not win.set_foreground(chat["hwnd"]):
+            r.rows.append("SKIP chat reply --wait (race) (this macOS machine keeps other apps from coming to the front)")
+        else:
+            r.step("chat reply --wait (race)", ["reply", "Lighting Test Chat", "hello from selftest", "--wait", "--timeout", "6s"],
+                   lambda o, e: not e and o.startswith("sent to") and "peer: ok, 19 chars" in o and "me: hello" not in o)
         r.step("chat link needs --yes", ["reply", "Lighting Test Chat", "see https://example.com"], lambda o, e: e and "--yes" in o)
         r.step("chat inbox after answer", ["inbox", "Lighting Test Chat", "--timeout", "1s"],
                lambda o, e: not e and o.startswith("nothing new"))
@@ -398,7 +422,7 @@ def desktop(r):
     close_apps(win)
     env = dict(os.environ, PYTHONPATH=str(D.ROOT))
     exe = str(D.PYW if D.PYW.exists() else sys.executable)
-    subprocess.Popen([exe, "-m", "lighting.testapp"], env=env)
+    subprocess.Popen([exe, "-m", "lighting.testapp" if D.WIN else "lighting.testapp_unix"], env=env)
     try:
         deadline = time.time() + 8
         while time.time() < deadline and not any(w["title"] == "Lighting Test App" for w in win.windows()):
@@ -592,7 +616,7 @@ def bench(ctx, pos, flags):
         if box:
             got = box[0]
             rows.append("mcp: %s" % got if isinstance(got, Exception) else
-                        "mcp ping through lighting.exe mcp: start %d ms, then median %.1f ms, max %.1f ms (%d calls)" % got)
+                        "mcp ping through lighting mcp: start %d ms, then median %.1f ms, max %.1f ms (%d calls)" % got)
             return "\n".join(rows)
         if last:
             rows.append("mcp: no answer within 60 s")
@@ -606,8 +630,8 @@ def mcp_probe(box, n=20):
     import json
     import statistics
     try:
-        p = subprocess.Popen([str(D.ROOT / "bin" / "lighting.exe"), "mcp"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                             stderr=subprocess.DEVNULL, creationflags=0x08000000)
+        p = subprocess.Popen([str(D.ROOT / "bin" / D.CLIENT), "mcp"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                             stderr=subprocess.DEVNULL, creationflags=D.NO_WINDOW)
 
         def ask(i, method, params):
             p.stdin.write((json.dumps({"jsonrpc": "2.0", "id": i, "method": method, "params": params}) + "\n").encode("utf-8"))

@@ -67,12 +67,26 @@ def pick_host(ctx, quiet=False, want=None):
 
 
 def running(exe_name):
+    if not D.WIN:
+        from lighting import procs
+        return procs.running(exe_name)
     try:
         out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq " + exe_name, "/NH"], capture_output=True,
                              timeout=5, creationflags=0x08000000).stdout or b""
     except (OSError, subprocess.SubprocessError):
         return False
     return exe_name.lower().encode("ascii", "ignore") in out.lower()
+
+
+def start_browser(exe):
+    if D.WIN:
+        subprocess.Popen([exe], creationflags=0x00000008 | 0x00000200, close_fds=True)
+    elif D.MAC:
+        app = exe.split(".app/")[0] + ".app" if ".app/" in exe else exe
+        subprocess.Popen(["open", "-a", app], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        subprocess.Popen([exe], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True, close_fds=True)
 
 
 def ensure_host(ctx, want=None):
@@ -95,7 +109,7 @@ def ensure_host(ctx, want=None):
                 time.sleep(0.1)
             raise Fail("%s is open but the Lighting extension is not connected" % name,
                        "lighting setup (loads the extension), then lighting status")
-        subprocess.Popen([exe], creationflags=0x00000008 | 0x00000200, close_fds=True)
+        start_browser(exe)
         deadline = time.time() + D.BROWSER_START_WAIT
         while time.time() < deadline:
             host = pick_host(ctx, quiet=True, want=want)
@@ -413,8 +427,14 @@ def cmd_search(ctx, pos, flags):
         found = call(ctx, "search-field", {})
     if not found.get("ref"):
         raise Fail("no search field on this page", "lighting snap -f search, then type e<N> words --enter")
+    before = (ctx.where or {}).get("url")
     res = cmd_type(ctx, [found["ref"], words], dict(flags, enter=True, nolearn=True))
-    learned = sites.learn((ctx.where or {}).get("url"), words)
+    url = (ctx.where or {}).get("url")
+    deadline = time.time() + D.SEARCH_NAV_S
+    while url == before and time.time() < deadline:
+        time.sleep(0.1)
+        url = (call(ctx, "where").get("where") or {}).get("url") or url
+    learned = sites.learn(url, words)
     return res + ("\n! learned the search URL of %s: next time search jumps there directly" % sites.host_of(learned)
                   if learned else "")
 

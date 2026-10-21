@@ -1,19 +1,21 @@
 {
   "name": "lighting",
-  "version": "1.1.0",
-  "description": "Drive your real browser and any Windows app from Codex with compact text snapshots, and replay tasks it has learned in one call.",
+  "version": "2.0.0",
+  "description": "Drive your real browser and any app on Windows, macOS or Linux from Codex with compact text snapshots, and replay tasks it has learned in one call.",
   "author": {
     "name": "QDHShamiro",
     "url": "https://github.com/QDHShamiro"
   },
   "homepage": "https://github.com/QDHShamiro/Lighting#readme",
   "repository": "https://github.com/QDHShamiro/Lighting",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": [
     "browser",
     "automation",
     "desktop",
     "windows",
+    "macos",
+    "linux",
     "ocr",
     "tokens",
     "mcp"
@@ -21,8 +23,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Lighting",
-    "shortDescription": "Your real browser and Windows apps, as a few lines of text",
-    "longDescription": "The lighting command drives your open Brave, Chrome or Edge through a small extension and any Windows app through UI Automation and OCR. Every action answers in one short line. Tasks that repeat become routines that run in one call.",
+    "shortDescription": "Your real browser and desktop apps, as a few lines of text",
+    "longDescription": "The lighting command drives your open Brave, Chrome or Edge through a small extension and any app on Windows, macOS or Linux through the accessibility APIs and OCR. Every action answers in one short line. Tasks that repeat become routines that run in one call.",
     "developerName": "QDHShamiro",
     "category": "Productivity",
     "capabilities": [

@@ -9,7 +9,8 @@ from lighting.common import Busy, Fail, Pending, Said, cap, is_url, ref_kind
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
-          "reload", "since", "seconds", "dir", "name", "model", "effort", "threshold", "runs"}
+          "reload", "since", "seconds", "dir", "name", "model", "effort", "threshold", "runs", "kind", "list",
+          "project"}
 TRACE = (D.HOME / "trace").exists()
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
          "-m": "media"}
@@ -162,6 +163,15 @@ def route(ctx, name, pos, flags):
     if name == "listen":
         from lighting import audio
         return audio.cmd_listen(ctx, pos, flags)
+    if name == "watch":
+        from lighting import watch
+        return watch.cmd_watch(ctx, pos, flags)
+    if name == "voice":
+        from lighting import voice_discord
+        return voice_discord.cmd_voice(ctx, pos, flags)
+    if name == "phone":
+        from lighting import android
+        return android.cmd_phone(ctx, pos, flags)
     if name == "claude":
         from lighting import spawn
         return spawn.cmd_claude(ctx, pos, flags)
@@ -249,7 +259,8 @@ def when_idle(ctx, name, pos, flags):
     return Pending(poll, D.BUSY_WAIT_S, 0.15)
 
 
-QUIET_CMDS = {"done", "suggest", "ping", "status", "log", "version", "help", "config", "brain", "improve", "doctor-info"}
+QUIET_CMDS = {"done", "suggest", "ping", "status", "log", "version", "help", "config", "brain", "improve", "doctor-info",
+              "access-prompt"}
 
 
 def run(ctx, msg):
@@ -326,6 +337,9 @@ def poll_pending(ctx, p):
         out, code = "err: %s: %s" % (type(e).__name__, str(e)[:300]), 1
     finally:
         ctx.target, ctx.where, ctx.last_target = saved
+    if isinstance(out, Pending):
+        p.poll, p.deadline, p.interval, p.due = out.poll, out.deadline, out.interval, out.due
+        return None
     if out is None and not last:
         p.due = time.time() + p.interval
         return None
@@ -339,6 +353,9 @@ def drain(ctx, out):
         time.sleep(max(0.0, out.due - time.time()))
         last = time.time() >= out.deadline
         res = out.poll(last)
+        if isinstance(res, Pending):
+            out = res
+            continue
         if res is None and not last:
             out.due = time.time() + out.interval
             continue
@@ -487,6 +504,10 @@ def close_later(ctx):
 def cleanup_now(ctx, quiet, scope):
     if ctx.sid and ctx.tabs and ctx.tabs[0] in ctx.owned and ctx.where and ctx.where.get("kind") == "web":
         ctx.closed_url = ctx.where.get("url")
+    if D.WIN:
+        from lighting import desktop, win
+        fg = win.foreground()
+        scope = dict(scope, front=bool(fg) and desktop.is_browser(fg))
     replies = browsers(ctx, "cleanup", scope)
     tabs = sum(r.get("closed") or 0 for r in replies)
     viewed = sum(r.get("kept") or 0 for r in replies)
@@ -505,7 +526,9 @@ def cleanup_now(ctx, quiet, scope):
         ["%s (%s)" % (plural(len(closed), "app"), ", ".join(closed))] if closed else [])
     lines = ["closed " + ", ".join(parts) if parts else "nothing to close"]
     if viewed:
-        lines.append("left %s open that the user is looking at" % plural(viewed, "tab"))
+        why = {w for r in replies for w in r.get("why") or []}
+        lines.append("left %s open that the user is looking at%s" % (plural(viewed, "tab"), (
+            " (in the user's own window)" if "yours" in why else " (the user brought it to the front)" if why else "")))
     if left:
         lines.append("still open, it may ask to save: " + ", ".join(left))
     return "\n".join(lines)
@@ -556,8 +579,9 @@ def cmd_status(ctx, pos, flags):
         lines.append("target %s %s" % (ctx.target[0], ctx.target[1]))
     cfg = ctx.cfg
     onoff = lambda k: "on" if cfg.get(k, True) else "off"
-    lines.append("pointer %s | cleanup %s | own window %s | browser pref %s | out %s" % (
-        onoff("pointer"), onoff("cleanup"), onoff("window"), cfg.get("browser"), D.OUT.as_posix()))
+    lines.append("pointer %s | cleanup %s | own window %s | focus %s | browser pref %s | out %s" % (
+        onoff("pointer"), onoff("cleanup"), onoff("window"), cfg.get("focus") or "never", cfg.get("browser"),
+        D.OUT.as_posix()))
     return "\n".join(lines)
 
 
@@ -578,6 +602,8 @@ def cmd_config(ctx, pos, flags):
         val = int(raw)
     else:
         val = raw
+    if key == "focus" and val not in D.FOCUS_MODES:
+        raise Fail("focus is one of %s" % ", ".join(D.FOCUS_MODES), "lighting config focus never")
     cfg[key] = val
     D.save_config(cfg)
     ctx.cfg = cfg
@@ -632,7 +658,7 @@ def cmd_log(ctx, pos, flags):
                     pass
         except OSError:
             return "log is empty"
-        rows = [r for r in rows if not r.get("x") and r.get("cmd") not in ("selftest", "bench", "done", "ext-reload")]
+        rows = [r for r in rows if not r.get("x") and r.get("cmd") not in ("selftest", "bench", "demo", "done", "ext-reload")]
         rows = rows[-(int(pos[0]) if pos and pos[0].isdigit() else 2000):]
         return cap(log_stats(rows), "log-stats", lines=40) if rows else "log is empty"
     try:
@@ -692,6 +718,11 @@ def cmd_bench(ctx, pos, flags):
     return selftest.bench(ctx, pos, flags)
 
 
+def cmd_demo(ctx, pos, flags):
+    from lighting import demo
+    return demo.run(ctx, pos, flags)
+
+
 def cmd_run(ctx, pos, flags):
     from lighting import routines
     return routines.cmd_run(ctx, pos, flags)
@@ -722,6 +753,13 @@ def cmd_suggest(ctx, pos, flags):
     return recall.cmd_suggest(ctx, pos, flags)
 
 
+def memcmd(name):
+    def run(ctx, pos, flags):
+        from lighting import memcmd as mc
+        return getattr(mc, "cmd_" + name)(ctx, pos, flags)
+    return run
+
+
 def cmd_brain(ctx, pos, flags):
     from lighting import brain
     return brain.cmd_brain(ctx, pos, flags)
@@ -738,17 +776,31 @@ def cmd_doctor_info(ctx, pos, flags):
               "alive": bool(h.alive), "hostpid": h.info.get("hostpid"), "up": now - h.connected} for h in list(d.hosts)]
     return {"out": "", "code": 0, "info": {"pid": os.getpid(), "version": D.version(), "root": str(D.ROOT),
                                            "up": now - d.started, "hotkey": bool(d.hotkey), "trace": TRACE,
-                                           "sessions": len(d.ctxs), "waits": len(d.waits), "hosts": hosts}}
+                                           "sessions": len(d.ctxs), "waits": len(d.waits), "hosts": hosts,
+                                           "access": access()}}
+
+
+def access(prompt=False):
+    try:
+        from lighting import win
+        return win.access(prompt) if hasattr(win, "access") else {}
+    except Exception as e:
+        return {"error": str(e)[:120]}
+
+
+def cmd_access_prompt(ctx, pos, flags):
+    return {"out": ", ".join("%s %s" % (k, "ok" if v else "missing") for k, v in access(True).items()), "code": 0}
 
 
 SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status, "config": cmd_config,
-          "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload,
+          "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "demo": cmd_demo, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload,
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
           "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest, "brain": cmd_brain,
-          "improve": cmd_improve, "doctor-info": cmd_doctor_info}
+          "improve": cmd_improve, "doctor-info": cmd_doctor_info, "access-prompt": cmd_access_prompt}
+SYSTEM.update({name: memcmd(name) for name in ("remember", "recall", "forget", "todo", "memory", "hook")})
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
          "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys",
-         "listen", "unread", "net", "tools"}
+         "listen", "watch", "unread", "net", "tools", "recall", "todo", "memory"}
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}
 APP_ONLY = {"windows", "focus", "clip", "launch"}
 CHAT = {"inbox", "reply", "unread"}

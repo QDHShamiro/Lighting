@@ -1,13 +1,55 @@
 # Changelog
 
-Versions follow semver. Every release on GitHub carries `lighting.exe` built from the tag by CI,
-a source zip and `SHA256SUMS.txt` (including the hash of `bin/lighting.exe` in the repo at that tag).
+Versions follow semver. Every release on GitHub carries the clients (`lighting.exe`, `lighting-macos`,
+`lighting-linux-x64`, `lighting-linux-arm64`) built from the tag by CI, `lighting.mcpb`, a source zip and
+`SHA256SUMS.txt` (including the hash of each `bin/` client in the repo at that tag).
 
 ## [2.0.0] - unreleased
 
 Built from 1,831 failed commands in the log since 1.1.0: most came from a few loops that kept hitting the same wall.
 
 ### Added
+- Memory: Lighting remembers across sessions, on this PC only. `remember "fact"`, `recall "words"` (words and meaning
+  mixed, one line per note, `recall 42` in full), `forget 42`, to-do lists (`todo add "task" --list x`,
+  `todo doing|done|drop 12`, `todo note 12 "..."`). A session starts with a summary of about 500 tokens (open
+  to-dos, the last sessions, what the user asked to keep). "merk dir ..." or "remember ..." in a prompt is saved by
+  the hook at once, and up to 2 notes of the same project that clearly fit a prompt are named. Finished sessions are learned in the background by
+  a local model: Lighting downloads llama.cpp, Qwen3.5 (4B, or 2B under 12 GB RAM) and Qwen3-Embedding with
+  checksums, runs them at low priority and never while a game runs (full screen, Minecraft, Steam and Epic games).
+  Any OpenAI-compatible server works instead (`config memory_api`). `memory import claude-mem` moves notes, session
+  summaries and open to-dos over. `lighting.exe` and the extension carry the Lighting icon.
+- Lighting never takes the screen from the user (Windows): no window comes to the front, the cursor does not move,
+  not even out of a full-screen game. Clicks, typing, keys and the wheel go to the app window in the background as
+  window messages; Ctrl+A/C/V/X/Z work there too, other shortcuts say they need the window in front. Launched apps
+  and the self-test windows open without taking focus, and if an app grabs it anyway Lighting gives it back.
+  `config focus away` allows the old way while the user has been away for a minute, `config focus idle` always.
+- `lighting voice` (Windows): an AI joins a Discord call when the user asks (`voice join "Friends"`), hears with Groq,
+  answers with Gemini and speaks with edge-tts through VB-Cable. It always says that it is an AI and listens, leaves
+  when someone says "KI raus", keeps no transcript of the others and uses a persona only in the call it was written for.
+- `lighting watch <link|file|e40>`: Claude watches a video in one call. The first answer is an overview: title,
+  length, chapters, the speech (captions first, else speech-to-text) as a skim with times, the text on screen and
+  12 scenes in one image (~50 image tokens per scene instead of one image per frame). On YouTube the scenes come from
+  the preview images, so nothing is downloaded or played. `--from 4:05 --to 6:00` looks closer (denser frames, all
+  speech there), `--at 1:23,2:45` gives those exact frames large enough to read code, `--text` reads the screen text
+  from the real frames, `--full` prints all speech. Works for links (yt-dlp), video files (ffmpeg, which Lighting
+  installs when missing) and videos on any page; results are kept for 24 h, so the next question about the same video
+  answers at once.
+- macOS and Linux (X11) work like Windows: desktop apps through the accessibility APIs (AX, AT-SPI) with OCR as a
+  fallback, windows, keys, video of one window, a Unix socket instead of the named pipe, native host manifests per
+  OS, the process list without `tasklist`, and `uv` installs itself. A Rust client is built for macOS (universal),
+  Linux x64 and Linux arm64. Every push is tested on GitHub's macOS and Linux runners.
+- `lighting phone ...` controls an Android phone over adb: `devices`, `snap [-f x]` (the screen as `p1`, `p2` refs;
+  a settings row with a switch shows as one `checkbox` and a tap hits the switch), `tap`, `type`, `key`, `swipe`,
+  `shot`, `launch`, `open`, `apps`. `phone setup` downloads Google's platform-tools.
+- `lighting.mcpb`, a one-click bundle for Claude Desktop, and an entry in the official MCP registry (`server.json`),
+  both published by the release workflow.
+- Lighting is licensed under Apache-2.0 (was MIT), with `NOTICE`, `TRADEMARKS.md` (name and logo stay reserved) and
+  `SECURITY.md`.
+- `routine schedule <name> daily 08:00` (or `weekly mon 09:30`, `hourly`, `every 30m`) runs a routine on a
+  schedule through the Windows Task Scheduler, launchd on macOS or a systemd user timer on Linux, without a window;
+  `routine schedules` lists them, `routine unschedule <name>` (and `routine rm`) removes them.
+- `lighting install antigravity`: Lighting's MCP server and skill for Google Antigravity (IDE, app and CLI share
+  `~/.gemini/config/mcp_config.json`; older config and skill folders are updated when they exist).
 - The brain: Lighting learns on this PC which controls are used on each page and app (it starts from the recorded
   episodes). On known pages `open`, `snap`, `back`, `forward`, `reload` and app snapshots show only those (up to 15,
   `config snap_top`) plus notes and alerts, with one line saying how many are hidden; `snap --full` shows all.
@@ -18,6 +60,9 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
 - `lighting brain` (what it learned), `brain forget <site|app:x.exe>`, `brain reset --yes`, `config brain off`.
 - `lighting improve [days]`: a self-check of the last days (top errors with what to do, loops, what the brain saved);
   once a week a 3-line summary comes with the first prompt.
+- `lighting demo [--fast]`: a ~30 s run for new users and screen recordings on a made-up shop page served from this
+  computer (open, find, fill, select, check, click, table), with the time and token size of every answer and the
+  page's own text size for comparison. Nothing is learned from it.
 - `upload` works on file inputs inside cross-origin frames (`f134.e2`, files up to 8 MB).
 - `claude --model m --effort e` starts the new Claude session with that model and effort.
 - `windows -f x` with exactly one match chooses that window, so `press`/`type`/`click` without a ref go there.
@@ -35,6 +80,8 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
 - `bench --real --runs 3` reports the median of several runs; plain `bench` also measures a call through MCP.
 
 ### Changed
+- `shot w3 --seconds 10` films the window itself, also while other windows cover it (frames from the window, not
+  the screen); `--screen-area` films the screen area as before. Works the same on Windows, macOS and Linux (X11).
 - `done` from the Stop hook paints the group green at once and closes the session's tabs and apps 20 s later;
   any command of that session in between keeps them. A background loop no longer loses its tab when a reply ends.
 - When the user is typing or moving the mouse, desktop actions wait up to 10 s for a pause (without blocking other
@@ -67,6 +114,9 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
   `ctrl+a` still wait up to 0.6 s, and changes are still reported.
 
 ### Fixed
+- `upload` on a label, menu item or button now finds its file input (the label's control, a nearby hidden
+  input, or the only one on the page) instead of failing with "Node is not a file input element"; this also
+  works inside same-origin frames. Without one nearby it says so.
 - The daemon crashed in `open`/`tabs` when `tasklist` printed non-ASCII text (umlauts in the OEM code page).
 - `snap --frame host` right after `open` failed because the frame was not there yet; it now waits up to 3 s,
   accepts the start of the host and lists the frames that exist when none matches.
@@ -83,6 +133,19 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
   valid in async functions".
 - A routine could be learned from page opens alone (two runs that opened the same test pages); a learned routine
   now needs at least one step that does something on the page.
+- `listen` on a paused video recorded nothing ("the recording is empty", 13 times in a week): it now starts the
+  video with a user gesture, so the browser allows it, and pauses it again afterwards.
+- `listen clip.mp3` looked for the file in the daemon's folder instead of the caller's.
+- Routine hints read the app of a routine that starts with `focus app:brave` as "app", so every prompt with the word
+  "app" got two unrelated routines.
+- `search` learned no search URL when the result page loaded slowly; it waits up to 1.5 s for the new address.
+- A click in a cross-origin frame that something on the page covered (a cookie banner) went to the cover; it is made
+  inside the frame now and says so.
+- Linux: key combinations with Ctrl, Shift, Alt or Super failed ("unknown key 'Control_L'"), AltGr and media keys
+  were unknown; the input recorder could miss the first click.
+- Linux: `done` kept the session's tabs open because the window manager focuses new windows, which looked like the
+  user was looking at them. Only a focus that comes later counts now.
+- macOS: when the system will not bring an app to the front, keys go to the app directly instead of failing.
 
 ## [1.1.0] - 2026-09-27
 

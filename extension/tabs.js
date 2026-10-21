@@ -128,9 +128,21 @@ export async function inGroup(tabId) {
 
 let ownWindow = true;
 let wins = null;
+const FOCUS_GRACE_MS = 2000;
+const born = {};
+const focusedAt = {};
 
 export function setOwnWindow(on) {
   ownWindow = on;
+}
+
+export function noteFocus(id) {
+  if (id !== chrome.windows.WINDOW_ID_NONE) focusedAt[id] = Date.now();
+}
+
+export function userPicked(id) {
+  if (focusedAt[id] === undefined) return false;
+  return born[id] === undefined || focusedAt[id] - born[id] >= FOCUS_GRACE_MS;
 }
 
 async function loadWins() {
@@ -152,7 +164,9 @@ export async function ownWindows() {
 async function tabInOwnWindow(label) {
   const w = await loadWins();
   if (w[label] !== undefined && (await alive(w[label]))) return chrome.tabs.create({ windowId: w[label], url: "about:blank", active: true });
+  const asked = Date.now();
   const nw = await chrome.windows.create({ url: "about:blank", focused: false });
+  born[nw.id] = asked;
   w[label] = nw.id;
   chrome.storage.local.set({ wins: w }).catch(() => {});
   return nw.tabs && nw.tabs[0] ? nw.tabs[0] : (await chrome.tabs.query({ windowId: nw.id }))[0];

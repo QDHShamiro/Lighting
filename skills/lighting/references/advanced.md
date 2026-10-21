@@ -29,6 +29,7 @@
 
 ## Tabs and browsers
 - Every Claude session works in its own browser window (the same logged-in profile) with its own tab group `Lighting #1`, `Lighting #2`, ...; calls without a session use the group "Lighting". The window opens behind the user's window and closes when its last tab closes. `lighting config window off` puts the tabs into the user's window instead. `open -n` opens another tab.
+- Lighting never brings a window to the front (Windows): app clicks, typing, keys and the wheel go to the window in the background. Shortcuts with Ctrl/Alt other than Ctrl+A/C/V/X/Z fail with a hint instead; `lighting config focus away` lets them take the front when the user has been away for a minute.
 - Every Claude session has its own tabs (it sends `CLAUDE_CODE_SESSION_ID`): its commands go to its own last tab, a session without a tab gets `this session has no tab yet` instead of touching another session's tab, and `done` at the end of a reply closes only that session's tabs and apps. `lighting tabs` + `tab t3` borrows any tab. Calls without a session (a plain terminal) share one context as before. Sessions survive `lighting stop`, updates and extension reloads (kept in `~/.lighting/sessions.json`); only a browser restart starts the tab ids over.
 - `lighting tabs` lists all tabs (`L` = Lighting group, `L2` = `Lighting #2`, `*` = current target, `a` = active). `lighting tab t3` works in any tab, including the user's own.
 - Links that open a new tab switch the target automatically (`! new tab t9 opened from t4`).
@@ -82,3 +83,10 @@
 - `lighting record stop [name] [param=value ...]` saves a routine; every `value` in the steps becomes `{param}`. `record cancel` throws it away, `record status` shows the progress.
 - `--web` or `--desktop` records only one side. Steps carry `--on web|app` so mixed routines go to the right side on replay.
 
+
+## Memory (kept on this PC)
+- Store: `~/.lighting/memory/memory.db` (SQLite). Search mixes words (FTS5) and meaning (local embeddings); notes of the current project rank first, `recall --all` shows others with `[project]`.
+- Hooks: session start prints the summary; every prompt can show up to 2 notes of the same project that clearly fit (`Lighting memory may help`); after each reply the session is queued and learned once it has been quiet 10 minutes or ended.
+- Learning uses a local model: Lighting downloads llama.cpp and Qwen3.5 (4B with 12 GB RAM or more, else 2B) plus Qwen3-Embedding by itself, checks the checksums, and never runs or downloads while a game runs. `lighting memory model` shows it or starts the download; `config models_dir <folder>` puts the files on another drive.
+- Own model instead: `config memory_api http://127.0.0.1:9930/v1` + `config memory_api_model <name>` + `config memory_api_embed <name>` (any OpenAI-compatible server), or files you have: `config memory_server <llama-server>`, `config memory_model <gguf>`, `config memory_embed <gguf>`.
+- `memory learn` learns the waiting sessions now, `memory import claude-mem` moves notes, summaries and open to-dos over (safe to repeat), `memory off` stops the hooks, `config memory_learn off` keeps the notes but learns nothing new. `forget <id>` deletes one note.

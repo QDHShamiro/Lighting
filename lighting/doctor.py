@@ -1,5 +1,3 @@
-import ctypes
-import ctypes.wintypes as W
 import hashlib
 import json
 import os
@@ -9,22 +7,28 @@ import subprocess
 import sys
 import threading
 import time
-import winreg
 from pathlib import Path
 
 from lighting import defaults as D
 from lighting.procs import HIDDEN, biggest, classify, is_daemon, kill, memory_load, memory_mb, processes, top_of
 
+if D.WIN:
+    import ctypes
+    import ctypes.wintypes as W
+    import winreg
+
+    u32 = ctypes.WinDLL("user32")
+    u32.GetForegroundWindow.restype = W.HWND
+    u32.GetWindowThreadProcessId.argtypes = [W.HWND, ctypes.POINTER(W.DWORD)]
+
 OK, WARN, FAIL = "ok", "warn", "FAIL"
 FIX_ORDER = ["venv", "files", "exe", "path", "data", "out", "log", "trace", "kill", "daemon", "ext", "agents"]
 AREAS = ["install", "client", "files", "daemon", "procs", "browser", "mcp", "claude", "agents", "ocr", "sound", "data", "disk",
          "memory", "errors", "focus", "update"]
-EXE_PATH = re.compile(r"([A-Za-z]:(?:\\\\|\\|/)[^\"'\n]*?lighting\.exe)", re.I)
+EXE_PATH = re.compile(r"([A-Za-z]:(?:\\\\|\\|/)[^\"'\n]*?lighting\.exe)", re.I) if D.WIN else \
+    re.compile(r"(/[^\"'\n]*?/lighting(?:-macos|-linux-\w+)?)(?=[\"'\s])")
 TRACEBACK = "Traceback (most recent call last)"
-
-u32 = ctypes.WinDLL("user32")
-u32.GetForegroundWindow.restype = W.HWND
-u32.GetWindowThreadProcessId.argtypes = [W.HWND, ctypes.POINTER(W.DWORD)]
+OCR_NAME = {"windows": "Windows OCR", "macos": "macOS Vision OCR", "linux": "Tesseract OCR"}[D.OS]
 
 
 def read_text(path):
@@ -100,6 +104,11 @@ def pidfile_pid():
 
 
 def user_path_has(folder):
+    if not D.WIN:
+        from lighting import install
+        link = D.LOCAL_BIN / "lighting"
+        on_path = any(same_path(p, D.LOCAL_BIN) for p in os.environ.get("PATH", "").split(os.pathsep) if p)
+        return on_path and link.is_symlink() and same_path(link, install.client_dst())
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as k:
             cur = winreg.QueryValueEx(k, "Path")[0]
@@ -162,8 +171,8 @@ def stamp_current():
 
 
 def ocr_languages():
-    from winrt.windows.media.ocr import OcrEngine
-    return sorted(l.language_tag for l in OcrEngine.available_recognizer_languages)
+    from lighting import ocr
+    return ocr.languages()
 
 
 def mcp_ping():
@@ -233,8 +242,8 @@ class Doctor:
 
     def check(self):
         for step in (self.install, self.client, self.files, self.daemon, self.procs, self.browser, self.claude,
-                     self.agents, self.ocr, self.sound, self.data, self.disk, self.memory, self.errors, self.focus, self.mcp,
-                     self.update):
+                     self.agents, self.ocr, self.sound, self.data, self.disk, self.memory, self.notes, self.errors,
+                     self.focus, self.mcp, self.update):
             try:
                 step()
             except Exception as e:
@@ -244,11 +253,14 @@ class Doctor:
     def running(self, browser):
         from lighting import install
         exe = install.browser_exe(browser)
+        if exe and not D.WIN:
+            from lighting import procs
+            return procs.running(exe)
         return bool(exe) and os.path.basename(exe).lower() in self.names
 
     def install(self):
         from lighting import boot
-        uv = shutil.which("uv")
+        uv = shutil.which("uv") or next((p for p in boot.uv_paths() if os.path.isfile(p)), None)
         if not uv:
             self.add(WARN, "install", "uv not found: setup and updates cannot install Python packages",
                      "install uv: https://docs.astral.sh/uv/getting-started/installation/")
@@ -268,7 +280,8 @@ class Doctor:
             self.add(OK, "install", "Python %s, packages match requirements.txt%s" % (py, ", uv found" if uv else ""))
 
     def client(self):
-        src, dst = D.ROOT / "bin" / "lighting.exe", D.BIN / "lighting.exe"
+        from lighting import install
+        src, dst = install.client_src(), install.client_dst()
         if not src.exists():
             self.add(FAIL, "client", "%s is missing" % src, "reinstall the plugin: claude plugin install " + self.plugin_key)
             return
@@ -277,13 +290,19 @@ class Doctor:
             self.add(WARN, "client", "%s differs from %s (new terminals and other AIs run it)" % (tilde(dst), src),
                      "copies it", "exe")
         if not user_path_has(D.BIN):
-            self.add(WARN, "client", "%s is not on your PATH: other AIs and new terminals do not find lighting" % tilde(D.BIN),
+            where = D.BIN if D.WIN else D.LOCAL_BIN / "lighting"
+            self.add(WARN, "client", "%s is not on your PATH: other AIs and new terminals do not find lighting" % tilde(where),
                      "adds it", "path")
         found = shutil.which("lighting")
         if found and not (same_path(found, src) or same_path(found, dst)):
-            self.add(WARN, "client", "`lighting` starts %s, not Lighting's exe" % found, "rename or delete that file")
+            self.add(WARN, "client", "`lighting` starts %s, not Lighting's client" % found, "rename or delete that file")
+        if not D.WIN:
+            env = (read_json(Path.home() / ".claude" / "settings.json") or {}).get("env") or {}
+            if (Path.home() / ".claude").exists() and env.get("LIGHTING_CLIENT") != D.CLIENT:
+                self.add(WARN, "client", "Claude Code does not know the %s client: MCP and hooks fail" % D.OS,
+                         "lighting setup, then restart Claude Code")
         if len(self.rows) == n:
-            self.add(OK, "client", "lighting.exe current in %s and on PATH" % tilde(D.BIN))
+            self.add(OK, "client", "%s current in %s and on PATH" % (dst.name, tilde(D.BIN)))
 
     def files(self):
         from lighting import install
@@ -292,15 +311,19 @@ class Doctor:
         bad = []
         if host.get("path") != str(D.HOST_BAT) or "chrome-extension://%s/" % ext_id not in (host.get("allowed_origins") or []):
             bad.append("host manifest")
-        if read_bytes(D.HOST_BAT) != install.HOST_BAT or read_bytes(D.HOST_PY) != install.HOST_PY:
-            bad.append("host.bat/host.py")
+        if read_bytes(D.HOST_BAT) != (install.HOST_BAT if D.WIN else install.HOST_SH) or read_bytes(D.HOST_PY) != install.HOST_PY:
+            bad.append("%s/host.py" % D.HOST_BAT.name)
         root = read_text(D.HOME / "client-root").strip()
         if not root or not (Path(root) / "lighting" / "__init__.py").exists():
             bad.append("client-root")
         browsers = install.installed_browsers()
-        missing = [b for b in browsers if reg_value(D.BROWSER_KEYS[b] + "\\" + D.HOST_NAME) != str(D.HOST_JSON)]
+        if D.WIN:
+            missing = [b for b in browsers if reg_value(D.BROWSER_KEYS[b] + "\\" + D.HOST_NAME) != str(D.HOST_JSON)]
+        else:
+            files = install.host_files()
+            missing = [b for b in browsers if read_bytes(files[b]) != read_bytes(D.HOST_JSON)]
         if missing:
-            bad.append("registry for " + ", ".join(missing))
+            bad.append(("registry for " if D.WIN else "host manifest for ") + ", ".join(missing))
         if bad:
             self.add(FAIL, "files", "browser link broken: " + ", ".join(bad), "rewrites it", "files")
         if ext_stale():
@@ -411,11 +434,11 @@ class Doctor:
         try:
             got = self.result("mcp", D.DOCTOR_MCP_WAIT_S)
         except TimeoutError:
-            self.add(FAIL, "mcp", "lighting.exe mcp did not answer within %d s" % D.DOCTOR_MCP_WAIT_S, "restarts the daemon", "daemon")
+            self.add(FAIL, "mcp", "lighting mcp did not answer within %d s" % D.DOCTOR_MCP_WAIT_S, "restarts the daemon", "daemon")
         except Exception as e:
-            self.add(FAIL, "mcp", "lighting.exe mcp failed: %s" % str(e)[:100], "lighting setup")
+            self.add(FAIL, "mcp", "lighting mcp failed: %s" % str(e)[:100], "lighting setup")
         else:
-            self.add(OK, "mcp", "lighting.exe mcp starts in %d ms, then %.1f ms per call" % got[:2])
+            self.add(OK, "mcp", "lighting mcp starts in %d ms, then %.1f ms per call" % got[:2])
 
     def claude(self):
         base = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
@@ -439,7 +462,7 @@ class Doctor:
             return
         ver = e.get("version") or "?"
         if ver != D.version():
-            hint = '"%s" setup' % (path / "bin" / "lighting.exe") if newer(ver, D.version()) else \
+            hint = '"%s" setup' % (path / "bin" / D.CLIENT) if newer(ver, D.version()) else \
                 "claude plugin update %s, then restart Claude Code" % key
             self.add(WARN, "claude", "Claude Code loads Lighting %s (skill, hooks), the daemon runs %s" % (ver, D.version()), hint)
         hooks = read_text(path / "hooks" / "hooks.json")
@@ -468,7 +491,7 @@ class Doctor:
                 (stale if any(not os.path.exists(x) for x in paths) else good).append(name)
         self.stale_agents = stale
         if stale:
-            self.add(WARN, "agents", "%s point to a lighting.exe that is gone" % ", ".join(stale), "rewrites their entries", "agents")
+            self.add(WARN, "agents", "%s point to a Lighting client that is gone" % ", ".join(stale), "rewrites their entries", "agents")
         if good:
             self.add(OK, "agents", "also set up for: " + ", ".join(good))
 
@@ -476,10 +499,10 @@ class Doctor:
         try:
             tags = self.result("ocr", D.DOCTOR_MCP_WAIT_S)
         except Exception as e:
-            self.add(FAIL, "ocr", "Windows OCR does not load: %s" % str(e)[:80], "reinstalls the Python packages", "venv")
+            self.add(FAIL, "ocr", OCR_NAME + " does not load: %s" % str(e)[:80], "reinstalls the Python packages", "venv")
             return
         if tags:
-            self.add(OK, "ocr", "Windows OCR languages: " + ", ".join(tags))
+            self.add(OK, "ocr", OCR_NAME + " languages: " + ", ".join(tags))
         else:
             self.add(FAIL, "ocr", "no OCR language installed: read w2 and o-refs cannot read the screen",
                      "Windows Settings > Time & language > Language & region > add English")
@@ -492,7 +515,7 @@ class Doctor:
             self.add(OK, "sound", "ffmpeg found, speech to text: captions, then %s" % asr)
         else:
             self.add(WARN, "sound", "ffmpeg not found: shot --seconds (screen video) fails, listen uploads bigger files",
-                     "winget install Gyan.FFmpeg")
+                     D.FFMPEG_HINT)
 
     def data(self):
         rdir = D.HOME / "routines"
@@ -525,6 +548,24 @@ class Doctor:
         if len(self.rows) == n:
             self.add(OK, "disk", "%.0f GB free on %s, out %d MB, daemon.log %.1f MB" % (free, D.HOME.anchor, out, log))
 
+    def notes(self):
+        if not D.config().get("memory"):
+            self.add(OK, "notes", "memory is off (lighting memory on)")
+            return
+        from lighting import memmodel as MM
+        from lighting import memory as M
+        try:
+            c = M.counts()
+        except Exception as e:
+            self.add(FAIL, "notes", "the memory database cannot be read: %s" % str(e)[:100], "lighting memory")
+            return
+        state = MM.status()
+        if c["q"] and not (MM.api("chat") or MM.ready("chat")):
+            self.add(WARN, "notes", "%d sessions wait, the local model is missing (%s)" % (c["q"], state),
+                     "lighting memory model")
+        else:
+            self.add(OK, "notes", "%d notes, %d open to-dos, %d sessions to learn | %s" % (c["n"], c["t"], c["q"], state))
+
     def memory(self):
         load, free = memory_load()
         own = memory_mb(self.info["pid"]) if self.info else 0
@@ -555,6 +596,20 @@ class Doctor:
             self.add(OK, "errors", "%d commands in 7 days, %.1f%% failed" % (s["runs"], rate))
 
     def focus(self):
+        if not D.WIN:
+            acc = (self.info or {}).get("access") or {}
+            missing = [k for k, v in acc.items() if v is False]
+            if acc.get("error"):
+                self.add(FAIL, "focus", "desktop access does not load: %s" % acc["error"], "lighting setup")
+            elif missing and D.MAC:
+                self.add(FAIL, "focus", "macOS blocks %s for the Lighting daemon: no app control" % " and ".join(missing),
+                         "System Settings > Privacy & Security: allow your terminal app (and Brave/Chrome), then lighting stop")
+            elif missing:
+                self.add(WARN, "focus", "missing: %s" % ", ".join(missing),
+                         "sudo apt install gir1.2-atspi-2.0 xclip (Wayland: ydotool wl-clipboard)")
+            elif acc:
+                self.add(OK, "focus", "desktop access: " + ", ".join(sorted(acc)))
+            return
         from lighting import win
         hwnd = u32.GetForegroundWindow()
         if not hwnd:

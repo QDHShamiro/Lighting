@@ -1,0 +1,44 @@
+{
+  "manifest_version": "0.3",
+  "name": "lighting",
+  "display_name": "Lighting",
+  "version": "0.0.0",
+  "description": "Your real logged-in browser and any app on your computer, as a few lines of text.",
+  "long_description": "Lighting drives your open Brave, Chrome or Edge through a small extension and any desktop app through the accessibility APIs of Windows, macOS and Linux, with OCR as a fallback. Every action answers in one short line instead of a screenshot. Tasks that repeat become routines that run in one call. Nothing leaves your computer. Ask Claude to run `setup` once: it loads the browser extension by itself.",
+  "author": {
+    "name": "QDHShamiro",
+    "url": "https://github.com/QDHShamiro"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/QDHShamiro/Lighting"
+  },
+  "homepage": "https://github.com/QDHShamiro/Lighting",
+  "documentation": "https://github.com/QDHShamiro/Lighting#readme",
+  "support": "https://github.com/QDHShamiro/Lighting/issues",
+  "icon": "icon.png",
+  "license": "Apache-2.0",
+  "keywords": ["browser", "desktop", "automation", "accessibility", "ocr", "tokens"],
+  "server": {
+    "type": "binary",
+    "entry_point": "bin/lighting.exe",
+    "mcp_config": {
+      "command": "${__dirname}/bin/lighting-linux-x64",
+      "args": ["mcp"],
+      "env": {},
+      "platform_overrides": {
+        "win32": {"command": "${__dirname}/bin/lighting.exe"},
+        "darwin": {"command": "${__dirname}/bin/lighting-macos"}
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "lighting",
+      "description": "One lighting command line per call: open, snap, click, type, text, windows, snap w2, read (OCR), run <routine>, setup, help."
+    }
+  ],
+  "compatibility": {
+    "platforms": ["win32", "darwin"]
+  }
+}

@@ -11,6 +11,7 @@ einer er es for from für geht gib hab habe hast hat he hey hi i ich ihr im in i
 machen mal me mein meine mich mir mit my nach nicht noch nur oder of on or please sag so soll the then to um und uns
 unter vom von vor was we wie will wir with wo you zu zum zur über lighting claude okay ok jetzt schnell einfach
 auch alle alles aber also hier dort mehr sehr gut kurz neu neue schau schaue guck gucke check checke look see
+warum wieso weshalb welche welcher welches welchen wann wer wen wem woher wohin womit wofür
 this that these those what when where why how have has had get got want need just also more some any all
 """.split())
 TOKEN = re.compile(r"[@#]|[^\W\d_][\w-]*", re.U)
@@ -41,7 +42,10 @@ def routine_words(r):
     first = (r.get("steps") or [{}])[0]
     app = app_word(first.get("where"))
     if not app and first.get("args"):
-        app = re.sub(r"^(?:[a-z]+://)?(?:www\.)?", "", first["args"][0].lower()).split("/")[0].split(".")[0].split(":")[0]
+        arg = first["args"][0].lower()
+        if arg.startswith("app:"):
+            arg = arg[4:].split()[0] if arg[4:].split() else ""
+        app = re.sub(r"^(?:[a-z]+://)?(?:www\.)?", "", arg).split("/")[0].split(".")[0].split(":")[0]
     ws = set(words(r.get("name", "").replace("-", " ")) + list(r.get("tags") or []))
     return {stem(w) for w in ws if w}, stem(app) if app else ""
 
@@ -90,8 +94,13 @@ def cmd_suggest(ctx, pos, flags):
     except (ValueError, AttributeError):
         prompt = raw
     note_prompt(ctx.prompts, prompt)
-    from lighting import brain
-    tip = brain.weekly_tip()
+    from lighting import brain, memcmd
+    try:
+        mem = memcmd.on_prompt(ctx, prompt)
+    except Exception:
+        mem = []
+    weekly = brain.weekly_tip()
+    tip = "\n".join(mem + ([weekly] if weekly else []))
     stems = {stem(w) for w in words(prompt)}
     if len(stems) < 2:
         return tip
