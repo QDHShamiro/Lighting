@@ -4,7 +4,7 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 `lighting-linux-x64`, `lighting-linux-arm64`) built from the tag by CI, `lighting.mcpb`, a source zip and
 `SHA256SUMS.txt` (including the hash of each `bin/` client in the repo at that tag).
 
-## [2.1.0] - unreleased
+## [2.1.0] - 2026-10-22
 
 Lighting now does the jobs of four tools at once: the memory (claude-mem), the session notes (Context Engine),
 the code map (Graphify) and the wiki upkeep (an Obsidian vault). Measured on real questions from the old tools'
@@ -30,6 +30,8 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   the project's rules and the drafts that wait.
 - A project is the folder with its own build file in a repo with several projects, else the git repo; the home
   folder is no project, and a session belongs to the project whose files it touched.
+- Hints while you type come only from the same project, need matching words and meaning, and are at most 2.
+- The session note covers every part of a long session, not only the last one; empty points are left out.
 
 ## [2.0.0] - 2026-10-22
 
