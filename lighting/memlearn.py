@@ -1,5 +1,6 @@
 import json
 import re
+import shutil
 import sqlite3
 import threading
 import time
@@ -19,19 +20,22 @@ SYSTEM = (
     "steps, file listings, what anyone sees in the code, progress and status (counts, timings, test or CI runs, "
     "what is running right now) and plans; what is still open goes into next, never into a note. Each note stands "
     "alone: its title starts with the project or tool, like 'Lighting: hints need words and meaning'. Write "
-    "English, short and concrete. At most %d notes; fewer is fine, none is fine. Also keep the session record up "
-    "to date, merged with the record so far: summary = what changed and "
-    "where, why = the reasons behind the decisions, rejected = what was tried and dropped and why, next = what is "
-    "left open. Say what and why, never how; one short line per point. Set wiki only on a note that deserves a "
-    "permanent page in the user's knowledge base: mistake = an error with its root cause and fix, rule = a fixed "
-    "rule the user gave, pattern = a reusable way of doing something; leave it empty for everything else."
-    % D.MEM_NOTES_PER_CHUNK)
+    "English, short and concrete. At most %d notes; fewer is fine, none is fine. For the session record write only "
+    "what THIS part of the log adds, one short line per point, what and why, never how: summary = what changed "
+    "and where, why = the reasons behind the decisions, rejected = what was tried and dropped and why, next = what "
+    "is left open at the end of this part. lessons = at most 2 things worth a permanent page in the user's "
+    "knowledge base: mistake = an error with its root cause and the fix, rule = a fixed rule the user gave, "
+    "pattern = a reusable way of doing something; none is fine." % D.MEM_NOTES_PER_CHUNK)
 DRAFT_SYSTEM = (
     "Write one page for the user's knowledge base from the note and the session context. Fill each section with "
     "1 to 4 short lines in the language of the section headings; leave a section empty when the note says nothing "
     "for it. Concrete names, versions and commands, never passwords, keys or tokens. The title says the lesson in "
     "a few words.")
 RECORD = ("summary", "why", "rejected", "next")
+GENERIC = {"assets", "config", "commands", "claude", "desktop", "content", "bilder", "scripts", "src", "data", "docs",
+           "tools", "test", "tests", "temp", "plugins", "server", "build", "public", "notes", "mod", "host", "shim",
+           "readme", "pluginname", "store", "stores", "reel", "index"}
+EMPTY = {"none", "nothing", "n/a", "na", "keine", "keiner", "nichts", "-", "--"}
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -43,11 +47,15 @@ SCHEMA = {
         "notes": {"type": "array", "maxItems": D.MEM_NOTES_PER_CHUNK, "items": {
             "type": "object",
             "properties": {"kind": {"type": "string", "enum": KINDS}, "title": {"type": "string"},
-                           "body": {"type": "string"}, "files": {"type": "array", "items": {"type": "string"}},
-                           "wiki": {"type": "string", "enum": [""] + list(vault.WIKI_KINDS)}},
+                           "body": {"type": "string"}, "files": {"type": "array", "items": {"type": "string"}}},
+            "required": ["kind", "title", "body"]}},
+        "lessons": {"type": "array", "maxItems": 2, "items": {
+            "type": "object",
+            "properties": {"kind": {"type": "string", "enum": list(vault.WIKI_KINDS)}, "title": {"type": "string"},
+                           "body": {"type": "string"}},
             "required": ["kind", "title", "body"]}},
     },
-    "required": ["title", "summary", "why", "rejected", "next", "notes"],
+    "required": ["title", "summary", "why", "rejected", "next", "notes", "lessons"],
 }
 REMINDER = re.compile(r"(?s)<(system-reminder|local-command-caveat)>.*?</\1>")
 TAG = re.compile(r"</?[a-zA-Z][\w-]*(?:\s[^<>]*)?>")
@@ -158,19 +166,19 @@ def learn(row):
     for part in chunks(text):
         if games.running():
             raise MM.NotReady("a game started")
-        so_far = "\n".join("%s: %s" % (k, summary[k]) for k in RECORD if summary[k]) or "-"
-        user = "Project: %s\nSession title: %s\nRecord so far:\n%s\n\nSession log:\n%s" % (
-            project or "-", summary["title"] or "-", so_far, part)
+        user = "Project: %s\nSession title: %s\n\nSession log:\n%s" % (project or "-", summary["title"] or "-", part)
         out = parse(MM.chat(SYSTEM, user, SCHEMA))
         for n in out.get("notes") or []:
             if n.get("title"):
                 kind = n.get("kind") if n.get("kind") in KINDS else "fact"
-                _, new = M.merge_note(project, kind, n["title"], n.get("body", ""), n.get("files") or [], sid)
+                _, new = M.merge_note(project, kind, titled(project, n["title"]), n.get("body", ""),
+                                      n.get("files") or [], sid)
                 added += new
-                if n.get("wiki") in vault.WIKI_KINDS:
-                    wiki.append(n)
-        summary = dict({k: M.scrub(str(out.get(k) or "")) for k in RECORD},
-                       title=title or out.get("title") or summary["title"])
+        wiki += [n for n in out.get("lessons") or [] if n.get("kind") in vault.WIKI_KINDS and n.get("title")]
+        for k in ("summary", "why", "rejected"):
+            summary[k] = points(summary[k], out.get(k))
+        summary["next"] = points("", out.get("next")) or summary["next"]
+        summary["title"] = title or summary["title"] or out.get("title") or ""
     for n in wiki[: D.WIKI_PER_SESSION]:
         draft(n, project, sid, summary)
     M.write("update sessions set offset = ?, learned = ?, status = 'done', tries = 0, title = ?, summary = ?, why = ?, "
@@ -182,22 +190,41 @@ def learn(row):
     return added
 
 
+def titled(project, title):
+    title = title.strip()
+    if not project or title.lower().startswith(project.lower()):
+        return title
+    return "%s: %s" % (project, title)
+
+
+def points(old, new):
+    lines = [x.strip().lstrip("-* ").strip() for x in (old or "").splitlines() if x.strip()]
+    seen = {frozenset(M.norm_title(x)) for x in lines}
+    for x in str(new or "").splitlines():
+        x = M.scrub(x.strip().lstrip("-* ").strip())
+        key = frozenset(M.norm_title(x))
+        if x and x.rstrip(".!").lower() not in EMPTY and key not in seen:
+            seen.add(key)
+            lines.append(x)
+    return "\n".join(lines[-D.RECORD_LINES:])
+
+
 def draft(n, project, sid, record):
     for r in M.search(n["title"], project=project, limit=5, fts_only=True):
         if r["source"] == "vault" and M.similar(r["title"], n["title"]) >= D.MEM_DUP_SIM:
             return None
-    heads = vault.template(n["wiki"])[1]
+    heads = vault.template(n["kind"])[1]
     schema = {"type": "object", "required": ["title", "sections"], "properties": {
         "title": {"type": "string"},
         "sections": {"type": "object", "required": heads, "properties": {h: {"type": "string"} for h in heads}}}}
-    user = "Project: %s\nKind: %s\nNote: %s\n%s\n\nSession: %s\n%s" % (
-        project or "-", n["wiki"], n["title"], n.get("body", ""), record.get("title", ""), record.get("summary", ""))
+    user = "Project: %s\nKind: %s\nLesson: %s\n%s\n\nSession: %s\n%s" % (
+        project or "-", n["kind"], n["title"], n.get("body", ""), record.get("title", ""), record.get("summary", ""))
     try:
         out = parse(MM.chat(DRAFT_SYSTEM, user, schema))
     except (ValueError, KeyError, TypeError):
         return None
     sections = {h: M.scrub(str(v)) for h, v in (out.get("sections") or {}).items()}
-    return vault.write_draft(n["wiki"], M.oneline(M.scrub(out.get("title") or n["title"]), 100), sections, project, sid)
+    return vault.write_draft(n["kind"], M.oneline(M.scrub(out.get("title") or n["title"]), 100), sections, project, sid)
 
 
 def embed_some(seconds=50):
@@ -413,8 +440,11 @@ def context_dirs():
 
 
 def known_projects():
-    names = {r["project"] for r in M.rows("select distinct project from notes where project != ''")}
-    return sorted((n for n in names if len(n) >= 4), key=len, reverse=True)
+    pages = {r["project"] for r in M.rows("select distinct project from notes where source = 'vault' and kind = 'project'")}
+    busy = {r["project"] for r in M.rows("select project from notes where project != '' group by project "
+                                         "having count(*) >= ?", (D.KNOWN_PROJECT_NOTES,))}
+    names = {n for n in pages | busy if len(n) >= 4 and re.search(r"[A-Za-z]{3}", n) and n.lower() not in GENERIC}
+    return sorted(names, key=len, reverse=True)
 
 
 def import_context_engine(dirs=None):
@@ -433,7 +463,7 @@ def import_context_engine(dirs=None):
             if dest.exists():
                 continue
             dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(text, "utf-8")
+            shutil.copy2(f, dest)
             copied += 1
     return copied
 

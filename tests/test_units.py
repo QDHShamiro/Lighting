@@ -1181,6 +1181,14 @@ def test_vault_index_and_projects():
     assert M.project_of_files([str(repo / "A" / "src" / "x.java")] * 2 + [str(repo / "C" / "y.java")]) == "A"
 
 
+def test_session_record_points():
+    from lighting import memlearn
+    assert memlearn.points("alpha one\n- beta two", "- Beta two.\ngamma three") == "alpha one\nbeta two\ngamma three"
+    assert memlearn.points("alpha one", "- None.\nKeine") == "alpha one"
+    assert memlearn.titled("Lighting", "focus fix") == "Lighting: focus fix"
+    assert memlearn.titled("Lighting", "lighting: x") == "lighting: x" and memlearn.titled("", "x") == "x"
+
+
 def test_code_map():
     import types
     from lighting import codemap

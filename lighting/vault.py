@@ -155,7 +155,7 @@ def write_session(sid, project, record, started):
     path = folder / ("%s %s %s.md" % (time.strftime("%Y-%m-%d", time.localtime(started)), safe_name(title), sid[:8]))
     try:
         folder.mkdir(parents=True, exist_ok=True)
-        path.write_text("\n".join(lines), "utf-8")
+        path.write_text("\n".join(lines), "utf-8", newline="\n")
         if old and old != path:
             old.unlink()
     except OSError:
@@ -196,7 +196,7 @@ def write_draft(kind, title, sections, project, sid):
         return None
     try:
         folder.mkdir(parents=True, exist_ok=True)
-        path.write_text(render(kind, title, sections, project, sid), "utf-8")
+        path.write_text(render(kind, title, sections, project, sid), "utf-8", newline="\n")
     except OSError:
         return None
     return path
