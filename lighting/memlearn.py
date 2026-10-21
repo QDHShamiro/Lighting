@@ -120,6 +120,9 @@ def parse(text):
 
 
 def learn(row):
+    if not Path(row["transcript"]).exists():
+        M.write("update sessions set status = 'done' where id = ?", (row["id"],))
+        return 0
     text, end, title = condense(row["transcript"], row["offset"])
     sid, project = row["id"], row["project"]
     if len(text) < D.MEM_MIN_CHARS:

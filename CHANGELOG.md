@@ -13,7 +13,7 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
   mixed, one line per note, `recall 42` in full), `forget 42`, to-do lists (`todo add "task" --list x`,
   `todo doing|done|drop 12`, `todo note 12 "..."`). A session starts with a summary of about 500 tokens (open
   to-dos, the last sessions, what the user asked to keep). "merk dir ..." or "remember ..." in a prompt is saved by
-  the hook at once, and up to 3 notes that fit a prompt are named. Finished sessions are learned in the background by
+  the hook at once, and up to 2 notes of the same project that clearly fit a prompt are named. Finished sessions are learned in the background by
   a local model: Lighting downloads llama.cpp, Qwen3.5 (4B, or 2B under 12 GB RAM) and Qwen3-Embedding with
   checksums, runs them at low priority and never while a game runs (full screen, Minecraft, Steam and Epic games).
   Any OpenAI-compatible server works instead (`config memory_api`). `memory import claude-mem` moves notes, session

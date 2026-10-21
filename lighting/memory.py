@@ -280,7 +280,7 @@ def todos(project=None, open_only=True):
         args.append(project)
     if open_only:
         sql += " and status in ('todo', 'doing')"
-    return rows(sql + " order by list, status = 'doing' desc, updated desc", args)
+    return rows(sql + " order by list, status = 'doing' desc, id", args)
 
 
 def session_seen(sid, project, cwd, transcript, ended=False):

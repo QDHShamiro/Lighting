@@ -215,14 +215,16 @@ def on_prompt(ctx, prompt):
     if len(stems) < 3:
         return []
     here = M.project_of(getattr(ctx, "cwd", None) or "")
+    qv = query_vec(prompt, False)
     out = []
-    for r in M.search(prompt, project=here, limit=8, vec=query_vec(prompt, False), min_sim=D.MEM_HINT_SIM):
+    for r in M.search(prompt, project=here, limit=8, vec=qv, min_sim=D.MEM_HINT_SIM):
         key = "m:%d" % r["id"]
-        if key in ctx.told or r["kind"] == "session":
+        if key in ctx.told or r["kind"] == "session" or r["project"] not in (here, ""):
             continue
         have = {stem(w) for w in words(r["title"] + " " + (r["body"] or ""))}
         hit = len(stems & have)
-        if hit >= D.MEM_HINT_TERMS and hit / len(stems) >= D.MEM_HINT_SHARE or (r["sim"] or 0) >= D.MEM_HINT_SIM:
+        words_ok = hit >= D.MEM_HINT_TERMS and hit / len(stems) >= D.MEM_HINT_SHARE
+        if words_ok and (qv is None or (r["sim"] or 0) >= D.MEM_HINT_SIM):
             ctx.told[key] = time.time()
             out.append("#%d %s" % (r["id"], M.oneline(r["title"], 100)))
         if len(out) >= D.MEM_HINTS:
