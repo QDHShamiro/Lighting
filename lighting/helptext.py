@@ -13,6 +13,7 @@ web     open <url> [-n] [-f "a|b"] [--text]   snap [-f "a|b"] [-s css|ref] [--al
         read <image url|file> (saved as JPEG to look at)
         dialog accept|dismiss [text]   downloads   console   net [n] [-f x] (JSON the page loaded)
         tools   call <tool> '{json}' [--yes] (WebMCP)   open <app link> (obsidian://, spotify:) starts the app
+video   watch <url|file|ref> [--from m:ss --to m:ss] [--at 1:23,2:45] [--text] [--full] [--count 12] [--lang de]
 sound   listen [ref|url|file] [--from m:ss --to m:ss] [--lang de] [--live] [--local]   frames <ref> --audio
 desktop windows [-f x] (one match = chosen)   launch <app|uri|path> [-f x]   focus <w>   close <w>   snap <w> [--web]
         click <d|o|"text">   type <d|"Field"|focused> <text> [--tab] [--enter]   press <keys>   read [w|screen]

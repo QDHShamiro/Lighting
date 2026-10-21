@@ -162,6 +162,9 @@ def route(ctx, name, pos, flags):
     if name == "listen":
         from lighting import audio
         return audio.cmd_listen(ctx, pos, flags)
+    if name == "watch":
+        from lighting import watch
+        return watch.cmd_watch(ctx, pos, flags)
     if name == "phone":
         from lighting import android
         return android.cmd_phone(ctx, pos, flags)
@@ -770,7 +773,7 @@ SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status
           "improve": cmd_improve, "doctor-info": cmd_doctor_info, "access-prompt": cmd_access_prompt}
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
          "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys",
-         "listen", "unread", "net", "tools"}
+         "listen", "watch", "unread", "net", "tools"}
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}
 APP_ONLY = {"windows", "focus", "clip", "launch"}
 CHAT = {"inbox", "reply", "unread"}

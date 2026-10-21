@@ -105,7 +105,7 @@ None of that is what the AI needs. It needs to know what it can click, and wheth
 | 🖥️ **Every app** | The accessibility tree for normal apps (UI Automation on Windows, AX on macOS, AT-SPI on Linux), OCR for games and canvas UIs. On Windows clicks and typing go through in the background; your mouse stays where it is. |
 | 📱 **Your Android phone** | `lighting phone snap` lists what is on the screen, `phone tap p3` taps it, over USB debugging. |
 | 🧠 **Learns your tasks** | Do something twice and it becomes a routine that runs in one call ([how](#the-second-time-is-one-call)). |
-| 🎞️ **Sees images and video** | `snap --media` lists images, `shot e57` shows one, `frames e40` turns a whole video into one contact sheet. |
+| 🎞️ **Watches videos** | `watch <link\|file>` gives chapters, the speech, the text on screen and 12 scenes in one image, then zooms in on request. `snap --media` lists images, `shot e57` shows one. |
 | 🧹 **Cleans up after itself** | When the AI finishes its reply, what it opened closes again. The tab group's color is a status light: orange working, red stopped, green done. |
 | 🔒 **Safe by default** | Banking sites are read-only, buy/pay/delete/merge buttons need `--yes`, hidden text never reaches the model, secrets never reach the log. |
 
@@ -287,7 +287,8 @@ your logged-in browser and your apps, cheaply.
 
 ## What's new
 
-- **2.0.0** macOS and Linux, Android phones (`lighting phone`), and a brain: on pages it knows, `snap` shows the
+- **2.0.0** `lighting watch` (any video in one call: chapters, speech, screen text and scenes in one image), macOS
+  and Linux, Android phones (`lighting phone`), and a brain: on pages it knows, `snap` shows the
   controls you actually use (this repo's page ~450 → ~117 tokens). `lighting improve` checks the last days for
   errors and loops, `lighting doctor --fix` repairs the setup, routines run on a schedule, `lighting demo` shows it
   all in 30 s. A one-click bundle for Claude Desktop, an entry in the MCP registry, Apache-2.0.
@@ -399,7 +400,8 @@ args = ["mcp"]
 | Data | `table e8` · `fetch /api/me --pick login` (with your cookies) · `js` |
 | Tabs | `tabs` · `tab t3` · `close` · `back` · `reload` · `dialog accept\|dismiss` · `dismiss` (cookie banners) · `viewport 390x844` |
 | Clean up | `done` (close what Lighting opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) · `config window off` (tabs in your window, not an own one) |
-| Images, video | `snap --media` (images get refs, captions as names) · `shot e57` (look at one image) · `frames e40 [--scenes] [--from 1:30 --to 2:00] [--live]` (the whole video as one contact sheet, captions included) · `read <image url>` |
+| Video | `watch <link\|file\|e40>` (overview: chapters, speech, screen text, scenes in one image) · `watch ... --from 4:05 --to 6:00` (closer) · `--at 1:23,2:45` (exact frames, readable code) · `--text` · `--full` · `listen` (speech only) · `frames e40 [--scenes] [--live]` (a video on the page as one contact sheet) |
+| Images | `snap --media` (images get refs, captions as names) · `shot e57` (look at one image) · `read <image url>` |
 
 **Desktop (Windows, macOS, Linux)**
 

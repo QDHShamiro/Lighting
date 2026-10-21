@@ -108,6 +108,15 @@
     const el = get(r);
     if (!el) return { gone: true };
     if (el.tagName !== "VIDEO" && el.tagName !== "AUDIO") return { notMedia: true };
+    if (op === "mark" || op === "unmark") {
+      if (op === "mark") el.setAttribute("data-lt-play", "1");
+      else el.removeAttribute("data-lt-play");
+      return { paused: el.paused };
+    }
+    if (op === "pause") {
+      if (!el.paused) el.pause();
+      return { paused: true };
+    }
     if (op === "info") {
       S.media = { el, time: el.currentTime, paused: el.paused || el.readyState < 2, controls: el.controls, tracks: [...el.textTracks].map((x) => x.mode) };
       el.controls = false;

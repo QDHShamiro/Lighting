@@ -171,6 +171,8 @@ async function pageExtras(tabId) {
   return { net: bigJson, webmcp: tools || 0 };
 }
 
+const PLAY_MARKED = "(() => { const v = document.querySelector('[data-lt-play]'); return v ? v.play().then(() => true, () => false) : false; })()";
+
 async function mediaAudio(a, tab) {
   const tabId = await tabOf(tab);
   let ref = a.ref;
@@ -183,10 +185,19 @@ async function mediaAudio(a, tab) {
   const t = await chrome.tabs.get(tabId);
   const muted = !!(t.mutedInfo && t.mutedInfo.muted);
   if (!muted) await chrome.tabs.update(tabId, { muted: true }).catch(() => {});
+  let started = false;
   try {
     if (typeof a.from === "number") await page(tabId, "media", [ref, "seek", a.from], 0, 12000);
+    const st = await page(tabId, "media", [ref, "mark"], 0, 8000).catch(() => null);
+    if (st && st.paused) {
+      await C.attach(tabId).catch(() => {});
+      const r = await C.send(tabId, "Runtime.evaluate", { expression: PLAY_MARKED, awaitPromise: true, returnByValue: true, userGesture: true, timeout: 5000 }).catch(() => null);
+      started = !!(r && r.result && r.result.value);
+    }
+    await page(tabId, "media", [ref, "unmark"], 0, 8000).catch(() => {});
     return Object.assign({ ref }, await page(tabId, "media", [ref, "record", a.ms], 0, a.ms + 20000));
   } finally {
+    if (started) await page(tabId, "media", [ref, "pause"], 0, 8000).catch(() => {});
     if (!muted) await chrome.tabs.update(tabId, { muted: false }).catch(() => {});
   }
 }

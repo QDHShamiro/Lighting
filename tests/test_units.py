@@ -879,6 +879,72 @@ def test_listen_relative_file():
     assert audio.cmd_listen(ctx, [os.path.join(folder, "clip.mp3")], {})[0] == os.path.join(folder, "clip.mp3")
 
 
+def test_watch_transcript():
+    from lighting import watch
+    segs = [(0.0, "hello and welcome"), (2.0, "and welcome to the video"), (4.0, "[Music]"), (31.0, "next part starts"),
+            (40.0, "next part starts here")]
+    assert watch.paragraphs(segs, None, None, 30) == [(0.0, "hello and welcome to the video"), (31.0, "next part starts here")]
+    assert watch.paragraphs(segs, 30, None, 30) == [(31.0, "next part starts here")]
+    long = [(i * 30.0, "sentence number %d with some more words to make it long enough to count" % i) for i in range(100)]
+    text, window = watch.transcript(long, None, None, 2400)
+    assert window and window > 30 and len(text) < 3000 and all(len(r) <= 160 for r in text.split("\n")), (window, len(text))
+    short, none = watch.transcript(segs, None, None, 2400)
+    assert none is None and short.startswith("0:00 hello and welcome to the video")
+
+
+def test_watch_subtitle_order():
+    from lighting import watch
+    tracks = {"en": "u1", "de-DE": "u2", "en-orig~auto": "u3", "de~auto": "u4"}
+    assert watch.sub_order(tracks, None, "en") == ["en", "de-DE", "en-orig~auto", "de~auto"]
+    assert watch.sub_order(tracks, "de", "en") == ["de-DE", "en", "de~auto", "en-orig~auto"]
+    info = {"language": "en", "subtitles": {"en": [{"ext": "vtt", "url": "a"}]},
+            "automatic_captions": {"fr": [{"ext": "vtt", "url": "b"}], "en-orig": [{"ext": "vtt", "url": "c"}]}}
+    assert watch.subs_of(info, None) == {"en": "a", "en-orig~auto": "c"}
+
+
+def test_watch_storyboard_tiles():
+    from PIL import Image
+    from lighting import watch
+    box = Path(tempfile.mkdtemp(prefix="lighting-watch-"))
+    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255), (255, 0, 255)]
+    for i in range(2):
+        img = Image.new("RGB", (30, 12))
+        for j, c in enumerate(colors):
+            r, col = divmod(j, 3)
+            img.paste(Image.new("RGB", (10, 6), c if i == 0 else tuple(255 - v for v in c)), (col * 10, r * 6))
+        img.save(box / ("sb-%d.jpg" % i), "PNG")
+    board = {"rows": 2, "cols": 3, "fps": 0.5, "frags": [["http://x/0", 12.0], ["http://x/1", 6.0]]}
+    tiles = watch.board_tiles(board, [1.0, 5.0, 13.0, 99.0], box)
+    got = [(t, img.getpixel((5, 3))) for t, img in tiles]
+    assert got == [(1.0, (255, 0, 0)), (5.0, (0, 0, 255)), (13.0, (0, 255, 255)), (99.0, (255, 255, 0))], got
+    sheet = watch.sheet(tiles, False, False)
+    assert sheet.size == (1024, 154), sheet.size
+    assert watch.sheet(tiles[:2], False, True).size == (1024, 307)
+
+
+def test_watch_sources():
+    import types
+    from lighting import watch
+    from lighting.common import Fail
+    folder = tempfile.mkdtemp(prefix="lighting-watch-src-")
+    Path(folder, "clip.mp4").write_bytes(b"x")
+    ctx = types.SimpleNamespace(cwd=folder, cfg={}, d=types.SimpleNamespace(hosts_seen=set()))
+    old = watch.start
+    watch.start = lambda c, job: job
+    try:
+        job = watch.cmd_watch(ctx, ["clip.mp4"], {"from": "1:00", "at": "1:23,2:45"})
+        assert (job["kind"], job["src"], job["lo"], job["at"]) == ("file", os.path.join(folder, "clip.mp4"), 60.0, [83.0, 165.0])
+        job = watch.cmd_watch(ctx, ["youtu.be/abc"], {})
+        assert (job["kind"], job["src"], job["count"]) == ("url", "https://youtu.be/abc", 12)
+        try:
+            watch.cmd_watch(ctx, ["missing.mp4"], {})
+            assert False, "a missing file must not become https://missing.mp4"
+        except Fail as e:
+            assert "no video file" in e.text()
+    finally:
+        watch.start = old
+
+
 def test_linux_key_names():
     try:
         import Xlib.XK

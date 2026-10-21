@@ -23,7 +23,7 @@ tabs [-f x]   tab t3   close   back   dismiss   dialog accept   table e8   js "c
 Secrets: `type e3 --env PASS` or `fill "Password=@secret" --env PASS`, never inline.
 
 ## Video, desktop, chats
-`listen [e40|url|file]` (speech, `--from 1:30`), `frames e40 [--audio]`, `shot screen --seconds 10` (video for the user).
+`watch url|file|e40` (scenes, screen text, speech; zoom `--from 1:30`, `--at 1:23`), `listen` (sound), `shot screen --seconds 10` (clip).
 `launch spotify [-f x]`, `snap app:spotify` (no `windows` needed; several windows: `windows -f x`), `click d5|"Save"|o3`, `type d5|"Search"|focused text [--enter]`, `press ctrl+k`, `read app:spotify` (OCR), `wait "Done" app:spotify`, `close w2`. `snap --links`: all link targets. Shortcuts: the `keys:` line, `lighting keys [app]`. `claude "task" --yes` only if asked.
 `reply "@Name" "text" --wait`, `inbox "@Name"`, `unread`. Links need `--yes`.
 

@@ -9,6 +9,14 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 Built from 1,831 failed commands in the log since 1.1.0: most came from a few loops that kept hitting the same wall.
 
 ### Added
+- `lighting watch <link|file|e40>`: Claude watches a video in one call. The first answer is an overview: title,
+  length, chapters, the speech (captions first, else speech-to-text) as a skim with times, the text on screen and
+  12 scenes in one image (~50 image tokens per scene instead of one image per frame). On YouTube the scenes come from
+  the preview images, so nothing is downloaded or played. `--from 4:05 --to 6:00` looks closer (denser frames, all
+  speech there), `--at 1:23,2:45` gives those exact frames large enough to read code, `--text` reads the screen text
+  from the real frames, `--full` prints all speech. Works for links (yt-dlp), video files (ffmpeg, which Lighting
+  installs when missing) and videos on any page; results are kept for 24 h, so the next question about the same video
+  answers at once.
 - macOS and Linux (X11) work like Windows: desktop apps through the accessibility APIs (AX, AT-SPI) with OCR as a
   fallback, windows, keys, video of one window, a Unix socket instead of the named pipe, native host manifests per
   OS, the process list without `tasklist`, and `uv` installs itself. A Rust client is built for macOS (universal),
@@ -105,6 +113,19 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
   valid in async functions".
 - A routine could be learned from page opens alone (two runs that opened the same test pages); a learned routine
   now needs at least one step that does something on the page.
+- `listen` on a paused video recorded nothing ("the recording is empty", 13 times in a week): it now starts the
+  video with a user gesture, so the browser allows it, and pauses it again afterwards.
+- `listen clip.mp3` looked for the file in the daemon's folder instead of the caller's.
+- Routine hints read the app of a routine that starts with `focus app:brave` as "app", so every prompt with the word
+  "app" got two unrelated routines.
+- `search` learned no search URL when the result page loaded slowly; it waits up to 1.5 s for the new address.
+- A click in a cross-origin frame that something on the page covered (a cookie banner) went to the cover; it is made
+  inside the frame now and says so.
+- Linux: key combinations with Ctrl, Shift, Alt or Super failed ("unknown key 'Control_L'"), AltGr and media keys
+  were unknown; the input recorder could miss the first click.
+- Linux: `done` kept the session's tabs open because the window manager focuses new windows, which looked like the
+  user was looking at them. Only a focus that comes later counts now.
+- macOS: when the system will not bring an app to the front, keys go to the app directly instead of failing.
 
 ## [1.1.0] - 2026-09-27
 
