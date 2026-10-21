@@ -4,7 +4,34 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 `lighting-linux-x64`, `lighting-linux-arm64`) built from the tag by CI, `lighting.mcpb`, a source zip and
 `SHA256SUMS.txt` (including the hash of each `bin/` client in the repo at that tag).
 
-## [2.0.0] - unreleased
+## [2.1.0] - unreleased
+
+Lighting now does the jobs of four tools at once: the memory (claude-mem), the session notes (Context Engine),
+the code map (Graphify) and the wiki upkeep (an Obsidian vault). Measured on real questions from the old tools'
+own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 8 of 20 with 39,401), and 9 of
+10 code questions (Graphify: 2 of 10).
+
+### Added
+- `lighting code`: a code map per project (tree-sitter). Without a name an overview (languages, folders, most used
+  types, entry points); `code Name` shows where it is defined and who calls it, `code callers Name` all callers,
+  `code "what it does"` searches by meaning. Only changed files are read again; the meaning index builds in the
+  background for projects used in the last 7 days, never while a game runs.
+- Session notes write themselves: after a session the local model writes done / why / tried and rejected / left
+  open as Markdown into the vault (`Sessions/<project>/`). `PreCompact` learns the session so far.
+- Wiki drafts: a mistake with its cause, a rule or a pattern from a session becomes a draft in the vault inbox,
+  filled along the vault's own templates; `lighting wiki`, `wiki accept <n> [folder]` (files it and adds the INDEX
+  line), `wiki drop <n>` (to the vault's .trash).
+- `recall` also searches the vault (`config vault <folder>`, plain Markdown, Obsidian keeps working) and Claude
+  Code's own memory files, and says where a note comes from.
+- `lighting memory import context-engine` copies old Context Engine session notes into the vault.
+
+### Changed
+- The start info names the project, the open to-dos, the last 3 sessions with what is open, the last 5 commits,
+  the project's rules and the drafts that wait.
+- A project is the folder with its own build file in a repo with several projects, else the git repo; the home
+  folder is no project, and a session belongs to the project whose files it touched.
+
+## [2.0.0] - 2026-10-22
 
 Built from 1,831 failed commands in the log since 1.1.0: most came from a few loops that kept hitting the same wall.
 

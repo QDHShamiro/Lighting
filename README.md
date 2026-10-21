@@ -313,7 +313,7 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **145/145** on Windows, 145/145 on Linux, 144/144 on macOS (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (61/61), `cargo test` in `client/`.
+- `lighting selftest`: **145/145** on Windows, 145/145 on Linux, 144/144 on macOS (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (63/63), `cargo test` in `client/`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - `lighting demo` shows Lighting in about 30 s on a made-up shop page served from your own computer (open, find, fill, pick, tick, click, read a table), with the time and size of every answer. `--fast` skips the pauses that are there for screen recordings.
 - Filling and submitting a form: ~160 ms.
@@ -328,6 +328,8 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | Tokens for a first look at a page | **~440** (measured) | ~15,850: screenshot + page text (measured) | 15,000-30,000 on dense pages ([1]) | no number published ([2]) |
 | Repeated tasks | learned routines, one call | saved shortcuts | – | – |
 | Memory across sessions | ✅ on your computer, learned by a local model | – | – | – |
+| Session notes and a wiki in your Obsidian vault | ✅ written by the local model, you confirm | – | – | – |
+| Code map: definitions, callers, search by meaning | ✅ `lighting code` | – | – | – |
 | A whole video as one image | ✅ `frames` | – | – | – |
 | Headless, CI | ❌ real browser only | desktop Chrome, no headless | ✅ | ✅ |
 
@@ -341,6 +343,10 @@ your logged-in browser and your apps, cheaply.
 
 ## What's new
 
+- **2.1.0** One tool instead of four: session notes that write themselves into your vault, wiki drafts you accept
+  with one command, `recall` over your notes, the vault and Claude Code's memory, and `lighting code`, a code map
+  with callers and search by meaning. On real questions from the old tools' own data: 19 of 20 answered with
+  13,511 tokens (claude-mem: 8 of 20 with 39,401), code 9 of 10 (Graphify: 2 of 10).
 - **2.0.0** A memory across sessions (`recall`, `remember`, `todo`, a start summary of ~500 tokens, learned by a
   local model that Lighting downloads itself), `lighting watch` (any video in one call: chapters, speech, screen
   text and scenes in one image), macOS and Linux, Android phones (`lighting phone`), and a brain: on pages it
