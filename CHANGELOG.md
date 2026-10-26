@@ -15,9 +15,10 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 - `lighting grep <pattern> [path ...]`: text search for agents. Results are grouped by file (no path on every line),
   indentation is dropped, very long lines (JSONL, minified files) are cut to the part around the hit, and at most 80
   lines are shown with the full list in a file. A search with no hits says how many files it searched. It follows
-  `.gitignore` in repos, skips binary files and folders like `node_modules`, takes grep's `-i -w -F -l -C` and
-  `a\|b`, and searches a pattern that is not a valid regex as plain text. Measured on 6 searches in Lighting's own
-  code: 31% fewer characters than `path:line:text` with the same hits, 66% fewer with the 80-line view.
+  `.gitignore` in repos, skips binary files and folders like `node_modules`, reads UTF-16 files (Windows
+  PowerShell output), takes `--glob "*.py"` or `--glob "!*.md"`, grep's `-i -w -F -l -C` and `a\|b`, and searches
+  a pattern that is not a valid regex as plain text. Measured on 6 searches in Lighting's own code: 31% fewer
+  characters than `path:line:text` with the same hits, 66% fewer with the 80-line view.
 - `lighting squeeze`: long command output in short, the idea of [Headroom](https://github.com/chopratejas/headroom)
   run locally (no proxy, nothing leaves the PC). `squeeze <file>`, `<command> 2>&1 | lighting squeeze` or
   `squeeze -- <command>` (keeps the exit code). Error and warning lines stay with the first lines of their stack

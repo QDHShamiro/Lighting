@@ -278,6 +278,12 @@ def read_limited(fh):
     return head + (b"\n... %d MB in the middle not read\n" % (dropped // 1_000_000) if dropped else b"") + bytes(data)
 
 
+def decode(data):
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return data.decode("utf-16", "replace")
+    return data.decode("utf-8-sig", "replace")
+
+
 def cmd_squeeze(ctx, pos, flags):
     text, name = getattr(ctx, "stdin", None), str(flags.get("name") or "output")
     if pos and pos[0] == "--":
@@ -289,7 +295,7 @@ def cmd_squeeze(ctx, pos, flags):
             path = path if path.is_absolute() else base / path
             try:
                 with open(path, "rb") as fh:
-                    parts.append(read_limited(fh).decode("utf-8", "replace"))
+                    parts.append(decode(read_limited(fh)))
             except OSError as e:
                 raise Fail("cannot read %s (%s)" % (p, e.strerror or e), USAGE)
         text, name = "\n".join(parts), Path(pos[0]).name
@@ -313,7 +319,7 @@ def run_command(args):
     except OSError as e:
         return 127, "cannot start %s: %s" % (args[0], e.strerror or e)
     data = read_limited(p.stdout)
-    return p.wait(), data.decode("utf-8", "replace")
+    return p.wait(), decode(data)
 
 
 def client(argv):
@@ -327,7 +333,7 @@ def client(argv):
         code, text = run_command(cmd)
         rest.append("--name=" + Path(cmd[0]).stem)
     elif not [a for a in rest if not a.startswith("-")] and piped():
-        text = read_limited(sys.stdin.buffer).decode("utf-8", "replace")
+        text = decode(read_limited(sys.stdin.buffer))
     try:
         res = execute(["squeeze", *rest], {"stdin": text} if text is not None else None)
         out = res.get("out", "")

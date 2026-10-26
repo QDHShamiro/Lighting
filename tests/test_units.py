@@ -1907,9 +1907,13 @@ def test_memory_model_never_stalls():
 
 
 def test_grep_searches_right_and_short():
+    import threading
+    import time
     import types
     from lighting import grep
-    from lighting.common import Fail
+    from lighting import defaults as D
+    from lighting.common import Fail, Pending
+    keep_inline, D.GREP_INLINE_S = D.GREP_INLINE_S, 30
     assert commands.parse(["grep", "x", "--glob", "*.py", "--context", "2"]) == ("grep", ["x"], {"glob": "*.py", "context": "2"})
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -1923,7 +1927,12 @@ def test_grep_searches_right_and_short():
         (root / "node_modules" / "x.txt").write_text("needle\n", "utf-8")
         (root / "sub").mkdir()
         (root / "sub" / "Case.txt").write_text("Needle here\nneedles there\n", "utf-8")
+        (root / "sub" / "wide.log").write_bytes("first\nwide needle\n".encode("utf-16"))
         ctx = types.SimpleNamespace(cwd=tmp)
+        (root / "dash.txt").write_text("plain\nuse -v here\n", "utf-8")
+        out = grep.cmd_grep(ctx, ["needle", "sub"], {"glob": "!Case.txt"})
+        assert "wide.log" in out and "2: wide needle" in out and "Case.txt" not in out, out
+        assert "2: use -v here" in grep.cmd_grep(ctx, ["--", "-v", "dash.txt"], {})
         out = grep.cmd_grep(ctx, ['"type":"assistant"', "t.jsonl"], {})
         assert "  1: {" in out and "  3: {" in out and "2 lines" in out and "  2:" not in out, out
         out = grep.cmd_grep(ctx, ["def \\|argparse", "g.py"], {"new": True})
@@ -1946,12 +1955,28 @@ def test_grep_searches_right_and_short():
         full = Path(out.rsplit("full list: ", 1)[1].strip()).read_text("utf-8")
         assert "  200: hit 199" in full
         assert grep.cmd_grep(ctx, ["zzz_nothing"], {}).startswith('no line matches "zzz_nothing" in ')
-        for bad in ([], ["x", "nowhere"]):
+        for bad in ([], ["x", "nowhere"], ["-v", "needle"]):
             try:
                 grep.cmd_grep(ctx, bad, {})
                 raise AssertionError("no error for %s" % bad)
             except Fail:
                 pass
+        D.GREP_INLINE_S = 0
+        gate, real = threading.Event(), grep.search
+        grep.search = lambda job, *a: (gate.wait(10), real(job, *a))
+        try:
+            later = grep.cmd_grep(ctx, ["hit 7", "many.txt"], {})
+            assert isinstance(later, Pending) and later.poll(False) is None, later
+            gate.set()
+            for _ in range(500):
+                out = later.poll(False)
+                if out is not None:
+                    break
+                time.sleep(0.02)
+        finally:
+            grep.search = real
+        assert out is not None and "  8: hit 7" in out, out
+    D.GREP_INLINE_S = keep_inline
 
 
 def test_squeeze_keeps_errors_and_the_original():
@@ -1984,8 +2009,10 @@ def test_squeeze_keeps_errors_and_the_original():
     assert lines.startswith("<100 items") and not lines.startswith("[") and '"error":"boom"' in lines, lines
     with tempfile.TemporaryDirectory() as tmp:
         (Path(tmp) / "log.txt").write_text(text, "utf-8")
+        (Path(tmp) / "wide.txt").write_bytes(text.encode("utf-16"))
         ctx = types.SimpleNamespace(cwd=tmp, stdin=None)
         assert "Could not load plugin Foo" in squeeze.cmd_squeeze(ctx, ["log.txt"], {})
+        assert "Could not load plugin Foo" in squeeze.cmd_squeeze(ctx, ["wide.txt"], {})
         ctx.stdin = text
         assert "squeezed" in squeeze.cmd_squeeze(ctx, [], {"name": "mvn"})
         ctx.stdin = None

@@ -2,12 +2,13 @@ import fnmatch
 import os
 import re
 import subprocess
+import threading
 import time
 from collections import deque
 from pathlib import Path
 
 from lighting import defaults as D
-from lighting.common import Fail, cap, outfile, trimmed, win_path
+from lighting.common import Fail, Pending, cap, outfile, trimmed, win_path
 
 LETTERS = {"i": "ignore", "w": "word", "F": "fixed", "l": "files", "c": "files", "r": None, "R": None, "n": None,
            "E": None, "H": None, "I": None, "P": None, "h": None, "s": None}
@@ -44,7 +45,10 @@ def options(pos, flags):
             n = number(val)
             o["before"] = n if m.group(1) in "BC" else o["before"]
             o["after"] = n if m.group(1) in "AC" else o["after"]
-        elif re.fullmatch(r"-[A-Za-z]+", a) and all(c in LETTERS for c in a[1:]):
+        elif re.fullmatch(r"-[A-Za-z]+", a):
+            unknown = [c for c in a[1:] if c not in LETTERS]
+            if unknown:
+                raise Fail("grep option -%s is not supported" % unknown[0], "%s (a pattern that starts with - goes after --)" % USAGE)
             for c in a[1:]:
                 if LETTERS[c]:
                     o[LETTERS[c]] = True
@@ -102,9 +106,13 @@ def candidates(root, base, single, o, globs):
         yield root, nice(root, base)
         return
     listed = git_files(root)
+    take = [g for g in globs if not g.startswith("!")]
+    drop = [g[1:] for g in globs if g.startswith("!")]
     for p in listed if listed is not None else walk_files(root, o["hidden"]):
         rel = p.relative_to(root).as_posix()
-        if globs and not any(fnmatch.fnmatch(p.name, g) or fnmatch.fnmatch(rel, g) for g in globs):
+        if take and not any(fnmatch.fnmatch(p.name, g) or fnmatch.fnmatch(rel, g) for g in take):
+            continue
+        if any(fnmatch.fnmatch(p.name, g) or fnmatch.fnmatch(rel, g) for g in drop):
             continue
         yield p, rel if single else nice(p, base)
 
@@ -147,8 +155,16 @@ def hits(lines, rx, o):
     return count, shown
 
 
-def stream(path):
-    with open(path, "r", encoding="utf-8", errors="replace") as fh:
+def encoding_of(head):
+    if head.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return "utf-16"
+    if b"\0" in head:
+        return None
+    return "utf-8-sig" if head.startswith(b"\xef\xbb\xbf") else "utf-8"
+
+
+def stream(path, enc):
+    with open(path, "r", encoding=enc, errors="replace") as fh:
         for line in fh:
             yield line.rstrip("\n")
 
@@ -159,11 +175,12 @@ def scan(path, rx, pre, o):
         if size > D.GREP_MAX_BYTES:
             return "big"
         with open(path, "rb") as fh:
-            if b"\0" in fh.read(8000):
-                return "binary"
+            enc = encoding_of(fh.read(8000))
+        if enc is None:
+            return "binary"
         if size > D.GREP_WHOLE:
-            return hits(stream(path), rx, o)
-        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            return hits(stream(path, enc), rx, o)
+        with open(path, "r", encoding=enc, errors="replace") as fh:
             text = fh.read()
         if pre is not None and not pre.search(text):
             return 0, []
@@ -205,6 +222,34 @@ def render(results, o, budget):
     return out, sum(c for _, c, _ in results) - used
 
 
+def search(job, roots, base, o, globs, rx, pre):
+    single = len(roots) == 1 and roots[0].is_dir()
+    deadline = time.time() + D.GREP_BUDGET_S
+    results, seen, skipped, searched, stopped = [], set(), {"binary": 0, "big": 0, "gone": 0}, 0, False
+    try:
+        for root in roots:
+            for path, show in candidates(root, base, single, o, globs):
+                if time.time() > deadline:
+                    stopped = True
+                    break
+                key = os.path.normcase(str(path))
+                if key in seen:
+                    continue
+                seen.add(key)
+                res = scan(path, rx, pre, o)
+                if isinstance(res, str):
+                    skipped[res] += 1
+                    continue
+                searched += 1
+                if res[0]:
+                    results.append((show, res[0], res[1]))
+            if stopped:
+                break
+    except Exception as e:
+        job["error"] = e
+    job.update(results=results, skipped=skipped, searched=searched, stopped=stopped)
+
+
 def cmd_grep(ctx, pos, flags):
     o, rest = options(pos, flags)
     if not rest:
@@ -220,27 +265,27 @@ def cmd_grep(ctx, pos, flags):
         if not p.exists():
             raise Fail("no file or folder %s" % name, USAGE)
         roots.append(p)
-    single = len(roots) == 1 and roots[0].is_dir()
-    deadline = time.time() + D.GREP_BUDGET_S
-    results, seen, skipped, searched, stopped = [], set(), {"binary": 0, "big": 0, "gone": 0}, 0, False
-    for root in roots:
-        for path, show in candidates(root, base, single, o, globs):
-            if time.time() > deadline:
-                stopped = True
-                break
-            key = os.path.normcase(str(path))
-            if key in seen:
-                continue
-            seen.add(key)
-            res = scan(path, rx, pre, o)
-            if isinstance(res, str):
-                skipped[res] += 1
-                continue
-            searched += 1
-            if res[0]:
-                results.append((show, res[0], res[1]))
-        if stopped:
-            break
+    job = {}
+    worker = threading.Thread(target=search, args=(job, roots, base, o, globs, rx, pre), daemon=True)
+    worker.start()
+    worker.join(D.GREP_INLINE_S)
+    if not worker.is_alive():
+        return answer(job, pattern, roots, base, o, flags, warn)
+
+    def poll(last):
+        if worker.is_alive():
+            if last:
+                raise Fail("the search did not end in time", "narrow the folder or add --glob")
+            return None
+        return answer(job, pattern, roots, base, o, flags, warn)
+
+    return Pending(poll, D.GREP_BUDGET_S + D.GREP_INLINE_S + 10, D.GREP_POLL_S)
+
+
+def answer(job, pattern, roots, base, o, flags, warn):
+    if "error" in job:
+        raise Fail("search failed: %s: %s" % (type(job["error"]).__name__, str(job["error"])[:200]), USAGE)
+    results, skipped, searched, stopped = job["results"], job["skipped"], job["searched"], job["stopped"]
     where = nice(roots[0], base) if len(roots) == 1 else "%d places" % len(roots)
     notes = ["%d %s" % (n, {"binary": "binary", "big": "over %d MB" % (D.GREP_MAX_BYTES // 1_000_000),
                             "gone": "unreadable"}[k]) for k, n in skipped.items() if n]

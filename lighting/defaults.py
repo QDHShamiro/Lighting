@@ -128,6 +128,8 @@ GREP_SIDE = 80
 GREP_WHOLE = 16_000_000
 GREP_MAX_BYTES = 300_000_000
 GREP_BUDGET_S = 30
+GREP_INLINE_S = 1.0
+GREP_POLL_S = 0.25
 GREP_MORE_FILES = 30
 GREP_SKIP = {".git", "node_modules", "target", "build", "dist", "out", ".gradle", ".idea", "venv", ".venv",
              "__pycache__", ".next", ".cache"}
