@@ -7,7 +7,7 @@ from collections import Counter
 from lighting import defaults as D
 from lighting import pointer
 from lighting import win
-from lighting.common import Busy, Fail, best_only, cap, note, ref_kind, terms, tiers
+from lighting.common import Busy, Fail, best_only, cap, note, ref_kind, terms, tiers, trimmed
 
 BROWSER_EXES = {"brave.exe", "chrome.exe", "msedge.exe", "opera.exe", "vivaldi.exe",
                 "brave browser", "google chrome", "microsoft edge", "chromium", "opera", "vivaldi",
@@ -517,6 +517,7 @@ def cmd_snap(ctx, pos, flags):
         st.last_lines[hwnd] = (time.time(), lines) if lines is not None else None
         delta = None if flags.get("full") or flags.get("web") else changes(old, lines, wref(ctx, hwnd))
         if delta:
+            trimmed(len("\n".join(rest.split("\n")[: D.SNAP_LINES])[: D.OUT_CHARS]) - len(delta))
             return cap(head + "\n" + delta, "app-snap", lines=D.SNAP_LINES)
         text = head + keys.hint(exe) + "\n" + rest
         if not flags.get("full") and not flags.get("web"):

@@ -38,6 +38,12 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - A repeated `snap` of an app window shows only what changed, like pages do (`changed since your last snap: +2,
   -1 gone`); `--full` shows everything. Since 10-01, 92% of the app snapshot output (~685k tokens) was the same
   window again within two minutes, mostly chats and terminals with a line or two new.
+- `lighting tokens` (and `/lighting:tokens`): what your agent read from Lighting, what the same steps would
+  have cost a screenshot agent (the measured README rows: ~15,850 to open a page, ~2,350 per other look or
+  action, ~14,100 per video) and the difference, per group, per day or week, plus routines and the brain
+  filter. Page text, memory and code count only as used. Your log of the last 30 days: 20,654 commands, 3.9M
+  tokens read, ~35M without Lighting. From now on the log also keeps how much Lighting cut from its own
+  answers (long answers to a file, app deltas, brain filter, code outlines), shown as an exact line.
 - Text in a page, app, chat or transcript that speaks to an AI ("ignore all previous instructions", "if you are an
   AI assistant", "Hey Claude,", "do not tell the user", the same in German) gets one line that names where it is
   and that it is not a request from the user. Nothing is removed. None of 1,788 real outputs from the last 30

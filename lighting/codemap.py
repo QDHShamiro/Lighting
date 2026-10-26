@@ -9,7 +9,7 @@ from pathlib import Path
 
 from lighting import defaults as D
 from lighting import memory as M
-from lighting.common import Fail, cap
+from lighting.common import Fail, cap, trimmed
 
 LANGS = {".java": "java", ".py": "python", ".rs": "rust", ".ts": "typescript", ".tsx": "tsx", ".js": "javascript",
          ".mjs": "javascript", ".cjs": "javascript", ".jsx": "javascript", ".cs": "csharp", ".go": "go",
@@ -379,7 +379,12 @@ def outline(root, name):
         lines.append("%s%d-%d %s" % ("    " if r["parent"] else "  ", r["line"], r["end_line"], sig))
     if len(syms) > D.CODE_OUTLINE_MAX:
         lines.append("  ... %d more" % (len(syms) - D.CODE_OUTLINE_MAX))
-    return "\n".join(lines)
+    out = "\n".join(lines)
+    try:
+        trimmed((root / f["path"]).stat().st_size - len(out))
+    except OSError:
+        pass
+    return out
 
 
 def body(root, name):
@@ -406,6 +411,7 @@ def body(root, name):
     out = ["%s:%d-%d" % (r["path"], r["line"], r["end_line"])] + text[r["line"] - 1: end]
     if end < r["end_line"]:
         out.append("... %d more lines (Read %s from line %d)" % (r["end_line"] - end, r["path"], end + 1))
+    trimmed(sum(len(x) + 1 for x in text) - sum(len(x) + 1 for x in out))
     return "\n".join(out)
 
 

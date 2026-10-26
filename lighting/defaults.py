@@ -103,6 +103,13 @@ OUT_CLEAN_EVERY_S = 6 * 3600
 SERVER_LOG_MAX = 5 << 20
 SERVER_LOG_KEEP = 1 << 20
 LOG_MAX_BYTES = 5_000_000
+TOKENS_DAYS = 30
+TOKENS_PAGE = 15_850
+TOKENS_SCREENSHOT = 2_350
+TOKENS_VIDEO = 14_100
+TOKENS_IMAGE = {"shot": 700, "frames": 518}
+TOKENS_BAR = 24
+TOKENS_WEEKS = 12
 
 LONG_WAITS = {"inbox": 300_000, "reply": 300_000, "wait": 10_000, "listen": 900_000}
 WEB_SCHEMES = {"http", "https", "file", "about", "chrome", "brave", "edge", "view-source", "data", "blob",

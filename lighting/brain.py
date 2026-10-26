@@ -4,7 +4,7 @@ import time
 from urllib.parse import urlsplit
 
 from lighting import defaults as D
-from lighting.common import Fail, cap, note, ref_kind
+from lighting.common import Fail, cap, note, ref_kind, trimmed
 
 LEARN_CMDS = {"click", "type", "select", "check", "hover", "fill"}
 TARGETED = {"click", "type", "select", "check", "hover"}
@@ -177,6 +177,7 @@ def prune(ctx, text, key):
     st = data()["stats"]
     st["pruned"] += 1
     st["chars"] += max(0, len(text) - len(out))
+    trimmed(len(text) - len(out))
     _b["dirty"] = True
     return out
 

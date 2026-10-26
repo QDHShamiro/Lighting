@@ -454,6 +454,70 @@ def test_sessions_survive_a_restart():
     assert r.tabs == [] and r.owned == set()
 
 
+def test_token_overview_counts_used_and_saved():
+    import collections
+    import datetime
+    import json
+    import time
+    import types
+    from lighting import common, tokens
+    from lighting import defaults as D
+    today, old = datetime.date.today(), datetime.date.today() - datetime.timedelta(days=40)
+    rows = [("open", True, 1760, {}), ("click", True, 120, {}), ("click", False, 200, {}), ("shot", True, 40, {}),
+            ("text", True, 6000, {"c": 4000}), ("recall", True, 800, {}), ("snap", True, 400, {"x": 1}),
+            ("selftest", True, 9000, {})]
+    lines = [dict({"t": "%s 10:%02d:00" % (today, i), "cmd": c, "ok": ok, "n": n}, **more)
+             for i, (c, ok, n, more) in enumerate(rows)]
+    lines.append({"t": "%s 10:00:00" % old, "cmd": "open", "ok": True, "n": 1760})
+    old_log, kept = D.LOG.with_suffix(".old.jsonl"), {}
+
+    def close_log():
+        with commands._log["lock"]:
+            if commands._log["f"]:
+                commands._log["f"].close()
+            commands._log["f"] = None
+
+    close_log()
+    for p in (D.LOG, old_log):
+        kept[p] = p.read_bytes() if p.exists() else None
+    try:
+        old_log.write_text("\n".join(json.dumps(r) for r in lines[-1:]) + "\n", "utf-8")
+        D.LOG.write_text("\n".join(json.dumps(r) for r in lines[:-1]) + "\nnot json\n", "utf-8")
+        s = tokens.summarize(tokens.read_rows((today - datetime.timedelta(days=29)).isoformat()))
+        assert s["runs"] == 6 and s["trim"] == 1000, s
+        assert s["groups"]["look at pages and apps"] == [2, 440 + 10 + 700, 15850 + 2350]
+        assert s["groups"]["clicks and typing"] == [2, 30 + 50, 2350 + 50]
+        assert s["groups"]["page text and data"] == [1, 1500, 1500] and s["groups"]["memory and code"] == [1, 200, 200]
+        out = tokens.cmd_tokens(None, [], {})
+        assert out.startswith("Lighting tokens, last 30 days (") and ": 6 commands" in out, out
+        assert "most saved: open 15k, click 2.3k, shot 1.6k" in out and "exact: Lighting cut ~1.0k tokens" in out, out
+        total = next(x for x in out.splitlines() if x.startswith("total")).split()
+        assert total == ["total", "6", "2.9k", "22k", "19k", "86%"], total
+        assert ": 7 commands" in tokens.cmd_tokens(None, ["all"], {}) and ": 6 commands" in tokens.cmd_tokens(None, ["today"], {})
+        try:
+            tokens.cmd_tokens(None, ["soon"], {})
+            assert False
+        except commands.Fail as e:
+            assert "lighting tokens 7" in e.text()
+        common.take_trimmed()
+        big = "line\n" * 500
+        assert common.take_trimmed() == 0 and common.take_trimmed() == 0
+        shown = common.cap(big, "unit-cap", lines=10)
+        assert common.take_trimmed() == len(big) - len(shown) > 2000
+        common.trimmed(321)
+        ctx = types.SimpleNamespace(d=types.SimpleNamespace(events=collections.deque()), notes=[], image=None, no_learn=True)
+        commands.finish(ctx, "snap", ["snap"], "ok", 0, time.perf_counter())
+        last = json.loads(D.LOG.read_text("utf-8").splitlines()[-1])
+        assert (last["cmd"], last["c"]) == ("snap", 321) and common.take_trimmed() == 0, last
+    finally:
+        close_log()
+        for p, b in kept.items():
+            if b is None:
+                p.unlink(missing_ok=True)
+            else:
+                p.write_bytes(b)
+
+
 def test_text_that_speaks_to_an_ai_gets_a_note():
     import collections
     import time

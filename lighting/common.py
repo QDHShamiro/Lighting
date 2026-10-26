@@ -1,10 +1,21 @@
 import re
+import threading
 import time
 from pathlib import Path
 
 from lighting import defaults as D
 
 REF = re.compile(r"^(?:(f\d+)\.)?(e|d|o|w|t)(\d+)$")
+_cut = threading.local()
+
+
+def trimmed(chars):
+    _cut.n = getattr(_cut, "n", 0) + max(0, chars)
+
+
+def take_trimmed():
+    n, _cut.n = getattr(_cut, "n", 0), 0
+    return n
 
 
 class Fail(Exception):
@@ -82,7 +93,9 @@ def cap(text, name, lines=None, chars=D.OUT_CHARS):
     if len(out) > chars:
         out = out[:chars].rsplit("\n", 1)[0]
     shown = out.count("\n") + 1
-    return out + "\n... +%d more lines (full: %s)" % (len(rows) - shown, Path(path).as_posix())
+    out += "\n... +%d more lines (full: %s)" % (len(rows) - shown, Path(path).as_posix())
+    trimmed(len(text) - len(out))
+    return out
 
 
 def tokens(text):

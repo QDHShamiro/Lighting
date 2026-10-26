@@ -7,7 +7,7 @@ import threading
 import time
 
 from lighting import defaults as D
-from lighting.common import Busy, Fail, Pending, Said, cap, is_url, ref_kind
+from lighting.common import Busy, Fail, Pending, Said, cap, is_url, ref_kind, take_trimmed
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
@@ -307,7 +307,7 @@ def when_idle(ctx, name, pos, flags):
 
 
 QUIET_CMDS = {"done", "suggest", "hook", "ping", "status", "log", "version", "help", "config", "brain", "improve",
-              "doctor-info", "access-prompt"}
+              "doctor-info", "access-prompt", "tokens"}
 
 
 def run(ctx, msg):
@@ -315,6 +315,7 @@ def run(ctx, msg):
     ctx.cwd = msg.get("cwd")
     ctx.image = None
     ctx.notes = []
+    take_trimmed()
     argv = msg.get("argv") or []
     t = time.perf_counter()
     code = 0
@@ -434,7 +435,7 @@ def finish(ctx, name, argv, out, code, t):
     if events:
         out = (out + "\n" if out else "") + "\n".join(events)
     t_log = time.perf_counter()
-    log(name, argv, code, (time.perf_counter() - t) * 1000, out, ctx.no_learn)
+    log(name, argv, code, (time.perf_counter() - t) * 1000, out, ctx.no_learn, take_trimmed())
     if TRACE:
         print("trace %s: total %.2f ms, log %.2f ms" % (name, (time.perf_counter() - t) * 1000, (time.perf_counter() - t_log) * 1000),
               file=sys.stderr, flush=True)
@@ -447,14 +448,14 @@ def finish(ctx, name, argv, out, code, t):
 _log = {"f": None, "n": 0, "lock": threading.Lock()}
 
 
-def log(name, argv, code, ms, out="", test=False):
-    if name in ("ping", "status", "log", "suggest"):
+def log(name, argv, code, ms, out="", test=False, cut=0):
+    if name in ("ping", "status", "log", "suggest", "tokens"):
         return
     with _log["lock"]:
-        write_log(name, argv, code, ms, out, test)
+        write_log(name, argv, code, ms, out, test, cut)
 
 
-def write_log(name, argv, code, ms, out, test):
+def write_log(name, argv, code, ms, out, test, cut):
     try:
         if _log["f"] is None or _log["n"] >= 500:
             if _log["f"]:
@@ -471,6 +472,8 @@ def write_log(name, argv, code, ms, out, test):
             row["f"] = 1
         if test:
             row["x"] = 1
+        if cut > 0:
+            row["c"] = cut
         if code:
             row["e"] = (out or "").replace("err: ", "", 1).split(" -> try:")[0][:60]
         _log["f"].write(json.dumps(row, ensure_ascii=False) + "\n")
@@ -847,6 +850,11 @@ def cmd_improve(ctx, pos, flags):
     return brain.cmd_improve(ctx, pos, flags)
 
 
+def cmd_tokens(ctx, pos, flags):
+    from lighting import tokens
+    return tokens.cmd_tokens(ctx, pos, flags)
+
+
 def cmd_doctor_info(ctx, pos, flags):
     d, now = ctx.d, time.time()
     hosts = [{"brand": h.brand, "browser": h.info.get("browserVersion", ""), "ext": h.info.get("ext", ""),
@@ -873,9 +881,10 @@ SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status
           "log": cmd_log, "version": cmd_version, "help": cmd_help, "selftest": cmd_selftest, "bench": cmd_bench, "demo": cmd_demo, "autoload": cmd_autoload, "ext-reload": cmd_ext_reload,
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
           "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest, "brain": cmd_brain,
-          "improve": cmd_improve, "doctor-info": cmd_doctor_info, "access-prompt": cmd_access_prompt}
+          "improve": cmd_improve, "doctor-info": cmd_doctor_info, "access-prompt": cmd_access_prompt,
+          "tokens": cmd_tokens}
 MEMORY = ("remember", "recall", "forget", "todo", "memory", "hook", "wiki", "code")
-MEMORY_LANE = {"suggest", *MEMORY}
+MEMORY_LANE = {"suggest", "tokens", *MEMORY}
 SYSTEM.update({name: memcmd(name) for name in MEMORY})
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
          "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys",

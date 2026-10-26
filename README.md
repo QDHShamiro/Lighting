@@ -280,6 +280,8 @@ Want every agent on your PC to prefer it? Put this in `CLAUDE.md` or `AGENTS.md`
 ## 📊 The numbers
 
 Every number here comes from a run you can repeat: `lighting bench`, `lighting bench --real`, `lighting selftest`.
+Your own numbers: `lighting tokens` (or `/lighting:tokens` in Claude Code) shows what your agent read from Lighting,
+what the same steps would have cost a screenshot agent with the rows below, and the difference, per day or week.
 Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
 
 ### Per action
@@ -502,6 +504,13 @@ args = ["mcp"]
 | Find | `recall "words" [--all]` · `recall 42` (in full) · `forget 42` |
 | To-dos | `todo [--all]` · `todo add "task" --list x` · `todo doing\|done\|drop 12` · `todo note 12 "text"` |
 | Model | `memory` (state) · `memory model` (download) · `memory learn` · `memory import claude-mem` · `config memory_api <url>` · `memory off` |
+
+**Tokens**
+
+| | |
+|---|---|
+| Overview | `tokens` (last 30 days) · `tokens 7` · `tokens today` · `tokens all` · `/lighting:tokens`: used, without Lighting, saved, per group, per day or week, the commands that saved most |
+| Details | `log [20]` (last commands) · `log stats` (runs, errors, time and tokens per command) |
 
 On Windows clicks and typing go through UI Automation in the background, your mouse stays where it is.
 `do "fill Email=a@b.c; click Continue; expect Welcome"` runs several steps in one call.
