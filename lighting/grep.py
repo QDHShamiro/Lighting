@@ -10,12 +10,17 @@ from pathlib import Path
 from lighting import defaults as D
 from lighting.common import Fail, Pending, cap, outfile, trimmed, win_path
 
-LETTERS = {"i": "ignore", "w": "word", "F": "fixed", "l": "files", "c": "files", "r": None, "R": None, "n": None,
-           "E": None, "H": None, "I": None, "P": None, "h": None, "s": None}
+LETTERS = {"i": "ignore", "w": "word", "x": "line", "F": "fixed", "E": "ere", "P": "perl", "G": None, "l": "files",
+           "c": "files", "r": None, "R": None, "n": None, "H": None, "I": None, "h": None, "s": None}
 TAKEN = {"f": "-f", "s": "-s", "d": "-d", "media": "-m", "gone": "-g"}
 CONTEXT = re.compile(r"-([ABC])(\d*)")
 BARE_BAR = re.compile(r"(?<!\\)\|")
-USAGE = "lighting grep <pattern> [folder|file ...] [-i] [-w] [-F] [-l] [-C 2] [--glob '*.py'] [--all]"
+INTERVAL = re.compile(r"\{\d*(?:,\d*)?\}")
+POSIX = {"alpha": "a-zA-Z", "digit": "0-9", "alnum": "a-zA-Z0-9", "upper": "A-Z", "lower": "a-z", "space": r"\s",
+         "blank": r" \t", "punct": r"!-/:-@\[-`{-~", "xdigit": "0-9A-Fa-f", "word": r"\w", "cntrl": r"\x00-\x1f\x7f",
+         "print": r" -~", "graph": "!-~"}
+USAGE = ("lighting grep <pattern> [folder|file ...] [-i] [-w] [-x] [-F|-E|-P] [-l] [-C 2] [--glob '*.py'] "
+         "[--include '*.py'] [--exclude-dir build] [--all]")
 
 
 def number(val):
@@ -28,9 +33,11 @@ def options(pos, flags):
     taken = next((v for k, v in TAKEN.items() if flags.get(k) is not None), None)
     if taken:
         raise Fail("grep option %s is not supported" % taken, USAGE)
-    o = {"ignore": bool(flags.get("ignore-case")), "word": bool(flags.get("word")), "fixed": bool(flags.get("fixed")),
-         "files": bool(flags.get("files") or flags.get("count")), "hidden": bool(flags.get("hidden")),
-         "all": bool(flags.get("all")), "before": 0, "after": 0}
+    o = {"ignore": bool(flags.get("ignore-case")), "word": bool(flags.get("word") or flags.get("word-regexp")),
+         "fixed": bool(flags.get("fixed") or flags.get("fixed-strings")), "line": bool(flags.get("line-regexp")),
+         "ere": bool(flags.get("extended-regexp")), "perl": bool(flags.get("perl-regexp")),
+         "files": bool(flags.get("files") or flags.get("files-with-matches") or flags.get("count")),
+         "hidden": bool(flags.get("hidden")), "all": bool(flags.get("all")), "before": 0, "after": 0}
     if flags.get("context") not in (None, True):
         o["before"] = o["after"] = number(flags["context"])
     rest, i, done = [], 0, False
@@ -62,12 +69,89 @@ def options(pos, flags):
     return o, rest
 
 
+def bracket(p, i):
+    j = i + 1 + p.startswith("^", i + 1)
+    j += p.startswith("]", j)
+    while j < len(p) and p[j] != "]":
+        if p.startswith(("[:", "[.", "[="), j):
+            end = p.find(p[j + 1] + "]", j + 2)
+            if end < 0:
+                return None, i + 1
+            j = end + 2
+        else:
+            j += 2 if p[j] == "\\" else 1
+    if j >= len(p):
+        return None, i + 1
+    body, out, k = p[i + 1:j], "", 0
+    if body.startswith("^"):
+        out, k = "^", 1
+    if body.startswith("]", k):
+        out, k = out + r"\]", k + 1
+    while k < len(body):
+        if body.startswith(("[:", "[.", "[="), k):
+            end = body.find(body[k + 1] + "]", k + 2)
+            name = body[k + 2:end]
+            out += POSIX.get(name, re.escape(name)) if body[k + 1] == ":" else re.escape(name)
+            k = end + 2
+        elif body[k] == "\\" and k + 1 < len(body):
+            out += body[k:k + 2]
+            k += 2
+        else:
+            out += "\\" + body[k] if body[k] in "[&~|" else body[k]
+            k += 1
+    return "[" + out + "]", j + 1
+
+
+def translate(p, ere):
+    out, i = [], 0
+    while i < len(p):
+        c = p[i]
+        start = not out or out[-1] in ("(", "|", "^")
+        if c == "\\" and i + 1 < len(p):
+            d, i = p[i + 1], i + 2
+            if d in "(){}|+?" and not ere:
+                out.append(d)
+            elif d in "<>":
+                out.append(r"\b")
+            elif d in "`'":
+                out.append("^" if d == "`" else "$")
+            elif d in "wWsSbBdD123456789":
+                out.append("\\" + d)
+            else:
+                out.append(re.escape(d))
+            continue
+        i += 1
+        if c == "[":
+            cls, i = bracket(p, i - 1)
+            out.append(cls or r"\[")
+        elif c == "*":
+            out.append(r"\*" if start else "*")
+        elif c in "+?":
+            out.append(c if ere and not start else "\\" + c)
+        elif c == "{":
+            m = INTERVAL.match(p, i - 1)
+            if ere and m and not start and m.group() not in ("{}", "{,}"):
+                out.append(m.group())
+                i += len(m.group()) - 1
+            else:
+                out.append(r"\{")
+        elif c in "()|}":
+            out.append(c if ere else "\\" + c)
+        elif c == "^":
+            out.append("^" if ere or start else r"\^")
+        elif c == "$":
+            out.append("$" if ere or i == len(p) or p.startswith(("\\)", "\\|"), i) else r"\$")
+        else:
+            out.append(c)
+    return "".join(out)
+
+
 def matcher(pattern, o):
-    text = re.escape(pattern) if o["fixed"] else pattern
-    if not o["fixed"] and "\\|" in text and not BARE_BAR.search(text):
-        text = text.replace("\\|", "|")
+    text = re.escape(pattern) if o["fixed"] else pattern if o["perl"] else translate(pattern, o["ere"])
     if o["word"]:
-        text = r"\b(?:%s)\b" % text
+        text = r"(?<!\w)(?:%s)(?!\w)" % text
+    if o["line"]:
+        text = r"^(?:%s)$" % text
     flags = re.I if o["ignore"] else 0
     try:
         rx = re.compile(text, flags)
@@ -77,6 +161,27 @@ def matcher(pattern, o):
         rx, pre, _ = matcher(pattern, dict(o, fixed=True))
         return rx, pre, "not a regex (%s), searched as plain text" % e
     return rx, None if "\\A" in text or "\\Z" in text else re.compile(text, flags | re.M), ""
+
+
+def braces(glob):
+    m = re.search(r"\{([^{}]*,[^{}]*)\}", glob)
+    if not m:
+        return [glob]
+    return [g for part in m.group(1).split(",") for g in braces(glob[:m.start()] + part + glob[m.end():])]
+
+
+def split_list(val):
+    if not isinstance(val, str):
+        return []
+    parts, cur, depth = [], "", 0
+    for ch in val:
+        if ch == "," and not depth:
+            parts.append(cur)
+            cur = ""
+            continue
+        depth = max(0, depth + {"{": 1, "}": -1}.get(ch, 0))
+        cur += ch
+    return [g for part in parts + [cur] if part.strip() for g in braces(part.strip())]
 
 
 def git_files(root):
@@ -90,9 +195,10 @@ def git_files(root):
     return [root / n for n in sorted(set(n for n in names if n))] or None
 
 
-def walk_files(root, hidden):
+def walk_files(root, hidden, skipdirs):
     for base, dirs, names in os.walk(root):
-        dirs[:] = sorted(d for d in dirs if d not in D.GREP_SKIP and (hidden or not d.startswith(".")))
+        dirs[:] = sorted(d for d in dirs if d not in D.GREP_SKIP and (hidden or not d.startswith("."))
+                         and not any(fnmatch.fnmatch(d, g) for g in skipdirs))
         for n in sorted(names):
             if hidden or not n.startswith("."):
                 yield Path(base) / n
@@ -105,15 +211,17 @@ def nice(p, base):
         return p.as_posix()
 
 
-def candidates(root, base, single, o, globs):
+def candidates(root, base, single, o, globs, skipdirs):
     if root.is_file():
         yield root, nice(root, base)
         return
     listed = git_files(root)
     take = [g for g in globs if not g.startswith("!")]
     drop = [g[1:] for g in globs if g.startswith("!")]
-    for p in listed if listed is not None else walk_files(root, o["hidden"]):
+    for p in listed if listed is not None else walk_files(root, o["hidden"], skipdirs):
         rel = p.relative_to(root).as_posix()
+        if skipdirs and any(fnmatch.fnmatch(part, g) for part in rel.split("/")[:-1] for g in skipdirs):
+            continue
         if take and not any(fnmatch.fnmatch(p.name, g) or fnmatch.fnmatch(rel, g) for g in take):
             continue
         if any(fnmatch.fnmatch(p.name, g) or fnmatch.fnmatch(rel, g) for g in drop):
@@ -193,7 +301,7 @@ def scan(path, rx, pre, o):
         return "gone"
 
 
-def render(results, o, budget):
+def render(results, o, budget, bare=False):
     if o["files"]:
         groups = {}
         for show, count, _ in results:
@@ -202,23 +310,25 @@ def render(results, o, budget):
         return ["%s/  %s" % (f, ", ".join(names)) if f else ", ".join(names) for f, names in groups.items()], 0
     per_file = max(D.GREP_PER_FILE, budget // max(1, len(results)))
     out, used, rest, context = [], 0, [], bool(o["before"] or o["after"])
+    pad = "" if bare else "  "
     for show, count, shown in results:
         if used >= budget:
             rest.append("%s (%d)" % (show, count))
             continue
         allow, n, prev = min(per_file, budget - used), 0, None
-        out.append("%s (%d)" % (show, count) if count > 1 else show)
+        if not bare:
+            out.append("%s (%d)" % (show, count) if count > 1 else show)
         for no, text, kind in shown:
             if kind == ":":
                 if n >= allow:
                     break
                 n += 1
             if context and prev is not None and no > prev + 1:
-                out.append("  --")
-            out.append(("  %d%s %s" % (no, kind, text)).rstrip())
+                out.append(pad + "--")
+            out.append(("%s%d%s %s" % (pad, no, kind, text)).rstrip())
             prev = no
         if count > n:
-            out.append("  ... +%d more in this file" % (count - n))
+            out.append("%s... +%d more in this file" % (pad, count - n))
         used += n
     if rest:
         out.append("more files: " + ", ".join(rest[:D.GREP_MORE_FILES]) + (
@@ -226,13 +336,13 @@ def render(results, o, budget):
     return out, sum(c for _, c, _ in results) - used
 
 
-def search(job, roots, base, o, globs, rx, pre):
+def search(job, roots, base, o, globs, rx, pre, skipdirs=()):
     single = len(roots) == 1 and roots[0].is_dir()
     deadline = time.time() + D.GREP_BUDGET_S
     results, seen, skipped, searched, stopped = [], set(), {"binary": 0, "big": 0, "gone": 0}, 0, False
     try:
         for root in roots:
-            for path, show in candidates(root, base, single, o, globs):
+            for path, show in candidates(root, base, single, o, globs, skipdirs):
                 if time.time() > deadline:
                     stopped = True
                     break
@@ -260,7 +370,9 @@ def cmd_grep(ctx, pos, flags):
         raise Fail("what should I search for?", USAGE)
     pattern, names = rest[0], rest[1:]
     rx, pre, warn = matcher(pattern, o)
-    globs = [g.strip() for g in str(flags.get("glob") or "").split(",") if g.strip() and flags.get("glob") is not True]
+    globs = split_list(flags.get("glob")) + split_list(flags.get("include")) + [
+        "!" + g for g in split_list(flags.get("exclude"))]
+    skipdirs = split_list(flags.get("exclude-dir"))
     base = Path(getattr(ctx, "cwd", None) or os.getcwd())
     roots = []
     for name in names or ["."]:
@@ -270,43 +382,47 @@ def cmd_grep(ctx, pos, flags):
             raise Fail("no file or folder %s" % name, USAGE)
         roots.append(p)
     job = {}
-    worker = threading.Thread(target=search, args=(job, roots, base, o, globs, rx, pre), daemon=True)
+    worker = threading.Thread(target=search, args=(job, roots, base, o, globs, rx, pre, skipdirs), daemon=True)
     worker.start()
     worker.join(D.GREP_INLINE_S)
     if not worker.is_alive():
-        return answer(job, pattern, roots, base, o, flags, warn)
+        return answer(job, pattern, roots, o, flags, warn)
 
     def poll(last):
         if worker.is_alive():
             if last:
                 raise Fail("the search did not end in time", "narrow the folder or add --glob")
             return None
-        return answer(job, pattern, roots, base, o, flags, warn)
+        return answer(job, pattern, roots, o, flags, warn)
 
     return Pending(poll, D.GREP_BUDGET_S + D.GREP_INLINE_S + 10, D.GREP_POLL_S)
 
 
-def answer(job, pattern, roots, base, o, flags, warn):
+def answer(job, pattern, roots, o, flags, warn):
     if "error" in job:
         raise Fail("search failed: %s: %s" % (type(job["error"]).__name__, str(job["error"])[:200]), USAGE)
     results, skipped, searched, stopped = job["results"], job["skipped"], job["searched"], job["stopped"]
-    where = nice(roots[0], base) if len(roots) == 1 else "%d places" % len(roots)
     notes = ["%d %s" % (n, {"binary": "binary", "big": "over %d MB" % (D.GREP_MAX_BYTES // 1_000_000),
                             "gone": "unreadable"}[k]) for k, n in skipped.items() if n]
     tail = ([", skipped " + ", ".join(notes)] if notes else []) + (
         ["; stopped after %d s, narrow the folder or add --glob" % D.GREP_BUDGET_S] if stopped else []) + (
         ["; " + warn] if warn else [])
     if not results:
-        return "no line matches \"%s\" in %d files under %s%s" % (pattern, searched, where, "".join(tail))
+        if not (o["fixed"] or o["ere"] or o["perl"]) and BARE_BAR.search(pattern):
+            tail.append('; | is a plain character here, use \\| or -E for "or"')
+        return "no line matches \"%s\" in %d file%s%s" % (pattern, searched, "" if searched == 1 else "s", "".join(tail))
     total = sum(c for _, c, _ in results)
     budget = 10 ** 9 if o["all"] else int(flags["max"]) if str(flags.get("max") or "").isdigit() else D.GREP_LINES
-    lines, hidden = render(results, o, budget)
-    summary = "%d line%s" % (total, "" if total == 1 else "s") + (
-        " in %d files" % len(results) if len(results) > 1 else "") + (" (%d searched)" % searched if searched > 1 else "")
-    text = "\n".join(lines + [summary + "".join(tail)])
+    bare = len(roots) == 1 and roots[0].is_file()
+    lines, hidden = render(results, o, budget, bare)
+    if hidden or tail:
+        lines.append("%d line%s" % (total, "" if total == 1 else "s") + (
+            " in %d files" % len(results) if len(results) > 1 else "") + (
+            " (%d searched)" % searched if searched > 1 else "") + "".join(tail))
+    text = "\n".join(lines)
     if o["all"] or not hidden:
         return cap(text, "grep")
-    full = "\n".join(render(results, dict(o, files=False), 10 ** 9)[0])
+    full = "\n".join(render(results, dict(o, files=False), 10 ** 9, bare)[0])
     path = outfile("grep", "txt")
     path.write_text(full, "utf-8")
     trimmed(len(full) - len(text))

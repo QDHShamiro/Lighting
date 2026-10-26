@@ -1915,6 +1915,8 @@ def test_grep_searches_right_and_short():
     from lighting.common import Fail, Pending
     keep_inline, D.GREP_INLINE_S = D.GREP_INLINE_S, 30
     assert commands.parse(["grep", "x", "--glob", "*.py", "--context", "2"]) == ("grep", ["x"], {"glob": "*.py", "context": "2"})
+    assert commands.parse(["grep", "x", "--include", "*.py", "--include=*.md", "--exclude-dir", "out"]) == (
+        "grep", ["x"], {"include": "*.py,*.md", "exclude-dir": "out"})
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         (root / "t.jsonl").write_text('{"type":"assistant","x":1}\n{"type":"user"}\n{"type":"assistant"}\n', "utf-8")
@@ -1930,30 +1932,45 @@ def test_grep_searches_right_and_short():
         (root / "sub" / "wide.log").write_bytes("first\nwide needle\n".encode("utf-16"))
         ctx = types.SimpleNamespace(cwd=tmp)
         (root / "dash.txt").write_text("plain\nuse -v here\n", "utf-8")
+        (root / "calls.txt").write_text("refresh(root)\nrefreshroot\nx+y\nxxy\ncolour\ncolor\nid 42\n", "utf-8")
         out = grep.cmd_grep(ctx, ["needle", "sub"], {"glob": "!Case.txt"})
         assert "wide.log" in out and "2: wide needle" in out and "Case.txt" not in out, out
         assert "2: use -v here" in grep.cmd_grep(ctx, ["--", "-v", "dash.txt"], {})
         out = grep.cmd_grep(ctx, ['"type":"assistant"', "t.jsonl"], {})
-        assert "  1: {" in out and "  3: {" in out and "2 lines" in out and "  2:" not in out, out
+        assert out == '1: {"type":"assistant","x":1}\n3: {"type":"assistant"}', out
         out = grep.cmd_grep(ctx, ["def \\|argparse", "g.py"], {"new": True})
-        assert "  1: def a():" in out and "  3: import argparse" in out and "2 lines" in out, out
+        assert out == "1: def a():\n3: import argparse", out
         out = grep.cmd_grep(ctx, ["needle", "long.txt"], {})
         assert "...a" in out and "needle" in out and "(+1 more in this line)" in out and len(out) < 500, out
-        out = grep.cmd_grep(ctx, ["Fail(", "g.py"], {})
+        assert grep.cmd_grep(ctx, ["a()", "g.py"], {}) == "1: def a():"
+        assert grep.cmd_grep(ctx, ["refresh(root)", "calls.txt"], {}) == "1: refresh(root)"
+        assert grep.cmd_grep(ctx, ["-E", "refresh(root)", "calls.txt"], {}) == "2: refreshroot"
+        assert grep.cmd_grep(ctx, ["x+y", "calls.txt"], {}) == "3: x+y"
+        assert grep.cmd_grep(ctx, ["x\\+y", "calls.txt"], {}) == "4: xxy"
+        assert grep.cmd_grep(ctx, ["-E", "colou?r", "calls.txt"], {}) == "5: colour\n6: color"
+        assert grep.cmd_grep(ctx, ["-x", "color", "calls.txt"], {}) == "6: color"
+        assert grep.cmd_grep(ctx, ["[[:digit:]]\\{2\\}", "calls.txt"], {}) == "7: id 42"
+        out = grep.cmd_grep(ctx, ["[z-a]", "g.py"], {})
         assert out.startswith("no line matches") and "searched as plain text" in out, out
         out = grep.cmd_grep(ctx, ["needle"], {})
         assert "node_modules" not in out and "skipped 1 binary" in out and "2: needles there" in out, out
         assert "Needle here" not in out, out
         out = grep.cmd_grep(ctx, ["-iw", "needle", "sub"], {})
         assert "Case.txt" in out and "1: Needle here" in out and "needles" not in out, out
-        out = grep.cmd_grep(ctx, ["-l", "needle|hit"], {})
+        out = grep.cmd_grep(ctx, ["-l", "needle\\|hit"], {})
         assert "long.txt (1), many.txt (200)" in out and "sub/  Case.txt (1)" in out, out
+        assert grep.cmd_grep(ctx, ["-lE", "needle|hit"], {}) == out
+        out = grep.cmd_grep(ctx, ["needle|hit"], {})
+        assert out.startswith('no line matches "needle|hit"') and "use \\| or -E" in out, out
+        out = grep.cmd_grep(ctx, ["needle"], {"include": "*.{txt,log}", "exclude-dir": "sub"})
+        assert out.startswith("long.txt\n") and "Case.txt" not in out and "wide.log" not in out and "bin" not in out, out
+        assert "long.txt" not in grep.cmd_grep(ctx, ["needle"], {"exclude": "long.txt,*.dat"})
         out = grep.cmd_grep(ctx, ["-C", "1", "match", "ctx.txt"], {})
-        assert "  1- one\n  2: two match\n  3- three\n  --\n  5- five\n  6: six match\n  7- seven" in out, out
+        assert out == "1- one\n2: two match\n3- three\n--\n5- five\n6: six match\n7- seven", out
         out = grep.cmd_grep(ctx, ["hit", "many.txt"], {})
-        assert "  ... +120 more in this file" in out and "200 lines" in out, out
+        assert out.startswith("1: hit 0\n") and "\n... +120 more in this file\n200 lines\nfull list: " in out, out
         full = Path(out.rsplit("full list: ", 1)[1].strip()).read_text("utf-8")
-        assert "  200: hit 199" in full
+        assert full.endswith("\n200: hit 199") and full.count("\n") == 199, full[-80:]
         assert grep.cmd_grep(ctx, ["zzz_nothing"], {}).startswith('no line matches "zzz_nothing" in ')
         for bad, fl in (([], {}), (["x", "nowhere"], {}), (["-v", "needle"], {}), (["dir"], {"s": "needle"})):
             try:
@@ -1975,7 +1992,7 @@ def test_grep_searches_right_and_short():
                 time.sleep(0.02)
         finally:
             grep.search = real
-        assert out is not None and "  8: hit 7" in out, out
+        assert out is not None and out.startswith("8: hit 7\n"), out
     D.GREP_INLINE_S = keep_inline
 
 
@@ -1999,6 +2016,12 @@ def test_squeeze_keeps_errors_and_the_original():
     assert len(out) < len(text) // 3 and "squeezed %d lines" % len(rows) in out, out
     saved = Path(out.rsplit("all of it: ", 1)[1].strip())
     assert saved.read_text("utf-8") == text
+    names = ["file" + chr(97 + i) for i in range(25)]
+    steps = "".join("    at %s (node:internal/x:1:1)\n" % s for s in "load parse build emit write check spawn exec wrap "
+                    "fail throw catch run main boot".split())
+    run = "".join("Error: Command failed: tool.exe /tmp/run/%s.ts\n%sFAIL src/%s.ts\n" % (n, steps, n) for n in names)
+    out = squeeze.squeeze(run + "Tests: 25 failed\n", "vitest")
+    assert all("FAIL src/%s.ts" % n in out for n in names) and "more squeezed lines" not in out, out
     items = [{"id": i, "kind": "x", "status": "ok", "ms": 10 + i % 3} for i in range(50)]
     items[25].update(status="failed", error="boom")
     items[40]["ms"] = 10000

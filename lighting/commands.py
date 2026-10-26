@@ -12,7 +12,8 @@ from lighting.common import Busy, Fail, Pending, Said, cap, is_url, ref_kind, ta
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
           "reload", "since", "seconds", "dir", "name", "model", "effort", "threshold", "runs", "kind", "list",
-          "project", "base", "glob", "context"}
+          "project", "base", "glob", "context", "include", "exclude", "exclude-dir"}
+MULTI = {"glob", "include", "exclude", "exclude-dir"}
 TRACE = (D.HOME / "trace").exists()
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
          "-m": "media"}
@@ -81,6 +82,11 @@ class Context:
         return self.target[0] if self.target else None
 
 
+def put(flags, key, val):
+    old = flags.get(key)
+    flags[key] = old + "," + val if key in MULTI and isinstance(old, str) else val
+
+
 def parse(argv):
     name = argv[0].lower() if argv else ""
     name = SAME.get(name, name)
@@ -91,7 +97,7 @@ def parse(argv):
         if a.startswith("--") and len(a) > 2:
             key, _, val = a[2:].partition("=")
             if _:
-                flags[key] = val
+                put(flags, key, val)
                 i += 1
                 continue
         elif a in ALIAS:
@@ -99,7 +105,7 @@ def parse(argv):
         if key is None:
             pos.append(a)
         elif key in VALUED and i + 1 < len(argv) and not argv[i + 1].startswith("--"):
-            flags[key] = argv[i + 1]
+            put(flags, key, argv[i + 1])
             i += 1
         else:
             flags[key] = True

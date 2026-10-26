@@ -12,22 +12,29 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   level, then the biggest fixes first (auto-compact window, effort, start context, cache rebuilds), each with the
   setting to change. Measured on 30 days with 1.9 GB of transcripts: 7 s the first time, under 1 s after that
   (per-file cache in `~/.lighting/claude-usage.json`).
-- `lighting grep <pattern> [path ...]`: text search for agents. Results are grouped by file (no path on every line),
-  indentation is dropped, very long lines (JSONL, minified files) are cut to the part around the hit, and at most 80
-  lines are shown with the full list in a file. A search with no hits says how many files it searched. It follows
-  `.gitignore` in repos, skips binary files and folders like `node_modules`, reads UTF-16 files (Windows
-  PowerShell output), takes `--glob "*.py"` or `--glob "!*.md"`, grep's `-i -w -F -l -C` and `a\|b`, and searches
-  a pattern that is not a valid regex as plain text. Measured on 6 searches in Lighting's own code: 31% fewer
-  characters than `path:line:text` with the same hits, 66% fewer with the 80-line view.
+- `lighting grep <pattern> [path ...]`: text search for agents. Patterns work as in GNU grep: basic by default
+  (`a\|b`, `\(...\)`, `x\+`, while a bare `(` or `+` is a plain character), `-E` extended, `-P` Python, `-F` fixed,
+  POSIX classes like `[[:digit:]]`, `-i -w -x -l -c -C`. Results are grouped by file (no path on every line, no
+  file line when one file is searched), indentation is dropped, very long lines (JSONL, minified files) are cut to
+  the part around the hit, and at most 80 lines are shown with the full list in a file. A search with no hits says
+  how many files it searched. It follows `.gitignore` in repos, skips binary files and folders like
+  `node_modules`, reads UTF-16 files (Windows PowerShell output), takes `--include "*.{py,md}"`, `--exclude`,
+  `--exclude-dir` or `--glob "!*.md"`, and searches a pattern that cannot be read as plain text. Replayed 300 grep
+  commands from 30 days of Claude Code transcripts against GNU grep: the same hits in 298 (the other 2 only
+  differ by files in skipped folders), output 5% shorter for searches with hits; recursive searches over many
+  files save more (31% in 6 searches in Lighting's own code).
 - `lighting squeeze`: long command output in short, the idea of [Headroom](https://github.com/chopratejas/headroom)
   run locally (no proxy, nothing leaves the PC). `squeeze <file>`, `<command> 2>&1 | lighting squeeze` or
   `squeeze -- <command>` (keeps the exit code). Error and warning lines stay with the first lines of their stack
   trace, as do the start and the end. Repeated lines are folded, everything else becomes one line like
   `... 66 lines (16 x Loading server plugin)`. In JSON and JSONL arrays the first and last items stay, plus items
   with error words or unusual values, and fields that are the same in every item are named once. The whole output
-  goes to a file. Measured: a Minecraft server log from 7,875 to 3,261 tokens with every exception kept,
+  goes to a file. When the error lines alone are still too many, their stack lines go first, so a test run keeps
+  every `FAIL` line. Measured: a Minecraft server log from 7,875 to 3,261 tokens with every exception kept,
   Lighting's own 34,038-line log from ~779k to ~325 tokens (5 different errors shown), GitHub's pull request list
-  from ~147k to ~1k tokens.
+  from ~147k to ~1k tokens. Replayed on the 3,107 long Bash outputs (4,000+ characters or 60+ lines) of 30 days of
+  Claude Code transcripts: 59% fewer characters, and 5 of 3,809 kinds of error line not in view, all inside JSON
+  lists, whose first line counts the items with error words.
 
 ## [2.1.0] - 2026-10-22
 

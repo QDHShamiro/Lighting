@@ -106,13 +106,13 @@ def assemble(lines, keep):
 
 
 def squeeze_log(lines):
-    out = assemble(lines, marked(lines, D.SQUEEZE_AFTER, D.SQUEEZE_TRACE))
-    if len(out) > D.SQUEEZE_LINES:
-        out = assemble(lines, marked(lines, 0, D.SQUEEZE_TRACE_TIGHT))
-    if len(out) > D.SQUEEZE_LINES:
-        top = D.SQUEEZE_LINES - D.SQUEEZE_TAIL
-        out = out[:top] + ["... %d more squeezed lines (see the full file)" % (len(out) - D.SQUEEZE_LINES)] + out[-D.SQUEEZE_TAIL:]
-    return out
+    out = []
+    for after, trace in ((D.SQUEEZE_AFTER, D.SQUEEZE_TRACE), (0, D.SQUEEZE_TRACE_TIGHT), (0, 0)):
+        out = assemble(lines, marked(lines, after, trace))
+        if len(out) <= D.SQUEEZE_LINES:
+            return out
+    top = D.SQUEEZE_LINES - D.SQUEEZE_TAIL
+    return out[:top] + ["... %d more squeezed lines (see the full file)" % (len(out) - D.SQUEEZE_LINES)] + out[-D.SQUEEZE_TAIL:]
 
 
 def as_json(text):
