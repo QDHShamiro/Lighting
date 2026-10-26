@@ -12,7 +12,7 @@ from lighting.common import Busy, Fail, Pending, Said, cap, is_url, ref_kind, ta
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
           "reload", "since", "seconds", "dir", "name", "model", "effort", "threshold", "runs", "kind", "list",
-          "project", "base"}
+          "project", "base", "glob", "context"}
 TRACE = (D.HOME / "trace").exists()
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
          "-m": "media"}
@@ -312,6 +312,7 @@ QUIET_CMDS = {"done", "suggest", "hook", "ping", "status", "log", "version", "he
 
 def run(ctx, msg):
     ctx.secret = msg.get("secret")
+    ctx.stdin = msg.get("stdin")
     ctx.cwd = msg.get("cwd")
     ctx.image = None
     ctx.notes = []
@@ -331,6 +332,7 @@ def run(ctx, msg):
         out, code = "err: " + str(e), 1
     finally:
         ctx.secret = None
+        ctx.stdin = None
     if isinstance(out, Pending):
         out.meta = (name, argv, t)
         out.gen = ctx.d.abort_gen
@@ -855,6 +857,16 @@ def cmd_tokens(ctx, pos, flags):
     return tokens.cmd_tokens(ctx, pos, flags)
 
 
+def cmd_grep(ctx, pos, flags):
+    from lighting import grep
+    return grep.cmd_grep(ctx, pos, flags)
+
+
+def cmd_squeeze(ctx, pos, flags):
+    from lighting import squeeze
+    return squeeze.cmd_squeeze(ctx, pos, flags)
+
+
 def cmd_doctor_info(ctx, pos, flags):
     d, now = ctx.d, time.time()
     hosts = [{"brand": h.brand, "browser": h.info.get("browserVersion", ""), "ext": h.info.get("ext", ""),
@@ -882,17 +894,17 @@ SYSTEM = {"do": cmd_do, "ping": cmd_ping, "stop": cmd_stop, "status": cmd_status
           "run": cmd_run, "routine": cmd_routine, "routines": cmd_routines, "record": cmd_record,
           "done": cmd_done, "keep": cmd_keep, "keys": cmd_keys, "suggest": cmd_suggest, "brain": cmd_brain,
           "improve": cmd_improve, "doctor-info": cmd_doctor_info, "access-prompt": cmd_access_prompt,
-          "tokens": cmd_tokens}
+          "tokens": cmd_tokens, "grep": cmd_grep, "squeeze": cmd_squeeze}
 MEMORY = ("remember", "recall", "forget", "todo", "memory", "hook", "wiki", "code")
-MEMORY_LANE = {"suggest", "tokens", *MEMORY}
+MEMORY_LANE = {"suggest", "tokens", "grep", "squeeze", *MEMORY}
 SYSTEM.update({name: memcmd(name) for name in MEMORY})
 READS = {"snap", "text", "table", "read", "js", "fetch", "tabs", "windows", "shot", "log", "status", "downloads",
          "console", "expect", "wait", "clip", "help", "version", "config", "routines", "frames", "inbox", "keys",
-         "listen", "watch", "unread", "net", "tools", "recall", "todo", "memory", "code"}
+         "listen", "watch", "unread", "net", "tools", "recall", "todo", "memory", "code", "grep", "squeeze"}
 SHARED = {"snap", "click", "type", "press", "shot", "scroll", "hover", "drag"}
 APP_ONLY = {"windows", "focus", "clip", "launch"}
 FOREIGN = {"snap", "text", "table", "read", "js", "fetch", "frames", "inbox", "unread", "listen", "watch", "net",
-           "console", "clip", "open"} | POST_VIEW
+           "console", "clip", "open", "grep", "squeeze"} | POST_VIEW
 CHAT = {"inbox", "reply", "unread"}
 WEB_ONLY = {"open", "text", "fill", "select", "check", "wait", "expect", "table", "fetch", "js", "dismiss", "search",
             "net", "tools", "call",

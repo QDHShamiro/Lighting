@@ -31,11 +31,11 @@ def wait_seconds(argv):
         return 0
 
 
-def execute(argv):
+def execute(argv, extra=None):
     from lighting import boot
     argv, secret = pull_secret(argv)
     boot.ensure_venv()
-    payload = {"argv": argv, "cwd": os.getcwd(), "sid": os.environ.get("CLAUDE_CODE_SESSION_ID", "")}
+    payload = dict(extra or {}, argv=argv, cwd=os.getcwd(), sid=os.environ.get("CLAUDE_CODE_SESSION_ID", ""))
     if secret is not None:
         payload["secret"] = secret
     return boot.request(payload, max(D.CLIENT_TIMEOUT, wait_seconds(argv) + 30))
@@ -74,6 +74,9 @@ def main():
     if cmd == "doctor":
         from lighting import doctor
         sys.exit(doctor.main(argv))
+    if cmd == "squeeze":
+        from lighting import squeeze
+        sys.exit(squeeze.client(argv))
     stats = "--stats" in argv
     if stats:
         argv = [a for a in argv if a != "--stats"]

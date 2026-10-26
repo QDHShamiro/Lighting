@@ -120,6 +120,43 @@ CLAUDE_START_BIG = 30_000
 CLAUDE_START_SESSIONS = 20
 CLAUDE_TIP_PCT = 10
 CLAUDE_MAX_RATIO = 1.5
+GREP_LINES = 80
+GREP_PER_FILE = 8
+GREP_KEEP = 2000
+GREP_LONG = 220
+GREP_SIDE = 80
+GREP_WHOLE = 16_000_000
+GREP_MAX_BYTES = 300_000_000
+GREP_BUDGET_S = 30
+GREP_MORE_FILES = 30
+GREP_SKIP = {".git", "node_modules", "target", "build", "dist", "out", ".gradle", ".idea", "venv", ".venv",
+             "__pycache__", ".next", ".cache"}
+SQUEEZE_MIN_LINES = 60
+SQUEEZE_MIN_CHARS = 4000
+SQUEEZE_HEAD = 10
+SQUEEZE_TAIL = 30
+SQUEEZE_AFTER = 2
+SQUEEZE_TRACE = 12
+SQUEEZE_TRACE_TIGHT = 3
+SQUEEZE_SAME = 2
+SQUEEZE_GAP_KEEP = 2
+SQUEEZE_LINES = 120
+SQUEEZE_LINE_CHARS = 300
+SQUEEZE_MAX_BYTES = 64_000_000
+SQUEEZE_ITEMS = 6
+SQUEEZE_FIRST = 3
+SQUEEZE_LAST = 1
+SQUEEZE_ITEM_CHARS = 600
+SQUEEZE_PICKS = 6
+SQUEEZE_STR = 300
+SQUEEZE_SIGNAL = 120
+SQUEEZE_SAME_MAX = 5000
+SQUEEZE_SHORT = 40
+SQUEEZE_IMPORTANT = (r"\w*(?:error|exception)s?\b|\b(?:err|fail|failed|failing|failure|failures|fatal|traceback|panic|"
+                     r"warn|warning|warnings|denied|refused|cannot|can't|unable|not found|no such|missing|undefined|"
+                     r"segfault|abort|aborted|timeout|timed out|killed|assert|assertion|severe|critical)\b")
+SQUEEZE_TRACE_LINE = r"^\s+at \S|^\s*File \"|^\s+\.\.\. \d+ more|^\s+\^"
+SQUEEZE_PREFIX = r"^(?:\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?Z? (?:[A-Z]{3,8} )?)?(?:\[[^\]]{0,60}\]:? ?){0,3}"
 
 LONG_WAITS = {"inbox": 300_000, "reply": 300_000, "wait": 10_000, "listen": 900_000}
 WEB_SCHEMES = {"http", "https", "file", "about", "chrome", "brave", "edge", "view-source", "data", "blob",

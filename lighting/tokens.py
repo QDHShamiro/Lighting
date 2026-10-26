@@ -9,7 +9,8 @@ GROUPS = (("look at pages and apps", {"open", "snap", "back", "forward", "reload
                                  "dismiss", "focus", "upload", "launch", "wait", "expect", "reply", "dialog"}),
           ("sequences and routines", {"do", "run"}),
           ("page text and data", {"text", "read", "table", "fetch", "js", "net", "console", "listen", "watch", "clip"}),
-          ("memory and code", {"recall", "remember", "forget", "todo", "wiki", "memory", "code", "hook"}))
+          ("memory and code", {"recall", "remember", "forget", "todo", "wiki", "memory", "code", "hook", "grep",
+                               "squeeze"}))
 CLAIMED = {"look at pages and apps", "clicks and typing", "sequences and routines"}
 SKIP = {"selftest", "bench", "demo", "ext-reload", "done", "ping", "status", "log", "tokens", "suggest", "version",
         "help", "doctor-info", "access-prompt", "stop", "autoload"}
@@ -135,7 +136,7 @@ def report(s, title, daily):
     out += extras()
     if s["trim"]:
         out.append("exact: Lighting cut ~%s tokens from its own answers since %s (long answers to a file, app "
-                   "deltas, brain filter, code outlines)" % (short(s["trim"]), s["trim_from"][5:]))
+                   "deltas, brain filter, code outlines, squeeze, grep)" % (short(s["trim"]), s["trim_from"][5:]))
     out += ["", "used = what your agent read from Lighting (characters / 4, images as measured).",
             "without Lighting = the same steps by a screenshot agent, measured (README, The numbers): ~%s tokens"
             % "{:,}".format(D.TOKENS_PAGE),

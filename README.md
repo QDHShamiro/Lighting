@@ -249,6 +249,12 @@ it, two levels deep (`--base main` for a whole branch).
 The search by meaning is built in the background by the same local model, only for projects you work in. While the
 model is paused (a game runs), `code "what it does"` lists the code whose names contain the words instead.
 
+For plain text there is `lighting grep "pattern" [path]`: hits grouped by file, long lines cut to the part around
+the hit, 80 lines with the full list in a file, and a search with no hits says how many files it looked at.
+`lighting squeeze -- <command>` (or `squeeze <log>`, or a pipe) keeps the errors, their first stack lines and the
+end of a long output, folds the rest into one-line summaries and puts all of it in a file, the idea of
+[Headroom](https://github.com/chopratejas/headroom) run locally. A 34,038-line log went from ~779k to ~325 tokens.
+
 ## Built for Claude
 
 Every step of an AI agent costs a model round of 1-5 seconds, and everything a tool prints stays in the
@@ -515,6 +521,8 @@ args = ["mcp"]
 |---|---|
 | Overview | `tokens` (last 30 days) · `tokens 7` · `tokens today` · `tokens all` · `/lighting:tokens`: used, without Lighting, saved, per group, per day or week, the commands that saved most |
 | Details | `log [20]` (last commands) · `log stats` (runs, errors, time and tokens per command) |
+| Claude Code | `tokens claude [days]`: where your Claude Code tokens go, biggest fixes first |
+| Shorter output | `grep "pattern" [path] [-i -w -F -l -C 2] [--glob "*.py"]` · `squeeze <file>` · `cmd 2>&1 \| lighting squeeze` · `squeeze -- <cmd>` |
 
 On Windows clicks and typing go through UI Automation in the background, your mouse stays where it is.
 `do "fill Email=a@b.c; click Continue; expect Welcome"` runs several steps in one call.

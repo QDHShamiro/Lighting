@@ -1906,6 +1906,115 @@ def test_memory_model_never_stalls():
     assert recall.cmd_suggest(ctx, [note], {}) == "" and ctx.prompts == []
 
 
+def test_grep_searches_right_and_short():
+    import types
+    from lighting import grep
+    from lighting.common import Fail
+    assert commands.parse(["grep", "x", "--glob", "*.py", "--context", "2"]) == ("grep", ["x"], {"glob": "*.py", "context": "2"})
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "t.jsonl").write_text('{"type":"assistant","x":1}\n{"type":"user"}\n{"type":"assistant"}\n', "utf-8")
+        (root / "g.py").write_text("def a():\n    pass\nimport argparse\n", "utf-8")
+        (root / "long.txt").write_text("a" * 3000 + " needle " + "b" * 3000 + " needle\n", "utf-8")
+        (root / "bin.dat").write_bytes(b"needle\0\0")
+        (root / "many.txt").write_text("".join("hit %d\n" % i for i in range(200)), "utf-8")
+        (root / "ctx.txt").write_text("one\ntwo match\nthree\nfour\nfive\nsix match\nseven\n", "utf-8")
+        (root / "node_modules").mkdir()
+        (root / "node_modules" / "x.txt").write_text("needle\n", "utf-8")
+        (root / "sub").mkdir()
+        (root / "sub" / "Case.txt").write_text("Needle here\nneedles there\n", "utf-8")
+        ctx = types.SimpleNamespace(cwd=tmp)
+        out = grep.cmd_grep(ctx, ['"type":"assistant"', "t.jsonl"], {})
+        assert "  1: {" in out and "  3: {" in out and "2 lines" in out and "  2:" not in out, out
+        out = grep.cmd_grep(ctx, ["def \\|argparse", "g.py"], {"new": True})
+        assert "  1: def a():" in out and "  3: import argparse" in out and "2 lines" in out, out
+        out = grep.cmd_grep(ctx, ["needle", "long.txt"], {})
+        assert "...a" in out and "needle" in out and "(+1 more in this line)" in out and len(out) < 500, out
+        out = grep.cmd_grep(ctx, ["Fail(", "g.py"], {})
+        assert out.startswith("no line matches") and "searched as plain text" in out, out
+        out = grep.cmd_grep(ctx, ["needle"], {})
+        assert "node_modules" not in out and "skipped 1 binary" in out and "2: needles there" in out, out
+        assert "Needle here" not in out, out
+        out = grep.cmd_grep(ctx, ["-iw", "needle", "sub"], {})
+        assert "Case.txt" in out and "1: Needle here" in out and "needles" not in out, out
+        out = grep.cmd_grep(ctx, ["-l", "needle|hit"], {})
+        assert "long.txt (1), many.txt (200)" in out and "sub/  Case.txt (1)" in out, out
+        out = grep.cmd_grep(ctx, ["-C", "1", "match", "ctx.txt"], {})
+        assert "  1- one\n  2: two match\n  3- three\n  --\n  5- five\n  6: six match\n  7- seven" in out, out
+        out = grep.cmd_grep(ctx, ["hit", "many.txt"], {})
+        assert "  ... +120 more in this file" in out and "200 lines" in out, out
+        full = Path(out.rsplit("full list: ", 1)[1].strip()).read_text("utf-8")
+        assert "  200: hit 199" in full
+        assert grep.cmd_grep(ctx, ["zzz_nothing"], {}).startswith('no line matches "zzz_nothing" in ')
+        for bad in ([], ["x", "nowhere"]):
+            try:
+                grep.cmd_grep(ctx, bad, {})
+                raise AssertionError("no error for %s" % bad)
+            except Fail:
+                pass
+
+
+def test_squeeze_keeps_errors_and_the_original():
+    import json
+    import types
+    from lighting import squeeze
+    from lighting.common import Fail
+    assert squeeze.squeeze("\x1b[31mred\x1b[0m\r\nok") == "red\nok"
+    assert squeeze.squeeze("50%\r100%\ndone") == "100%\ndone"
+    rows = ["[12:00:%02d] [Server thread/INFO]: Loading plugin number %d" % (i % 60, i) for i in range(300)]
+    rows[150:150] = ["[12:01:00] [Server thread/ERROR]: Could not load plugin Foo"] + [
+        "[12:01:00] [Server thread/ERROR]: \tat foo.Bar.m%d(Bar.java:%d)" % (i, i) for i in range(20)]
+    rows += ["[12:02:%02d] [Server thread/WARN]: Disk almost full on try %d" % (i, i) for i in range(40)]
+    rows += ["[12:03:00] [Server thread/INFO]: " + "x" * 50 for _ in range(30)] + ["BUILD FAILURE"]
+    text = "\n".join(rows)
+    out = squeeze.squeeze(text, "server")
+    assert "Could not load plugin Foo" in out and "BUILD FAILURE" in out, out
+    assert out.count("Bar.java") <= 12 and out.count("Disk almost full") <= 3, out
+    assert "... 1" in out and "x Loading plugin number" in out and "(x" in out, out
+    assert len(out) < len(text) // 3 and "squeezed %d lines" % len(rows) in out, out
+    saved = Path(out.rsplit("all of it: ", 1)[1].strip())
+    assert saved.read_text("utf-8") == text
+    items = [{"id": i, "kind": "x", "status": "ok", "ms": 10 + i % 3} for i in range(50)]
+    items[25].update(status="failed", error="boom")
+    items[40]["ms"] = 10000
+    out = squeeze.squeeze(json.dumps(items, indent=2))
+    assert out.startswith("[\n<50 items, 1 with error words, the same in all: kind=\"x\">"), out
+    assert '"error":"boom"' in out and '"ms":10000' in out and "<... " in out, out
+    lines = squeeze.squeeze("\n".join(json.dumps(it) for it in items * 2))
+    assert lines.startswith("<100 items") and not lines.startswith("[") and '"error":"boom"' in lines, lines
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "log.txt").write_text(text, "utf-8")
+        ctx = types.SimpleNamespace(cwd=tmp, stdin=None)
+        assert "Could not load plugin Foo" in squeeze.cmd_squeeze(ctx, ["log.txt"], {})
+        ctx.stdin = text
+        assert "squeezed" in squeeze.cmd_squeeze(ctx, [], {"name": "mvn"})
+        ctx.stdin = None
+        for pos, said in (([], "nothing to squeeze"), (["--", "mvn"], "cannot run commands")):
+            try:
+                squeeze.cmd_squeeze(ctx, pos, {})
+                raise AssertionError("no error for %s" % pos)
+            except Fail as e:
+                assert said in str(e), e
+        class F:
+            events, waits, hosts, started = [], [], [], 0.0
+
+            def later(self, delay, fn):
+                pass
+
+        c = commands.Context(F(), "s-squeeze")
+        res = commands.run(c, {"argv": ["squeeze", "--name=mvn"], "stdin": text, "cwd": tmp})
+        assert res["code"] == 0 and "Could not load plugin Foo" in res["out"] and c.stdin is None, res
+        res = commands.run(c, {"argv": ["grep", "load plugin", "log.txt"], "cwd": tmp})
+        assert res["code"] == 0 and "151: [12:01:00]" in res["out"], res
+        assert "grep" in commands.MEMORY_LANE and "squeeze" in commands.MEMORY_LANE
+        if WINDOWS:
+            script = Path(tmp) / "t.cmd"
+            script.write_text("@echo off\r\necho hello\r\nexit /b 3\r\n", "utf-8")
+            code, said = squeeze.run_command([str(script)])
+            assert code == 3 and said.strip() == "hello", (code, said)
+        assert squeeze.run_command(["lighting-no-such-tool-x"])[0] == 127
+
+
 if __name__ == "__main__":
     tests =[(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
     failed = 0

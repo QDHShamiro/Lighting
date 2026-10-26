@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 const HOOK_INPUT_WAIT: Duration = Duration::from_millis(1000);
 const HOOK_INPUT_MAX: u64 = 64 * 1024;
 const LOCAL: &[&str] = &[
-    "", "help", "-h", "--help", "--version", "daemon", "host", "mcp", "setup", "uninstall", "install", "doctor",
+    "", "help", "-h", "--help", "--version", "daemon", "host", "mcp", "setup", "uninstall", "install", "doctor", "squeeze",
 ];
 
 #[cfg(windows)]

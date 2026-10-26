@@ -35,6 +35,8 @@ memory  remember "fact" [--kind decision] [--global]   recall "words" [--all] | 
         memory import context-engine   wiki (drafts) | wiki accept <n> [folder] | wiki drop <n>   config vault <folder>
 code    code (overview)   code <Name> (definition + callers)   code callers <Name>   code "what it does" (by meaning)
         code outline <file> (signatures)   code body <Name|Class.name|file.name>   code impact [--base main] [--tests]
+        grep <pattern> [path ...] [-i] [-w] [-F] [-l] [-C 2] [--glob "*.py"] [--all] (grouped by file, long lines cut at the hit)
+        squeeze <file> | <cmd> 2>&1 | lighting squeeze | squeeze -- <cmd> (long output: errors + the end, repeats folded, all of it in a file)
 routine routines [-f x]   run <name|words> [param=value ...] [--yes]   routine show|save|rm|rename|forget <name>
         record start [name] [--web|--desktop]   record stop [name] [param=value ...]   record cancel|status
         routine schedule <name> daily 08:00|weekly mon 09:30|hourly|every 30m [param=value]   routine schedules|unschedule

@@ -12,6 +12,21 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   level, then the biggest fixes first (auto-compact window, effort, start context, cache rebuilds), each with the
   setting to change. Measured on 30 days with 1.9 GB of transcripts: 7 s the first time, under 1 s after that
   (per-file cache in `~/.lighting/claude-usage.json`).
+- `lighting grep <pattern> [path ...]`: text search for agents. Results are grouped by file (no path on every line),
+  indentation is dropped, very long lines (JSONL, minified files) are cut to the part around the hit, and at most 80
+  lines are shown with the full list in a file. A search with no hits says how many files it searched. It follows
+  `.gitignore` in repos, skips binary files and folders like `node_modules`, takes grep's `-i -w -F -l -C` and
+  `a\|b`, and searches a pattern that is not a valid regex as plain text. Measured on 6 searches in Lighting's own
+  code: 31% fewer characters than `path:line:text` with the same hits, 66% fewer with the 80-line view.
+- `lighting squeeze`: long command output in short, the idea of [Headroom](https://github.com/chopratejas/headroom)
+  run locally (no proxy, nothing leaves the PC). `squeeze <file>`, `<command> 2>&1 | lighting squeeze` or
+  `squeeze -- <command>` (keeps the exit code). Error and warning lines stay with the first lines of their stack
+  trace, as do the start and the end. Repeated lines are folded, everything else becomes one line like
+  `... 66 lines (16 x Loading server plugin)`. In JSON and JSONL arrays the first and last items stay, plus items
+  with error words or unusual values, and fields that are the same in every item are named once. The whole output
+  goes to a file. Measured: a Minecraft server log from 7,875 to 3,261 tokens with every exception kept,
+  Lighting's own 34,038-line log from ~779k to ~325 tokens (5 different errors shown), GitHub's pull request list
+  from ~147k to ~1k tokens.
 
 ## [2.1.0] - 2026-10-22
 
