@@ -10,6 +10,7 @@ from lighting.common import (Fail, Pending, best_only, cap, hit, is_url, note, o
                              terms, tiers, win_path)
 
 REF_RE = re.compile(r"^(?:f\d+\.)?e\d+$")
+FULL_SNAP = re.compile(r"since your last snap[^\n]*\(all \d+ lines, ~([\d,]+) tokens")
 EMBED = re.compile(r"^https?://(?:www\.)?(?:youtube\.com|youtube-nocookie\.com)/embed/([\w-]{6,})/?(?:\?(.*))?$", re.I)
 IMAGE_EXT = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp")
 _reloaded = set()
@@ -364,6 +365,10 @@ def cmd_snap(ctx, pos, flags):
     limit = None if flags.get("all") else D.SNAP_LINES
     msg = call(ctx, "snap", args, 30)
     text = msg.get("out", "")
+    whole = FULL_SNAP.search(text)
+    if whole:
+        from lighting import common
+        common.trimmed(min(int(whole.group(1).replace(",", "")) * 4, D.OUT_CHARS) - len(text))
     if not (scope or any(flags.get(k) for k in ("f", "all", "diff", "force", "media", "full", "frame", "links"))):
         text = trimmed(ctx, text)
     return cap(text, "snap", lines=limit or 100000)

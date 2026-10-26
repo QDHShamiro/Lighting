@@ -718,7 +718,7 @@
       const gone = [...seenLines].filter((l) => !S.plainLines.has(l)).length;
       if (added.length + gone <= Math.max(4, res.lines.length / 2)) {
         out.lines = added;
-        out.delta = { gone, total: res.lines.length };
+        out.delta = { gone, total: res.lines.length, chars: res.lines.reduce((n, l) => n + l.length + 1, 0) };
       }
     }
     if (S.keys.size) out.keys = [...S.keys].slice(0, 40);

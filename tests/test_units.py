@@ -296,11 +296,29 @@ def test_app_snap_delta():
     old = (time.time(), ['d1 button "Send"', 'd2 text "hi"', "  hello", "  hello", 'd3 listitem "a"'])
     now = ['d1 button "Send"', 'd2 text "hi"', "  hello", "  hello", "  hello", 'd4 listitem "b"']
     out = desktop.changes(old, now, "w3").splitlines()
-    assert out == ["changed since your last snap: +2, -1 gone (all 6 lines: lighting snap w3 --full)", "  hello",
-                   'd4 listitem "b"'], out
+    assert out == ["changed since your last snap: +2, -1 gone (all 6 lines, ~17 tokens: lighting snap w3 --full)",
+                   "  hello", 'd4 listitem "b"'], out
     assert desktop.changes(None, now, "w3") is None
     assert desktop.changes((time.time() - 3600, old[1]), now, "w3") is None
     assert desktop.changes((time.time(), ["x", "y", "z"]), now, "w3") is None
+
+
+def test_web_snap_delta_counts_the_cut():
+    from lighting import browser, common
+    from lighting import defaults as D
+    text = '[t1] Page - x\nchanged since your last snap: +1 (all 300 lines, ~4,000 tokens: lighting snap --full)\ne5 button "New"'
+    real = browser.call
+    try:
+        browser.call = lambda ctx, cmd, args, timeout: {"out": text}
+        common.take_trimmed()
+        ctx = commands.Context(None, "")
+        assert browser.cmd_snap(ctx, [], {}) == text
+        assert common.take_trimmed() == min(16000, D.OUT_CHARS) - len(text) > 0
+        browser.call = lambda ctx, cmd, args, timeout: {"out": text.replace(", ~4,000 tokens", "")}
+        browser.cmd_snap(ctx, [], {})
+        assert common.take_trimmed() == 0
+    finally:
+        browser.call = real
 
 
 def test_repeated_app_lines_fold():

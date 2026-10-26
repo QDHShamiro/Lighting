@@ -161,7 +161,8 @@ function formatSnap(tabId, res, limit, whole) {
   for (const n of res.notes || []) out.push(n);
   if (res.delta) {
     const d = res.delta;
-    out.push(res.lines.length || d.gone ? "changed since your last snap: +" + res.lines.length + (d.gone ? ", -" + d.gone + " gone" : "") + " (all " + d.total + " lines: lighting snap --full)" : "no change since your last snap (all " + d.total + " lines: lighting snap --full)");
+    const all = " (all " + d.total + " lines" + (d.chars ? ", ~" + Math.round(d.chars / 4).toLocaleString("en-US") + " tokens" : "") + ": lighting snap --full)";
+    out.push(res.lines.length || d.gone ? "changed since your last snap: +" + res.lines.length + (d.gone ? ", -" + d.gone + " gone" : "") + all : "no change since your last snap" + all);
     out.push(...res.lines);
     return out.join("\n");
   }

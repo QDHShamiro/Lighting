@@ -537,8 +537,9 @@ def changes(old, lines, ref):
         if seen[line] > before[line]:
             added.append(line)
     gone = sum((before - now).values())
-    return "\n".join(["changed since your last snap: +%d%s (all %d lines: lighting snap %s --full)" % (
-        len(added), ", -%d gone" % gone if gone else "", len(lines), ref)] + fold(added)[0])
+    return "\n".join(["changed since your last snap: +%d%s (all %d lines, ~%s tokens: lighting snap %s --full)" % (
+        len(added), ", -%d gone" % gone if gone else "", len(lines), "{:,}".format(sum(len(x) + 1 for x in lines) // 4),
+        ref)] + fold(added)[0])
 
 
 def before_action(ctx, hwnd):
