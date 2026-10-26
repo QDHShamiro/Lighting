@@ -1955,9 +1955,9 @@ def test_grep_searches_right_and_short():
         full = Path(out.rsplit("full list: ", 1)[1].strip()).read_text("utf-8")
         assert "  200: hit 199" in full
         assert grep.cmd_grep(ctx, ["zzz_nothing"], {}).startswith('no line matches "zzz_nothing" in ')
-        for bad in ([], ["x", "nowhere"], ["-v", "needle"]):
+        for bad, fl in (([], {}), (["x", "nowhere"], {}), (["-v", "needle"], {}), (["dir"], {"s": "needle"})):
             try:
-                grep.cmd_grep(ctx, bad, {})
+                grep.cmd_grep(ctx, bad, fl)
                 raise AssertionError("no error for %s" % bad)
             except Fail:
                 pass

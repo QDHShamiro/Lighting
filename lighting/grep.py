@@ -12,6 +12,7 @@ from lighting.common import Fail, Pending, cap, outfile, trimmed, win_path
 
 LETTERS = {"i": "ignore", "w": "word", "F": "fixed", "l": "files", "c": "files", "r": None, "R": None, "n": None,
            "E": None, "H": None, "I": None, "P": None, "h": None, "s": None}
+TAKEN = {"f": "-f", "s": "-s", "d": "-d", "media": "-m", "gone": "-g"}
 CONTEXT = re.compile(r"-([ABC])(\d*)")
 BARE_BAR = re.compile(r"(?<!\\)\|")
 USAGE = "lighting grep <pattern> [folder|file ...] [-i] [-w] [-F] [-l] [-C 2] [--glob '*.py'] [--all]"
@@ -24,6 +25,9 @@ def number(val):
 
 
 def options(pos, flags):
+    taken = next((v for k, v in TAKEN.items() if flags.get(k) is not None), None)
+    if taken:
+        raise Fail("grep option %s is not supported" % taken, USAGE)
     o = {"ignore": bool(flags.get("ignore-case")), "word": bool(flags.get("word")), "fixed": bool(flags.get("fixed")),
          "files": bool(flags.get("files") or flags.get("count")), "hidden": bool(flags.get("hidden")),
          "all": bool(flags.get("all")), "before": 0, "after": 0}
