@@ -10,10 +10,11 @@ from lighting.common import Busy, Fail, Pending, Said, cap, is_url, ref_kind
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
           "reload", "since", "seconds", "dir", "name", "model", "effort", "threshold", "runs", "kind", "list",
-          "project"}
+          "project", "base"}
 TRACE = (D.HOME / "trace").exists()
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
          "-m": "media"}
+SAME = {"batch": "do"}
 
 
 class Context:
@@ -21,7 +22,6 @@ class Context:
         self.d = daemon
         self.sid = sid
         self.used = time.time()
-        self.cfg = D.config()
         self.target = None
         self.secret = None
         self.cwd = None
@@ -46,12 +46,17 @@ class Context:
         self.refnames = {}
         self.brain_miss = None
 
+    @property
+    def cfg(self):
+        return D.config()
+
     def kind(self):
         return self.target[0] if self.target else None
 
 
 def parse(argv):
     name = argv[0].lower() if argv else ""
+    name = SAME.get(name, name)
     pos, flags, i = [], {}, 1
     while i < len(argv):
         a = argv[i]
@@ -85,7 +90,7 @@ def split_steps(text):
         elif ch in "\"'":
             quote = ch
             cur.append(ch)
-        elif ch == ";":
+        elif ch in ";\n":
             steps.append("".join(cur))
             cur = []
         else:
@@ -189,7 +194,22 @@ def route(ctx, name, pos, flags):
         if not pos or pos[0].lower() == "desktop":
             return app().cmd_windows(ctx, [], flags)
         return route(ctx, pos[0].lower(), pos[1:], dict(flags, on="app"))
-    raise Fail("unknown command '%s'" % name, "lighting help")
+    raise unknown(name)
+
+
+GUESS = {"find": 'snap -f "word" (page), code <name> (code) or recall "words" (memory)',
+         "url": "tabs (every tab with its URL)", "goto": "open <url>", "navigate": "open <url>", "screenshot": "shot",
+         "eval": "js <code>", "sleep": 'wait <ms|"text">'}
+HIDDEN = {"hook", "suggest", "doctor-info", "access-prompt", "autoload", "ping"}
+
+
+def unknown(name):
+    import difflib
+    names = (set(SYSTEM) | SHARED | APP_ONLY | CHAT | WEB_ONLY | {"read", "listen", "watch", "voice", "phone", "claude",
+                                                                  "desktop"}) - HIDDEN
+    close = difflib.get_close_matches(name, sorted(names), 1, 0.75)
+    hint = GUESS.get(name) or (close[0] if close else "help")
+    return Fail("unknown command '%s'" % name, "lighting " + hint)
 
 
 def run_one(ctx, argv):
@@ -259,8 +279,8 @@ def when_idle(ctx, name, pos, flags):
     return Pending(poll, D.BUSY_WAIT_S, 0.15)
 
 
-QUIET_CMDS = {"done", "suggest", "ping", "status", "log", "version", "help", "config", "brain", "improve", "doctor-info",
-              "access-prompt"}
+QUIET_CMDS = {"done", "suggest", "hook", "ping", "status", "log", "version", "help", "config", "brain", "improve",
+              "doctor-info", "access-prompt"}
 
 
 def run(ctx, msg):
@@ -421,28 +441,44 @@ def cmd_do(ctx, pos, flags):
     steps = split_steps(text)
     if not steps:
         raise Fail("do needs steps", 'lighting do "click e3; type e4 hi; press Enter"')
-    lines = []
+    keep, quiet = flags.get("keep-going"), flags.get("quiet")
+    lines, ok, failed = [], 0, 0
     ctx.in_do = True
     try:
         for i, step in enumerate(steps, 1):
             if ctx.d.abort.is_set():
                 lines.append("%d stopped by hotkey" % i)
                 break
-            argv = tokenize(step)
+            optional = step.startswith("?")
+            argv = tokenize(step[1:].strip() if optional else step)
+            prefix = "%d " % i if len(steps) > 1 else ""
             try:
                 out, _, _ = run_one(ctx, argv)
                 out = drain(ctx, out)
             except Fail as e:
+                if optional:
+                    lines.append(prefix + "skipped, " + e.text())
+                    continue
+                failed += 1
                 left = len(steps) - i
-                lines.append("%d %s%s" % (i, e.text(), " (stopped, %d skipped)" % left if left else ""))
+                if keep or not left:
+                    lines.append(prefix + e.text())
+                    continue
+                lines.append("%d %s (stopped, %d skipped)" % (i, e.text(), left))
                 break
+            ok += 1
             text = out if isinstance(out, str) else json.dumps(out)
             if i < len(steps) and parse(argv)[0] not in READS:
+                if quiet:
+                    continue
                 text = text.split("\n", 1)[0]
-            prefix = "%d " % i if len(steps) > 1 else ""
             lines.append(prefix + text)
     finally:
         ctx.in_do = False
+    if keep and failed:
+        lines.append("%d of %d steps failed" % (failed, len(steps)))
+    elif quiet and ok == len(steps) and len(steps) > 1:
+        lines.insert(0, "ok %d/%d" % (ok, len(steps)))
     return "\n".join(lines)
 
 
@@ -606,7 +642,6 @@ def cmd_config(ctx, pos, flags):
         raise Fail("focus is one of %s" % ", ".join(D.FOCUS_MODES), "lighting config focus never")
     cfg[key] = val
     D.save_config(cfg)
-    ctx.cfg = cfg
     try:
         web().push_config(ctx)
     except Exception:

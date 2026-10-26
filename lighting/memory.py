@@ -51,7 +51,7 @@ SECRET = [
     re.compile(r"(?i)((?:password|passwort|passwd|secret|token|api[_-]?key|license[_-]?key)\s*[:=]\s*)\S{6,}"),
 ]
 _lock = threading.RLock()
-_db = {"conn": None, "ids": None, "mat": None}
+_db = {"conn": None, "vm": None, "gen": 0}
 
 
 def conn():
@@ -245,7 +245,9 @@ def meta_json(key, value=None):
 
 
 def drop_cache():
-    _db["ids"] = None
+    with _lock:
+        _db["gen"] += 1
+        _db["vm"] = None
 
 
 def forget(nid):
@@ -256,7 +258,7 @@ def forget(nid):
         c = conn()
         n = c.execute("delete from notes where id = ?", (nid,)).rowcount
         c.commit()
-    _db["ids"] = None
+    drop_cache()
     return n
 
 
@@ -276,17 +278,23 @@ def save_vecs(pairs):
     import numpy as np
     many("insert or replace into vecs(id, v) values (?, ?)",
          [(i, np.asarray(v, dtype=np.float16).tobytes()) for i, v in pairs])
-    _db["ids"] = None
+    drop_cache()
 
 
 def matrix():
     import numpy as np
-    if _db["ids"] is None:
-        found = rows("select id, v from vecs")
-        _db["ids"] = np.array([r["id"] for r in found], dtype=np.int64)
-        _db["mat"] = (np.frombuffer(b"".join(r["v"] for r in found), dtype=np.float16).astype(np.float32)
-                      .reshape(-1, D.MEM_VEC_DIM)) if found else np.zeros((0, D.MEM_VEC_DIM), dtype=np.float32)
-    return _db["ids"], _db["mat"]
+    vm = _db["vm"]
+    if vm is not None:
+        return vm
+    gen = _db["gen"]
+    found = rows("select id, v from vecs")
+    ids = np.array([r["id"] for r in found], dtype=np.int64)
+    mat = (np.frombuffer(b"".join(r["v"] for r in found), dtype=np.float16).astype(np.float32)
+           .reshape(-1, D.MEM_VEC_DIM)) if found else np.zeros((0, D.MEM_VEC_DIM), dtype=np.float32)
+    with _lock:
+        if _db["gen"] == gen:
+            _db["vm"] = (ids, mat)
+    return ids, mat
 
 
 def search(text, project="", limit=D.MEM_RECALL_MAX, vec=None, fts_only=False, min_sim=0.0):
@@ -378,7 +386,7 @@ def session_seen(sid, project, cwd, transcript, ended=False):
 def due_sessions(now=None):
     now = now or time.time()
     return rows("select * from sessions where status = 'open' and transcript != '' and tries < ? and retry_at <= ? "
-                "and (ended = 1 or last < ?) order by last", (D.MEM_MAX_TRIES, now, now - D.MEM_QUIET_S))
+                "and (ended = 1 or last < ?) order by last desc", (D.MEM_MAX_TRIES, now, now - D.MEM_QUIET_S))
 
 
 def sessions(project=None, limit=5):

@@ -2,6 +2,39 @@ import subprocess
 
 from lighting import defaults as D
 
+SHELL_CLASSES = {"Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd"}
+
+
+def fullscreen(state, covers):
+    return state == D.GAME_D3D or (state in D.GAME_FULLSCREEN and covers())
+
+
+def front_covers():
+    import ctypes
+    from ctypes import wintypes as w
+
+    class Info(ctypes.Structure):
+        _fields_ = [("cbSize", w.DWORD), ("rcMonitor", w.RECT), ("rcWork", w.RECT), ("dwFlags", w.DWORD)]
+
+    user32 = ctypes.WinDLL("user32")
+    user32.GetForegroundWindow.restype = w.HWND
+    user32.GetClassNameW.argtypes = [w.HWND, w.LPWSTR, ctypes.c_int]
+    user32.GetWindowRect.argtypes = [w.HWND, ctypes.POINTER(w.RECT)]
+    user32.MonitorFromWindow.argtypes = [w.HWND, w.DWORD]
+    user32.MonitorFromWindow.restype = w.HMONITOR
+    user32.GetMonitorInfoW.argtypes = [w.HMONITOR, ctypes.POINTER(Info)]
+    hwnd = user32.GetForegroundWindow()
+    if not hwnd:
+        return False
+    cls, rect, info = ctypes.create_unicode_buffer(64), w.RECT(), Info(ctypes.sizeof(Info))
+    user32.GetClassNameW(hwnd, cls, 64)
+    if cls.value in SHELL_CLASSES or not user32.GetWindowRect(hwnd, ctypes.byref(rect)):
+        return False
+    if not user32.GetMonitorInfoW(user32.MonitorFromWindow(hwnd, 2), ctypes.byref(info)):
+        return False
+    m = info.rcMonitor
+    return rect.left <= m.left and rect.top <= m.top and rect.right >= m.right and rect.bottom >= m.bottom
+
 
 def is_game(path):
     p = path.lower().replace("\\", "/")
@@ -22,7 +55,7 @@ def _windows():
     import ctypes
     from ctypes import wintypes as w
     state = ctypes.c_int(0)
-    if ctypes.windll.shell32.SHQueryUserNotificationState(ctypes.byref(state)) == 0 and state.value in D.GAME_FULLSCREEN:
+    if ctypes.windll.shell32.SHQueryUserNotificationState(ctypes.byref(state)) == 0 and fullscreen(state.value, front_covers):
         return "fullscreen"
     k32, user32 = ctypes.windll.kernel32, ctypes.windll.user32
 

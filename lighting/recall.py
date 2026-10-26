@@ -1,5 +1,6 @@
 import json
 import re
+import sys
 import time
 
 from lighting import defaults as D
@@ -15,6 +16,7 @@ warum wieso weshalb welche welcher welches welchen wann wer wen wem woher wohin 
 this that these those what when where why how have has had get got want need just also more some any all
 """.split())
 TOKEN = re.compile(r"[@#]|[^\W\d_][\w-]*", re.U)
+NOT_TYPED = re.compile(r"\[SYSTEM NOTIFICATION|<task-notification>|^\s*<(?:system-reminder|local-command-\w+|command-name)>")
 
 
 def words(text):
@@ -93,12 +95,18 @@ def cmd_suggest(ctx, pos, flags):
         prompt = json.loads(raw).get("prompt") or ""
     except (ValueError, AttributeError):
         prompt = raw
+    if NOT_TYPED.search(prompt[:400]):
+        return ""
     note_prompt(ctx.prompts, prompt)
     from lighting import brain, memcmd
+    t0 = time.perf_counter()
     try:
         mem = memcmd.on_prompt(ctx, prompt)
     except Exception:
         mem = []
+    spent = time.perf_counter() - t0
+    if spent >= D.HOOK_SLOW_S:
+        print("slow hook suggest: memory %.0f ms" % (spent * 1000), file=sys.stderr, flush=True)
     weekly = brain.weekly_tip()
     tip = "\n".join(mem + ([weekly] if weekly else []))
     stems = {stem(w) for w in words(prompt)}

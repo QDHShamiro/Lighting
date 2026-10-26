@@ -253,6 +253,13 @@ def capture(host, tab, ref, ms, lo, tmp):
 def pipeline(job):
     tmp = D.OUT / ("listen-" + uuid.uuid4().hex[:8])
     tmp.mkdir(parents=True, exist_ok=True)
+    try:
+        return transcribe(job, tmp)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def transcribe(job, tmp):
     t0 = time.time()
     lo, hi, lang = job["lo"], job["hi"], job["lang"]
     if job["file"]:

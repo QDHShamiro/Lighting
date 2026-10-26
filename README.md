@@ -241,7 +241,11 @@ claude   lighting code withdraw
 ```
 
 Without a name, `lighting code` gives the overview: languages, folders, the most used types and the entry points.
-The search by meaning is built in the background by the same local model, only for projects you work in.
+`code outline <file>` lists a file's signatures with their lines instead of the whole file, `code body <Name>`
+prints just that function, and `code impact` names every function your uncommitted changes touch and who calls
+it, two levels deep (`--base main` for a whole branch).
+The search by meaning is built in the background by the same local model, only for projects you work in. While the
+model is paused (a game runs), `code "what it does"` lists the code whose names contain the words instead.
 
 ## Built for Claude
 
@@ -249,7 +253,9 @@ Every step of an AI agent costs a model round of 1-5 seconds, and everything a t
 context. So Lighting saves steps first and tokens second:
 
 - **One call instead of two.** `open <url> -f "Issues|Pull"` returns only the matching lines,
-  `do "fill Email=a@b.c; click Continue; expect Welcome"` runs a whole sequence, a known task is `run <name> k=v`.
+  `do "fill Email=a@b.c; click Continue; expect Welcome"` (or `batch`) runs a whole sequence, a known task is
+  `run <name> k=v`. In a sequence `?dismiss` is optional, `--keep-going` runs every step and reports the failures,
+  `--quiet` prints only the last answer, and one step per line works too.
 - **Answers you can act on.** Everything clickable has a ref (`e12` web, `d5` app, `t4` tab, `w2` window).
   An action answers with one line and what changed; the header says where you are (`[t4]` tab, `[w2]` window).
 - **Errors name the next step.** `err: nothing matches "Log in" -> try: lighting snap -f "log in"`.
@@ -471,7 +477,7 @@ args = ["mcp"]
 | Start | `launch spotify` · `launch "spotify:search:SOS"` · `launch calc` (Win+R names and Store apps too) · `close w4` · `close "app:Rechner"` |
 | Look | `windows` · `snap app:spotify` · `snap w2` (accessibility tree) · `read w2` (OCR) · `shot w2` (even when covered) · `shot screen --seconds 10` (a short video) |
 | Act | `click d5` · `click "Save"` · `click o3` (OCR text, real click, cursor goes back) · `type "Search" text` · `type focused text` · `press ctrl+s` · `clip get\|set` |
-| Claude | `claude "task" --yes` (new terminal tab: Claude with Remote Control, the task sent once it is ready) · `--dir E:/proj` · `--no-remote` |
+| Claude | `claude "task" --yes` (new terminal tab: Claude with Remote Control, the task sent once it is ready) · `--dir E:/proj` · `--no-remote` · `--bg` (a background session without any window, nothing typed: works while you play; in a git repo its edits land in a worktree under `.claude/worktrees/`; `claude attach <id>` to watch) · `claude list` (why a session waits) · `claude logs <id>` |
 
 **Android phone** (USB debugging on, then `lighting phone setup` downloads Google's platform-tools)
 

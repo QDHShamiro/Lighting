@@ -9,6 +9,7 @@ import tarfile
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -17,12 +18,15 @@ from lighting import defaults as D
 from lighting import games
 from lighting import memory as M
 
+LOCAL_HOSTS = ("127.0.0.1", "localhost", "::1")
+
 
 class NotReady(Exception):
     pass
 
 
-_st = {"chat": None, "embed": None, "dl": None, "note": "", "api_ok": (0.0, False), "lock": threading.RLock()}
+_st = {"chat": None, "embed": None, "dl": None, "note": "", "api_ok": (0.0, False), "lock": threading.RLock(),
+       "down": (0.0, ""), "probing": None, "warming": None}
 
 
 def cfg():
@@ -84,7 +88,31 @@ def ready(kind):
     return bool(s and s.exists() and m.exists() and m.stat().st_size > 1_000_000)
 
 
-def api(kind):
+def reachable(base):
+    u = urllib.parse.urlsplit(base)
+    if (u.hostname or "") not in LOCAL_HOSTS:
+        return True
+    try:
+        socket.create_connection((u.hostname, u.port or 80), timeout=D.MEM_LOCAL_CONNECT_S).close()
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def probe(base):
+    ok = False
+    if reachable(base):
+        local = (urllib.parse.urlsplit(base).hostname or "") in LOCAL_HOSTS
+        try:
+            with urllib.request.urlopen(base + "/v1/models", timeout=D.MEM_API_PROBE_S if local else D.MEM_API_REMOTE_S) as r:
+                ok = r.status == 200
+        except (OSError, urllib.error.URLError, ValueError):
+            ok = False
+    _st["api_ok"] = (time.time(), ok)
+    return ok
+
+
+def api(kind, wait=True):
     c = cfg()
     base = (c.get("memory_api") or "").rstrip("/")
     model = c.get("memory_api_model" if kind == "chat" else "memory_api_embed")
@@ -93,13 +121,12 @@ def api(kind):
     if base.endswith("/v1"):
         base = base[:-3]
     t, ok = _st["api_ok"]
-    if time.time() - t > 60:
-        try:
-            with urllib.request.urlopen(base + "/v1/models", timeout=3) as r:
-                ok = r.status == 200
-        except (OSError, urllib.error.URLError, ValueError):
-            ok = False
-        _st["api_ok"] = (time.time(), ok)
+    if time.time() - t > D.MEM_API_RECHECK_S:
+        if wait or not t:
+            ok = probe(base)
+        elif not (_st["probing"] and _st["probing"].is_alive()):
+            _st["probing"] = threading.Thread(target=probe, args=(base,), daemon=True)
+            _st["probing"].start()
     return (base, model) if ok else None
 
 
@@ -121,6 +148,7 @@ class Server:
         self.port = 0
         self.used = 0.0
         self.log = None
+        self.up = False
 
     def alive(self):
         return self.proc is not None and self.proc.poll() is None
@@ -141,9 +169,15 @@ class Server:
         if not ready(self.kind):
             raise NotReady("the local model is not downloaded yet (lighting memory model)")
         D.MEMORY.mkdir(parents=True, exist_ok=True)
+        path = D.MEMORY / ("server-%s.log" % self.kind)
+        try:
+            if path.stat().st_size > D.SERVER_LOG_MAX:
+                path.write_bytes(path.read_bytes()[-D.SERVER_LOG_KEEP:])
+        except OSError:
+            pass
         for ngl in (99, 0):
             self.port = free_port()
-            self.log = open(D.MEMORY / ("server-%s.log" % self.kind), "ab")
+            self.log = open(path, "ab")
             kw = {"creationflags": D.NO_WINDOW | 0x4000} if D.WIN else {"preexec_fn": lambda: os.nice(10)}
             self.proc = subprocess.Popen(self.args(exe, model, ngl), stdout=self.log, stderr=self.log,
                                          stdin=subprocess.DEVNULL, cwd=str(Path(exe).parent), **kw)
@@ -152,6 +186,7 @@ class Server:
                 try:
                     if get(self.base() + "/health", 2) == 200:
                         self.used = time.time()
+                        self.up = True
                         return self.base()
                 except (OSError, urllib.error.URLError):
                     pass
@@ -166,6 +201,7 @@ class Server:
         raise NotReady("the local model server did not start (see %s)" % (D.MEMORY / ("server-%s.log" % self.kind)))
 
     def stop(self):
+        self.up = False
         p, self.proc = self.proc, None
         if p and p.poll() is None:
             p.terminate()
@@ -178,16 +214,20 @@ class Server:
             self.log = None
 
 
-def base_for(kind, start=True):
-    found = api(kind)
+def base_for(kind, start=True, wait=True):
+    found = api(kind, wait)
     if found:
         return found
+    if not start:
+        s = _st[kind]
+        if s and s.up and s.alive():
+            s.used = time.time()
+            return s.base(), "local"
+        return None
     with _st["lock"]:
         s = _st[kind] or Server(kind)
         _st[kind] = s
         if not s.alive():
-            if not start:
-                return None
             if games.running():
                 raise NotReady("a game is running")
             s.start()
@@ -218,17 +258,70 @@ def chat(system, user, schema=None):
     return re.sub(r"(?s)<think>.*?</think>", "", text).strip()
 
 
-def embed(texts, query=False, start=True, timeout=120):
+def down():
+    until, why = _st["down"]
+    return why if time.time() < until else ""
+
+
+def embed(texts, query=False, start=True, timeout=120, wait=True):
     import numpy as np
-    found = base_for("embed", start)
+    why = down()
+    if why:
+        raise NotReady(why)
+    found = base_for("embed", start, wait)
     if not found:
         return None
     base, model = found
     items = [(D.MEM_QUERY_PREFIX if query else "") + t[: D.MEM_EMBED_CHARS] for t in texts]
-    data = post(base, "/v1/embeddings", {"model": model, "input": items}, timeout)
+    try:
+        data = post(base, "/v1/embeddings", {"model": model, "input": items}, timeout)
+    except NotReady as e:
+        _st["down"] = (time.time() + D.MEM_EMBED_BACKOFF_S, str(e))
+        raise
     vecs = np.array([d["embedding"] for d in sorted(data["data"], key=lambda d: d["index"])],
                     dtype=np.float32)[:, : D.MEM_VEC_DIM]
     return vecs / np.maximum(np.linalg.norm(vecs, axis=1, keepdims=True), 1e-9)
+
+
+def reason(text):
+    m = re.match(r"model answered (\d+)", text)
+    if m:
+        return "the model is paused" if m.group(1) == "503" else "the model answered %s" % m.group(1)
+    if "timed out" in text:
+        return "the model did not answer in time"
+    if text.startswith("model not reachable"):
+        return "the model is not reachable"
+    return text
+
+
+def query(text, budget, start=False):
+    try:
+        v = embed([text], query=True, start=False, timeout=budget, wait=False)
+    except NotReady as e:
+        return None, reason(str(e))
+    if v is not None:
+        return v[0], ""
+    if not ready("embed"):
+        return None, "no local model yet (lighting memory model)"
+    if start:
+        warm("embed")
+        return None, "the model is starting"
+    return None, "the model is not running"
+
+
+def warm(kind):
+    t = _st["warming"]
+    if (t and t.is_alive()) or not ready(kind):
+        return
+
+    def run():
+        try:
+            base_for(kind, True)
+        except (NotReady, OSError, ValueError):
+            pass
+
+    _st["warming"] = threading.Thread(target=run, daemon=True)
+    _st["warming"].start()
 
 
 def reap():
@@ -353,10 +446,10 @@ def download_bg():
     return True
 
 
-def status():
+def status(wait=True):
     parts = []
     for kind in ("chat", "embed"):
-        a = api(kind)
+        a = api(kind, wait)
         if a:
             parts.append("%s: %s via %s" % (kind, a[1], a[0]))
             continue

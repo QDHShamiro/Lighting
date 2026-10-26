@@ -20,7 +20,8 @@ desktop windows [-f x] (one match = chosen)   launch <app|uri|path> [-f x]   foc
         click <d|o|"text">   type <d|"Field"|focused> <text> [--tab] [--enter]   press <keys>   read [w|screen]
         wait "text" [w] [--gone] [--timeout 60s] (in an app)
         shot [w|screen] [--seconds 10] (video)   clip [get|set <text>]   press playpause|volumeup (no window)
-        claude ["prompt" --yes] [--dir path] [--name x] [--model m] [--effort e] [--no-remote]  new Claude tab with remote control
+        claude ["prompt" --yes] [--dir path] [--name x] [--model m] [--effort e] [--no-remote] [--bg]  new Claude tab with remote control (--bg: no window)
+        claude list [--all] | claude logs <id>   background Claude sessions and their last lines
 phone   phone devices|setup   phone snap [-f x]   phone tap <p3|"text"> [--long]   phone type ["text"] [--enter]
         phone key back|home|recent|enter   phone swipe up|down|left|right   phone shot   phone launch <app>   phone open <url>
 chat    inbox <w|"title"> [--from name] [--since id] [--timeout 5m]   reply <w|"title"> "text" [--wait] [--yes]
@@ -33,11 +34,12 @@ memory  remember "fact" [--kind decision] [--global]   recall "words" [--all] | 
         memory (state)   memory learn   memory model (local AI, downloads itself)   memory import claude-mem   memory off
         memory import context-engine   wiki (drafts) | wiki accept <n> [folder] | wiki drop <n>   config vault <folder>
 code    code (overview)   code <Name> (definition + callers)   code callers <Name>   code "what it does" (by meaning)
+        code outline <file> (signatures)   code body <Name|Class.name|file.name>   code impact [--base main] [--tests]
 routine routines [-f x]   run <name|words> [param=value ...] [--yes]   routine show|save|rm|rename|forget <name>
         record start [name] [--web|--desktop]   record stop [name] [param=value ...]   record cancel|status
         routine schedule <name> daily 08:00|weekly mon 09:30|hourly|every 30m [param=value]   routine schedules|unschedule
 cleanup done [--quiet]   keep [t|w]   config cleanup on|off   config window on|off (own window per session)   config focus never|away|idle (take the front: never = default)
-system  do "cmd; cmd; ..."   status   stop   config [key value]   log [stats]   version
+system  do|batch "cmd; cmd; ..." [--keep-going] [--quiet] (?cmd = optional, one per line too)   status   stop   config [key value]   log [stats]   version
         setup [--manual]   install <ai>   selftest [web|app|chat]   bench [--real [--runs 3]]   demo [--fast]   ext-reload   uninstall [--purge]
         doctor [--fix] [--offline]   checks every part of Lighting, --fix repairs what it safely can
 

@@ -3,6 +3,7 @@ import ctypes
 import json
 import os
 import queue
+import shutil
 import sys
 import threading
 import time
@@ -78,7 +79,10 @@ class Host:
                 if msg.get("id"):
                     box = self.pending.get(msg["id"])
                     if box:
-                        box.put(msg)
+                        try:
+                            box.put_nowait(msg)
+                        except queue.Full:
+                            pass
                 elif msg.get("event"):
                     self.d.on_event(self, msg)
         except (EOFError, OSError, ValueError):
@@ -340,6 +344,7 @@ class Daemon:
         threading.Thread(target=self.worker, daemon=True).start()
         threading.Thread(target=self.hotkey_loop, daemon=True).start()
         threading.Thread(target=warm_apps, daemon=True).start()
+        threading.Thread(target=clean_loop, daemon=True).start()
         try:
             from lighting import memlearn
             memlearn.start()
@@ -392,19 +397,24 @@ def cleanup_out():
     for p in D.OUT.iterdir():
         try:
             if p.stat().st_mtime < limit:
-                p.unlink()
+                if p.is_dir():
+                    shutil.rmtree(p, ignore_errors=True)
+                else:
+                    p.unlink()
         except OSError:
             pass
+
+
+def clean_loop():
+    while True:
+        time.sleep(D.OUT_CLEAN_EVERY_S)
+        cleanup_out()
 
 
 def main():
     if D.WIN:
         try:
             ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
-        except (AttributeError, OSError):
-            pass
-        try:
-            ctypes.windll.winmm.timeBeginPeriod(1)
         except (AttributeError, OSError):
             pass
     Daemon().serve()

@@ -615,6 +615,12 @@ def test_done_waits_while_the_session_still_works():
         commands.run(c, {"argv": ["routines"]})
         timers.pop()()
         assert c.tabs == ["t6"] and c.owned == {"t6"}
+        commands.cmd_done(c, [], {"quiet": True})
+        commands.run(c, {"argv": ["hook", "stop", "{}"]})
+        assert c.closing > 0
+        c.closing = time.time() - 1
+        timers.pop()()
+        assert c.owned == set() and sent[-1]["only"] == ["t6"] and "close" not in sent[-1]
     finally:
         commands.browsers = keep
 
@@ -719,8 +725,15 @@ def test_brain_trims_known_pages():
     assert brain.prune(c, text, "example.com") == text
     delta = lines[0] + "\nchanged since your last snap: +2\n" + "\n".join(lines[2:])
     assert brain.prune(c, delta, "github.com/qdhshamiro/lighting") == delta
-    c.cfg["brain"] = False
-    assert brain.prune(c, text, "github.com/qdhshamiro/lighting") == text
+    from lighting import defaults as D
+    cfg = D.config()
+    cfg["brain"] = False
+    D.save_config(cfg)
+    try:
+        assert brain.prune(c, text, "github.com/qdhshamiro/lighting") == text
+    finally:
+        cfg["brain"] = True
+        D.save_config(cfg)
 
 
 def test_brain_learns_fixes_and_regains_refs():
@@ -862,6 +875,10 @@ def test_doctor():
     s = brain.summary(7, now)
     assert (s["runs"], s["failed"], s["prev_runs"]) == (2, 0, 1)
     assert doctor.plural(2, "process") == "2 processes" and doctor.span(7300) == "2 h"
+    market = {"extraKnownMarketplaces": {"lighting": {"source": {"source": "directory", "path": str(ROOT)}}}}
+    assert doctor.live_root(market, "lighting@lighting") == ROOT / "./"
+    assert doctor.live_root({}, "lighting@lighting") is None
+    assert doctor.live_root(market, "other@lighting") is None
 
 
 def test_skill_and_mcp_budget():
@@ -1075,6 +1092,11 @@ def test_memory_condense_transcript():
                                    "ERROR: release version 21 not supported", "CLAUDE: It needs JDK 21."], text
     assert end < path.stat().st_size
     assert memlearn.condense(str(path), end)[0] == ""
+    part, mid, _ = memlearn.condense(str(path), 0, 40)
+    assert memlearn.condense.more and part.split(chr(10)) == ["USER: why does the build fail?", "TOOL Bash: mvn package"]
+    rest = memlearn.condense(str(path), mid)[0]
+    assert not memlearn.condense.more and rest.split(chr(10)) == ["ERROR: release version 21 not supported",
+                                                                 "CLAUDE: It needs JDK 21."], rest
     assert len(memlearn.chunks("a" * 10 + chr(10) + "b" * 10)) == 1
     assert memlearn.parse('noise {"notes": []} tail') == {"notes": []}
 
@@ -1100,6 +1122,10 @@ def test_games_paths():
     assert not games.is_game("C:/Program Files (x86)/Steam/steam.exe")
     assert not games.is_game("C:/Program Files/Epic Games/Launcher/Portal/EpicGamesLauncher.exe")
     assert not games.is_game("C:/Windows/explorer.exe")
+    assert games.fullscreen(3, lambda: False) and games.fullscreen(2, lambda: True)
+    assert not games.fullscreen(2, lambda: False) and not games.fullscreen(5, lambda: True)
+    if WINDOWS:
+        assert games.front_covers() in (True, False)
 
 
 def test_vault_index_and_projects():
@@ -1181,6 +1207,49 @@ def test_vault_index_and_projects():
     assert M.project_of_files([str(repo / "A" / "src" / "x.java")] * 2 + [str(repo / "C" / "y.java")]) == "A"
 
 
+def test_vault_keeps_notes_when_the_folder_is_gone():
+    from lighting import defaults as D, memory as M, vault
+    base = Path(tempfile.mkdtemp(prefix="lighting-vault2-"))
+    (base / "Notes").mkdir()
+    (base / "Notes" / "a.md").write_text("# Alpha note\nbody", "utf-8")
+    (base / "Inbox").mkdir()
+    (base / "Inbox" / "d.md").write_text("# Unchecked draft\nbody", "utf-8")
+    cfg = D.config()
+    cfg.update(vault=str(base), vault_inbox="Inbox")
+    D.save_config(cfg)
+    vault.claude_dirs, real = (lambda: []), vault.claude_dirs
+    try:
+        vault.index()
+        kinds = {r["title"]: r["kind"] for r in M.rows("select title, kind from notes where source = 'vault'")}
+        assert kinds == {"Alpha note": "note", "Unchecked draft": "draft"}, kinds
+        away = base.with_name(base.name + "-away")
+        base.rename(away)
+        assert vault.index() == 0 and M.one("select id from notes where title = 'Alpha note'")
+        moved = Path(tempfile.mkdtemp(prefix="lighting-vault3-"))
+        (moved / "b.md").write_text("# Beta note\nbody", "utf-8")
+        cfg["vault"] = str(moved)
+        D.save_config(cfg)
+        assert vault.index() == 3 and not M.one("select id from notes where title = 'Alpha note'")
+        cfg["vault"] = str(base)
+        D.save_config(cfg)
+        away.rename(base)
+        assert vault.index() == 3 and M.one("select id from notes where title = 'Alpha note'")
+        rec = {"title": "T", "summary": "x", "why": "", "rejected": "", "next": ""}
+        first = vault.write_session("abcdef1234", "Alpha", rec, 1760000000)
+        second = vault.write_session("abcdef1234", "Beta", rec, 1760000000)
+        assert not first.exists() and second.exists() and second.parent.name == "Beta"
+        (base / "Knowledge").mkdir()
+        (base / "Knowledge" / "INDEX.md").write_bytes(b"# INDEX\r\n\r\n## Mistakes\r\n")
+        vault.accept(vault.write_draft("mistake", "X breaks Y", {"Problem": "p"}, "", "abcdef1234"))
+        raw = (base / "Knowledge" / "INDEX.md").read_bytes()
+        assert b"[[Knowledge/Mistakes/X breaks Y]]" in raw and b"\n" not in raw.replace(b"\r\n", b""), raw
+        assert b"\r" not in (base / "Knowledge" / "Mistakes" / "X breaks Y.md").read_bytes()
+    finally:
+        vault.claude_dirs = real
+        cfg.update(vault="", vault_inbox="Inbox")
+        D.save_config(cfg)
+
+
 def test_session_record_points():
     from lighting import memlearn
     assert memlearn.points("alpha one\n- beta two", "- Beta two.\ngamma three") == "alpha one\nbeta two\ngamma three"
@@ -1206,9 +1275,137 @@ def test_code_map():
     assert "src/shop.py:6 function buy" in out and "src/Main.java:2 in run" in out, out
     assert "src/shop.py:7 in buy" in codemap.cmd_code(ctx, ["callers", "take"], {})
     assert "close names" in codemap.cmd_code(ctx, ["wall"], {})
+    out = codemap.cmd_code(ctx, ["take", "the", "money"], {})
+    assert "not built yet" in out and "src/shop.py:2 function take in Wallet" in out, out
+    import threading
+    import time
+    held, done = threading.Event(), threading.Event()
+
+    def background():
+        with codemap.lock_for(codemap.root_for(str(repo))):
+            held.set()
+            done.wait(10)
+
+    worker = threading.Thread(target=background)
+    worker.start()
+    held.wait(5)
+    t0 = time.time()
+    out = codemap.cmd_code(ctx, ["buy"], {})
+    done.set()
+    worker.join()
+    assert time.time() - t0 < 2 and "updated in the background" in out and "src/shop.py:6 function buy" in out, out
     (repo / "src" / "Main.java").unlink()
     assert codemap.refresh(codemap.root_for(str(repo))) == 1
     assert "Main.java" not in codemap.cmd_code(ctx, ["buy"], {})
+
+
+def test_code_outline_body_impact():
+    import subprocess
+    import types
+    from lighting import codemap
+    repo = Path(tempfile.mkdtemp(prefix="lighting-impact-"))
+    (repo / "pyproject.toml").write_text("[project]\nname='x'\n", "utf-8")
+    src = repo / "shop.py"
+    src.write_text("class Wallet:\n    def take(self, n):\n        return n\n\n\ndef buy(w):\n    return w.take(5)\n\n\n"
+                   "def checkout(w):\n    return buy(w)\n", "utf-8")
+    (repo / "übung.py").write_text("def ueben(w):\n    return w\n", "utf-8")
+    who = ["-c", "user.email=t@t", "-c", "user.name=t", "-c", "core.autocrlf=false"]
+    for args in (["init", "-q"], ["add", "."], ["commit", "-qm", "x"]):
+        subprocess.run(["git", *who, "-C", str(repo), *args], capture_output=True, check=True)
+    ctx = types.SimpleNamespace(cwd=str(repo))
+    out = codemap.cmd_code(ctx, ["outline", "shop.py"], {}).splitlines()
+    assert out[1:4] == ["  1-3 class Wallet:", "    2-3 def take(self, n):", "  6-7 def buy(w):"], out
+    assert codemap.cmd_code(ctx, ["body", "Wallet.take"], {}).splitlines() == ["shop.py:2-3", "    def take(self, n):",
+                                                                               "        return n"]
+    assert "no code file" in codemap.cmd_code(ctx, ["outline", "nope.py"], {})
+    assert codemap.cmd_code(ctx, ["impact"], {}) == "no changes against HEAD"
+    src.write_text(src.read_text("utf-8").replace("return n", "return n * 2"), "utf-8")
+    (repo / "übung.py").write_text("def ueben(w):\n    return w + 1\n", "utf-8")
+    out = codemap.cmd_code(ctx, ["impact"], {})
+    assert "shop.py:2 function take in Wallet <- 1: shop.py:7 buy" in out and "then: checkout" in out, out
+    assert "übung.py:1 function ueben" in out, out
+    from lighting import defaults as D
+    keep, D.CODE_IMPACT_LINES = D.CODE_IMPACT_LINES, 2
+    try:
+        assert "more lines (full:" in codemap.cmd_code(ctx, ["impact"], {})
+    finally:
+        D.CODE_IMPACT_LINES = keep
+
+
+def test_code_map_vectors_and_budget():
+    import subprocess
+    import time
+    from lighting import codemap
+    repo = Path(tempfile.mkdtemp(prefix="lighting-vec-"))
+    (repo / "pyproject.toml").write_text("[project]\nname='x'\n", "utf-8")
+    for name in ("a.py", "b.py", "übung.py"):
+        (repo / name).write_text("def f_%s():\n    return 1\n" % name[0], "utf-8")
+    subprocess.run(["git", "-C", str(repo), "init", "-q"], capture_output=True, check=True)
+    root = codemap.root_for(str(repo))
+    assert codemap.refresh(root) == 3
+    c = codemap.db(root)
+    assert c.execute("select count(*) from files where path = 'übung.py'").fetchone()[0] == 1
+    ids = [r["id"] for r in c.execute("select id from symbols where path = 'b.py'")]
+    c.executemany("insert into vecs(id, v) values (?, ?)", [(i, b"x") for i in ids])
+    c.commit()
+    later = time.time() + 5
+    for name in ("a.py", "b.py"):
+        (repo / name).write_text("def g():\n    return 2\n", "utf-8")
+        os.utime(repo / name, (later, later))
+    assert codemap.refresh(root, -1) == 0 and codemap._left[str(root).lower()] == 2
+    assert c.execute("select count(*) from files").fetchone()[0] == 3
+    assert codemap.refresh(root) == 2 and codemap._left[str(root).lower()] == 0
+    assert c.execute("select count(*) from vecs").fetchone()[0] == 0
+
+
+def test_cleanup_out_removes_old_folders():
+    import time
+    from lighting import daemon
+    from lighting import defaults as D
+    D.OUT.mkdir(parents=True, exist_ok=True)
+    old, new = D.OUT / "listen-0ld", D.OUT / "listen-n3w"
+    for d in (old, new):
+        d.mkdir(exist_ok=True)
+        (d / "live.webm").write_bytes(b"x")
+    then = time.time() - (D.OUT_KEEP_HOURS + 1) * 3600
+    os.utime(old, (then, then))
+    daemon.cleanup_out()
+    assert not old.exists() and new.exists()
+
+
+def test_learning_keeps_a_session_open_that_moved_on():
+    import json
+    import time
+    from lighting import memlearn, memory as M
+    path = Path(tempfile.mkdtemp(prefix="lighting-tr-")) / "t.jsonl"
+    path.write_text(json.dumps({"type": "user", "message": {"content": "hi"}}) + chr(10), "utf-8")
+    for sid, last, want in (("s-moved", time.time() + 100, "open"), ("s-quiet", time.time() - 100, "done")):
+        M.write("insert or replace into sessions(id, project, cwd, transcript, started, last) values (?, '', '', ?, ?, ?)",
+                (sid, str(path), last, last))
+        memlearn.learn(M.one("select * from sessions where id = ?", (sid,)))
+        assert M.one("select status from sessions where id = ?", (sid,))["status"] == want
+
+
+def test_memory_backlog_is_visible():
+    import time
+    import types
+    from lighting import doctor, games, memcmd, memory as M
+    now = time.time()
+    for sid, last in (("s-old", now - 5000), ("s-new", now - 4000)):
+        M.write("insert or replace into sessions(id, project, cwd, transcript, started, last, ended) "
+                "values (?, '', '', 'gone.jsonl', ?, ?, 1)", (sid, last, last))
+    order = [r["id"] for r in M.due_sessions()]
+    assert order.index("s-new") < order.index("s-old"), order
+    assert doctor.backlog(5, 0, now) == "" and doctor.backlog(25, now - 100, now) == ""
+    assert doctor.backlog(25, 0, now) == "25 sessions wait to be learned, the last one was learned never"
+    real = games.running
+    games.running = lambda: "minecraft"
+    try:
+        ctx = types.SimpleNamespace(cwd="", sid="")
+        assert "learning waits: minecraft runs" in memcmd.cmd_memory(ctx, [], {})
+        assert "minecraft runs, learning starts by itself" in memcmd.cmd_memory(ctx, ["learn"], {})
+    finally:
+        games.running = real
 
 
 def test_nested_pending_keeps_waiting():
@@ -1259,6 +1456,169 @@ def test_memory_download_resumes():
     finally:
         MM.games.running, MM.tls = running, tls
         srv.shutdown()
+
+
+def test_batch_steps():
+    import collections
+    import threading
+    assert commands.split_steps("ping\nping; ?ping") == ["ping", "ping", "?ping"]
+    assert commands.parse(["batch", "ping"])[0] == "do"
+    d = type("F", (), {"events": collections.deque(), "abort": threading.Event(), "abort_gen": 0})()
+    c = commands.Context(d, "s-batch")
+    c.no_learn = True
+    assert commands.cmd_do(c, ["ping; ping"], {}) == "1 pong\n2 pong"
+    out = commands.cmd_do(c, ["ping; zzqx; ping"], {}).splitlines()
+    assert out == ["1 pong", "2 err: unknown command 'zzqx' -> try: lighting help (stopped, 1 skipped)"], out
+    out = commands.cmd_do(c, ["?zzqx; ping"], {}).splitlines()
+    assert out[0].startswith("1 skipped, err: unknown command") and out[1] == "2 pong", out
+    out = commands.cmd_do(c, ["zzqx; ping"], {"keep-going": True}).splitlines()
+    assert out[1:] == ["2 pong", "1 of 2 steps failed"], out
+    assert commands.cmd_do(c, ["ping; ping; ping"], {"quiet": True}) == "ok 3/3\n3 pong"
+
+
+def test_claude_in_the_background():
+    import json
+    import subprocess
+    import time
+    import types
+    from lighting import spawn
+    seen, ids = {}, iter(["3a3828a8", "4b4939b9"])
+
+    class Started:
+        def __init__(self, args, cwd=None, env=None, stdout=None, **kw):
+            seen.update(args=args, cwd=cwd, env=env)
+            stdout.write(("Starting background service…\nbackgrounded · %s · Fix it\n" % next(ids)).encode("utf-8"))
+
+        def poll(self):
+            return 0
+
+    real = spawn.subprocess
+    spawn.subprocess = types.SimpleNamespace(Popen=Started, DEVNULL=subprocess.DEVNULL, STDOUT=subprocess.STDOUT)
+    os.environ["CLAUDECODE"] = "1"
+    try:
+        folder = tempfile.mkdtemp(prefix="lighting-bg-")
+        ctx = types.SimpleNamespace(cwd=folder)
+        try:
+            spawn.cmd_claude(ctx, ["fix", "it"], {"bg": True})
+            raise AssertionError("a prompt without --yes started a session")
+        except commands.Fail:
+            pass
+        flags = {"bg": True, "yes": True, "model": "haiku", "name": "Fix it"}
+        first = spawn.cmd_claude(ctx, ["fix", "it"], flags)
+        (Path(folder) / ".git").mkdir()
+        second = spawn.cmd_claude(ctx, ["fix", "it"], flags)
+        one, two = first.poll(False), second.poll(False)
+        assert "claude attach 3a3828a8" in one and "no window:" in one and "worktree" not in one, one
+        assert "claude attach 4b4939b9" in two and "edits go to a git worktree" in two, two
+        assert seen["args"][1:] == ["--bg", "--name", "Fix it", "--model", "haiku", "--remote-control", "Fix it", "fix it"]
+        assert seen["cwd"] == folder and "CLAUDECODE" not in seen["env"]
+    finally:
+        spawn.subprocess = real
+        os.environ.pop("CLAUDECODE", None)
+    now = int(time.time() * 1000)
+    rows = [{"id": "a1b2c3d4", "kind": "background", "state": "working", "name": "Fix it", "cwd": "E:/x", "startedAt": now},
+            {"id": "c9d0e1f2", "kind": "background", "state": "blocked", "waitingFor": "permission prompt", "name": "Ask",
+             "cwd": "E:/w", "startedAt": now - 1000},
+            {"id": "e5f6a7b8", "kind": "background", "state": "stopped", "name": "Old", "cwd": "E:/y", "startedAt": now},
+            {"id": "0a1b2c3d", "kind": "background", "state": "blocked", "name": "July", "cwd": "E:/v", "startedAt": 0},
+            {"kind": "interactive", "cwd": "E:/z"}]
+    screen = "\x1b[38;5;245m● Write(ok.txt)\x1b[m\n\n────────\n  ⎿  Wrote 1 line\n\x1b]0;title\x07done\n"
+    real_out = spawn.claude_out
+    spawn.claude_out = lambda args, timeout=30: json.dumps(rows) if args[0] == "agents" else screen
+    try:
+        listed = spawn.cmd_claude(types.SimpleNamespace(cwd="."), ["list"], {}).splitlines()
+        assert listed[0].startswith('a1b2c3d4 working "Fix it" E:/x'), listed
+        assert listed[1].startswith('c9d0e1f2 blocked (permission prompt) "Ask"'), listed
+        assert listed[2] == "(2 stopped or older than 7 days: lighting claude list --all)", listed
+        assert "July" in spawn.cmd_claude(types.SimpleNamespace(cwd="."), ["list"], {"all": True})
+        assert spawn.cmd_claude(types.SimpleNamespace(cwd="."), ["logs", "a1b2c3d4"], {}).splitlines() == [
+            "● Write(ok.txt)", "  ⎿  Wrote 1 line", "done"]
+        try:
+            spawn.cmd_claude(types.SimpleNamespace(cwd="."), ["logs"], {})
+            raise AssertionError("logs without an id started something")
+        except commands.Fail as e:
+            assert "which session" in e.text()
+    finally:
+        spawn.claude_out = real_out
+
+    def missing(*a, **k):
+        raise FileNotFoundError("claude.exe")
+
+    done = types.SimpleNamespace(returncode=1, stdout=b"", stderr=b"error: no session abc")
+    spawn.subprocess = types.SimpleNamespace(Popen=missing, run=lambda *a, **k: done, DEVNULL=subprocess.DEVNULL,
+                                             STDOUT=subprocess.STDOUT, TimeoutExpired=subprocess.TimeoutExpired)
+    try:
+        for argv, want in ((["x"], "could not start claude"), (["logs", "abc"], "no session abc")):
+            try:
+                spawn.cmd_claude(types.SimpleNamespace(cwd=folder), argv, {"bg": True, "yes": argv == ["x"]})
+                raise AssertionError("no error for %s" % argv)
+            except commands.Fail as e:
+                assert want in e.text(), e.text()
+    finally:
+        spawn.subprocess = real
+
+
+def test_unknown_commands_get_a_guess():
+    assert commands.unknown("find").text().startswith("err: unknown command 'find' -> try: lighting snap -f")
+    assert commands.unknown("clik").text().endswith("-> try: lighting click")
+    assert commands.unknown("hok").text().endswith("-> try: lighting help")
+    assert commands.unknown("zzqx").text().endswith("-> try: lighting help")
+
+
+def test_memory_model_never_stalls():
+    import http.server
+    import socket
+    import threading
+    import time
+    import types
+    from lighting import defaults as D, memcmd, memmodel as MM, recall
+    seen = {"post": 0}
+
+    class Paused(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"data": []}')
+
+        def do_POST(self):
+            seen["post"] += 1
+            self.send_response(503)
+            self.end_headers()
+            self.wfile.write(b'{"error": "paused"}')
+
+        def log_message(self, *a):
+            pass
+
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Paused)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        closed = s.getsockname()[1]
+    cfg = D.config()
+    try:
+        cfg.update(memory_api="http://127.0.0.1:%d/v1" % closed, memory_api_embed="e")
+        D.save_config(cfg)
+        MM._st.update(api_ok=(0.0, False), down=(0.0, ""))
+        t = time.perf_counter()
+        assert MM.api("embed") is None and time.perf_counter() - t < 1.0
+        cfg["memory_api"] = "http://127.0.0.1:%d/v1" % srv.server_address[1]
+        D.save_config(cfg)
+        MM._st.update(api_ok=(0.0, False))
+        assert MM.query("where is the build", 1.0) == (None, "the model is paused")
+        assert MM.query("again", 1.0) == (None, "the model is paused") and seen["post"] == 1
+        ctx = types.SimpleNamespace(cwd=tempfile.mkdtemp(prefix="lighting-proj-"), sid="s-stall", told={})
+        memcmd.remember(ctx, "The deploy script lives in tools/deploy.sh")
+        assert memcmd.on_prompt(ctx, "where does the deploy script live again") == []
+        out = memcmd.cmd_recall(ctx, ["deploy", "script"], {})
+        assert "deploy.sh" in out and "words only, the model is paused" in out, out
+    finally:
+        cfg.update(memory_api="", memory_api_embed="")
+        D.save_config(cfg)
+        MM._st.update(api_ok=(0.0, False), down=(0.0, ""))
+        srv.shutdown()
+    ctx = types.SimpleNamespace(prompts=[], told={}, cwd="", sid="")
+    note = "[SYSTEM NOTIFICATION - NOT USER INPUT] <task-notification> background command completed"
+    assert recall.cmd_suggest(ctx, [note], {}) == "" and ctx.prompts == []
 
 
 if __name__ == "__main__":

@@ -3,12 +3,13 @@ import os
 import re
 import sqlite3
 import subprocess
+import threading
 import time
 from pathlib import Path
 
 from lighting import defaults as D
 from lighting import memory as M
-from lighting.common import Fail
+from lighting.common import Fail, cap
 
 LANGS = {".java": "java", ".py": "python", ".rs": "rust", ".ts": "typescript", ".tsx": "tsx", ".js": "javascript",
          ".mjs": "javascript", ".cjs": "javascript", ".jsx": "javascript", ".cs": "csharp", ".go": "go",
@@ -20,6 +21,10 @@ DEF = re.compile(r"^(?:function|method|class|interface|enum|struct|trait|record|
 CALLS = {"call", "call_expression", "method_invocation", "invocation_expression", "macro_invocation",
          "object_creation_expression", "new_expression", "function_call", "method_call", "method_call_expression"}
 CALLEE_FIELDS = ("name", "function", "type", "constructor", "method", "macro")
+MEANT = ("function", "method", "constructor", "class", "struct", "enum", "trait", "interface", "record", "macro")
+FAMILY = {"kotlin": "java", "scala": "java", "typescript": "javascript", "tsx": "javascript", "cpp": "c"}
+CODE_STOP = {"function", "funktion", "method", "methode", "class", "klasse", "code", "file", "datei", "does", "called",
+             "aufgerufen", "passiert", "happens", "happen", "wird", "werden", "gets"}
 SKIP_DIRS = {".git", "node_modules", "target", "build", "out", "dist", ".gradle", ".idea", "venv", ".venv",
              "__pycache__", ".next", ".graphify", "vendor", "bin", "obj"}
 SCHEMA = """
@@ -35,6 +40,8 @@ create table if not exists vecs(id integer primary key, v blob);
 """
 _parsers = {}
 _dbs = {}
+_locks = {}
+_left = {}
 
 
 def root_for(cwd):
@@ -62,8 +69,16 @@ def db(root):
         c.row_factory = sqlite3.Row
         c.execute("pragma journal_mode=wal")
         c.executescript(SCHEMA)
+        if c.execute("pragma user_version").fetchone()[0] < 1:
+            c.execute("delete from vecs")
+            c.execute("pragma user_version = 1")
+            c.commit()
         _dbs[key] = c
     return _dbs[key]
+
+
+def lock_for(root):
+    return _locks.setdefault(str(root).lower(), threading.RLock())
 
 
 def parser(lang):
@@ -78,11 +93,12 @@ def parser(lang):
 
 def listing(root):
     try:
-        out = subprocess.run(["git", "-C", str(root), "ls-files", "-co", "--exclude-standard", "."],
+        out = subprocess.run(["git", "-c", "core.quotePath=false", "-C", str(root), "ls-files", "-z", "-co",
+                              "--exclude-standard", "."],
                              capture_output=True, timeout=20, creationflags=0x08000000 if D.WIN else 0)
         if out.returncode == 0:
-            names = out.stdout.decode("utf-8", "replace").splitlines()
-            return [root / n for n in names if Path(n).suffix.lower() in LANGS
+            names = out.stdout.decode("utf-8", "replace").split("\0")
+            return [root / n for n in names if n and Path(n).suffix.lower() in LANGS
                     and not any(part in SKIP_DIRS for part in n.split("/")[:-1])]
     except (OSError, subprocess.TimeoutExpired):
         pass
@@ -138,42 +154,51 @@ def extract(data, lang):
     return defs, refs
 
 
-def refresh(root, budget_s=None):
-    c = db(root)
-    have = {r["path"]: r["mtime"] for r in c.execute("select path, mtime from files")}
-    seen, changed, t0 = set(), 0, time.time()
-    for f in listing(root):
-        rel = f.relative_to(root).as_posix()
-        seen.add(rel)
-        try:
-            st = f.stat()
-        except OSError:
-            continue
-        if have.get(rel) == st.st_mtime or st.st_size > D.CODE_MAX_BYTES:
-            continue
-        try:
-            data = f.read_bytes()
-        except OSError:
-            continue
-        defs, refs = extract(data, LANGS[f.suffix.lower()])
-        c.execute("delete from symbols where path = ?", (rel,))
-        c.execute("delete from refs where path = ?", (rel,))
-        c.executemany("insert into symbols(path, name, low, kind, line, end_line, parent, sig) values (?, ?, ?, ?, ?, ?, ?, ?)",
-                      [(rel, n, n.lower(), k, a, b, o, s) for n, k, a, b, o, s in defs])
-        c.executemany("insert into refs(path, name, low, line, caller) values (?, ?, ?, ?, ?)",
-                      [(rel, n, n.lower(), a, o) for n, a, o in refs])
-        c.execute("insert or replace into files(path, mtime, lang, lines) values (?, ?, ?, ?)",
-                  (rel, st.st_mtime, LANGS[f.suffix.lower()], data.count(b"\n") + 1))
-        changed += 1
-        if budget_s and time.time() - t0 > budget_s:
-            break
-    gone = [p for p in have if p not in seen]
-    for p in gone:
-        for table in ("files", "symbols", "refs"):
-            c.execute("delete from %s where path = ?" % table, (p,))
-    c.execute("delete from vecs where id not in (select id from symbols)")
-    c.commit()
-    return changed + len(gone)
+def refresh(root, budget_s=None, wait=True):
+    lock = lock_for(root)
+    if not lock.acquire(blocking=wait):
+        return None
+    try:
+        c = db(root)
+        have = {r["path"]: r["mtime"] for r in c.execute("select path, mtime from files")}
+        seen, changed, left, t0 = set(), 0, 0, time.time()
+        for f in listing(root):
+            rel = f.relative_to(root).as_posix()
+            seen.add(rel)
+            try:
+                st = f.stat()
+            except OSError:
+                continue
+            if have.get(rel) == st.st_mtime or st.st_size > D.CODE_MAX_BYTES:
+                continue
+            if budget_s and time.time() - t0 > budget_s:
+                left += 1
+                continue
+            try:
+                data = f.read_bytes()
+            except OSError:
+                continue
+            defs, refs = extract(data, LANGS[f.suffix.lower()])
+            c.execute("delete from vecs where id in (select id from symbols where path = ?)", (rel,))
+            c.execute("delete from symbols where path = ?", (rel,))
+            c.execute("delete from refs where path = ?", (rel,))
+            c.executemany("insert into symbols(path, name, low, kind, line, end_line, parent, sig) values (?, ?, ?, ?, ?, ?, ?, ?)",
+                          [(rel, n, n.lower(), k, a, b, o, s) for n, k, a, b, o, s in defs])
+            c.executemany("insert into refs(path, name, low, line, caller) values (?, ?, ?, ?, ?)",
+                          [(rel, n, n.lower(), a, o) for n, a, o in refs])
+            c.execute("insert or replace into files(path, mtime, lang, lines) values (?, ?, ?, ?)",
+                      (rel, st.st_mtime, LANGS[f.suffix.lower()], data.count(b"\n") + 1))
+            changed += 1
+        gone = [p for p in have if p not in seen]
+        for p in gone:
+            c.execute("delete from vecs where id in (select id from symbols where path = ?)", (p,))
+            for table in ("files", "symbols", "refs"):
+                c.execute("delete from %s where path = ?" % table, (p,))
+        c.commit()
+        _left[str(root).lower()] = left
+        return changed + len(gone)
+    finally:
+        lock.release()
 
 
 def overview(root):
@@ -270,11 +295,33 @@ def embed_some(root, seconds=50):
         vecs = MM.embed([source_text(root, r) for r in todo])
         if vecs is None:
             break
-        c.executemany("insert or replace into vecs(id, v) values (?, ?)",
-                      [(r["id"], np.asarray(v, dtype=np.float16).tobytes()) for r, v in zip(todo, vecs)])
-        c.commit()
+        key = lambda r: (r["id"], r["path"], r["name"], r["line"])
+        with lock_for(root):
+            still = {key(r) for r in c.execute("select id, path, name, line from symbols where id in (%s)"
+                                               % ",".join("?" * len(todo)), [r["id"] for r in todo])}
+            c.executemany("insert or replace into vecs(id, v) values (?, ?)",
+                          [(r["id"], np.asarray(v, dtype=np.float16).tobytes()) for r, v in zip(todo, vecs) if key(r) in still])
+            c.commit()
         n += len(todo)
     return n
+
+
+def by_name(c, text, limit, why):
+    from lighting.recall import stem, words
+    terms = [stem(w) for w in dict.fromkeys(words(text)) if len(w) >= 3 and w not in CODE_STOP][:8]
+    found = {}
+    for t in terms:
+        for r in c.execute("select * from symbols where low like ? or lower(sig) like ? limit 400",
+                           ("%" + t + "%", "%" + t + "%")):
+            hit = found.setdefault(r["id"], [r, set(), set()])
+            (hit[1] if t in r["low"] else hit[2]).add(t)
+    ranked = sorted(found.values(), key=lambda h: (-2 * len(h[1]) - len(h[2]), h[0]["kind"] not in MEANT,
+                                                   len(h[0]["name"]), h[0]["path"]))
+    lines = ["  %s:%d %s %s%s" % (r["path"], r["line"], r["kind"], r["name"], " in " + r["parent"] if r["parent"] else "")
+             for r, _, _ in ranked[:limit]]
+    if not lines:
+        return "%s; no names contain those words either" % why
+    return "\n".join(["%s, names with those words:" % why] + lines)
 
 
 def meaning(root, text, limit=D.CODE_LIMIT):
@@ -285,14 +332,14 @@ def meaning(root, text, limit=D.CODE_LIMIT):
     total = c.execute("select count(*) from symbols where kind in ('function', 'method', 'constructor', 'class', "
                       "'struct', 'enum', 'trait', 'interface', 'record', 'macro')").fetchone()[0]
     if not rows:
-        return "the meaning index of %s is not built yet (%d symbols wait; it builds in the background)" % (
-            root.name, total)
-    q = MM.embed([text], query=True, timeout=30)
+        return by_name(c, text, limit, "the meaning index of %s is not built yet (%d symbols wait; it builds in the "
+                                       "background)" % (root.name, total))
+    q, why = MM.query(text, D.MEM_QUERY_EMBED_S, True)
     if q is None:
-        raise Fail("the local model is not running", "lighting memory model")
+        return by_name(c, text, limit, "no meaning search right now (%s)" % why)
     ids = np.array([r["id"] for r in rows])
     mat = np.frombuffer(b"".join(r["v"] for r in rows), dtype=np.float16).astype(np.float32).reshape(-1, D.MEM_VEC_DIM)
-    sim = mat @ q[0]
+    sim = mat @ q
     order = np.argsort(-sim)[:limit]
     best, score = [int(ids[j]) for j in order], {int(ids[j]): float(sim[j]) for j in order}
     found = {r["id"]: r for r in c.execute("select * from symbols where id in (%s)" % ",".join("?" * len(best)), best)}
@@ -301,6 +348,125 @@ def meaning(root, text, limit=D.CODE_LIMIT):
                                          score[i]) for i in best if i in found]
     head = "closest by meaning:" + ("" if len(rows) >= total else " (%d of %d symbols indexed so far)" % (len(rows), total))
     return "\n".join([head] + lines)
+
+
+def find_file(c, root, name):
+    p = Path(name)
+    if p.is_absolute():
+        try:
+            name = p.resolve().relative_to(Path(root).resolve()).as_posix()
+        except ValueError:
+            return []
+    name = name.replace("\\", "/")
+    name = name[2:] if name.startswith("./") else name
+    rows = c.execute("select path, lang, lines from files where path = ?", (name,)).fetchall()
+    return rows or c.execute("select path, lang, lines from files where path like ? order by length(path) limit 6",
+                             ("%/" + name.replace("%", ""),)).fetchall()
+
+
+def outline(root, name):
+    c = db(root)
+    found = find_file(c, root, name)
+    if not found:
+        return 'no code file "%s" in %s' % (name, root.name)
+    if len(found) > 1:
+        return "several files match:\n" + "\n".join("  " + r["path"] for r in found)
+    f = found[0]
+    syms = c.execute("select * from symbols where path = ? order by line, end_line desc", (f["path"],)).fetchall()
+    lines = ["%s (%d lines, %s):" % (f["path"], f["lines"] or 0, f["lang"])]
+    for r in syms[: D.CODE_OUTLINE_MAX]:
+        sig = (r["sig"] or r["name"]).rstrip(" {")[: D.CODE_SIG]
+        lines.append("%s%d-%d %s" % ("    " if r["parent"] else "  ", r["line"], r["end_line"], sig))
+    if len(syms) > D.CODE_OUTLINE_MAX:
+        lines.append("  ... %d more" % (len(syms) - D.CODE_OUTLINE_MAX))
+    return "\n".join(lines)
+
+
+def body(root, name):
+    c = db(root)
+    owner, _, short = name.rpartition(".")
+    q = owner.rpartition(".")[2].lower()
+    sql, args = "select * from symbols where low = ?", [short.lower()]
+    if q:
+        sql += " and (lower(parent) = ? or lower(path) like ? or lower(path) like ?)"
+        args += [q, "%/" + q + ".%", q + ".%"]
+    rows = c.execute(sql + " order by path, line limit 6", args).fetchall()
+    if not rows:
+        return 'nothing named "%s" in %s (lighting code %s finds close names)' % (name, root.name, short)
+    if len(rows) > 1:
+        return "several match, name the class or file (code body Class.%s or file.%s):\n" % (short, short) + "\n".join(
+            "  %s:%d %s %s%s" % (r["path"], r["line"], r["kind"], r["name"], " in " + r["parent"] if r["parent"] else "")
+            for r in rows)
+    r = rows[0]
+    try:
+        text = (root / r["path"]).read_text("utf-8", errors="replace").splitlines()
+    except OSError as e:
+        raise Fail("cannot read %s: %s" % (r["path"], e))
+    end = min(r["end_line"], r["line"] - 1 + D.CODE_BODY_MAX)
+    out = ["%s:%d-%d" % (r["path"], r["line"], r["end_line"])] + text[r["line"] - 1: end]
+    if end < r["end_line"]:
+        out.append("... %d more lines (Read %s from line %d)" % (r["end_line"] - end, r["path"], end + 1))
+    return "\n".join(out)
+
+
+HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
+
+
+def changed_ranges(root, base):
+    try:
+        out = subprocess.run(["git", "-c", "core.quotePath=false", "-C", str(root), "diff", "--relative", "-U0",
+                              base or "HEAD", "--"],
+                             capture_output=True, timeout=20, creationflags=0x08000000 if D.WIN else 0)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise Fail("git diff failed: %s" % e)
+    if out.returncode:
+        raise Fail("git diff failed: %s" % out.stderr.decode("utf-8", "replace").strip()[:200], "lighting code impact --base main")
+    ranges, path = {}, None
+    for line in out.stdout.decode("utf-8", "replace").splitlines():
+        if line.startswith("+++ "):
+            path = None if line[4:] == "/dev/null" else line[6:] if line.startswith("+++ b/") else line[4:]
+        m = HUNK.match(line)
+        if m and path:
+            start, n = int(m.group(1)), int(m.group(2) if m.group(2) is not None else 1)
+            ranges.setdefault(path, []).append((start, start + max(n, 1) - 1))
+    return ranges
+
+
+def impact(root, base=None, tests=False):
+    c = db(root)
+    ranges = changed_ranges(root, base)
+    if not ranges:
+        return "no changes against %s" % (base or "HEAD")
+    hit = {}
+    for path, spans in ranges.items():
+        syms = c.execute("select * from symbols where path = ?", (path,)).fetchall()
+        for a, b in spans:
+            inside = [s for s in syms if s["line"] <= b and s["end_line"] >= a]
+            if inside:
+                s = min(inside, key=lambda s: s["end_line"] - s["line"])
+                hit[s["id"]] = s
+    if not hit:
+        return "%d changed files, no functions or classes touched: %s" % (len(ranges), ", ".join(sorted(ranges)[:8]))
+    keep = (lambda p: True) if tests else (lambda p: not re.search(r"(^|/)(tests?|spec|__tests__)/|_test\.|\.test\.|Test\.", p))
+    lang = {r["path"]: FAMILY.get(r["lang"], r["lang"]) for r in c.execute("select path, lang from files")}
+    lines = ["changed against %s: %d symbols in %d files" % (base or "HEAD", len(hit), len(ranges))]
+    for s in sorted(hit.values(), key=lambda s: (s["path"], s["line"])):
+        refs = [r for r in c.execute("select path, line, caller from refs where low = ? order by path, line", (s["low"],))
+                if keep(r["path"]) and lang.get(r["path"]) == lang.get(s["path"])
+                and not (r["path"] == s["path"] and s["line"] <= r["line"] <= s["end_line"])]
+        head = "  %s:%d %s %s%s" % (s["path"], s["line"], s["kind"], s["name"], " in " + s["parent"] if s["parent"] else "")
+        if not refs:
+            lines.append(head + " <- no callers found")
+            continue
+        shown = ", ".join("%s:%d%s" % (r["path"], r["line"], " " + r["caller"] if r["caller"] else "") for r in refs[: D.CODE_IMPACT])
+        lines.append("%s <- %d: %s%s" % (head, len(refs), shown, ", ..." if len(refs) > D.CODE_IMPACT else ""))
+        names = {r["caller"].lower() for r in refs if r["caller"]}
+        second = sorted({x["caller"] for n in names for x in c.execute(
+            "select path, caller from refs where low = ? and caller != ''", (n,))
+            if keep(x["path"]) and lang.get(x["path"]) == lang.get(s["path"])})
+        if second:
+            lines.append("      then: %s%s" % (", ".join(second[: D.CODE_IMPACT]), ", ..." if len(second) > D.CODE_IMPACT else ""))
+    return cap("\n".join(lines), "code-impact", lines=D.CODE_IMPACT_LINES)
 
 
 def used(root):
@@ -319,12 +485,27 @@ def cmd_code(ctx, pos, flags):
     root = root_for(where)
     if root is None:
         raise Fail("no project here (%s)" % where, "run it inside a project folder, or lighting code ... --project <path>")
-    refresh(root)
+    fresh = refresh(root, D.CODE_REFRESH_S, wait=False)
     used(root)
+    out = answer(root, pos, flags)
+    if fresh is None:
+        return out + "\n(the index is being updated in the background right now, the newest changes may be missing)"
+    left = _left.get(str(root).lower())
+    return out + ("\n(%d changed files are not read yet, the next lighting code reads on)" % left if left else "")
+
+
+def answer(root, pos, flags):
     if not pos:
         return overview(root)
-    if pos[0].lower() == "callers" and len(pos) == 2:
+    sub = pos[0].lower()
+    if sub == "callers" and len(pos) == 2:
         return callers(root, pos[1])
+    if sub == "outline" and len(pos) == 2:
+        return outline(root, pos[1])
+    if sub == "body" and len(pos) == 2:
+        return body(root, pos[1])
+    if sub == "impact" and len(pos) == 1:
+        return impact(root, flags.get("base"), bool(flags.get("tests")))
     text = " ".join(pos)
     if " " in text.strip():
         return meaning(root, text)

@@ -58,6 +58,7 @@ SCHEMA = {
     "required": ["title", "summary", "why", "rejected", "next", "notes", "lessons"],
 }
 REMINDER = re.compile(r"(?s)<(system-reminder|local-command-caveat)>.*?</\1>")
+STILL_OPEN = "case when last > ? then 'open' else 'done' end"
 TAG = re.compile(r"</?[a-zA-Z][\w-]*(?:\s[^<>]*)?>")
 _st = {"thread": None, "last": "", "learned": 0, "error": ""}
 _lock = threading.Lock()
@@ -88,42 +89,50 @@ def result_text(c):
     return str(v or "")
 
 
-def condense(path, offset):
-    with open(path, "rb") as f:
-        f.seek(offset)
-        data = f.read()
-    end = data.rfind(b"\n") + 1
-    parts, title, paths = [], "", []
-    for raw in data[:end].splitlines():
-        try:
-            d = json.loads(raw)
-        except ValueError:
-            continue
-        t = d.get("type")
-        if t == "ai-title":
-            title = d.get("aiTitle") or title
-            continue
-        if t not in ("user", "assistant") or d.get("isMeta") or d.get("isSidechain"):
-            continue
-        content = (d.get("message") or {}).get("content")
-        if isinstance(content, str):
-            content = [{"type": "text", "text": content}]
-        for c in content or []:
-            k = c.get("type")
-            if k == "text":
-                text = clean(c.get("text"))
-                if text:
-                    parts.append(("USER: " if t == "user" else "CLAUDE: ") + cut(text, D.MEM_TEXT))
-            elif k == "tool_use":
-                a = c.get("input") or {}
-                parts.append("TOOL " + tool_line(c.get("name"), a))
-                f = a.get("file_path") or a.get("notebook_path") or a.get("path")
-                if isinstance(f, str) and re.match(r"^(?:[A-Za-z]:[\\/]|/)", f):
-                    paths += [f] * (3 if c.get("name") in ("Edit", "Write", "NotebookEdit") else 1)
-            elif k == "tool_result" and c.get("is_error"):
-                parts.append("ERROR: " + cut(result_text(c), D.MEM_TOOL_TEXT))
-    condense.paths = paths
-    return M.scrub("\n".join(parts)), offset + end, title
+def condense(path, offset, limit=None):
+    limit = limit or D.MEM_CHUNK_CHARS * D.MEM_CHUNKS
+    parts, title, paths, size, pos, more = [], "", [], 0, offset, False
+    with open(path, "rb") as fh:
+        fh.seek(offset)
+        for raw in fh:
+            if not raw.endswith(b"\n"):
+                break
+            if size >= limit:
+                more = True
+                break
+            pos += len(raw)
+            try:
+                d = json.loads(raw)
+            except ValueError:
+                continue
+            t = d.get("type")
+            if t == "ai-title":
+                title = d.get("aiTitle") or title
+                continue
+            if t not in ("user", "assistant") or d.get("isMeta") or d.get("isSidechain"):
+                continue
+            content = (d.get("message") or {}).get("content")
+            if isinstance(content, str):
+                content = [{"type": "text", "text": content}]
+            for c in content or []:
+                k, piece = c.get("type"), ""
+                if k == "text":
+                    text = clean(c.get("text"))
+                    if text:
+                        piece = ("USER: " if t == "user" else "CLAUDE: ") + cut(text, D.MEM_TEXT)
+                elif k == "tool_use":
+                    a = c.get("input") or {}
+                    piece = "TOOL " + tool_line(c.get("name"), a)
+                    f = a.get("file_path") or a.get("notebook_path") or a.get("path")
+                    if isinstance(f, str) and re.match(r"^(?:[A-Za-z]:[\\/]|/)", f):
+                        paths += [f] * (3 if c.get("name") in ("Edit", "Write", "NotebookEdit") else 1)
+                elif k == "tool_result" and c.get("is_error"):
+                    piece = "ERROR: " + cut(result_text(c), D.MEM_TOOL_TEXT)
+                if piece:
+                    parts.append(piece)
+                    size += len(piece) + 1
+    condense.paths, condense.more = paths, more
+    return M.scrub("\n".join(parts)), pos, title
 
 
 def chunks(text):
@@ -136,7 +145,7 @@ def chunks(text):
         size += len(line) + 1
     if cur:
         out.append("\n".join(cur))
-    return out[-8:]
+    return out
 
 
 def parse(text):
@@ -153,13 +162,15 @@ def learn(row):
     if not Path(row["transcript"]).exists():
         M.write("update sessions set status = 'done' where id = ?", (row["id"],))
         return 0
+    began = time.time()
     text, end, title = condense(row["transcript"], row["offset"])
+    more = condense.more
     sid, project = row["id"], M.project_of_files(condense.paths) or row["project"]
     if project != row["project"]:
         M.write("update sessions set project = ? where id = ?", (project, sid))
     if len(text) < D.MEM_MIN_CHARS:
-        M.write("update sessions set offset = ?, learned = ?, status = 'done', title = coalesce(nullif(?, ''), title) "
-                "where id = ?", (end, time.time(), title, sid))
+        M.write("update sessions set offset = ?, learned = ?, status = " + STILL_OPEN + ", "
+                "title = coalesce(nullif(?, ''), title) where id = ?", (end, time.time(), began, title, sid))
         return 0
     summary = dict({k: row[k] or "" for k in RECORD}, title=title or row["title"])
     added, wiki = 0, []
@@ -181,9 +192,10 @@ def learn(row):
         summary["title"] = title or summary["title"] or out.get("title") or ""
     for n in wiki[: D.WIKI_PER_SESSION]:
         draft(n, project, sid, summary)
-    M.write("update sessions set offset = ?, learned = ?, status = 'done', tries = 0, title = ?, summary = ?, why = ?, "
-            "rejected = ?, next = ? where id = ?", (end, time.time(), M.oneline(summary["title"], 120),
-                                                    *[summary[k] for k in RECORD], sid))
+    M.write("update sessions set offset = ?, learned = ?, status = " + STILL_OPEN + ", tries = 0, title = ?, summary = ?, "
+            "why = ?, rejected = ?, next = ? where id = ?", (end, time.time(), 0 if more else began,
+                                                             M.oneline(summary["title"], 120),
+                                                             *[summary[k] for k in RECORD], sid))
     if not vault.write_session(sid, project, summary, row["started"] or time.time()):
         M.session_note(sid, project, summary["title"], summary["summary"], summary["next"])
     _st["learned"] += added
@@ -291,7 +303,7 @@ def code_some():
     for root in codemap.active_roots():
         if games.running():
             return
-        codemap.refresh(root)
+        codemap.refresh(root, D.CODE_BG_REFRESH_S)
         if codemap.embed_some(root, 40):
             return
 

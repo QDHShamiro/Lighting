@@ -52,6 +52,26 @@ def read_json(path):
         return None
 
 
+def backlog(waiting, last, now):
+    if waiting < D.DOCTOR_LEARN_BACKLOG or now - last < D.DOCTOR_LEARN_STALE_S:
+        return ""
+    return "%d sessions wait to be learned, the last one was learned %s" % (
+        waiting, time.strftime("%m-%d %H:%M", time.localtime(last)) if last else "never")
+
+
+def live_root(settings, key):
+    name, _, market = key.partition("@")
+    src = ((settings.get("extraKnownMarketplaces") or {}).get(market) or {}).get("source") or {}
+    if src.get("source") != "directory" or not src.get("path"):
+        return None
+    base = Path(src["path"])
+    for p in (read_json(base / ".claude-plugin" / "marketplace.json") or {}).get("plugins") or []:
+        if p.get("name") == name and isinstance(p.get("source"), str):
+            root = base / p["source"]
+            return root if (root / ".claude-plugin" / "plugin.json").exists() else None
+    return None
+
+
 def broken_json(path):
     try:
         json.loads(path.read_text("utf-8"))
@@ -452,15 +472,16 @@ class Doctor:
             return
         key, e = sorted(found, key=lambda kv: kv[1].get("scope") != "user")[0]
         self.plugin_key = key
-        path = Path(e.get("installPath") or "")
         settings = read_json(base / "settings.json") or {}
+        live = live_root(settings, key)
+        path = live or Path(e.get("installPath") or "")
         n = len(self.rows)
         if (settings.get("enabledPlugins") or {}).get(key) is False:
             self.add(WARN, "claude", "plugin %s is turned off" % key, "claude plugin enable " + key)
         if not (path / ".claude-plugin" / "plugin.json").exists():
             self.add(FAIL, "claude", "Claude Code's copy of Lighting is missing (%s)" % path, "claude plugin install " + key)
             return
-        ver = e.get("version") or "?"
+        ver = ((read_json(path / ".claude-plugin" / "plugin.json") or {}).get("version") if live else e.get("version")) or "?"
         if ver != D.version():
             hint = '"%s" setup' % (path / "bin" / D.CLIENT) if newer(ver, D.version()) else \
                 "claude plugin update %s, then restart Claude Code" % key
@@ -560,9 +581,15 @@ class Doctor:
             self.add(FAIL, "notes", "the memory database cannot be read: %s" % str(e)[:100], "lighting memory")
             return
         state = MM.status()
+        stuck = backlog(c["q"], (M.one("select max(learned) m from sessions") or {"m": 0})["m"] or 0, time.time())
         if c["q"] and not (MM.api("chat") or MM.ready("chat")):
             self.add(WARN, "notes", "%d sessions wait, the local model is missing (%s)" % (c["q"], state),
                      "lighting memory model")
+        elif stuck:
+            from lighting import games
+            game = games.running()
+            self.add(WARN, "notes", stuck + ("; right now %s runs, learning waits for it" % game if game else ""),
+                     "lighting memory learn")
         else:
             self.add(OK, "notes", "%d notes, %d open to-dos, %d sessions to learn | %s" % (c["n"], c["t"], c["q"], state))
 

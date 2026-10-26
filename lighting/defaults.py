@@ -99,6 +99,9 @@ SHOT_WIDTH = 1024
 SMALL_WIDTH = 768
 JPEG_QUALITY = 70
 OUT_KEEP_HOURS = 24
+OUT_CLEAN_EVERY_S = 6 * 3600
+SERVER_LOG_MAX = 5 << 20
+SERVER_LOG_KEEP = 1 << 20
 LOG_MAX_BYTES = 5_000_000
 
 LONG_WAITS = {"inbox": 300_000, "reply": 300_000, "wait": 10_000, "listen": 900_000}
@@ -140,6 +143,8 @@ VIDEO_FPS = 15
 VIDEO_WIDTH = 1280
 VIDEO_CRF = 30
 SPAWN_TIMEOUT_S = 90
+SPAWN_LOG_LINES = 30
+SPAWN_LIST_DAYS = 7
 APP_WAIT_MS = 30000
 APP_WAIT_OCR_S = 1.5
 LISTEN_CHARS = 1800
@@ -175,6 +180,8 @@ DOCTOR_HUNG_S = 60
 DOCTOR_STUCK_S = 3600
 DOCTOR_FAIL_PCT = 10
 DOCTOR_DISK_MIN_GB = 2
+DOCTOR_LEARN_BACKLOG = 20
+DOCTOR_LEARN_STALE_S = 86400
 DOCTOR_OUT_MAX_MB = 500
 DOCTOR_OUT_KEEP_S = 3600
 DOCTOR_LOG_MAX_MB = 20
@@ -189,6 +196,7 @@ MEM_POLL_S = 60
 MEM_RETRY_S = 1800
 MEM_MAX_TRIES = 3
 MEM_CHUNK_CHARS = 24000
+MEM_CHUNKS = 8
 MEM_MIN_CHARS = 600
 MEM_NOTES_PER_CHUNK = 6
 MEM_TEXT = 1500
@@ -223,12 +231,27 @@ CODE_LIMIT = 10
 CODE_CALLERS = 12
 CODE_ALL_CALLERS = 60
 CODE_EMBED_LINES = 30
+CODE_REFRESH_S = 2
+CODE_BG_REFRESH_S = 20
+CODE_IMPACT_LINES = 60
+CODE_OUTLINE_MAX = 80
+CODE_SIG = 110
+CODE_BODY_MAX = 150
+CODE_IMPACT = 6
 CODE_ACTIVE_DAYS = 7
 MEM_EMBED_BATCH = 32
 MEM_EMBED_CHARS = 1200
 MEM_QUERY_PREFIX = "Instruct: Given a question, find the notes that answer it\nQuery: "
 MEM_SERVER_IDLE_S = 300
 MEM_SERVER_BOOT_S = 120
+MEM_LOCAL_CONNECT_S = 0.25
+MEM_API_PROBE_S = 1.5
+MEM_API_REMOTE_S = 3
+MEM_API_RECHECK_S = 60
+MEM_EMBED_BACKOFF_S = 30
+MEM_HINT_EMBED_S = 0.8
+MEM_QUERY_EMBED_S = 4
+HOOK_SLOW_S = 1.0
 MEM_CTX = 16384
 MEM_EMBED_CTX = 4096
 MEM_ANSWER_TOKENS = 1500
@@ -260,6 +283,7 @@ GAME_PATH_SKIP = ("/epic games/launcher/", "/epic online services/", "eosoverlay
                   "easyanticheat", "battleye", "crashreport", "launcher", "cefsubprocess", "redist", "/steam/steam.exe",
                   "/steam/bin/")
 GAME_FULLSCREEN = (2, 3)
+GAME_D3D = 3
 GAME_MINECRAFT = ("minecraft", ("javaw.exe", "java.exe", "java"))
 RELEASES_URL = "https://api.github.com/repos/QDHShamiro/Lighting/releases/latest"
 DAEMON_STARTED = "lighting daemon started"
@@ -311,15 +335,26 @@ def version():
         return "0.0.0"
 
 
+_config = {"key": None, "data": None}
+
+
 def config():
-    data = dict(CONFIG_DEFAULTS)
     try:
-        data.update(json.loads(CONFIG.read_text("utf-8")))
-    except (OSError, ValueError):
-        pass
-    return data
+        st = CONFIG.stat()
+        key = (st.st_mtime_ns, st.st_size)
+    except OSError:
+        key = None
+    if _config["data"] is None or _config["key"] != key:
+        data = dict(CONFIG_DEFAULTS)
+        try:
+            data.update(json.loads(CONFIG.read_text("utf-8")))
+        except (OSError, ValueError):
+            pass
+        _config["key"], _config["data"] = key, data
+    return dict(_config["data"])
 
 
 def save_config(data):
     HOME.mkdir(parents=True, exist_ok=True)
     CONFIG.write_text(json.dumps(data, indent=2), "utf-8")
+    _config["data"] = None

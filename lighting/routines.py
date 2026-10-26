@@ -1,8 +1,10 @@
 import difflib
 import json
+import os
 import re
 import threading
 import time
+from pathlib import Path
 
 from lighting import defaults as D
 from lighting import recall
@@ -634,18 +636,34 @@ def path(name):
 
 def save(r):
     DIR.mkdir(parents=True, exist_ok=True)
-    path(r["name"]).write_text(json.dumps(r, indent=1, ensure_ascii=False), "utf-8")
+    p = path(r["name"])
+    p.write_text(json.dumps(r, indent=1, ensure_ascii=False), "utf-8")
+    _texts.pop(p.name, None)
+
+
+_texts = {}
 
 
 def load_all():
     out = []
-    if not DIR.exists():
+    try:
+        entries = sorted((e for e in os.scandir(DIR) if e.name.endswith(".json")), key=lambda e: e.name)
+    except OSError:
         return out
-    for p in sorted(DIR.glob("*.json")):
+    seen = set()
+    for e in entries:
+        seen.add(e.name)
         try:
-            out.append(json.loads(p.read_text("utf-8")))
+            st = e.stat()
+            hit = _texts.get(e.name)
+            if not hit or hit[0] != (st.st_mtime_ns, st.st_size):
+                hit = ((st.st_mtime_ns, st.st_size), Path(e.path).read_text("utf-8"))
+                _texts[e.name] = hit
+            out.append(json.loads(hit[1]))
         except (OSError, ValueError):
             pass
+    for name in [n for n in _texts if n not in seen]:
+        _texts.pop(name, None)
     return out
 
 

@@ -1,5 +1,6 @@
 import json
 import re
+import sys
 import threading
 import time
 from pathlib import Path
@@ -66,13 +67,12 @@ def cmd_remember(ctx, pos, flags):
     return "remembered #%d (lighting forget %d undoes it)" % (nid, nid)
 
 
-def query_vec(text, start):
+def query_vec(text, budget, start=False):
     try:
         from lighting import memmodel as MM
-        v = MM.embed([text], query=True, start=start, timeout=15 if start else 3)
-        return None if v is None else v[0]
-    except Exception:
-        return None
+        return MM.query(text, budget, start)
+    except Exception as e:
+        return None, str(e)
 
 
 def cmd_recall(ctx, pos, flags):
@@ -90,14 +90,16 @@ def cmd_recall(ctx, pos, flags):
             "\nfiles: " + files if files else "")
     text = " ".join(pos)
     here = project(ctx, flags)
+    vec, why = query_vec(text, D.MEM_QUERY_EMBED_S, True)
     found = M.search(text, project="" if flags.get("all") else here, limit=int(flags.get("max") or D.MEM_RECALL_MAX),
-                     vec=query_vec(text, True))
+                     vec=vec)
+    note = "words only, %s" % why if why else ""
     if not found:
-        return 'nothing remembered about "%s"' % text
+        return 'nothing remembered about "%s"%s' % (text, " (%s)" % note if note else "")
     M.touch([r["id"] for r in found])
     for r in found:
         r["other"] = bool(here) and r["project"] != here
-    return "\n".join(line(r) for r in found) + "\n(lighting recall <id> shows one in full)"
+    return "\n".join(line(r) for r in found) + "\n(lighting recall <id> shows one in full%s)" % ("; " + note if note else "")
 
 
 def cmd_forget(ctx, pos, flags):
@@ -211,8 +213,8 @@ def start_text(here, cwd=""):
         lines.append("%d wiki drafts wait for a yes or no: lighting wiki" % waiting)
     if c["q"]:
         from lighting import memmodel as MM
-        if not (MM.api("chat") or MM.ready("chat")):
-            lines.append("(%d sessions wait to be learned: %s)" % (c["q"], MM.status()))
+        if not (MM.ready("chat") or MM.api("chat", wait=False)):
+            lines.append("(%d sessions wait to be learned: %s)" % (c["q"], MM.status(wait=False)))
     return "\n".join(lines)
 
 
@@ -226,16 +228,23 @@ def hook_input(pos):
 def cmd_hook(ctx, pos, flags):
     if not D.config().get("memory"):
         return ""
+    t0 = time.perf_counter()
     event = pos[0].lower() if pos else ""
     data = hook_input(pos)
     cwd = data.get("cwd") or getattr(ctx, "cwd", None) or ""
     here = M.project_of(cwd)
     sid = data.get("session_id") or getattr(ctx, "sid", "")
     M.session_seen(sid, here, cwd, data.get("transcript_path") or "", ended=event == "end")
+    t1 = time.perf_counter()
     if event == "start":
         from lighting import memlearn
         memlearn.start()
-        return start_text(here, cwd)
+        text = start_text(here, cwd)
+        t2 = time.perf_counter()
+        if t2 - t0 >= D.HOOK_SLOW_S:
+            print("slow hook start: session %.0f ms, summary %.0f ms" % ((t1 - t0) * 1000, (t2 - t1) * 1000),
+                  file=sys.stderr, flush=True)
+        return text
     if event == "compact":
         from lighting import memlearn
         threading.Thread(target=memlearn.tick, args=(True,), daemon=True).start()
@@ -255,16 +264,18 @@ def on_prompt(ctx, prompt):
     if len(stems) < 3:
         return []
     here = M.project_of(getattr(ctx, "cwd", None) or "")
-    qv = query_vec(prompt, False)
+    qv, _ = query_vec(prompt, D.MEM_HINT_EMBED_S)
+    if qv is None:
+        return []
     out = []
     for r in M.search(prompt, project=here, limit=8, vec=qv, min_sim=D.MEM_HINT_SIM):
         key = "m:%d" % r["id"]
-        if key in ctx.told or r["kind"] == "session" or r["project"] not in (here, ""):
+        if key in ctx.told or r["kind"] in ("session", "draft") or r["project"] not in (here, ""):
             continue
         have = {stem(w) for w in words(r["title"] + " " + (r["body"] or ""))}
         hit = len(stems & have)
         words_ok = hit >= D.MEM_HINT_TERMS and hit / len(stems) >= D.MEM_HINT_SHARE
-        if words_ok and (qv is None or (r["sim"] or 0) >= D.MEM_HINT_SIM):
+        if words_ok and (r["sim"] or 0) >= D.MEM_HINT_SIM:
             ctx.told[key] = time.time()
             out.append("#%d %s" % (r["id"], M.oneline(r["title"], 100)))
         if len(out) >= D.MEM_HINTS:
@@ -330,18 +341,25 @@ def cmd_memory(ctx, pos, flags):
     if sub == "model":
         started = MM.download_bg() if not (MM.ready("chat") and MM.ready("embed")) else False
         return MM.status() + (" | download started" if started else "")
+    from lighting import games
+    game = games.running()
     if sub == "learn":
         M.write("update sessions set retry_at = 0, tries = 0 where status = 'open' and transcript != ''")
         memlearn.start()
+        if game:
+            return "%d sessions wait: %s runs, learning starts by itself when it ends" % (M.counts()["q"], game)
         threading.Thread(target=memlearn.tick, args=(True,), daemon=True).start()
         return "learning %d sessions in the background (lighting memory shows the state)" % M.counts()["q"]
     if sub:
         raise Fail("unknown memory command '%s'" % sub, MEMORY_HELP)
     c, st = M.counts(), memlearn.state()
+    last = (M.one("select max(learned) m from sessions") or {"m": 0})["m"] or 0
+    learned = st["last"] or (time.strftime("%m-%d %H:%M learned", time.localtime(last)) if last else "")
     return "\n".join(x for x in [
         "memory %s: %d notes (%d with vectors), %d open to-dos, %d session summaries, %d sessions to learn" % (
             "on" if D.config().get("memory") else "off", c["n"], c["v"], c["t"], c["s"], c["q"]),
         "model: " + MM.status(),
-        "last: %s" % st["last"] if st["last"] else "",
+        "learning waits: %s runs" % game if game and c["q"] else "",
+        "last: %s" % learned if learned else "",
         "problem: %s" % st["error"] if st["error"] else "",
         "kept on this PC only (%s) | %s" % (D.MEMORY_DB.as_posix(), MEMORY_HELP)] if x)

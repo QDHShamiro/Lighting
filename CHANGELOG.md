@@ -24,6 +24,17 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - `recall` also searches the vault (`config vault <folder>`, plain Markdown, Obsidian keeps working) and Claude
   Code's own memory files, and says where a note comes from.
 - `lighting memory import context-engine` copies old Context Engine session notes into the vault.
+- `code outline <file>` (signatures with their lines instead of the whole file), `code body <Name|Class.name>` (just
+  that function) and `code impact [--base main]` (every function the changes touch, with its callers two levels
+  deep, callers in other languages left out).
+- Batch: `do` is also called `batch`; `?step` is optional (a cookie banner that only comes sometimes),
+  `--keep-going` runs every step and counts the failures, `--quiet` prints only the last answer, and steps can
+  stand one per line (a heredoc, no `;` quoting).
+- `lighting claude "task" --yes --bg` starts Claude as a background session: no window, nothing typed, so it works
+  while a game runs and never takes the screen; `claude attach <id>` shows it, and in a git repo its edits land in
+  a worktree under `.claude/worktrees/`. `claude list` (with the reason a session waits) and `claude logs <id>`
+  (only the last lines, without terminal codes) keep an eye on them.
+- A mistyped or guessed command names the right one: `find` -> `snap -f`, `code` or `recall`; `clik` -> `click`.
 
 ### Changed
 - The start info names the project, the open to-dos, the last 3 sessions with what is open, the last 5 commits,
@@ -32,6 +43,40 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   folder is no project, and a session belongs to the project whose files it touched.
 - Hints while you type come only from the same project, need matching words and meaning, and are at most 2.
 - The session note covers every part of a long session, not only the last one; empty points are left out.
+
+### Fixed
+- The memory never waits long for the model. `recall` took 2 s and the start info 2-3 s (up to 15 s) whenever the
+  model server was off or busy: Windows needs 2 s to refuse a connection to a closed local port. A closed port is
+  now found in 0.25 s, the start info does not ask the model at all, hints wait at most 0.8 s and `recall` at most
+  4 s (then it searches by words and says so), and after a failed answer the model is left alone for 30 s.
+- `lighting code "what it does"` no longer fails while the model is paused (a game runs) or its meaning index is
+  still building: it lists the code whose names contain the words.
+- Hints while you type need meaning and words also when the model is paused; before, words alone showed unrelated
+  notes during games. Text that Claude Code adds by itself (task notifications) gets no hints or routines.
+- Tabs closed again after a reply: the Stop hook's memory part cancelled the 20 s cleanup in 66% of the replies
+  (238 of 360 from 10-18 to 10-25), so tabs of a session's last reply stayed open.
+- Code map: a file indexed again kept the meaning vectors of its old version (SQLite reused the ids), so the search
+  by meaning was wrong exactly where you work; all vectors are rebuilt once. Two threads no longer index the same
+  project at once, `lighting code` never waits for the background index, the first call in a big repo reads for
+  at most 2 s and says what is left, and files with umlauts in their path are no longer skipped.
+- `config learn off`, `brain off` and `cleanup off` apply to running sessions at once (before: after up to 12 h).
+- Learning a long session reads the transcript line by line and continues where it stopped; before, it loaded the
+  whole rest into memory and silently dropped everything before the last 8 parts. A session that went on while
+  it was being learned stays open, so its end is learned too.
+- Sessions are learned again: a window that only looked fullscreen (the NVIDIA overlay, Discord filling a second
+  screen) counted as a running game, so the learner stopped every minute; from 10-22 to 10-25 it learned 1 session
+  and never tried the other 55. Windows' "fullscreen" state now counts only when the window in front fills its
+  monitor (Direct3D fullscreen always counts, known games are still found by their process). The newest sessions
+  are learned first, `lighting memory` says when learning waits for a game, and `doctor` warns when sessions pile
+  up for a day.
+- A missing vault folder (drive not ready, renamed) no longer removes all vault notes from the memory; a session
+  note moves along when the session's project changes; unchecked wiki drafts are never offered as hints;
+  `wiki accept` keeps the line endings of the INDEX file.
+- `doctor` no longer claims Claude Code loads an old Lighting when the plugin comes from a folder marketplace:
+  Claude Code loads it live from that folder, only `installed_plugins.json` keeps the first version.
+- Old `listen` recordings are deleted after a day like other output (181 folders had piled up), the local model's
+  logs are kept small, a stop by hotkey can no longer leave the browser channel hanging, and the routine files are
+  read from disk only when they changed (10 ms -> 1.5 ms after every action).
 
 ## [2.0.0] - 2026-10-22
 

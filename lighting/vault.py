@@ -22,6 +22,7 @@ BUILTIN = {
 HOMES = {"mistake": "Knowledge/Mistakes", "pattern": "Knowledge/Patterns", "rule": "Rules"}
 INDEXES = {"mistake": "Knowledge/INDEX.md", "pattern": "Knowledge/INDEX.md", "rule": "Rules/INDEX.md"}
 SECTION_OF = {"mistake": "Mistakes", "pattern": "Patterns"}
+_inbox = ["inbox"]
 
 
 def root():
@@ -51,6 +52,8 @@ def front(text):
 
 def vault_kind(rel):
     low = rel.lower()
+    if low.startswith(_inbox[0] + "/"):
+        return "draft"
     return next((kind for prefix, kind in KIND_DIRS if low.startswith(prefix + "/")), "note")
 
 
@@ -90,10 +93,11 @@ def files(base, claude):
 def index_source(source, bases, claude):
     have = {r["origin"]: (r["id"], r["updated"]) for r in
             M.rows("select id, origin, updated from notes where source = ?", (source,))}
-    seen, changed = set(), 0
+    seen, changed, scanned = set(), 0, False
     for base in bases:
         if not base.is_dir():
             continue
+        scanned = True
         for p, rel in files(base, claude):
             origin = "%s:%s" % (source, p.as_posix())
             seen.add(origin)
@@ -118,7 +122,7 @@ def index_source(source, bases, claude):
                         "values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         (project, kind, title, body, "[]", source, mtime, mtime, origin))
             changed += 1
-    gone = [(v[0],) for k, v in have.items() if k not in seen]
+    gone = [(v[0],) for k, v in have.items() if k not in seen] if scanned else []
     if gone:
         M.many("delete from notes where id = ?", gone)
         M.drop_cache()
@@ -127,6 +131,7 @@ def index_source(source, bases, claude):
 
 def index():
     t = time.time()
+    _inbox[0] = (D.config().get("vault_inbox") or "Inbox").strip("/").lower()
     n = index_source("vault", [root()], False) + index_source("claude", claude_dirs(), True)
     M.meta("vault_indexed", t)
     return n
@@ -138,8 +143,9 @@ def safe_name(text, n=60):
 
 
 def session_file(sid, project):
-    folder = root() / "Sessions" / safe_name(project or "general", 80)
-    old = next(iter(folder.glob("* %s.md" % sid[:8])), None) if folder.is_dir() else None
+    base = root() / "Sessions"
+    folder = base / safe_name(project or "general", 80)
+    old = next(iter(base.glob("*/* %s.md" % sid[:8])), None) if base.is_dir() else None
     return folder, old
 
 
@@ -216,7 +222,7 @@ def accept(path, folder=None):
     if dest.exists():
         raise ValueError("%s already exists" % dest.relative_to(root()).as_posix())
     dest_dir.mkdir(parents=True, exist_ok=True)
-    dest.write_text(re.sub(r"(?m)^draft: true\n", "", text, count=1), "utf-8")
+    dest.write_text(re.sub(r"(?m)^draft: true\n", "", text, count=1), "utf-8", newline="\n")
     path.unlink()
     register(dest, kind, meta.get("project", "-"))
     return dest
@@ -230,6 +236,7 @@ def register(dest, kind, project):
     index = root() / INDEXES.get(kind, "Knowledge/INDEX.md")
     if not index.exists():
         return
+    eol = "\r\n" if b"\r\n" in index.read_bytes() else "\n"
     text = index.read_text("utf-8")
     section = SECTION_OF.get(kind)
     m = re.search(r"(?m)^## %s\s*$" % re.escape(section), text) if section else None
@@ -239,7 +246,7 @@ def register(dest, kind, project):
         text = text[:end].rstrip("\n") + "\n" + line + "\n" + text[end:]
     else:
         text = text.rstrip("\n") + "\n" + line + "\n"
-    index.write_text(text, "utf-8")
+    index.write_text(text, "utf-8", newline=eol)
 
 
 def drop(path):
