@@ -70,7 +70,7 @@ def bg_list(flags):
 
 def bg_logs(sid):
     text = re.sub(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07]*\x07", "", claude_out(["logs", sid]))
-    lines = [x.rstrip() for x in text.splitlines() if x.strip() and not set(x.strip()) <= set("─━-")]
+    lines = [x.rstrip() for x in text.splitlines() if x.strip() and x.count("─") + x.count("━") < len(x.strip()) // 2]
     return "\n".join(lines[-D.SPAWN_LOG_LINES:]) or "no output yet from %s" % sid
 
 

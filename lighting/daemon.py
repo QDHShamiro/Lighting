@@ -96,6 +96,8 @@ class Host:
 class Daemon:
     def __init__(self):
         self.jobs = queue.Queue()
+        self.memory_jobs = queue.Queue()
+        self.ctx_lock = threading.Lock()
         self.hosts = []
         self.events = collections.deque(maxlen=30)
         self.abort = threading.Event()
@@ -115,7 +117,9 @@ class Daemon:
 
     def session_rows(self):
         rows = {}
-        for sid, c in self.ctxs.items():
+        with self.ctx_lock:
+            ctxs = list(self.ctxs.items())
+        for sid, c in ctxs:
             st = getattr(c, "app", None)
             if sid:
                 rows[sid] = {"group": c.group, "tabs": list(c.tabs), "owned": sorted(c.owned), "used": int(c.used),
@@ -225,12 +229,14 @@ class Daemon:
         if msg.get("type") == "hello":
             self.add_host(conn, msg)
             return
-        if (msg.get("argv") or [""])[0] == "abort":
+        name = (msg.get("argv") or [""])[0]
+        if name == "abort":
             self.abort_all()
             res = {"out": "stopped the running and queued commands", "code": 0}
         else:
+            from lighting import commands
             reply = queue.Queue(1)
-            self.jobs.put((msg, reply))
+            (self.memory_jobs if name.lower() in commands.MEMORY_LANE else self.jobs).put((msg, reply))
             res = reply.get()
         try:
             if fast:
@@ -250,20 +256,36 @@ class Daemon:
             os._exit(0)
 
     def context(self, commands, sid):
-        now = time.time()
-        for key in [k for k, c in self.ctxs.items() if k and now - c.used > D.SESSION_IDLE_S]:
-            del self.ctxs[key]
-        ctx = self.ctxs.get(sid)
-        if ctx is None:
-            ctx = self.ctxs[sid] = commands.Context(self, sid)
-            if sid:
-                taken = {c.group for c in self.ctxs.values() if c is not ctx}
-                n = 1
-                while "Lighting #%d" % n in taken:
-                    n += 1
-                ctx.group = "Lighting #%d" % n
-        ctx.used = now
-        return ctx
+        with self.ctx_lock:
+            now = time.time()
+            for key in [k for k, c in self.ctxs.items() if k and now - c.used > D.SESSION_IDLE_S]:
+                del self.ctxs[key]
+            ctx = self.ctxs.get(sid)
+            if ctx is None:
+                ctx = self.ctxs[sid] = commands.Context(self, sid)
+                if sid:
+                    taken = {c.group for c in self.ctxs.values() if c is not ctx}
+                    n = 1
+                    while "Lighting #%d" % n in taken:
+                        n += 1
+                    ctx.group = "Lighting #%d" % n
+            ctx.used = now
+            return ctx
+
+    def memory_worker(self):
+        from lighting import commands
+        while True:
+            msg, reply = self.memory_jobs.get()
+            ctx = self.context(commands, msg.get("sid") or "")
+            if (msg.get("argv") or [""])[0].lower() not in commands.QUIET_CMDS:
+                ctx.closing = 0.0
+            view = ctx.memory_view()
+            res = self.guarded(lambda: commands.run(view, msg))
+            if res.get("pending"):
+                self.waits.append((res["pending"], reply, view))
+                self.jobs.put((None, None))
+            else:
+                reply.put(res)
 
     def worker(self):
         from lighting import commands
@@ -342,6 +364,7 @@ class Daemon:
         except OSError:
             pass
         threading.Thread(target=self.worker, daemon=True).start()
+        threading.Thread(target=self.memory_worker, daemon=True).start()
         threading.Thread(target=self.hotkey_loop, daemon=True).start()
         threading.Thread(target=warm_apps, daemon=True).start()
         threading.Thread(target=clean_loop, daemon=True).start()

@@ -662,7 +662,7 @@ def load_all():
             out.append(json.loads(hit[1]))
         except (OSError, ValueError):
             pass
-    for name in [n for n in _texts if n not in seen]:
+    for name in [n for n in list(_texts) if n not in seen]:
         _texts.pop(name, None)
     return out
 

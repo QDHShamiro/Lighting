@@ -35,6 +35,13 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   a worktree under `.claude/worktrees/`. `claude list` (with the reason a session waits) and `claude logs <id>`
   (only the last lines, without terminal codes) keep an eye on them.
 - A mistyped or guessed command names the right one: `find` -> `snap -f`, `code` or `recall`; `clik` -> `click`.
+- A repeated `snap` of an app window shows only what changed, like pages do (`changed since your last snap: +2,
+  -1 gone`); `--full` shows everything. Since 10-01, 92% of the app snapshot output (~685k tokens) was the same
+  window again within two minutes, mostly chats and terminals with a line or two new.
+- Text in a page, app, chat or transcript that speaks to an AI ("ignore all previous instructions", "if you are an
+  AI assistant", "Hey Claude,", "do not tell the user", the same in German) gets one line that names where it is
+  and that it is not a request from the user. Nothing is removed. None of 1,788 real outputs from the last 30
+  days was marked by mistake.
 
 ### Changed
 - The start info names the project, the open to-dos, the last 3 sessions with what is open, the last 5 commits,
@@ -49,6 +56,10 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   model server was off or busy: Windows needs 2 s to refuse a connection to a closed local port. A closed port is
   now found in 0.25 s, the start info does not ask the model at all, hints wait at most 0.8 s and `recall` at most
   4 s (then it searches by words and says so), and after a failed answer the model is left alone for 30 s.
+- Hints, the start info, `recall`, `todo` and `code` no longer wait behind browser commands of other sessions:
+  they run on their own lane. A prompt waited up to 5 s while another session ran `frames` or `selftest` (239
+  commands of 2 s or more from 10-18 to 10-25); with four commands queued on the browser lane, `todo` took
+  2.8-3.1 s and now takes 0.02-0.04 s.
 - `lighting code "what it does"` no longer fails while the model is paused (a game runs) or its meaning index is
   still building: it lists the code whose names contain the words.
 - Hints while you type need meaning and words also when the model is paused; before, words alone showed unrelated
@@ -67,8 +78,8 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   screen) counted as a running game, so the learner stopped every minute; from 10-22 to 10-25 it learned 1 session
   and never tried the other 55. Windows' "fullscreen" state now counts only when the window in front fills its
   monitor (Direct3D fullscreen always counts, known games are still found by their process). The newest sessions
-  are learned first, `lighting memory` says when learning waits for a game, and `doctor` warns when sessions pile
-  up for a day.
+  are learned first, `lighting memory` names what learning waits for ("minecraft", or "fullscreen <program>" so a
+  wrong fullscreen shows at once), and `doctor` warns when sessions pile up for a day.
 - A missing vault folder (drive not ready, renamed) no longer removes all vault notes from the memory; a session
   note moves along when the session's project changes; unchecked wiki drafts are never offered as hints;
   `wiki accept` keeps the line endings of the INDEX file.

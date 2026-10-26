@@ -146,6 +146,8 @@ SPAWN_TIMEOUT_S = 90
 SPAWN_LOG_LINES = 30
 SPAWN_LIST_DAYS = 7
 APP_WAIT_MS = 30000
+APP_DELTA_S = 300
+APP_DELTA_SHARE = 0.5
 APP_WAIT_OCR_S = 1.5
 LISTEN_CHARS = 1800
 
@@ -350,7 +352,7 @@ def config():
             data.update(json.loads(CONFIG.read_text("utf-8")))
         except (OSError, ValueError):
             pass
-        _config["key"], _config["data"] = key, data
+        _config["data"], _config["key"] = data, key
     return dict(_config["data"])
 
 

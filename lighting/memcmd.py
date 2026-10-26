@@ -179,7 +179,8 @@ def commits(cwd):
     return ["Last commits:"] + ["  " + M.oneline(x, 100) for x in rows] if rows else []
 
 
-def start_text(here, cwd=""):
+def start_text(here, cwd="", times=None):
+    times = {} if times is None else times
     c = M.counts()
     lines = ['Lighting memory (%s): lighting recall "<words>" searches %d notes (vault, session notes and Claude '
              'memory included), lighting remember "<fact>" keeps one, lighting todo tracks work.'
@@ -196,8 +197,10 @@ def start_text(here, cwd=""):
             nxt = " Open: " + M.oneline(s["next"], 90) if s["next"] else ""
             lines.append("  %s %s: %s%s" % (M.day(s["last"]), M.oneline(s["title"] or "-", 50),
                                              M.oneline(s["summary"], 100), nxt))
+    t = time.perf_counter()
     if here and cwd:
         lines += commits(cwd)
+    times["git"] = time.perf_counter() - t
     rules = M.rows("select id, title from notes where kind = 'rule' and source = 'vault' and project = ? "
                    "order by updated desc limit ?", (here, D.MEM_START_RULES)) if here else []
     if rules:
@@ -208,7 +211,9 @@ def start_text(here, cwd=""):
     if mine:
         lines.append("Remembered:")
         lines += ["  #%d %s" % (r["id"], M.oneline(r["title"], D.MEM_LINE)) for r in mine]
+    t = time.perf_counter()
     waiting = len(vault.drafts())
+    times["vault"] = time.perf_counter() - t
     if waiting:
         lines.append("%d wiki drafts wait for a yes or no: lighting wiki" % waiting)
     if c["q"]:
@@ -239,11 +244,13 @@ def cmd_hook(ctx, pos, flags):
     if event == "start":
         from lighting import memlearn
         memlearn.start()
-        text = start_text(here, cwd)
+        times = {}
+        text = start_text(here, cwd, times)
         t2 = time.perf_counter()
         if t2 - t0 >= D.HOOK_SLOW_S:
-            print("slow hook start: session %.0f ms, summary %.0f ms" % ((t1 - t0) * 1000, (t2 - t1) * 1000),
-                  file=sys.stderr, flush=True)
+            print("slow hook start: session %.0f ms, summary %.0f ms (git %.0f ms, vault %.0f ms)" % (
+                (t1 - t0) * 1000, (t2 - t1) * 1000, times.get("git", 0) * 1000, times.get("vault", 0) * 1000),
+                file=sys.stderr, flush=True)
         return text
     if event == "compact":
         from lighting import memlearn

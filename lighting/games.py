@@ -54,9 +54,6 @@ def running():
 def _windows():
     import ctypes
     from ctypes import wintypes as w
-    state = ctypes.c_int(0)
-    if ctypes.windll.shell32.SHQueryUserNotificationState(ctypes.byref(state)) == 0 and fullscreen(state.value, front_covers):
-        return "fullscreen"
     k32, user32 = ctypes.windll.kernel32, ctypes.windll.user32
 
     def path_of(pid):
@@ -68,6 +65,9 @@ def _windows():
             return buf.value if k32.QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(size)) else ""
         finally:
             k32.CloseHandle(h)
+
+    def exe_of(pid):
+        return path_of(pid).lower().replace("\\", "/").rsplit("/", 1)[-1]
 
     title, exes = D.GAME_MINECRAFT
     found = []
@@ -85,8 +85,13 @@ def _windows():
         return True
 
     user32.EnumWindows(visit, 0)
-    if any(path_of(pid).lower().replace("\\", "/").rsplit("/", 1)[-1] in exes for pid in found):
+    if any(exe_of(pid) in exes for pid in found):
         return "minecraft"
+    state = ctypes.c_int(0)
+    if ctypes.windll.shell32.SHQueryUserNotificationState(ctypes.byref(state)) == 0 and fullscreen(state.value, front_covers):
+        pid = w.DWORD(0)
+        user32.GetWindowThreadProcessId(user32.GetForegroundWindow(), ctypes.byref(pid))
+        return ("fullscreen " + exe_of(pid.value)).strip()
     pids, need = (w.DWORD * 8192)(), w.DWORD()
     if not ctypes.windll.psapi.EnumProcesses(ctypes.byref(pids), ctypes.sizeof(pids), ctypes.byref(need)):
         return ""

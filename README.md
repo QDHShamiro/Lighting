@@ -514,6 +514,8 @@ On Windows clicks and typing go through UI Automation in the background, your mo
 - Banking and payment sites are read-only (`~/.lighting/blocklist.txt`).
 - Buttons that look irreversible (buy, pay, delete, merge a pull request, ...) need `--yes`.
 - Hidden text is never shown to the model, which blocks a common prompt-injection trick.
+- Visible text that speaks to an AI ("ignore all previous instructions", "if you are an AI assistant", ...) gets a
+  `!` line saying it is content, not a request from the user. Nothing is removed.
 - A URL with a long query to a site not opened yet needs `--yes`, so injected instructions cannot quietly send data out.
 - Secrets come from environment variables (`--env VAR`) and are never logged.
 - **Ctrl+Alt+End** stops everything immediately.

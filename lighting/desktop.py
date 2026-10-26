@@ -2,6 +2,7 @@ import os
 import re
 import threading
 import time
+from collections import Counter
 
 from lighting import defaults as D
 from lighting import pointer
@@ -34,6 +35,7 @@ class AppState:
         self.front0 = None
         self.slow = set()
         self.last_snap = {}
+        self.last_lines = {}
         self.full = None
         self.info = {}
         self.seen_front = None
@@ -510,10 +512,32 @@ def cmd_snap(ctx, pos, flags):
         from lighting import brain, keys
         exe = win.exe_of(win.pid_of(hwnd)).lower()
         head, _, rest = text.partition("\n")
+        lines = st.full[2] if st.full and st.full[0] == hwnd else None
+        old = st.last_lines.get(hwnd)
+        st.last_lines[hwnd] = (time.time(), lines) if lines is not None else None
+        delta = None if flags.get("full") or flags.get("web") else changes(old, lines, wref(ctx, hwnd))
+        if delta:
+            return cap(head + "\n" + delta, "app-snap", lines=D.SNAP_LINES)
         text = head + keys.hint(exe) + "\n" + rest
         if not flags.get("full") and not flags.get("web"):
             text = brain.prune(ctx, text, "app:" + exe)
     return cap(text, "app-snap", lines=D.SNAP_LINES)
+
+
+def changes(old, lines, ref):
+    if not old or not old[1] or lines is None or time.time() - old[0] > D.APP_DELTA_S:
+        return None
+    before, now = Counter(old[1]), Counter(lines)
+    if sum((before & now).values()) < len(lines) * D.APP_DELTA_SHARE:
+        return None
+    added, seen = [], Counter()
+    for line in lines:
+        seen[line] += 1
+        if seen[line] > before[line]:
+            added.append(line)
+    gone = sum((before - now).values())
+    return "\n".join(["changed since your last snap: +%d%s (all %d lines: lighting snap %s --full)" % (
+        len(added), ", -%d gone" % gone if gone else "", len(lines), ref)] + fold(added)[0])
 
 
 def before_action(ctx, hwnd):
