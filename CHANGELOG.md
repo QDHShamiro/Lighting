@@ -17,11 +17,13 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   POSIX classes like `[[:digit:]]`, `-i -w -x -l -c -C`. Results are grouped by file (no path on every line, no
   file line when one file is searched), indentation is dropped, very long lines (JSONL, minified files) are cut to
   the part around the hit, and at most 80 lines are shown with the full list in a file. A search with no hits says
-  how many files it searched. It follows `.gitignore` in repos, skips binary files and folders like
-  `node_modules`, reads UTF-16 files (Windows PowerShell output), takes `--include "*.{py,md}"`, `--exclude`,
-  `--exclude-dir` or `--glob "!*.md"`, and searches a pattern that cannot be read as plain text. Replayed 300 grep
-  commands from 30 days of Claude Code transcripts against GNU grep: the same hits in 298 (the other 2 only
-  differ by files in skipped folders), output 5% shorter for searches with hits; recursive searches over many
+  how many files it searched. It follows `.gitignore` in repos (and in repos nested inside the folder), skips
+  binary files and folders like `node_modules`, reads UTF-16 files (Windows PowerShell output), counts lines the
+  way grep and editors do (a lone carriage return in a progress log is no line break), takes
+  `--include "*.{py,md}"`, `--exclude`, `--exclude-dir` or `--glob "!*.md"`, and searches a pattern that cannot be
+  read as plain text. Replayed 1,500 grep commands from 30 days of Claude Code transcripts against GNU grep: the
+  same hits in 1,486, the others differ by files in skipped folders (`node_modules`, `target`), files GNU grep
+  takes for binary, or a byte-order mark; output 7% shorter for searches with hits; recursive searches over many
   files save more (31% in 6 searches in Lighting's own code).
 - `lighting squeeze`: long command output in short, the idea of [Headroom](https://github.com/chopratejas/headroom)
   run locally (no proxy, nothing leaves the PC). `squeeze <file>`, `<command> 2>&1 | lighting squeeze` or

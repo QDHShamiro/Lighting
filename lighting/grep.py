@@ -192,7 +192,10 @@ def git_files(root):
     except (OSError, subprocess.TimeoutExpired):
         return None
     names = out.stdout.decode("utf-8", "replace").split("\0") if out.returncode == 0 else []
-    return [root / n for n in sorted(set(n for n in names if n))] or None
+    found = []
+    for n in sorted(set(n for n in names if n)):
+        found += (git_files(root / n) or []) if n.endswith("/") else [root / n]
+    return found or None
 
 
 def walk_files(root, hidden, skipdirs):
@@ -230,7 +233,7 @@ def candidates(root, base, single, o, globs, skipdirs):
 
 
 def snippet(line, m, rx, keep):
-    text = line.rstrip() if keep else line.strip()
+    text = (line.rstrip() if keep else line.strip()).replace("\r", " ")
     if len(text) <= D.GREP_LONG:
         return text
     if m is None:
@@ -276,9 +279,10 @@ def encoding_of(head):
 
 
 def stream(path, enc):
-    with open(path, "r", encoding=enc, errors="replace") as fh:
+    with open(path, "r", encoding=enc, errors="replace", newline="\n") as fh:
         for line in fh:
-            yield line.rstrip("\n")
+            line = line[:-1] if line.endswith("\n") else line
+            yield line[:-1] if line.endswith("\r") else line
 
 
 def scan(path, rx, pre, o):
@@ -292,8 +296,8 @@ def scan(path, rx, pre, o):
             return "binary"
         if size > D.GREP_WHOLE:
             return hits(stream(path, enc), rx, o)
-        with open(path, "r", encoding=enc, errors="replace") as fh:
-            text = fh.read()
+        with open(path, "r", encoding=enc, errors="replace", newline="\n") as fh:
+            text = fh.read().replace("\r\n", "\n")
         if pre is not None and not pre.search(text):
             return 0, []
         return hits((text[:-1] if text.endswith("\n") else text).split("\n"), rx, o)

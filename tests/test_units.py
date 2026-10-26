@@ -1907,6 +1907,7 @@ def test_memory_model_never_stalls():
 
 
 def test_grep_searches_right_and_short():
+    import subprocess
     import threading
     import time
     import types
@@ -1993,6 +1994,20 @@ def test_grep_searches_right_and_short():
         finally:
             grep.search = real
         assert out is not None and out.startswith("8: hit 7\n"), out
+    D.GREP_INLINE_S = 30
+    with tempfile.TemporaryDirectory() as tmp:
+        outer = Path(tmp)
+        (outer / "inner").mkdir()
+        (outer / "top.txt").write_text("deepword at top\n", "utf-8")
+        (outer / "inner" / "deep.txt").write_text("one\ndeepword inside\n", "utf-8")
+        for repo in (outer, outer / "inner"):
+            subprocess.run(["git", "-C", str(repo), "init", "-q"], capture_output=True, check=True)
+        (outer / "cr.log").write_bytes(b"50%\r100%\nneedle\r\nx\rneedle2\n")
+        ctx = types.SimpleNamespace(cwd=tmp)
+        out = grep.cmd_grep(ctx, ["deepword"], {})
+        assert "inner/deep.txt" in out and "2: deepword inside" in out and "top.txt" in out, out
+        assert grep.cmd_grep(ctx, ["needle", "cr.log"], {}) == "2: needle\n3: x needle2"
+        assert grep.cmd_grep(ctx, ["needle$", "cr.log"], {}) == "2: needle"
     D.GREP_INLINE_S = keep_inline
 
 
