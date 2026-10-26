@@ -45,6 +45,9 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   tokens read, ~35M without Lighting. From now on the log also keeps how much Lighting cut from its own
   answers (snap deltas, long answers to a file, brain filter, code outlines), shown as an exact line. A snap
   delta now says what the full snapshot would cost (`all 312 lines, ~4,100 tokens: lighting snap --full`).
+- After `/compact` the start info is short: the session's tabs (with the current page) and windows, whose refs
+  still work, plus the project's rules and remembered notes. ~28 tokens instead of 313-461 on this PC.
+- `recall` marks a note that is big in full with its size (`~1.8kt`), so opening `recall 42` is a choice.
 - Text in a page, app, chat or transcript that speaks to an AI ("ignore all previous instructions", "if you are an
   AI assistant", "Hey Claude,", "do not tell the user", the same in German) gets one line that names where it is
   and that it is not a request from the user. Nothing is removed. None of 1,788 real outputs from the last 30

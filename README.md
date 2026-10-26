@@ -215,6 +215,8 @@ claude   lighting todo add "Release 2.0" --list lighting
 - **Finds by meaning.** Search mixes words and meaning, in any language: "welcher port für geyser" finds the
   English note "Geyser Bedrock 20165, Simple Voice Chat 20166".
 - **Speaks up.** A prompt that clearly fits old notes of the same project shows their numbers, never more than two.
+- **Short after `/compact`.** The summary keeps the conversation, Lighting adds only the session's tab and window
+  refs, the project's rules and what you asked it to keep (~30 tokens instead of 300-460).
 - **Writes the notes for you.** After a session, the local model writes its note into your vault (done, why,
   tried and rejected, left open), one Markdown file per session under `Sessions/<project>/`. No tokens spent on it.
 - **Keeps a wiki with you.** A mistake with its cause, a rule you gave or a reusable pattern becomes a draft in

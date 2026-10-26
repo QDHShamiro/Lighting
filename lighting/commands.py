@@ -74,7 +74,7 @@ class Context:
     def memory_view(self):
         if self.view is None:
             self.view = Context(self.d, self.sid)
-            self.view.prompts, self.view.told, self.view.side = self.prompts, self.told, True
+            self.view.prompts, self.view.told, self.view.side, self.view.main = self.prompts, self.told, True, self
         return self.view
 
     def kind(self):

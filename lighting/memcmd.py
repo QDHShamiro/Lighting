@@ -37,7 +37,10 @@ def line(r):
     where = SOURCE_TAGS.get(r["source"], "")
     head = "#%d %s %s%s%s: %s" % (r["id"], M.day(r["updated"]), r["kind"], " [%s]" % r["project"] if r.get("other") and r["project"] else "",
                                   " (%s)" % where if where else "", M.oneline(r["title"], D.MEM_LINE))
-    return head + (" | " + body if body and body.lower() not in head.lower() else "")
+    full = (len(r["title"] or "") + len(r["body"] or "")) // 4
+    from lighting.tokens import short
+    return head + (" | " + body if body and body.lower() not in head.lower() else "") + (
+        " ~%st" % short(full) if full >= D.MEM_RECALL_COST else "")
 
 
 def embed_now(ids, texts):
@@ -99,7 +102,8 @@ def cmd_recall(ctx, pos, flags):
     M.touch([r["id"] for r in found])
     for r in found:
         r["other"] = bool(here) and r["project"] != here
-    return "\n".join(line(r) for r in found) + "\n(lighting recall <id> shows one in full%s)" % ("; " + note if note else "")
+    return "\n".join(line(r) for r in found) + "\n(lighting recall <id> shows one in full, ~Nt = its size%s)" % (
+        "; " + note if note else "")
 
 
 def cmd_forget(ctx, pos, flags):
@@ -179,6 +183,46 @@ def commits(cwd):
     return ["Last commits:"] + ["  " + M.oneline(x, 100) for x in rows] if rows else []
 
 
+def rule_lines(here):
+    rules = M.rows("select id, title from notes where kind = 'rule' and source = 'vault' and project = ? "
+                   "order by updated desc limit ?", (here, D.MEM_START_RULES)) if here else []
+    return ["Project rules:"] + ["  #%d %s" % (r["id"], M.oneline(r["title"], D.MEM_LINE)) for r in rules] if rules else []
+
+
+def note_lines(here):
+    mine = M.rows("select * from notes where source = 'user' and project in (?, '') order by updated desc limit ?",
+                  (here, D.MEM_START_NOTES))
+    return ["Remembered:"] + ["  #%d %s" % (r["id"], M.oneline(r["title"], D.MEM_LINE)) for r in mine] if mine else []
+
+
+def session_refs(main):
+    parts, where = [], getattr(main, "where", None) or {}
+    tabs = list(getattr(main, "tabs", None) or [])[: D.MEM_COMPACT_REFS]
+    if tabs:
+        parts.append("tabs " + ", ".join(t + (" (%s)" % M.oneline(where["url"], 80) if where.get("tab") == t and where.get("url")
+                                              else "") for t in tabs))
+    named = []
+    for ref, hwnd in list(dict(getattr(getattr(main, "app", None), "windows", None) or {}).items())[: D.MEM_COMPACT_REFS]:
+        try:
+            from lighting import win
+            if win.alive(hwnd):
+                named.append('%s "%s"' % (ref, M.oneline(win.text_of(hwnd), 50)))
+        except Exception:
+            pass
+    if named:
+        parts.append("windows " + ", ".join(named))
+    return "; ".join(parts)
+
+
+def compact_text(ctx, here):
+    lines = ['Lighting after the summary (%s): lighting recall "<words>" searches your notes, lighting todo tracks work.'
+             % (here or "no project")]
+    refs = session_refs(getattr(ctx, "main", None) or ctx)
+    if refs:
+        lines.append("Your Lighting refs still work: " + refs)
+    return "\n".join(lines + rule_lines(here) + note_lines(here))
+
+
 def start_text(here, cwd="", times=None):
     times = {} if times is None else times
     c = M.counts()
@@ -201,16 +245,7 @@ def start_text(here, cwd="", times=None):
     if here and cwd:
         lines += commits(cwd)
     times["git"] = time.perf_counter() - t
-    rules = M.rows("select id, title from notes where kind = 'rule' and source = 'vault' and project = ? "
-                   "order by updated desc limit ?", (here, D.MEM_START_RULES)) if here else []
-    if rules:
-        lines.append("Project rules:")
-        lines += ["  #%d %s" % (r["id"], M.oneline(r["title"], D.MEM_LINE)) for r in rules]
-    mine = M.rows("select * from notes where source = 'user' and project in (?, '') order by updated desc limit ?",
-                  (here, D.MEM_START_NOTES))
-    if mine:
-        lines.append("Remembered:")
-        lines += ["  #%d %s" % (r["id"], M.oneline(r["title"], D.MEM_LINE)) for r in mine]
+    lines += rule_lines(here) + note_lines(here)
     t = time.perf_counter()
     waiting = len(vault.drafts())
     times["vault"] = time.perf_counter() - t
@@ -245,7 +280,7 @@ def cmd_hook(ctx, pos, flags):
         from lighting import memlearn
         memlearn.start()
         times = {}
-        text = start_text(here, cwd, times)
+        text = compact_text(ctx, here) if data.get("source") == "compact" else start_text(here, cwd, times)
         t2 = time.perf_counter()
         if t2 - t0 >= D.HOOK_SLOW_S:
             print("slow hook start: session %.0f ms, summary %.0f ms (git %.0f ms, vault %.0f ms)" % (

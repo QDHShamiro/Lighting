@@ -1254,6 +1254,40 @@ def test_memory_store_and_search():
     assert "Spotify" in memcmd.start_text(here)
 
 
+def test_compact_start_info_lists_session_refs():
+    import json
+    import types
+    from lighting import memcmd, memlearn, win
+    main = types.SimpleNamespace(tabs=["t4", "t9"], where={"tab": "t4", "url": "https://github.com/QDHShamiro/Lighting/pull/27"},
+                                 app=types.SimpleNamespace(windows={"w2": 111, "w5": 222}))
+    ctx = types.SimpleNamespace(main=main, cwd="", sid="s-compact")
+    keep = (win.alive, win.text_of, memlearn.start)
+    win.alive, win.text_of, memlearn.start = (lambda h: h == 111), (lambda h: "Spotify Premium"), (lambda: None)
+    try:
+        lines = memcmd.compact_text(ctx, "").splitlines()
+        assert lines[0].startswith("Lighting after the summary (no project): lighting recall"), lines
+        assert lines[1] == ('Your Lighting refs still work: tabs t4 (https://github.com/QDHShamiro/Lighting/pull/27), t9; '
+                            'windows w2 "Spotify Premium"'), lines[1]
+
+        def hook(source):
+            return memcmd.cmd_hook(ctx, ["start", json.dumps({"source": source, "cwd": "", "session_id": "s-compact"})], {})
+
+        assert hook("compact").startswith("Lighting after the summary") and hook("startup").startswith("Lighting memory (")
+        assert "refs still work" not in memcmd.compact_text(types.SimpleNamespace(cwd="", sid=""), "")
+    finally:
+        win.alive, win.text_of, memlearn.start = keep
+
+
+def test_recall_line_names_big_notes():
+    import time
+    from lighting import memcmd
+    r = {"id": 5, "updated": time.time(), "kind": "note", "source": "user", "project": "", "title": "deploy notes",
+         "body": "step\n" * 400}
+    assert memcmd.line(r).endswith(" ~503t"), memcmd.line(r)
+    assert "~" not in memcmd.line(dict(r, body="short"))
+    assert memcmd.line(dict(r, body="step\n" * 1400)).endswith(" ~1.8kt")
+
+
 def test_memory_condense_transcript():
     import json
     from lighting import memlearn
