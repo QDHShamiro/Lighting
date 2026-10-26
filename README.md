@@ -284,6 +284,8 @@ Want every agent on your PC to prefer it? Put this in `CLAUDE.md` or `AGENTS.md`
 Every number here comes from a run you can repeat: `lighting bench`, `lighting bench --real`, `lighting selftest`.
 Your own numbers: `lighting tokens` (or `/lighting:tokens` in Claude Code) shows what your agent read from Lighting,
 what the same steps would have cost a screenshot agent with the rows below, and the difference, per day or week.
+`lighting tokens claude` reads your local Claude Code transcripts and shows where those tokens go (thinking, start
+context, effort levels, cache rebuilds) with the biggest fixes first.
 Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
 
 ### Per action

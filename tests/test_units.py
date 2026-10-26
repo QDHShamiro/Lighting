@@ -536,6 +536,71 @@ def test_token_overview_counts_used_and_saved():
                 p.write_bytes(b)
 
 
+def test_claude_usage_reads_transcripts():
+    import datetime
+    import json
+    from lighting import claudeuse, tokens
+    from lighting import defaults as D
+    day = datetime.date.today().isoformat()
+    old = (datetime.date.today() - datetime.timedelta(days=40)).isoformat()
+
+    def msg(mid, t, read, write, out, text="", side=False, think=False):
+        content = [{"type": "thinking", "thinking": ""}] if think else [{"type": "text", "text": text}]
+        stamp = "%sT10:00:00.000Z" % old if t == "old" else "%sT%s.000Z" % (day, t)
+        return {"type": "assistant", "isSidechain": side, "timestamp": stamp,
+                "message": {"id": mid, "content": content, "usage": {"input_tokens": 10 if mid == "m1" else 0,
+                            "cache_creation_input_tokens": write, "cache_read_input_tokens": read, "output_tokens": out}}}
+
+    def effort(level):
+        return {"type": "api-request", "params": {"output_config": {"effort": level}}}
+
+    a = [effort("max"), msg("m1", "10:00:00", 0, 30000, 2000, think=True), msg("m1", "10:00:00", 0, 30000, 2000, "x" * 400),
+         msg("s1", "10:00:30", 900000, 0, 9999, "side", side=True), msg("m2", "10:01:00", 449000, 1000, 1000, "y" * 400),
+         effort("high"), msg("m3", "10:02:00", 460000, 0, 600, "z" * 400), msg("m4", "12:30:00", 270000, 200000, 300)]
+    b = [effort("max"), msg("o1", "old", 999989, 0, 5000), msg("b1", "11:00:00", 0, 40000, 1500, think=True)]
+    keep_env, keep_cache = os.environ.get("CLAUDE_CONFIG_DIR"), D.CLAUDE_CACHE
+    with tempfile.TemporaryDirectory() as tmp:
+        proj = Path(tmp) / "projects" / "p"
+        proj.mkdir(parents=True)
+        for name, rows in (("a", a), ("b", b)):
+            (proj / (name + ".jsonl")).write_text("\n".join(json.dumps(r, separators=(",", ":")) for r in rows) + "\nnot json\n", "utf-8")
+        os.environ["CLAUDE_CONFIG_DIR"] = tmp
+        D.CLAUDE_CACHE = Path(tmp) / "cache.json"
+        try:
+            out = tokens.cmd_tokens(None, ["claude", "7"], {})
+            assert out.startswith("Claude Code tokens, last 7 days: 5 requests in 2 sessions"), out
+            assert "cache reads 17%, cache writes 78%, output 3%" in out and "~94% thinking" in out, out
+            rows = [x.split() for x in out.splitlines() if x.split()[:1] in (["max"], ["high"])]
+            assert rows == [["max", "3", "~1,433"], ["high", "2", "~400"]], rows
+            assert "auto-compact at 400k: ~51% fewer context tokens, +1 compactions" in out, out
+            assert "effort: max ran 60% of requests and thinks 3.6x as much as high" in out, out
+            assert "start context ~32k on every request (11% of all context" in out, out
+            assert "cache rebuilds: 1 full rewrites (1 after a break over 60 min), 58% of the weighted total" in out, out
+            assert json.loads(D.CLAUDE_CACHE.read_text("utf-8")).keys() == {str(proj / "a.jsonl"), str(proj / "b.jsonl")}
+            parse = claudeuse.parse
+
+            def missed(path):
+                raise AssertionError("cache missed: %s" % path)
+
+            claudeuse.parse = missed
+            try:
+                assert claudeuse.cmd(["7"]) == out
+            finally:
+                claudeuse.parse = parse
+            try:
+                tokens.cmd_tokens(None, ["claude", "soon"], {})
+                assert False
+            except commands.Fail as e:
+                assert "lighting tokens claude 7" in e.text()
+            assert "no sessions found" in claudeuse.report([], 7)
+        finally:
+            D.CLAUDE_CACHE = keep_cache
+            if keep_env is None:
+                os.environ.pop("CLAUDE_CONFIG_DIR", None)
+            else:
+                os.environ["CLAUDE_CONFIG_DIR"] = keep_env
+
+
 def test_text_that_speaks_to_an_ai_gets_a_note():
     import collections
     import time

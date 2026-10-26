@@ -110,6 +110,16 @@ TOKENS_VIDEO = 14_100
 TOKENS_IMAGE = {"shot": 700, "frames": 518}
 TOKENS_BAR = 24
 TOKENS_WEEKS = 12
+CLAUDE_CACHE = HOME / "claude-usage.json"
+CLAUDE_WEIGHTS = {"read": 0.1, "write": 2.0, "output": 5.0}
+CLAUDE_COMPACT_AT = 400_000
+CLAUDE_SUMMARY = 50_000
+CLAUDE_REBUILD = 50_000
+CLAUDE_BREAK_S = 3600
+CLAUDE_START_BIG = 30_000
+CLAUDE_START_SESSIONS = 20
+CLAUDE_TIP_PCT = 10
+CLAUDE_MAX_RATIO = 1.5
 
 LONG_WAITS = {"inbox": 300_000, "reply": 300_000, "wait": 10_000, "listen": 900_000}
 WEB_SCHEMES = {"http", "https", "file", "about", "chrome", "brave", "edge", "view-source", "data", "blob",

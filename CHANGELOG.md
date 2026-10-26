@@ -4,6 +4,15 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 `lighting-linux-x64`, `lighting-linux-arm64`) built from the tag by CI, `lighting.mcpb`, a source zip and
 `SHA256SUMS.txt` (including the hash of each `bin/` client in the repo at that tag).
 
+## [Unreleased]
+
+### Added
+- `lighting tokens claude [days]`: where your Claude Code tokens go, read from the local transcripts (no upload):
+  requests, context read, the cost split (cache reads, writes, output), the thinking share and thinking per effort
+  level, then the biggest fixes first (auto-compact window, effort, start context, cache rebuilds), each with the
+  setting to change. Measured on 30 days with 1.9 GB of transcripts: 7 s the first time, under 1 s after that
+  (per-file cache in `~/.lighting/claude-usage.json`).
+
 ## [2.1.0] - 2026-10-22
 
 Lighting now does the jobs of four tools at once: the memory (claude-mem), the session notes (Context Engine),

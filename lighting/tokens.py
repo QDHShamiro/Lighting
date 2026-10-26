@@ -28,7 +28,7 @@ def without(cmd):
 
 
 def short(n):
-    for size, unit in ((1_000_000, "M"), (1_000, "k")):
+    for size, unit in ((1_000_000_000, "B"), (1_000_000, "M"), (1_000, "k")):
         if n >= size:
             return ("%.0f%s" if n >= 10 * size else "%.1f%s") % (n / size, unit)
     return str(n)
@@ -148,6 +148,9 @@ def report(s, title, daily):
 def cmd_tokens(ctx, pos, flags):
     word = (pos[0].lower() if pos else "") or str(D.TOKENS_DAYS)
     today = datetime.date.today()
+    if word == "claude":
+        from lighting import claudeuse
+        return claudeuse.cmd(pos[1:])
     if word == "all":
         since, title, daily = "", "Lighting tokens, all logged days", False
     elif word == "today":
@@ -158,5 +161,5 @@ def cmd_tokens(ctx, pos, flags):
         title, daily = "Lighting tokens, last %s days (%s to %s)" % (word, first.strftime("%m-%d"), today.strftime("%m-%d")), int(word) <= 14
     else:
         from lighting.common import Fail
-        raise Fail("which days?", "lighting tokens | lighting tokens 7 | lighting tokens today | lighting tokens all")
+        raise Fail("which days?", "lighting tokens | lighting tokens 7 | lighting tokens today | lighting tokens all | lighting tokens claude")
     return report(summarize(read_rows(since)), title, daily)

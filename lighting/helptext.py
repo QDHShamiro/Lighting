@@ -40,7 +40,7 @@ routine routines [-f x]   run <name|words> [param=value ...] [--yes]   routine s
         routine schedule <name> daily 08:00|weekly mon 09:30|hourly|every 30m [param=value]   routine schedules|unschedule
 cleanup done [--quiet]   keep [t|w]   config cleanup on|off   config window on|off (own window per session)   config focus never|away|idle (take the front: never = default)
 system  do|batch "cmd; cmd; ..." [--keep-going] [--quiet] (?cmd = optional, one per line too)   status   stop   config [key value]   log [stats]   version
-        tokens [days|today|all] (used, without Lighting, saved: overview, also /lighting:tokens)
+        tokens [days|today|all] (used, without Lighting, saved: overview, also /lighting:tokens)   tokens claude [days] (where your Claude Code tokens go, biggest fixes first)
         setup [--manual]   install <ai>   selftest [web|app|chat]   bench [--real [--runs 3]]   demo [--fast]   ext-reload   uninstall [--purge]
         doctor [--fix] [--offline]   checks every part of Lighting, --fix repairs what it safely can
 
