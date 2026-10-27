@@ -135,6 +135,9 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   Before, `--help` was ignored and the command ran: `claude --help` started a new Claude session (2 times),
   `todo --help` printed the to-do list (4 times), `setup --help` ran setup, and `uninstall --help` would have
   stopped the daemon and removed the browser link.
+- `shot --out shots/a.png` (or `-o`) saves the picture there, as PNG, JPEG or WebP by the file name, and
+  `shot w3 --seconds 10 --out clip.mp4` saves the video there. `--out` was ignored before, so the file was missing
+  where the agent looked (6 times in a month; one agent printed the whole help, then copied the file by hand).
 
 ## [2.0.0] - 2026-10-22
 

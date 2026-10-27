@@ -12,10 +12,10 @@ from lighting.common import Busy, Fail, Pending, Said, cap, is_url, ref_kind, ta
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
           "reload", "since", "seconds", "dir", "name", "model", "effort", "threshold", "runs", "kind", "list",
-          "project", "base"}
+          "project", "base", "out"}
 TRACE = (D.HOME / "trace").exists()
 ALIAS = {"-f": "f", "-s": "s", "-d": "d", "-n": "new", "-a": "all", "-y": "yes", "-e": "errors", "-g": "gone",
-         "-m": "media"}
+         "-m": "media", "-o": "out"}
 SAME = {"batch": "do"}
 AI = (r"(?:an?\s+)?(?:ai|a\.i\.|llm|language\s+model|ki|chatbot|claude|chatgpt|gpt|gemini|copilot|"
       r"(?:ai|ki)[\s-]+(?:assistant|assistent|agent|model|modell)s?)")
