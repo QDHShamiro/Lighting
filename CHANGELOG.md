@@ -194,6 +194,11 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - An action that leaves the page no longer waits 8 s for the page it left. Lighting waited for the old page to be
   quiet, and when it was left before that (a fast server, or a page that kept changing) the old page never answered.
   The self-test's `search` that learns a site's search URL took 8.3 s in 27 of 31 runs in October.
+- A window named at the end of `click`, `press` or `type` (like `press ctrl+k w9`), or given as `--on w6` or
+  `--on app:Name`, is the window the command acts on. Before, `--on` with anything but `web` or `app` was ignored
+  and a window at the end was taken as a key or as text: in a month of transcripts 4 of 10 such commands went wrong
+  (`press ctrl+k w9` failed with `unknown key 'w9'`, Discord's search field got "Sprache w9", `press ctrl+k --on w6`
+  and `click "Nein" --on w6` went to the browser). Other `--on` values now fail instead of being ignored.
 
 ## [2.0.0] - 2026-10-22
 

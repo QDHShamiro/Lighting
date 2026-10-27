@@ -906,6 +906,51 @@ def test_desktop_alias_and_routing_without_a_tab():
         commands.app = keep
 
 
+def test_a_window_named_last_or_in_on_is_the_target():
+    from lighting import commands
+    from lighting.common import Fail
+    seen, aimed = [], []
+    keep = commands.app, commands.web
+
+    class Side:
+        def __init__(self, name):
+            self.name = name
+
+        def target(self, ctx, pos=None):
+            aimed.append(pos[0])
+
+        def __getattr__(self, name):
+            return lambda ctx, pos, flags: seen.append((self.name, name, pos, flags.get("on"))) or "ok"
+
+    app, web = Side("app"), Side("web")
+    commands.app, commands.web = (lambda: app), (lambda: web)
+    try:
+        c = commands.Context(type("F", (), {"events": [], "hosts": []})(), "s1")
+        c.tabs, c.target = ["t1"], ("web", "brave")
+        commands.route(c, "press", ["ctrl+k", "w9"], {})
+        commands.route(c, "type", ["d316", "Sprache", "w9"], {})
+        commands.route(c, "click", ["Nein"], {"on": "w6"})
+        commands.route(c, "click", ["Play"], {"on": "app:Modrinth App"})
+        assert seen == [("app", "cmd_press", ["ctrl+k"], "app"), ("app", "cmd_type", ["d316", "Sprache"], "app"),
+                        ("app", "cmd_click", ["Nein"], "app"), ("app", "cmd_click", ["Play"], "app")]
+        assert aimed == ["w9", "w9", "w6", "app:Modrinth App"]
+        del seen[:], aimed[:]
+        commands.route(c, "type", ["d5", "w9"], {})
+        commands.route(c, "press", ["w2", "enter"], {})
+        commands.route(c, "click", ["e5", "w9"], {})
+        commands.route(c, "click", ["Send"], {"on": "web"})
+        assert seen == [("app", "cmd_type", ["d5", "w9"], None), ("app", "cmd_press", ["w2", "enter"], None),
+                        ("web", "cmd_click", ["e5", "w9"], None), ("web", "cmd_click", ["Send"], "web")]
+        assert aimed == []
+        try:
+            commands.route(c, "click", ["Send"], {"on": "chrome"})
+            raise AssertionError("--on chrome was ignored")
+        except Fail as e:
+            assert "--on takes web, app or a window" in str(e)
+    finally:
+        commands.app, commands.web = keep
+
+
 def test_quick_keys_wait_less():
     from lighting import desktop
     assert all(desktop.quick_key(k) for k in ("tab", "shift+tab", "End", "x", "pgdn", "backspace"))
