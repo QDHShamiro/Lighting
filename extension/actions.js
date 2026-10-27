@@ -243,7 +243,7 @@ async function after(tabId, nav, beforeUrl, extra, mark, startBudget, beforeTitl
   if (mark) mark("nav");
   const navigated = st.started || st.dcl;
   if (navigated || st.spa) {
-    await quiet;
+    if (!navigated) await quiet;
     if (st.spa && !navigated && beforeTitle !== undefined) await titleChange(tabId, beforeTitle, 3000);
     await page(tabId, "act.settle", [250, 3000], 0, 8000).catch(() => {});
   } else {
