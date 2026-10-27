@@ -153,7 +153,8 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - `type --enter` and `search`: when the Enter never reaches the page, the form is sent from inside the page (its
   default button, or the form itself when Enter would send it) and the command says so. Before, `search` could
   report `ok (typed 8 chars)` while nothing happened: 4 times in the Linux CI, the words sat in the focused field
-  and the page had not moved.
+  and the page had not moved. In the first 14 CI self-tests with the fix it was needed once, and that search went
+  through.
 
 ## [2.0.0] - 2026-10-22
 
