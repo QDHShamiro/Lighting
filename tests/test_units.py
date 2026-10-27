@@ -990,6 +990,22 @@ def test_press_takes_a_window_first():
          win.windows) = keep
 
 
+def test_voice_status_reads_a_log_in_any_encoding():
+    if not WINDOWS:
+        return
+    import types
+    from lighting import voice_discord as V
+    log = Path(tempfile.mkdtemp(prefix="lighting-voice-")) / "voice.log"
+    log.write_bytes("Verbindung l\xe4uft\n".encode("cp1252"))
+    keep = (V.LOG, V.current)
+    V.LOG, V.current = log, (lambda: {})
+    try:
+        out = V.cmd_voice(types.SimpleNamespace(), ["status"], {})
+        assert out.startswith("voice: not in a call") and "log:\nVerbindung l" in out, out
+    finally:
+        V.LOG, V.current = keep
+
+
 def test_fill_takes_refs():
     import types
     from lighting import brain, browser

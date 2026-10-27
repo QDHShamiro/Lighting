@@ -302,7 +302,7 @@ def cmd_voice(ctx, pos, flags):
     if running:
         lines += ["heard: " + (cur.get("last_heard") or "-"), "said: " + (cur.get("last_said") or "-")]
     try:
-        lines += ["log:"] + LOG.read_text("utf-8").splitlines()[-6:]
+        lines += ["log:"] + LOG.read_text("utf-8", errors="replace").splitlines()[-6:]
     except OSError:
         pass
     return "\n".join(lines)

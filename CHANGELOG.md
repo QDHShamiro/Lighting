@@ -52,6 +52,8 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   is no field on the page says so. Before, it failed with `no field for "e2"`, and `fill e2 text` showed only the
   label form (both in the action log); it now names `fill e2="text"` and `type e2 "text"`. A fill by ref is not
   learned as a routine or a page label, since refs change with the page.
+- `lighting voice` no longer fails with `UnicodeDecodeError` when its log holds a line in the Windows code page (an
+  umlaut from the call process, seen in the daemon log); such a character is replaced now.
 
 ## [2.1.0] - 2026-10-22
 
