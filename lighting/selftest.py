@@ -178,8 +178,8 @@ def browser(r, base):
     r.step("close count tab", ["close"], ok)
     from lighting import sites
     r.step("finder page", ["open", base + "finder", "--new"], lambda o, e: not e and "Finder" in o)
-    if "learned the search URL" not in r.step("search learns the URL", ["search", "lighting"],
-                                              lambda o, e: not e and "learned the search URL" in o):
+    got = r.step("search learns the URL", ["search", "lighting"], lambda o, e: not e and "learned the search URL" in o)
+    if "learned the search URL" not in got:
         r.diag(["tabs"], ["js", SEARCH_PROBE])
     r.step("search jumps directly", ["search", "second try"],
            lambda o, e: not e and "find?q=second+try" in o and "(typed" not in o)
