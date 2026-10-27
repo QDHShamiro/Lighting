@@ -65,6 +65,7 @@ def about(name):
 def wanted(argv):
     if not argv or argv[0] in ("help", "-h", "--help"):
         return argv[1] if len(argv) > 1 else ""
-    if "--help" in argv[1:] or argv[1:] == ["-h"]:
+    own = argv[1:argv.index("--")] if "--" in argv else argv[1:]
+    if "--help" in own or own == ["-h"]:
         return argv[0]
     return None
