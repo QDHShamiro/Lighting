@@ -66,6 +66,10 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   restore the tab. A bare `press`, `type`, `scroll` or `drag` after such a loss gets this error too, if the session
   worked in the browser last; before, it went to the desktop (3 times "no window chosen" in the same burst, and with
   a window chosen earlier the keys would have gone to that app).
+- The brain clicks a learned fix by itself only when it looks like the name that missed: a shared word or a close
+  spelling (`Sumbit` for `Submit`). Before, whatever was clicked after the same miss twice was clicked on its own the
+  next time, and 2 of the 5 fixes learned on this PC had nothing to do with the miss ("alles zeigen" was followed by
+  "Einspruch!"). Such a fix still shows up in the error as a hint.
 
 ## [2.1.0] - 2026-10-22
 

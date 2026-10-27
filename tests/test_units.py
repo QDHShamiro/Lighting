@@ -1200,6 +1200,29 @@ def test_brain_learns_fixes_and_regains_refs():
     assert 'worked here before after the same miss: "Go to checkout"' in str(better)
 
 
+def test_brain_clicks_only_alike_fixes_by_itself():
+    from lighting import brain, commands, common
+    brain._b["data"] = brain.empty()
+    c = commands.Context(type("F", (), {"events": []})(), "s1")
+    c.where = {"kind": "web", "url": "https://court.example/case", "tab": "t9"}
+    for miss, hit in (("alles zeigen", "Einspruch!"), ("Sumbit", "Submit"), ('"Tester"', "Tester")):
+        for _ in range(2):
+            brain.observe(c, "click", [miss], {}, "", False, 'err: nothing matches "%s"' % miss)
+            brain.observe(c, "click", [hit], {}, "ok", True)
+    calls = []
+
+    def route(ctx, name, pos, flags):
+        calls.append(pos)
+        return "ok e7"
+
+    miss = common.Fail('nothing matches "alles zeigen"')
+    assert brain.retry(c, "click", ["alles zeigen"], {}, miss, route) is None and calls == []
+    assert 'after the same miss: "Einspruch!"' in str(brain.hint_for(c, "click", ["alles zeigen"], miss))
+    assert brain.retry(c, "click", ["Sumbit"], {}, common.Fail('nothing matches "Sumbit"'), route)[1] == ["Submit"]
+    assert brain.retry(c, "click", ['"Tester"'], {}, common.Fail('nothing matches ""Tester""'), route)[1] == ["Tester"]
+    assert calls == [["Submit"], ["Tester"]]
+
+
 def test_self_check_and_weekly_tip():
     import json
     import time

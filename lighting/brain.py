@@ -1,3 +1,4 @@
+import difflib
 import json
 import re
 import time
@@ -223,6 +224,12 @@ def fix_for(ctx, cmd, text):
     return data()["fixes"].get(site(ctx), {}).get(cmd + "|" + norm(text))
 
 
+def alike(miss, label):
+    a, b = norm(miss).strip("\"'"), norm(label)
+    words = lambda s: {w for w in re.findall(r"\w+", s) if len(w) >= 3}
+    return bool(words(a) & words(b)) or difflib.SequenceMatcher(None, a, b).ratio() >= D.BRAIN_FIX_ALIKE
+
+
 def retry(ctx, name, pos, flags, err, route):
     if name not in TARGETED or not pos or not can_prune(ctx):
         return None
@@ -244,7 +251,7 @@ def retry(ctx, name, pos, flags, err, route):
         return out, new_pos, new_flags
     if kind is None and MISS.search(text):
         fix = fix_for(ctx, name, pos[0])
-        if not fix or fix[1] < D.BRAIN_FIX_SURE:
+        if not fix or fix[1] < D.BRAIN_FIX_SURE or not alike(pos[0], fix[0]):
             return None
         new_pos = [fix[0]] + list(pos[1:])
         try:
