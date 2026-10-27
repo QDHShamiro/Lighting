@@ -12,40 +12,40 @@ from lighting import defaults as D
 from lighting.common import Fail, Pending, cap, outfile, trimmed, win_path
 
 LETTERS = {"i": "ignore", "w": "word", "x": "line", "F": "fixed", "E": "ere", "P": "perl", "G": None, "l": "files",
-           "c": "files", "a": "text", "r": None, "R": None, "n": None, "H": None, "I": None, "h": None, "s": None}
-TAKEN = {"f": "-f", "s": "-s", "d": "-d", "media": "-m", "gone": "-g"}
-CONTEXT = re.compile(r"-([ABC])(\d*)")
+           "c": "files", "a": "text", "o": "only", "v": "invert", "r": None, "R": None, "n": None, "H": None, "I": None,
+           "h": None, "s": None}
+NUMBERED = re.compile(r"-([ABCm])(\d*)")
 BARE_BAR = re.compile(r"(?<!\\)\|")
 INTERVAL = re.compile(r"\{\d*(?:,\d*)?\}")
 POSIX = {"alpha": "a-zA-Z", "digit": "0-9", "alnum": "a-zA-Z0-9", "upper": "A-Z", "lower": "a-z", "space": r"\s",
          "blank": r" \t", "punct": r"!-/:-@\[-`{-~", "xdigit": "0-9A-Fa-f", "word": r"\w", "cntrl": r"\x00-\x1f\x7f",
          "print": r" -~", "graph": "!-~"}
-USAGE = ("lighting grep <pattern> [folder|file ...] [-i] [-w] [-x] [-F|-E|-P] [-l] [-C 2] [--glob '*.py'] "
-         "[--include '*.py'] [--exclude-dir build] [--all]")
+USAGE = ("lighting grep <pattern> [folder|file ...] [-i] [-w] [-x] [-F|-E|-P] [-l] [-o] [-v] [-m 1] [-C 2] "
+         "[--glob '*.py'] [--include '*.py'] [--exclude-dir build] [--all]")
 
 
-def number(val):
+def number(val, flag="-C"):
     if not str(val or "").isdigit():
-        raise Fail("which number of context lines? (%s)" % val, "lighting grep -C 2 <pattern>")
+        raise Fail("%s needs a number (%s)" % (flag, val), "lighting grep %s 2 <pattern>" % flag)
     return int(val)
 
 
 def options(pos, flags):
-    taken = next((v for k, v in TAKEN.items() if flags.get(k) is not None), None)
-    if taken:
-        raise Fail("grep option %s is not supported" % taken, USAGE)
     o = {"ignore": bool(flags.get("ignore-case")), "word": bool(flags.get("word") or flags.get("word-regexp")),
          "fixed": bool(flags.get("fixed") or flags.get("fixed-strings")), "line": bool(flags.get("line-regexp")),
          "ere": bool(flags.get("extended-regexp")), "perl": bool(flags.get("perl-regexp")),
          "files": bool(flags.get("files") or flags.get("files-with-matches") or flags.get("count")),
          "hidden": bool(flags.get("hidden")), "all": bool(flags.get("all")), "text": bool(flags.get("text")), "before": 0,
-         "after": 0, "patterns": []}
+         "after": 0, "patterns": [], "only": bool(flags.get("only-matching")),
+         "invert": bool(flags.get("invert-match")), "max": None}
     if flags.get("context") not in (None, True):
         o["before"] = o["after"] = number(flags["context"])
+    if flags.get("max-count") not in (None, True):
+        o["max"] = number(flags["max-count"], "-m")
     rest, i, done = [], 0, False
     while i < len(pos):
         a = pos[i]
-        m = CONTEXT.fullmatch(a)
+        m = NUMBERED.fullmatch(a)
         if done or len(a) < 2 or not a.startswith("-"):
             rest.append(a)
         elif a == "--":
@@ -60,7 +60,8 @@ def options(pos, flags):
             if not val and i + 1 < len(pos):
                 i += 1
                 val = pos[i]
-            n = number(val)
+            n = number(val, "-" + m.group(1))
+            o["max"] = n if m.group(1) == "m" else o["max"]
             o["before"] = n if m.group(1) in "BC" else o["before"]
             o["after"] = n if m.group(1) in "AC" else o["after"]
         elif re.fullmatch(r"-[A-Za-z]+", a):
@@ -73,6 +74,10 @@ def options(pos, flags):
         else:
             rest.append(a)
         i += 1
+    if o["only"] and o["invert"]:
+        raise Fail("-o with -v shows nothing: the lines -v picks have no match", USAGE)
+    if o["only"]:
+        o["before"] = o["after"] = 0
     return o, rest
 
 
@@ -264,15 +269,21 @@ def snippet(line, m, rx, keep):
 
 def hits(lines, rx, o):
     before, after, keep = o["before"], o["after"], bool(o["before"] or o["after"])
-    buf, left, shown, count, last = deque(maxlen=before or 1), 0, [], 0, 0
+    limit = float("inf") if o["max"] is None else o["max"]
+    buf, left, shown, count, picked, last = deque(maxlen=before or 1), 0, [], 0, 0, 0
     for no, line in enumerate(lines, 1):
         m = rx.search(line)
-        if m:
-            count += 1
+        if (m is None) == o["invert"] and picked < limit:
+            picked += 1
+            parts = [x for x in rx.finditer(line) if x.group()] if o["only"] else [m]
+            count += len(parts)
             if len(shown) < D.GREP_KEEP:
                 if before:
                     shown += [(n, snippet(t, None, rx, True), "-") for n, t in buf if n > last]
-                shown.append((no, snippet(line, m, rx, keep), ":"))
+                if o["only"]:
+                    shown += [(no, snippet(x.group(), None, rx, True), ":") for x in parts]
+                else:
+                    shown.append((no, snippet(line, m, rx, keep), ":"))
                 last = no
             buf.clear()
             left = after
@@ -281,6 +292,8 @@ def hits(lines, rx, o):
             if len(shown) < D.GREP_KEEP:
                 shown.append((no, snippet(line, None, rx, True), "-"))
                 last = no
+        elif picked >= limit:
+            break
         elif before:
             buf.append((no, line))
     return count, shown
@@ -315,7 +328,7 @@ def scan(path, rx, pre, o):
         if size > D.GREP_WHOLE:
             return hits(stream(path, enc), rx, o)
         text = raw.decode(enc, "replace").replace("\r\n", "\n")
-        if pre is not None and not pre.search(text):
+        if pre is not None and not o["invert"] and not pre.search(text):
             return 0, []
         return hits((text[:-1] if text.endswith("\n") else text).split("\n"), rx, o)
     except OSError:
@@ -430,9 +443,10 @@ def answer(job, pattern, roots, o, flags, warn):
         ["; stopped after %d s, narrow the folder or add --glob" % D.GREP_BUDGET_S] if stopped else []) + (
         ["; " + warn] if warn else [])
     if not results:
-        if not (o["fixed"] or o["ere"] or o["perl"]) and BARE_BAR.search(pattern):
+        if not (o["fixed"] or o["ere"] or o["perl"] or o["invert"]) and BARE_BAR.search(pattern):
             tail.append('; | is a plain character here, use \\| or -E for "or"')
-        return "no line matches \"%s\" in %d file%s%s" % (pattern, searched, "" if searched == 1 else "s", "".join(tail))
+        return "%s \"%s\" in %d file%s%s" % ("every line matches" if o["invert"] else "no line matches", pattern,
+                                             searched, "" if searched == 1 else "s", "".join(tail))
     total = sum(c for _, c, _ in results)
     budget = 10 ** 9 if o["all"] else int(flags["max"]) if str(flags.get("max") or "").isdigit() else D.GREP_LINES
     bare = len(roots) == 1 and roots[0].is_file()

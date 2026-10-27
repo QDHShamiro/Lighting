@@ -2257,7 +2257,7 @@ def test_grep_searches_right_and_short():
         full = Path(out.rsplit("full list: ", 1)[1].strip()).read_text("utf-8")
         assert full.endswith("\n200: hit 199") and full.count("\n") == 199, full[-80:]
         assert grep.cmd_grep(ctx, ["zzz_nothing"], {}).startswith('no line matches "zzz_nothing" in ')
-        for bad, fl in (([], {}), (["x", "nowhere"], {}), (["-v", "needle"], {}), (["dir"], {"s": "needle"})):
+        for bad, fl in (([], {}), (["x", "nowhere"], {}), (["-z", "needle"], {}), (["-C", "x", "needle"], {})):
             try:
                 grep.cmd_grep(ctx, bad, fl)
                 raise AssertionError("no error for %s" % bad)
@@ -2319,7 +2319,41 @@ def test_grep_takes_its_own_short_options():
             assert run("-e", "-v", "calls.txt") == "4: use -v here"
             assert run("-w", "-e", "colo", "-e", "color", "calls.txt") == "2: color"
             assert run("-e", "zzz", "-e", "yyy", "calls.txt").startswith('no line matches "zzz" or "yyy" in 1 file')
-            for bad in (["-m", "5", "x"], ["x", "-e"]):
+            for bad in (["-f", "pats.txt", "x"], ["x", "-e"]):
+                try:
+                    run(*bad)
+                    raise AssertionError("no error for %s" % bad)
+                except Fail:
+                    pass
+    finally:
+        D.GREP_INLINE_S = keep_inline
+
+
+def test_grep_shows_only_the_match_inverts_and_stops():
+    import types
+    from lighting import grep
+    from lighting import defaults as D
+    from lighting.common import Fail
+    keep_inline, D.GREP_INLINE_S = D.GREP_INLINE_S, 30
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "m.json").write_text('{"abs": "a/core.py"} {"abs": "b/core.py"}\n# note\nplain\n', "utf-8")
+            (root / "desc.md").write_text("description: one\ndescription: two\nbody\n", "utf-8")
+            ctx = types.SimpleNamespace(cwd=tmp)
+
+            def run(*argv):
+                return grep.cmd_grep(ctx, *commands.parse(["grep"] + list(argv))[1:])
+
+            assert run("-o", '"abs": "[^"]*"', "m.json") == '1: "abs": "a/core.py"\n1: "abs": "b/core.py"'
+            assert run("-v", "^#", "m.json") == '1: {"abs": "a/core.py"} {"abs": "b/core.py"}\n3: plain'
+            assert run("-v", "zzz", "desc.md") == "1: description: one\n2: description: two\n3: body"
+            assert run("-cv", "^#", "m.json") == "m.json (2)"
+            assert run("-v", ".", "desc.md").startswith('every line matches "." in 1 file')
+            for argv in (["-m", "1"], ["-m1"], ["--max-count=1"], ["--max-count", "1"]):
+                assert run(*argv, "description", "desc.md") == "1: description: one"
+            assert run("-m", "1", "-A", "1", "description", "desc.md") == "1: description: one\n2- description: two"
+            for bad in (["-o", "-v", "x"], ["-m", "x", "description"]):
                 try:
                     run(*bad)
                     raise AssertionError("no error for %s" % bad)
