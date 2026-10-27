@@ -156,6 +156,10 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - `lighting demo` and `lighting selftest` start their local test page without a reverse name lookup of
   127.0.0.1. On GitHub's macOS runners the first such lookup in a process takes 35 s (measured three times); there
   the unit tests now take 5 s instead of 40 s, and the self-test step 63 s instead of 86 s.
+- `lighting todo note 12 "text"` adds a line stamped with the date and time; it replaced the last note before.
+  Agents keep these notes as a log: of the 20 they wrote since 2.0, 2 were corrections ("the times in the notes
+  above are wrong") that wiped the notes they corrected, and one release to-do kept 1 of its 8 notes. The times
+  agents typed in were guesses, 3 of them off by 16 minutes to over 2 hours. `lighting todo` shows the newest line.
 
 ## [2.0.0] - 2026-10-22
 
