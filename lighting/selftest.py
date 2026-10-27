@@ -16,7 +16,9 @@ EXTRA = {
     "/finder": "<title>Finder</title><form action=/find method=get role=search><input name=q aria-label=Search></form>",
     "/data": "<title>Data</title><p id=n>loading</p><script>fetch('/api/items').then((r) => r.json())"
              ".then((d) => { document.getElementById('n').textContent = 'Items ' + d.items.length; })</script>",
+    "/slow": "<title>Slow</title><script defer src=/slow.js></script><h1>Slow page</h1><p>Its script is still coming.</p>",
 }
+SLOW_SCRIPT_S = 14
 API_ITEMS = {"items": [{"id": i, "name": "Item %d" % i, "price": i * 1.5} for i in range(40)], "total": 40}
 SEARCH_PROBE = ("[location.href, document.visibilityState, document.hasFocus(), "
                 "document.activeElement ? document.activeElement.outerHTML.slice(0, 60) : '-', "
@@ -64,6 +66,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             body = (D.ROOT / "tests" / "fixture.html").read_bytes()
         elif path == "/doc.pdf":
             body, ctype = PDF, "application/pdf"
+        elif path == "/slow.js":
+            time.sleep(SLOW_SCRIPT_S)
+            body, ctype = b"document.title = 'Slow done';", "text/javascript"
         elif path in EXTRA:
             body = ("<!doctype html><meta charset=utf-8>" + EXTRA[path]).encode("utf-8")
         else:
@@ -327,6 +332,9 @@ def browser(r, base):
     r.step("keep hands tab over", ["keep", dref], lambda o, e: not e and "kept 1 tab" in o)
     r.step("kept tab left the group", ["tabs"], lambda o, e: listed(o, dref, False))
     tref = tab_ref(r.step("throwaway tab", ["open", base + "second", "--new"], lambda o, e: not e and "Second" in o))
+    r.step("open a slow page", ["open", base + "slow"], lambda o, e: not e and "Slow page" in o and "(still loading)" in o)
+    r.step("snap while loading", ["snap"], lambda o, e: not e and "(still loading)" in o)
+    r.step("text while loading", ["text"], lambda o, e: not e and "Slow page" in o and "(still loading)" in o)
     from lighting import commands
     from lighting import desktop as dk
     lit = re.findall(r"^(t\d+) L\d*[*a]* ", commands.run(r.ctx, {"argv": ["tabs"]}).get("out", ""), re.M)

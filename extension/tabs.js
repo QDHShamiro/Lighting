@@ -227,12 +227,12 @@ export function watchNav(tabId) {
   st.stop = () => {
     for (const k in on) chrome.webNavigation[k].removeListener(on[k]);
   };
-  st.wait = async (startBudget, loadBudget) => {
+  st.wait = async (startBudget, loadBudget, committedBudget) => {
     const t0 = Date.now();
     while (!st.started && !st.dcl && !st.spa && Date.now() - t0 < startBudget) await sleep(15);
     if (st.started && !st.dcl) {
       const t1 = Date.now();
-      while (!st.dcl && Date.now() - t1 < loadBudget) await sleep(20);
+      while (!st.dcl && Date.now() - t1 < loadBudget && !(committedBudget && st.committed && Date.now() - t0 >= committedBudget)) await sleep(20);
     }
     st.stop();
     return st;
@@ -240,10 +240,10 @@ export function watchNav(tabId) {
   return st;
 }
 
-export async function navigate(tabId, url, loadBudget) {
+export async function navigate(tabId, url, loadBudget, committedBudget) {
   const nav = watchNav(tabId);
   await chrome.tabs.update(tabId, { url });
-  await nav.wait(3000, loadBudget);
+  await nav.wait(3000, loadBudget, committedBudget);
   return nav;
 }
 
