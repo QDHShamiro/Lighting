@@ -1340,7 +1340,19 @@ def test_memory_store_and_search():
     assert said and "saved #" in said[0]
     assert memcmd.on_prompt(ctx, "Merkel war Kanzlerin") == []
     tid = int(memcmd.cmd_todo(ctx, ["add", "Ship", "it"], {"list": "rel"}).split("#")[1].split()[0])
-    assert "Ship it" in memcmd.cmd_todo(ctx, [], {})
+    listed = memcmd.cmd_todo(ctx, [], {})
+    assert "Ship it" in listed and "in full" not in listed, listed
+    note = " ".join("step%d" % i for i in range(30))
+    memcmd.cmd_todo(ctx, ["note", str(tid), note], {})
+    listed = memcmd.cmd_todo(ctx, [], {})
+    assert note not in listed and listed.endswith("(lighting todo <id> shows one in full)"), listed
+    full = memcmd.cmd_todo(ctx, ["#%d" % tid], {})
+    assert full.startswith("#%d " % tid) and "todo [rel, " in full and full.endswith("Ship it\nnote: " + note), full
+    try:
+        memcmd.cmd_todo(ctx, [str(tid + 1000)], {})
+        raise AssertionError("a missing to-do must fail")
+    except commands.Fail as e:
+        assert "no to-do #%d" % (tid + 1000) in str(e), e
     assert "is done" in memcmd.cmd_todo(ctx, ["done", str(tid)], {})
     assert "Ship it" not in memcmd.cmd_todo(ctx, [], {})
     assert memcmd.cmd_forget(ctx, [str(nid)], {}) == "forgot #%d" % nid

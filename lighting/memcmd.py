@@ -12,7 +12,7 @@ from lighting.common import Fail
 
 SAY = re.compile(r"(?is)^\s*(?:bitte\s+|please\s+)?(?:merk(?:e)?\s+dir|notier(?:e)?\s+dir|remember)\b[\s,:;-]*"
                  r"(?:(?:bitte|please)\s+)?(?:dass\s+|that\s+)?(.+)")
-TODO_HELP = 'lighting todo | todo add "task" [--list name] | todo done|doing|drop|todo <id> | todo note <id> "text"'
+TODO_HELP = 'lighting todo | todo <id> | todo add "task" [--list name] | todo done|doing|drop|todo <id> | todo note <id> "text"'
 SOURCE_TAGS = {"vault": "vault", "claude": "claude memory"}
 MEMORY_HELP = "lighting memory [learn | import claude-mem | model | on | off]"
 
@@ -157,12 +157,22 @@ def cmd_todo(ctx, pos, flags):
         if not t:
             raise Fail("no to-do #%s" % pos[1], "lighting todo")
         return "#%d noted" % t["id"]
+    if len(pos) == 1 and re.fullmatch(r"#?\d+", pos[0]):
+        t = M.one("select * from todos where id = ?", (ident(pos[0]),))
+        if not t:
+            raise Fail("no to-do #%s" % pos[0].lstrip("#"), "lighting todo")
+        return "#%d %s %s [%s, %s]\n%s%s" % (
+            t["id"], time.strftime("%Y-%m-%d", time.localtime(t["updated"])), t["status"], t["list"] or "to-dos",
+            t["project"] or "global", t["task"], "\nnote: " + t["note"] if t["note"] else "")
     if sub:
         raise Fail("unknown todo command '%s'" % sub, TODO_HELP)
     rows = M.todos(None if flags.get("all") else here)
     if flags.get("list"):
         rows = [t for t in rows if t["list"] == flags["list"]]
-    return "\n".join(todo_list(rows)) if rows else "no open to-dos (lighting todo add \"task\")"
+    if not rows:
+        return "no open to-dos (lighting todo add \"task\")"
+    out = todo_list(rows)
+    return "\n".join(out + (["(lighting todo <id> shows one in full)"] if any("…" in x for x in out) else []))
 
 
 def project_lines(here):

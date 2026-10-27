@@ -41,6 +41,8 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   from ~147k to ~1k tokens. Replayed on the 3,107 long Bash outputs (4,000+ characters or 60+ lines) of 30 days of
   Claude Code transcripts: 59% fewer characters, and 5 of 3,809 kinds of error line not in view, all inside JSON
   lists, whose first line counts the items with error words.
+- `lighting todo <id>` shows one to-do in full (task, note, status, list). The list cuts notes at 80 characters
+  and now says so when it did.
 
 ## [2.1.0] - 2026-10-22
 

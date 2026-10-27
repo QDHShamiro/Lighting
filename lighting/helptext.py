@@ -30,7 +30,7 @@ keys    keys [app|site] [-f x]   keys add <app> "ctrl+k=what"   keys rm <app> <k
 brain   brain (what Lighting learned)   brain forget <site|app:x.exe>   brain reset --yes   improve [days] (self-check)
         known pages show the controls you use there; snap --full shows all   config brain off
 memory  remember "fact" [--kind decision] [--global]   recall "words" [--all] | recall <id>   forget <id>
-        todo [--all] [--list x]   todo add "task" [--list x]   todo done|doing|drop <id>   todo note <id> "text"
+        todo [--all] [--list x] | todo <id>   todo add "task" [--list x]   todo done|doing|drop <id>   todo note <id> "text"
         memory (state)   memory learn   memory model (local AI, downloads itself)   memory import claude-mem   memory off
         memory import context-engine   wiki (drafts) | wiki accept <n> [folder] | wiki drop <n>   config vault <folder>
 code    code (overview)   code <Name> (definition + callers)   code callers <Name>   code "what it does" (by meaning)
