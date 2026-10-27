@@ -181,7 +181,8 @@ def browser(r, base):
     if "learned the search URL" not in r.step("search learns the URL", ["search", "lighting"],
                                               lambda o, e: not e and "learned the search URL" in o):
         r.diag(["tabs"], ["js", SEARCH_PROBE])
-    r.step("search jumps directly", ["search", "second try"], lambda o, e: not e and "find?q=second+try" in o)
+    r.step("search jumps directly", ["search", "second try"],
+           lambda o, e: not e and "find?q=second+try" in o and "(typed" not in o)
     r.step("jumped to results", ["expect", "Found: second try"], ok)
     r.step("close finder tab", ["close"], ok)
     data = sites.load()
