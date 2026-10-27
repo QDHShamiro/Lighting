@@ -164,6 +164,12 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   Agents keep these notes as a log: of the 20 they wrote since 2.0, 2 were corrections ("the times in the notes
   above are wrong") that wiped the notes they corrected, and one release to-do kept 1 of its 8 notes. The times
   agents typed in were guesses, 3 of them off by 16 minutes to over 2 hours. `lighting todo` shows the newest line.
+- `open`, `snap` and `text` answer on a page whose scripts are still loading: once the page is 8 s old they read
+  what is there and say "(still loading)". Chrome ran Lighting's page code only after the page's own scripts, so
+  every such call waited for them: 4 snaps failed after 20 to 30 s, each on a GitHub pull request page right after
+  "Create pull request". With a test script that takes 14 s, `open` now answers in 8.3 s and `snap` in 8 s (both
+  waited the 14 s); a 25 s script took 25 s to open. Clicks and typing still wait for the page's scripts, so they
+  act on a page that works.
 - The start info says when a game holds the session learner: "(61 sessions wait to be learned: paused while
   minecraft runs)". With Minecraft open for a day and a half, no session was learned, and the start listed
   sessions 5 to 12 days old as the last ones without a word about the 61 newer ones.
