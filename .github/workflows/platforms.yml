@@ -76,14 +76,16 @@ jobs:
         if: runner.os == 'Linux'
         timeout-minutes: 15
         run: |
-          pkg() { sudo apt-get -qq -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 "$@"; }
+          sudo rm -f /var/lib/man-db/auto-update
+          get() { sudo timeout "$1" apt-get -qq -o Acquire::Retries=3 -o Acquire::http::Timeout=30 "${@:2}"; }
           for try in 1 2 3; do
-            pkg update && pkg install -y xvfb openbox at-spi2-core python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 xclip \
-              tesseract-ocr ffmpeg dbus-x11 x11-utils xdotool > /dev/null && exit 0
-            echo "apt try $try failed"
-            sleep 20
+            sudo dpkg --configure -a || true
+            get 120 update && get 240 install -y xvfb openbox at-spi2-core python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 \
+              xclip tesseract-ocr ffmpeg dbus-x11 x11-utils xdotool > /dev/null && break
+            [ "$try" = 3 ] && exit 1
+            echo "apt try $try hung or failed, switching to the main Ubuntu mirror"
+            sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
           done
-          exit 1
       - name: Chrome for Testing
         shell: bash
         run: |
