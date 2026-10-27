@@ -741,7 +741,6 @@ def cmd_console(ctx, pos, flags):
 def cmd_shot(ctx, pos, flags):
     from PIL import Image
     import base64
-    import hashlib
     import io
     ref = pos[0] if pos and REF_RE.match(pos[0]) else None
     msg = call(ctx, "shot", {"ref": ref, "marks": bool(flags.get("marks"))}, 30)
