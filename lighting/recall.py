@@ -61,7 +61,7 @@ def routine_words(r):
 def score(prompt_words, r):
     ws, app = routine_words(r)
     shared = {stem(w) for w in prompt_words} & ws
-    app_hit = bool(app) and app in prompt_words
+    app_hit = bool(app) and any(w == app or (len(app) >= D.APP_PREFIX and w.startswith(app)) for w in prompt_words)
     other = shared - {stem(app)}
     return app_hit, len(other)
 
