@@ -2065,6 +2065,43 @@ def test_unknown_commands_get_a_guess():
     assert commands.unknown("zzqx").text().endswith("-> try: lighting help")
 
 
+def test_help_on_a_command_shows_it_and_runs_nothing():
+    import contextlib
+    import io
+    from lighting import cli, helptext, mcp
+    from lighting.common import Fail
+    assert helptext.about("todo").startswith("todo [--all]") and "\n" not in helptext.about("tab")
+    assert "claude list" in helptext.about("claude") and helptext.about("batch").startswith("do|batch")
+    assert helptext.about("nosuch") is None
+    assert [helptext.wanted(a) for a in (["todo", "--help"], ["help", "todo"], ["todo", "-h"], ["type", "e5", "-h"],
+                                         ["todo"], [])] == ["todo", "todo", "todo", None, None, ""]
+    c = commands.Context(type("F", (), {"events": [], "hosts": []})(), "s1")
+    keep = commands.route
+    commands.route = lambda *a: (_ for _ in ()).throw(AssertionError("ran %s" % (a[1:],)))
+    try:
+        out, name, pos = commands.run_one(c, ["claude", "--help"])
+        assert (name, pos) == ("help", ["claude"]) and out.startswith("claude [") and "claude list" in out, out
+        assert commands.run_one(c, ["todo", "-h"])[0].startswith("todo [--all]")
+        try:
+            commands.run_one(c, ["snapp", "--help"])
+            raise AssertionError("snapp --help went on")
+        except Fail as e:
+            assert e.text() == "err: unknown command 'snapp' -> try: lighting snap", e.text()
+    finally:
+        commands.route = keep
+    keep, argv, buf = install.main, sys.argv, io.StringIO()
+    install.main = lambda a: (_ for _ in ()).throw(AssertionError("ran %s" % a))
+    sys.argv = ["lighting", "uninstall", "--help"]
+    try:
+        with contextlib.redirect_stdout(buf):
+            cli.main()
+        got = mcp.run_cmd("lighting setup --help")
+    finally:
+        install.main, sys.argv = keep, argv
+    assert "uninstall [--purge]" in buf.getvalue(), buf.getvalue()
+    assert got["content"][0]["text"].startswith("setup [--manual]") and not got["isError"], got
+
+
 def test_memory_model_never_stalls():
     import http.server
     import io

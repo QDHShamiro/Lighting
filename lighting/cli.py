@@ -48,9 +48,10 @@ def main():
     except (AttributeError, ValueError):
         pass
     argv = sys.argv[1:]
-    if not argv or argv[0] in ("help", "-h", "--help"):
-        from lighting.helptext import HELP
-        print(HELP)
+    from lighting import helptext
+    asked = helptext.wanted(argv)
+    if asked is not None:
+        print(helptext.about(asked) or helptext.HELP)
         return
     cmd = argv[0]
     if cmd in ("version", "--version"):

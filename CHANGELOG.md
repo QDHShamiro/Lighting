@@ -174,6 +174,10 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - `scroll --up` (and `--top`, `--bottom`, `--down`) scrolls that way, like `scroll up`. The flag was ignored, so
   `scroll --up` scrolled down: one agent ran `scroll w5 --up` 9 times, 4 of them in a loop, and the window went
   the other way each time. A desktop scroll now says which way it went (`ok (scrolled w5 up in background)`).
+- `<command> --help` (or `-h` alone) and `help <command>` show just that command's help lines, and nothing runs.
+  Before, `--help` was ignored and the command ran: `claude --help` started a new Claude session (2 times),
+  `todo --help` printed the to-do list (4 times), `setup --help` ran setup, and `uninstall --help` would have
+  stopped the daemon and removed the browser link.
 
 ## [2.0.0] - 2026-10-22
 
