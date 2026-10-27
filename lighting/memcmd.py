@@ -12,8 +12,7 @@ from lighting.common import Fail
 
 SAY = re.compile(r"(?is)^\s*(?:bitte\s+|please\s+)?(?:merk(?:e)?\s+dir|notier(?:e)?\s+dir|remember)\b[\s,:;-]*"
                  r"(?:(?:bitte|please)\s+)?(?:dass\s+|that\s+)?(.+)")
-TODO_HELP = ('lighting todo | todo <id> | todo add "task" [--list name] | todo done|doing|drop|todo <id> | '
-             'todo note <id> "text"')
+TODO_HELP = 'lighting todo | todo add "task" [--list name] | todo done|doing|drop|todo <id> | todo note <id> "text"'
 SOURCE_TAGS = {"vault": "vault", "claude": "claude memory"}
 DRAFTS = "%d wiki drafts wait for a yes or no: lighting wiki"
 MEMORY_HELP = "lighting memory [learn | import claude-mem | model | on | off]"
@@ -136,11 +135,6 @@ def todo_list(rows, short=False):
     return out
 
 
-def todo_full(t):
-    head = "#%d %s%s: %s" % (t["id"], t["status"], " in " + t["list"] if t["list"] else "", t["task"])
-    return "\n".join([head] + ["  " + x for x in (t["note"] or "").split("\n") if x.strip()])
-
-
 def cmd_todo(ctx, pos, flags):
     sub = pos[0].lower() if pos else ""
     here = project(ctx, flags)
@@ -165,14 +159,7 @@ def cmd_todo(ctx, pos, flags):
         if not t:
             raise Fail("no to-do #%s" % pos[1], "lighting todo")
         return "#%d noted" % t["id"]
-    if sub == "show" and len(pos) > 1:
-        sub = pos[1]
-    if re.fullmatch(r"#?\d+", sub):
-        t = M.one("select * from todos where id = ?", (ident(sub),))
-        if not t:
-            raise Fail("no to-do #%s" % sub.lstrip("#"), "lighting todo")
-        return todo_full(t)
-    if sub and sub not in ("list", "ls"):
+    if sub:
         raise Fail("unknown todo command '%s'" % sub, TODO_HELP)
     rows = M.todos(None if flags.get("all") else here)
     if flags.get("list"):
