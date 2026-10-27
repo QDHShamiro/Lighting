@@ -17,7 +17,17 @@ run() {
   local code=$?
   printf '%s\n' "$out" | tee -a "$LOG"
   say "-- exit $code ($((SECONDS - t0)) s)"
+  [ "$code" = 142 ] && threads
   return 0
+}
+threads() {
+  local dlog="$HOME/.lighting/daemon.log" n
+  [ -f "$HOME/.lighting/daemon.pid" ] && [ -f "$dlog" ] || return 0
+  n=$(wc -l < "$dlog")
+  kill -USR1 "$(cat "$HOME/.lighting/daemon.pid")" 2> /dev/null || return 0
+  sleep 1
+  say "-- daemon threads:"
+  tail -n +"$((n + 1))" "$dlog" | head -150 | tee -a "$LOG"
 }
 
 if [ "$(uname)" = Linux ]; then
