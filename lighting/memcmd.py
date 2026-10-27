@@ -331,8 +331,8 @@ def on_prompt(ctx, prompt):
         nid = remember(ctx, m.group(1).strip().rstrip("."), kind="preference")
         return ['Lighting memory saved #%d: "%s" (lighting forget %d if that was not meant to be kept)'
                 % (nid, M.oneline(m.group(1), 90), nid)]
-    from lighting.recall import stem, words
-    stems = {stem(w) for w in words(prompt)}
+    from lighting.recall import stem, typed_words, words
+    stems = {stem(w) for w in typed_words(prompt)}
     if len(stems) < 3:
         return []
     here = M.project_of(getattr(ctx, "cwd", None) or "")
@@ -347,7 +347,8 @@ def on_prompt(ctx, prompt):
         have = {stem(w) for w in words(r["title"] + " " + (r["body"] or ""))}
         hit = len(stems & have)
         words_ok = hit >= D.MEM_HINT_TERMS and hit / len(stems) >= D.MEM_HINT_SHARE
-        if words_ok and (r["sim"] or 0) >= D.MEM_HINT_SIM:
+        titled = stems & {stem(w) for w in words(r["title"])}
+        if words_ok and titled and (r["sim"] or 0) >= D.MEM_HINT_SIM:
             ctx.told[key] = time.time()
             out.append("#%d %s" % (r["id"], M.oneline(r["title"], 100)))
         if len(out) >= D.MEM_HINTS:
