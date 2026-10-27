@@ -263,6 +263,7 @@ def test_recall_finds_routines_by_words():
          "steps": [{"cmd": "launch", "args": ["discord"], "where": {"kind": "app", "exe": "Discord.exe"}}]}
     said = lambda text: set(recall.typed_words(text))
     assert recall.fits(said("markiere Tom auf Discord"), r)
+    assert recall.fits(said("markiere Tom auf dem Discord-Server"), r)
     assert not recall.fits(said("fix the minecraft plugin"), r)
     prompts = []
     recall.note_prompt(prompts, "markiere Luis auf Discord bitte")
@@ -837,6 +838,10 @@ def test_suggest_needs_the_app():
     assert recall.routine_words(focus)[1] == "brave"
     assert not recall.fits(said("mache Lighting zu einer app mit terminal design"), focus)
     assert recall.fits(said("in brave das orange design weg"), focus)
+    code = {"name": "code-aaliyah-ordner", "tags": ["aaliyah", "ordner"],
+            "steps": [{"cmd": "focus", "args": ["app:Code"], "where": {"kind": "app", "exe": "Code.exe"}}]}
+    assert not recall.fits(said("zeig die code-map vom ordner"), code)
+    assert recall.fits(said("im code den ordner von aaliyah"), code)
 
 
 def test_suggest_reads_only_what_was_typed():
@@ -859,9 +864,10 @@ def test_suggest_reads_only_what_was_typed():
         assert ask("Lies C:" + back + "Users" + back + "Gigabyte" + back + "a.md und ~/hud/b.md im windowsterminal") == ""
         assert ask("This session is being continued from a previous conversation. windowsterminal link") == ""
         assert len(ctx.prompts) == 3 and "users" not in ctx.prompts[-1][1], ctx.prompts
-        for _ in range(D.SUGGEST_IGNORED):
+        said = ["im windowsterminal den link öffnen", "im windowsterminal-fenster den link öffnen"]
+        for i in range(D.SUGGEST_IGNORED):
             ctx.told.clear()
-            assert "lighting run windowsterminal-machst-link" in ask("im windowsterminal den link öffnen")
+            assert "lighting run windowsterminal-machst-link" in ask(said[i % 2])
         ctx.told.clear()
         assert ask("im windowsterminal den link öffnen") == ""
         routines.record_result(next(r for r in routines.load_all() if r["name"] == term["name"]), True, 100, 10)
