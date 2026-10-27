@@ -60,6 +60,10 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   folder is no project, and a session belongs to the project whose files it touched.
 - Hints while you type come only from the same project, need matching words and meaning, and are at most 2.
 - The session note covers every part of a long session, not only the last one; empty points are left out.
+- `snap -f "a|b"`, and `-f` after `open` or a click, also looks outside the view for words that matched nothing in
+  view (at most 12 lines, 0.5 s on a large page) and names the words that are only text or nowhere on the page. In
+  30 days 190 of 233 such filters missed a word and 48 were followed by a second snap for it, 25 of them on GitHub,
+  where the compare page has "Create pull request" and the description box below the view.
 
 ### Fixed
 - The memory never waits long for the model. `recall` took 2 s and the start info 2-3 s (up to 15 s) whenever the
