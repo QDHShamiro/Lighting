@@ -288,10 +288,10 @@ def stream(path, enc):
 
 def scan(path, rx, pre, o):
     try:
-        size = path.stat().st_size
-        if size > D.GREP_MAX_BYTES:
-            return "big"
         with open(path, "rb") as fh:
+            size = os.fstat(fh.fileno()).st_size
+            if size > D.GREP_MAX_BYTES:
+                return "big"
             raw = fh.read(8000 if size > D.GREP_WHOLE else -1)
         enc = encoding_of(raw[:8000])
         if enc is None and not o["text"]:
