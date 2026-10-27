@@ -171,6 +171,9 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   (`press ctrl+k w9` failed with `unknown key 'w9'`, Discord's search field got "Sprache w9", `press ctrl+k --on w6`
   and `click "Nein" --on w6` went to the browser). Other `--on` values now fail instead of being ignored. `text w3`
   reads that window's screen text like `read w3`; it read the session's page instead or said it had no tab (3 times).
+- `scroll --up` (and `--top`, `--bottom`, `--down`) scrolls that way, like `scroll up`. The flag was ignored, so
+  `scroll --up` scrolled down: one agent ran `scroll w5 --up` 9 times, 4 of them in a loop, and the window went
+  the other way each time. A desktop scroll now says which way it went (`ok (scrolled w5 up in background)`).
 
 ## [2.0.0] - 2026-10-22
 

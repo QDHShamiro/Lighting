@@ -7,7 +7,7 @@ import time
 
 from lighting import defaults as D
 from lighting.common import (Fail, Pending, best_only, cap, hit, is_url, note, outfile, parse_ms, plain_links, ref_kind,
-                             terms, tiers, win_path)
+                             scroll_dir, terms, tiers, win_path)
 
 REF_RE = re.compile(r"^(?:f\d+\.)?e\d+$")
 FULL_SNAP = re.compile(r"since your last snap[^\n]*\(all \d+ lines, ~([\d,]+) tokens")
@@ -501,8 +501,9 @@ def cmd_scroll(ctx, pos, flags):
     for p in pos:
         if REF_RE.match(p):
             args["ref"] = p
-        elif p.lower() in ("up", "down", "top", "bottom"):
-            args["dir"] = p.lower()
+    way = scroll_dir(pos, flags)
+    if way:
+        args["dir"] = way
     if flags.get("until"):
         args["until"] = flags["until"]
     if flags.get("delta"):
