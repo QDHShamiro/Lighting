@@ -1524,13 +1524,17 @@ def test_demo_offline():
             return "400", "js", argv[1:]
         return "ok", argv[0], argv[1:]
 
-    old_run, old_any = commands.run_one, browser.any_browser
+    import socket
+    asked = []
+    old_run, old_any, old_name = commands.run_one, browser.any_browser, socket.gethostbyaddr
     commands.run_one, browser.any_browser = fake, lambda c: True
+    socket.gethostbyaddr = lambda host: asked.append(host) or old_name(host)
     try:
         ctx = types.SimpleNamespace(no_learn=False)
         out = demo.run(ctx, [], {"fast": True})
     finally:
-        commands.run_one, browser.any_browser = old_run, old_any
+        commands.run_one, browser.any_browser, socket.gethostbyaddr = old_run, old_any, old_name
+    assert asked == [], asked
     assert ctx.no_learn is False
     assert [a[0] for a in seen] == ["open", "snap", "fill", "select", "check", "click", "table", "js"], seen
     assert "$ lighting open <demo page> --new" in out and "127.0.0.1" not in out, out
@@ -2033,6 +2037,7 @@ def test_memory_download_resumes():
     import http.server
     import threading
     from lighting import memmodel as MM
+    from lighting.common import local_server
     blob = os.urandom(3 << 20)
 
     class Ranged(http.server.BaseHTTPRequestHandler):
@@ -2046,7 +2051,7 @@ def test_memory_download_resumes():
         def log_message(self, *a):
             pass
 
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Ranged)
+    srv = local_server(Ranged)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     running, tls = MM.games.running, MM.tls
     MM.games.running, MM.tls = (lambda: ""), (lambda: None)
@@ -2223,6 +2228,7 @@ def test_memory_model_never_stalls():
     import urllib.error
     import urllib.request
     from lighting import defaults as D, memcmd, memmodel as MM, recall
+    from lighting.common import local_server
     seen = {"post": 0}
 
     class Paused(http.server.BaseHTTPRequestHandler):
@@ -2241,7 +2247,7 @@ def test_memory_model_never_stalls():
         def log_message(self, *a):
             pass
 
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Paused)
+    srv = local_server(Paused)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))

@@ -166,6 +166,9 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   the title, and long note bodies matched almost any prompt: for "the sniper UI clicks the filter 3 times" it named
   "Figma Weave Pricing". Of 87 hinted notes nobody recalled in a month, 59 shared no word with their title; the two
   that were recalled did.
+- `lighting demo` and `lighting selftest` start their local test page without a reverse name lookup of
+  127.0.0.1. On GitHub's macOS runners the first such lookup in a process takes 35 s (measured three times): the
+  demo's unit test took 35.5 of the 40 s that all unit tests took there.
 
 ## [2.0.0] - 2026-10-22
 

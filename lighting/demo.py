@@ -3,7 +3,7 @@ import threading
 import time
 
 from lighting import defaults as D
-from lighting.common import Fail
+from lighting.common import Fail, local_server
 
 PAGE = D.ROOT / "lighting" / "demo.html"
 PLACE = "<demo page>"
@@ -45,7 +45,7 @@ def run(ctx, pos, flags):
     if not browser.any_browser(ctx):
         raise Fail("the demo needs the browser", "lighting setup")
     pause = 0.0 if flags.get("fast") else float(flags.get("pause") or D.DEMO_PAUSE_S)
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    srv = local_server(Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base = "http://127.0.0.1:%d/" % srv.server_address[1]
     blocks, work, chars, failed = [], 0.0, 0, 0
