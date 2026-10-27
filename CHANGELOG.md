@@ -15,7 +15,8 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   guess (tool output runs ~2.2 characters per token, not 4). On 30 days of real use: earlier thinking 33% of all
   context (18% from max effort alone, which the effort fix names), Bash output 21%, start context 19%. Measured
   with 1.9 GB of transcripts: 10 s the first time, under 1.5 s after that (per-file cache in
-  `~/.lighting/claude-usage.json`).
+  `~/.lighting/claude-usage.json`). Days are local days: the transcripts keep UTC times, and a request just after
+  midnight counts for the new day, not the one before.
 - `lighting grep <pattern> [path ...]`: text search for agents. Patterns work as in GNU grep: basic by default
   (`a\|b`, `\(...\)`, `x\+`, while a bare `(` or `+` is a plain character), `-E` extended, `-P` Python, `-F` fixed,
   POSIX classes like `[[:digit:]]`, `-i -w -x -l -c -C`. Results are grouped by file (no path on every line, no
