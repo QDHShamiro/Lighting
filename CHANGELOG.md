@@ -155,11 +155,13 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - A routine hint (`! routine X can finish this in one call`) needs two or more steps still to do; with one left,
   running the routine saves nothing. `github-create-pull-request` (open the compare page, click Create) was offered
   8 times in a week after the page was already open and never run; in a month 1 of 328 hints was followed.
-- The prompt hook names a routine only when the message names its app or site as a whole word: `windows` named a
-  Windows Terminal routine and `unread` an Unreal Editor one. File paths (`C:/Users/...` matched every routine with
-  "users" in its name) and Claude Code's summary after a compaction no longer count, and a routine offered 5 times
-  in a row without a run stays quiet until it runs. Of 1,376 suggestions in a month, one was followed: a path match
-  that failed. Replaying that month's prompts gives 102 suggestions instead of 844.
+- The prompt hook names a routine only when a word of the message is its app or site or starts with it
+  (`Discord-Server`). Five matching letters were enough before: `live-update` named a routine for the site
+  live-charms-analysis-enclosed, and in a month of prompts replayed, `window` or `windows` named the Windows
+  Terminal routines 427 times. File paths (`C:/Users/...` matched every routine with "users" in its name) and
+  Claude Code's summary after a compaction no longer count, and a routine offered 5 times in a row without a run
+  stays quiet until it runs. Of 1,376 suggestions in a month, one was followed: a path match that failed.
+  Replaying the month: 104 suggestions instead of 844.
 - A memory hint (`Lighting memory may help`) needs a word of the prompt in the note's title. The hint shows only
   the title, and long note bodies matched almost any prompt: for "the sniper UI clicks the filter 3 times" it named
   "Figma Weave Pricing". Of 87 hinted notes nobody recalled in a month, 59 shared no word with their title; the two
