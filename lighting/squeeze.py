@@ -6,11 +6,12 @@ import shutil
 import stat
 import subprocess
 import sys
+import threading
 from collections import Counter
 from pathlib import Path
 
 from lighting import defaults as D
-from lighting.common import Fail, outfile, trimmed, win_path
+from lighting.common import Fail, Pending, outfile, trimmed, win_path
 
 ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[()][A-Z0-9]")
 IMPORTANT = re.compile(D.SQUEEZE_IMPORTANT, re.I)
@@ -243,7 +244,7 @@ def squeeze_json(obj, lines_mode):
     return [compact(small)]
 
 
-def squeeze(text, name="output"):
+def squeeze(text, name="output", stats=None):
     lines = clean(text)
     plain = "\n".join(lines)
     if len(lines) <= D.SQUEEZE_MIN_LINES and len(plain) <= D.SQUEEZE_MIN_CHARS:
@@ -258,7 +259,11 @@ def squeeze(text, name="output"):
     if len(small) + len(tail) >= len(plain):
         return plain
     path.write_text(plain, "utf-8")
-    trimmed(len(plain) - len(small) - len(tail))
+    cut = len(plain) - len(small) - len(tail)
+    if stats is None:
+        trimmed(cut)
+    else:
+        stats["cut"] = cut
     return small + tail
 
 
@@ -285,24 +290,60 @@ def decode(data):
     return data.decode("utf-8-sig", "replace")
 
 
+def read_files(pos, base):
+    parts = []
+    for p in pos:
+        path = Path(win_path(p)).expanduser()
+        path = path if path.is_absolute() else base / path
+        try:
+            with open(path, "rb") as fh:
+                parts.append(decode(read_limited(fh)))
+        except OSError as e:
+            raise Fail("cannot read %s (%s)" % (p, e.strerror or e), USAGE)
+    return "\n".join(parts)
+
+
+def work(job, text, name, pos, base):
+    try:
+        if pos:
+            text, name = read_files(pos, base), Path(pos[0]).name
+        job["out"] = squeeze(text, name, job)
+    except Exception as e:
+        job["error"] = e
+
+
+def done(job):
+    e = job.get("error")
+    if isinstance(e, Fail):
+        raise e
+    if e is not None:
+        raise Fail("squeeze failed: %s: %s" % (type(e).__name__, str(e)[:200]), USAGE)
+    trimmed(job.get("cut", 0))
+    return job["out"]
+
+
 def cmd_squeeze(ctx, pos, flags):
     text, name = getattr(ctx, "stdin", None), str(flags.get("name") or "output")
     if pos and pos[0] == "--":
         raise Fail("this lighting client cannot run commands yet", "<command> > out.txt 2>&1; lighting squeeze out.txt")
-    if pos:
-        base, parts = Path(getattr(ctx, "cwd", None) or os.getcwd()), []
-        for p in pos:
-            path = Path(win_path(p)).expanduser()
-            path = path if path.is_absolute() else base / path
-            try:
-                with open(path, "rb") as fh:
-                    parts.append(decode(read_limited(fh)))
-            except OSError as e:
-                raise Fail("cannot read %s (%s)" % (p, e.strerror or e), USAGE)
-        text, name = "\n".join(parts), Path(pos[0]).name
-    if text is None:
+    if not pos and text is None:
         raise Fail("nothing to squeeze", USAGE)
-    return squeeze(text, name)
+    job = {}
+    base = Path(getattr(ctx, "cwd", None) or os.getcwd())
+    worker = threading.Thread(target=work, args=(job, text, name, pos, base), daemon=True)
+    worker.start()
+    worker.join(D.SQUEEZE_INLINE_S)
+    if not worker.is_alive():
+        return done(job)
+
+    def poll(last):
+        if worker.is_alive():
+            if last:
+                raise Fail("squeezing did not end in time", USAGE)
+            return None
+        return done(job)
+
+    return Pending(poll, D.SQUEEZE_BUDGET_S, D.GREP_POLL_S)
 
 
 def piped():

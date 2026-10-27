@@ -2216,6 +2216,32 @@ def test_squeeze_keeps_errors_and_the_original():
         assert squeeze.run_command(["lighting-no-such-tool-x"])[0] == 127
 
 
+def test_long_squeeze_frees_the_memory_lane():
+    import time
+    import types
+    from lighting import squeeze
+    from lighting.common import Pending, take_trimmed
+    real = squeeze.squeeze
+
+    def slow(text, name="output", stats=None):
+        time.sleep(1.4)
+        if stats is not None:
+            stats["cut"] = 7
+        return "squeezed " + text
+
+    squeeze.squeeze = slow
+    try:
+        t = time.perf_counter()
+        p = squeeze.cmd_squeeze(types.SimpleNamespace(cwd="", stdin="big log"), [], {})
+        assert isinstance(p, Pending) and time.perf_counter() - t < 1.3, p
+        assert p.poll(False) is None
+        time.sleep(0.6)
+        take_trimmed()
+        assert p.poll(False) == "squeezed big log" and take_trimmed() == 7
+    finally:
+        squeeze.squeeze = real
+
+
 if __name__ == "__main__":
     tests =[(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
     failed = 0
