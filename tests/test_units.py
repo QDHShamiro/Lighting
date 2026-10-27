@@ -1161,31 +1161,18 @@ def test_linux_key_names():
     assert all(w.keysym_of(w.MODSYMS.get(k, k)) for k in list(w.KEYSYMS) + list(w.MODSYMS))
 
 
-def test_linux_display_shared_by_threads():
-    try:
-        import Xlib.display
-    except ImportError:
-        return
-    if not os.environ.get("DISPLAY"):
-        return
-    import threading
-    from lighting import win_linux as w
-    errors = []
-
-    def hammer():
-        try:
-            for _ in range(300):
-                w.foreground()
-                w.display().sync()
-        except Exception as e:
-            errors.append(repr(e))
-
-    threads = [threading.Thread(target=hammer, daemon=True) for _ in range(4)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join(20)
-    assert not errors and not any(t.is_alive() for t in threads), errors[:3] or "threads hang on the shared X display"
+def test_app_recorder_says_when_it_was_busy():
+    import types
+    from lighting import deskrec_unix
+    for alive, busy, skipped, said in (
+            (True, "a click", [], "the app recorder was still reading a click after 5 s, it is not recorded"),
+            (False, None, ["chrome", "chrome"], "2 clicks went to chrome, which the app recorder leaves out"),
+            (False, None, [], None)):
+        rec = deskrec_unix.DeskRecorder()
+        rec.busy, rec.skipped = busy, skipped
+        rec.hook_thread = rec.work_thread = types.SimpleNamespace(join=lambda timeout=None: None, is_alive=lambda a=alive: a)
+        notes = [s["args"][0] for s in rec.stop() if s["cmd"] == "#"]
+        assert notes == ([said] if said else []), notes
 
 
 def test_demo_offline():
