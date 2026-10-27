@@ -64,7 +64,7 @@
 ## Routines (learned tasks)
 - Every successful action is kept with a stable target (`click e12` is stored as `click "Sign in"`, desktop `d5` by its name). Reads (snap, text, shot) only count as cost.
 - A task ends after 45 s without commands or when a new site/app starts. Lighting then aligns it with earlier tasks (sequence alignment, like DNA matching); parts that differ between runs become parameters (`spotify:search:SOS` and `spotify:search:Numb` give `search`). Seen twice: a routine is saved and announced once (`! learned routine spotify-wiedergeben ...`).
-- Starting a known task prints `! routine X can finish this in one call: lighting run X search=...` after the first matching step.
+- Starting a known task prints `! routine X can finish this in one call: lighting run X search=...` after the first matching step, when two or more steps are left.
 - Even earlier: a hook reads the user's message and, when a routine fits (its app plus a word, or two words of its name and tags), adds one line to the prompt: `Lighting routine fits this request (one call, swap the values): lighting run discord-markieren user=Luis text='hi'`. Nothing fits: nothing is added (0 tokens). The same routine is named at most every 10 minutes.
 - Routines keep the words of the request they were learned from as tags (`markiere`, `discord`, `@`; parameter values left out), so the next request in other words still finds them. Name saved routines by intent in the user's words: `routine save discord-markieren user=Tom text=hi`.
 - Routines can use routines: a step `run gh-open page=Tools` runs another one (at most 3 deep, no loops). A `run` in the middle of a task is kept as one step, and a newly learned routine that contains a whole existing routine uses `run` for that part.
