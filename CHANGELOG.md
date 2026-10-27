@@ -229,6 +229,11 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - A routine hint (`! routine X can finish this in one call`) needs two or more steps still to do; with one left,
   running the routine saves nothing. `github-create-pull-request` (open the compare page, click Create) was offered
   8 times in a week after the page was already open and never run; in a month 1 of 328 hints was followed.
+- The prompt hook names a routine only when the message names its app or site as a whole word: `windows` named a
+  Windows Terminal routine and `unread` an Unreal Editor one. File paths (`C:/Users/...` matched every routine with
+  "users" in its name) and Claude Code's summary after a compaction no longer count, and a routine offered 5 times
+  in a row without a run stays quiet until it runs. Of 1,376 suggestions in a month, one was followed: a path match
+  that failed. Replaying that month's prompts gives 102 suggestions instead of 844.
 
 ## [2.0.0] - 2026-10-22
 

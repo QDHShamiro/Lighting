@@ -776,6 +776,7 @@ def place(w):
 def record_result(r, ok, ms, out_tokens, err=None):
     st = r["stats"]
     st["runs"] += 1
+    st["offered"] = 0
     st["ok" if ok else "fail"] += 1
     st["ms"] = int(ms) if not st.get("ms") else int(st["ms"] * 0.7 + ms * 0.3)
     if ok:
