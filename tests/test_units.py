@@ -1866,10 +1866,13 @@ def test_unknown_commands_get_a_guess():
 
 def test_memory_model_never_stalls():
     import http.server
+    import io
     import socket
     import threading
     import time
     import types
+    import urllib.error
+    import urllib.request
     from lighting import defaults as D, memcmd, memmodel as MM, recall
     seen = {"post": 0}
 
@@ -1881,6 +1884,7 @@ def test_memory_model_never_stalls():
 
         def do_POST(self):
             seen["post"] += 1
+            self.rfile.read(int(self.headers.get("Content-Length") or 0))
             self.send_response(503)
             self.end_headers()
             self.wfile.write(b'{"error": "paused"}')
@@ -1905,6 +1909,23 @@ def test_memory_model_never_stalls():
         MM._st.update(api_ok=(0.0, False))
         assert MM.query("where is the build", 1.0) == (None, "the model is paused")
         assert MM.query("again", 1.0) == (None, "the model is paused") and seen["post"] == 1
+
+        class Reset(io.BytesIO):
+            def read(self, *a):
+                raise ConnectionResetError(54, "Connection reset by peer")
+
+        def reset(*a, **k):
+            raise urllib.error.HTTPError("http://x/v1/embeddings", 503, "paused", {}, Reset())
+
+        keep = urllib.request.urlopen
+        urllib.request.urlopen = reset
+        try:
+            MM.post("http://x", "/v1/embeddings", {}, 1)
+            raise AssertionError("no NotReady")
+        except MM.NotReady as e:
+            assert MM.reason(str(e)) == "the model is paused", e
+        finally:
+            urllib.request.urlopen = keep
         ctx = types.SimpleNamespace(cwd=tempfile.mkdtemp(prefix="lighting-proj-"), sid="s-stall", told={})
         memcmd.remember(ctx, "The deploy script lives in tools/deploy.sh")
         assert memcmd.on_prompt(ctx, "where does the deploy script live again") == []
