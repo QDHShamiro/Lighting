@@ -75,6 +75,9 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 - `lighting improve` gives advice for a guessed `fill` label (`no field for`), an elevated window and a `wait` that
   ran into its timeout (`timeout after`). These were 3 of the 5 top errors of the last 3 days, and all of them said
   only "look at lighting log for the details".
+- `type o74 "text"` (a ref from `read`, which is screen text) says what works: `click o74`, then
+  `type focused "text"`. Before, it said `no field called "o74"` and pointed to `snap`, which had already found
+  nothing in that window (Discord); the click and `type focused` is what then sent the message.
 
 ## [2.1.0] - 2026-10-22
 

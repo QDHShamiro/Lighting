@@ -731,6 +731,8 @@ def cmd_type(ctx, pos, flags):
         raise Fail("type needs a d-ref, a field name or focused", 'lighting type d5 "hello" | type "Search" hello')
     if ref_kind(pos[0]) == "d":
         el = element(ctx, pos[0])
+    elif ref_kind(pos[0]) == "o":
+        raise Fail("%s is screen text, not a field" % pos[0], 'lighting click %s, then lighting type focused "<text>"' % pos[0])
     elif pos[0].lower() == "focused":
         el = focused_in(target(ctx))
     else:

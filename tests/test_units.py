@@ -951,6 +951,18 @@ def test_a_window_named_last_or_in_on_is_the_target():
         commands.app, commands.web = keep
 
 
+def test_typing_into_screen_text_says_how():
+    from lighting import commands, desktop
+    from lighting.common import Fail
+    c = commands.Context(type("F", (), {"events": [], "hosts": []})(), "s1")
+    try:
+        desktop.cmd_type(c, ["o74", "hello"], {"enter": True})
+        raise AssertionError("type o74 went on")
+    except Fail as e:
+        assert str(e) == "o74 is screen text, not a field", e
+        assert e.hint.startswith("lighting click o74, then lighting type focused"), e.hint
+
+
 def test_quick_keys_wait_less():
     from lighting import desktop
     assert all(desktop.quick_key(k) for k in ("tab", "shift+tab", "End", "x", "pgdn", "backspace"))
