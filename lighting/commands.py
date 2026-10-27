@@ -193,7 +193,7 @@ def aim(ctx, name, pos, flags):
         if on is True or not windowish(on):
             raise Fail("--on takes web, app or a window like w3 or app:Name", "lighting %s ... --on app" % name)
         spec = on
-    elif (name in AIMED and len(pos) >= (3 if name == "type" else 2) and windowish(pos[-1])
+    elif (on != "web" and name in AIMED and len(pos) >= (3 if name == "type" else 2) and windowish(pos[-1])
           and ref_kind(pos[0]) not in ("e", "t")):
         spec, pos = pos[-1], pos[:-1]
     if spec is None:

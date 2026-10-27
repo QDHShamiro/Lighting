@@ -776,10 +776,10 @@ def test_a_window_named_last_or_in_on_is_the_target():
         commands.route(c, "type", ["d5", "w9"], {})
         commands.route(c, "press", ["w2", "enter"], {})
         commands.route(c, "click", ["e5", "w9"], {})
-        commands.route(c, "click", ["Send"], {"on": "web"})
+        commands.route(c, "click", ["Send", "w2"], {"on": "web"})
         commands.route(c, "text", [], {})
         assert seen == [("app", "cmd_type", ["d5", "w9"], None), ("app", "cmd_press", ["w2", "enter"], None),
-                        ("web", "cmd_click", ["e5", "w9"], None), ("web", "cmd_click", ["Send"], "web"),
+                        ("web", "cmd_click", ["e5", "w9"], None), ("web", "cmd_click", ["Send", "w2"], "web"),
                         ("web", "cmd_text", [], None)]
         assert aimed == []
         del seen[:]
