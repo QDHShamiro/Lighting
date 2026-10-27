@@ -144,17 +144,18 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - The prompt hook names a routine only when a word of the message is its app or site or starts with it
   (`Discord-Server`). Five matching letters were enough before: `live-update` named a routine for the site
   live-charms-analysis-enclosed, and in a month of prompts replayed, `window` or `windows` named the Windows
-  Terminal routines 427 times. File paths (`C:/Users/...` matched every routine with "users" in its name) and
+  Terminal routines 148 times. File paths (`C:/Users/...` matched every routine with "users" in its name) and
   Claude Code's summary after a compaction no longer count, and a routine offered 5 times in a row without a run
   stays quiet until it runs. Of 1,376 suggestions in a month, one was followed: a path match that failed.
-  Replaying the month: 104 suggestions instead of 844.
+  Replaying the month: 42 suggestions instead of 288, and the agent went on to use the named app after 45% of
+  them (7% before).
 - A memory hint (`Lighting memory may help`) needs a word of the prompt in the note's title. The hint shows only
   the title, and long note bodies matched almost any prompt: for "the sniper UI clicks the filter 3 times" it named
   "Figma Weave Pricing". Of 87 hinted notes nobody recalled in a month, 59 shared no word with their title; the two
   that were recalled did.
 - `lighting demo` and `lighting selftest` start their local test page without a reverse name lookup of
-  127.0.0.1. On GitHub's macOS runners the first such lookup in a process takes 35 s (measured three times): the
-  demo's unit test took 35.5 of the 40 s that all unit tests took there.
+  127.0.0.1. On GitHub's macOS runners the first such lookup in a process takes 35 s (measured three times); there
+  the unit tests now take 5 s instead of 40 s, and the self-test step 63 s instead of 86 s.
 
 ## [2.0.0] - 2026-10-22
 
