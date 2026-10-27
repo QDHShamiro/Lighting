@@ -292,14 +292,14 @@ def scan(path, rx, pre, o):
         if size > D.GREP_MAX_BYTES:
             return "big"
         with open(path, "rb") as fh:
-            enc = encoding_of(fh.read(8000))
+            raw = fh.read(8000 if size > D.GREP_WHOLE else -1)
+        enc = encoding_of(raw[:8000])
         if enc is None and not o["text"]:
             return "binary"
         enc = enc or "utf-8"
         if size > D.GREP_WHOLE:
             return hits(stream(path, enc), rx, o)
-        with open(path, "r", encoding=enc, errors="replace", newline="\n") as fh:
-            text = fh.read().replace("\r\n", "\n")
+        text = raw.decode(enc, "replace").replace("\r\n", "\n")
         if pre is not None and not pre.search(text):
             return 0, []
         return hits((text[:-1] if text.endswith("\n") else text).split("\n"), rx, o)
