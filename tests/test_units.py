@@ -2787,12 +2787,14 @@ def test_long_squeeze_frees_the_memory_lane():
 
 
 if __name__ == "__main__":
+    import time
     tests =[(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
     failed = 0
     for name, fn in tests:
+        t0 = time.perf_counter()
         try:
             fn()
-            print("PASS", name)
+            print("PASS %s %d ms" % (name, (time.perf_counter() - t0) * 1000))
         except Exception as e:
             failed += 1
             print("FAIL", name, "|", type(e).__name__, str(e).replace("\n", " / "))
