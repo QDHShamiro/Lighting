@@ -1000,6 +1000,31 @@ def test_busy_input_becomes_a_wait():
         commands.route = keep
 
 
+def test_a_bare_f_asks_for_words_before_acting():
+    from lighting import commands, common
+    calls = []
+    keep = commands.route
+
+    def route(ctx, name, pos, flags):
+        calls.append((name, dict(flags)))
+        return "ok"
+
+    commands.route = route
+    try:
+        c = commands.Context(type("F", (), {"events": []})(), "s1")
+        for argv in (["snap", "-f"], ["click", "e4", "-f"], ["snap", "-f", "--all"], ["windows", "-f"]):
+            try:
+                commands.run_one(c, argv)
+                raise AssertionError("no error for %s" % argv)
+            except common.Fail as e:
+                assert "-f needs the words to look for" in str(e) and "nothing was done" in str(e), e
+        assert calls == []
+        commands.run_one(c, ["click", "e4", "-f", "Save"])
+        assert calls == [("click", {"f": "Save"}), ("snap", {"f": "Save"})]
+    finally:
+        commands.route = keep
+
+
 def test_gone_window_finds_its_successor():
     if not WINDOWS:
         return
