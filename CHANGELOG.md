@@ -54,6 +54,9 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   learned as a routine or a page label, since refs change with the page.
 - `lighting voice` no longer fails with `UnicodeDecodeError` when its log holds a line in the Windows code page (an
   umlaut from the call process, seen in the daemon log); such a character is replaced now.
+- A UI Automation error from a busy app no longer ends in a COM traceback: `snap` says the app may be busy, and
+  after `type` or `press` only the list of changes is left out, the action itself counts. In the daemon log 5
+  times, twice after the keys had already been sent, so the command looked failed although it worked.
 
 ## [2.1.0] - 2026-10-22
 

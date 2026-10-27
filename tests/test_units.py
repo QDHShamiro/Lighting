@@ -990,6 +990,34 @@ def test_press_takes_a_window_first():
          win.windows) = keep
 
 
+def test_ui_automation_timeout_is_a_clear_error():
+    if not WINDOWS:
+        return
+    from _ctypes import COMError
+    from lighting import uia_windows as U
+
+    class Root:
+        def FindAllBuildCache(self, *a):
+            raise COMError(-2146233083, None, (None, None, None, 0, None))
+
+    class Api:
+        def ElementFromHandle(self, hwnd):
+            return Root()
+
+    keep, had = (U.api, U.condition), "cache" in U._state
+    U.api, U.condition = (lambda: (Api(), None)), (lambda with_text: None)
+    U._state.setdefault("cache", None)
+    try:
+        U.collect(123)
+        raise AssertionError("a COM timeout must become a Fail")
+    except commands.Fail as e:
+        assert "0x80131505" in str(e) and "snap again" in e.hint, (str(e), e.hint)
+    finally:
+        U.api, U.condition = keep
+        if not had:
+            U._state.pop("cache", None)
+
+
 def test_voice_status_reads_a_log_in_any_encoding():
     if not WINDOWS:
         return

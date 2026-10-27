@@ -1,6 +1,7 @@
 import time
 
 from lighting import defaults as D
+from lighting.common import Fail
 
 _state = {}
 
@@ -86,21 +87,27 @@ def document_rect(root):
 
 
 def collect(hwnd, with_text=False, skip_rect=None):
+    from _ctypes import COMError
     uia, U = api()
-    root = uia.ElementFromHandle(hwnd)
-    t0 = time.perf_counter()
-    arr = root.FindAllBuildCache(4, condition(with_text), _state["cache"])
-    items = []
-    for i in range(arr.Length):
-        el = arr.GetElement(i)
-        l, t, r, b = rect_of(el)
-        if r - l < 2 or b - t < 2:
-            continue
-        if skip_rect and l >= skip_rect[0] and t >= skip_rect[1] and r <= skip_rect[2] and b <= skip_rect[3]:
-            continue
-        items.append(el)
-        if (time.perf_counter() - t0) * 1000 > D.UIA_BUDGET_MS:
-            break
+    try:
+        root = uia.ElementFromHandle(hwnd)
+        t0 = time.perf_counter()
+        arr = root.FindAllBuildCache(4, condition(with_text), _state["cache"])
+        items = []
+        for i in range(arr.Length):
+            el = arr.GetElement(i)
+            l, t, r, b = rect_of(el)
+            if r - l < 2 or b - t < 2:
+                continue
+            if skip_rect and l >= skip_rect[0] and t >= skip_rect[1] and r <= skip_rect[2] and b <= skip_rect[3]:
+                continue
+            items.append(el)
+            if (time.perf_counter() - t0) * 1000 > D.UIA_BUDGET_MS:
+                break
+    except COMError as e:
+        code = e.args[0] & 0xFFFFFFFF if e.args and isinstance(e.args[0], int) else 0
+        raise Fail("the window's controls could not be read (UI Automation error %#x, the app may be busy)" % code,
+                   "lighting snap again in a moment, or lighting read for screen text") from None
     return root, items
 
 
