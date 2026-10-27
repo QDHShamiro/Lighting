@@ -181,6 +181,8 @@ def browser(r, base):
     got = r.step("search learns the URL", ["search", "lighting"], lambda o, e: not e and "learned the search URL" in o)
     if "learned the search URL" not in got:
         r.diag(["tabs"], ["js", SEARCH_PROBE])
+    elif "did not reach the page" in got:
+        r.rows.append("DIAG %-26s | %s" % ("search Enter fallback", got.replace("\n", " / ")[:300]))
     r.step("search jumps directly", ["search", "second try"],
            lambda o, e: not e and "find?q=second+try" in o and "(typed" not in o)
     r.step("jumped to results", ["expect", "Found: second try"], ok)
