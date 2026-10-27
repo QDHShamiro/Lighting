@@ -24,6 +24,10 @@ def main(path, label):
         chunks.append(cur)
     for n, c in enumerate(chunks[:9], 1):
         print("::notice title=%s part %d/%d::%s" % (label, n, len(chunks), esc(c)))
+    rows = re.findall(r"^(?:PASS|FAIL) (.+?)\s+(\d+) ms", text, re.M)
+    slow = sorted(rows, key=lambda r: -int(r[1]))[:8]
+    if slow:
+        print("::notice title=%s slowest checks::%s" % (label, esc(", ".join("%s %s ms" % r for r in slow))))
     m = re.findall(r"(\d+)/(\d+) passed", text)
     if m:
         print("::notice title=%s selftest::%s/%s passed" % (label, m[-1][0], m[-1][1]))

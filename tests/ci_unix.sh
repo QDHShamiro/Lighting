@@ -12,11 +12,11 @@ say() { printf '%s\n' "$*" | tee -a "$LOG"; }
 run() {
   local name="$1"; shift
   say "== $name"
-  local out
+  local out t0=$SECONDS
   out=$(perl -e "alarm shift; exec @ARGV" 600 "$@" 2>&1)
   local code=$?
   printf '%s\n' "$out" | tee -a "$LOG"
-  say "-- exit $code"
+  say "-- exit $code ($((SECONDS - t0)) s)"
   return 0
 }
 
