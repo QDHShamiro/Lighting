@@ -8,9 +8,12 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 
 ### Added
 - `lighting tokens claude [days]`: where your Claude Code tokens go, read from the local transcripts (no upload):
-  requests, context read, the cost split (cache reads, writes, output), the thinking share and thinking per effort
-  level, then the biggest fixes first (auto-compact window, effort, start context, cache rebuilds), each with the
-  setting to change. Measured on 30 days with 1.9 GB of transcripts: 7 s the first time, under 1 s after that
+  requests, context read, the cost split (cache reads, writes, output), the thinking share, what fills the context
+  (earlier thinking, Bash output, start context, file reads, summaries after compact) and thinking per effort level,
+  then the biggest fixes first (auto-compact window, effort, tool output, start context, cache rebuilds), each with
+  the setting to change. The content split uses how much each request grew, so it needs no characters-per-token
+  guess (tool output runs ~2.2 characters per token, not 4). On 30 days of real use: earlier thinking 33% of all
+  context, Bash output 21%, start context 19%. Measured with 1.9 GB of transcripts: 10 s the first time, under 1.5 s after that
   (per-file cache in `~/.lighting/claude-usage.json`).
 - `lighting grep <pattern> [path ...]`: text search for agents. Patterns work as in GNU grep: basic by default
   (`a\|b`, `\(...\)`, `x\+`, while a bare `(` or `+` is a plain character), `-E` extended, `-P` Python, `-F` fixed,

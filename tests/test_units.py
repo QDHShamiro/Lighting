@@ -544,8 +544,9 @@ def test_claude_usage_reads_transcripts():
     day = datetime.date.today().isoformat()
     old = (datetime.date.today() - datetime.timedelta(days=40)).isoformat()
 
-    def msg(mid, t, read, write, out, text="", side=False, think=False):
+    def msg(mid, t, read, write, out, text="", side=False, think=False, tool=None):
         content = [{"type": "thinking", "thinking": ""}] if think else [{"type": "text", "text": text}]
+        content += [{"type": "tool_use", "id": "t" + mid, "name": tool, "input": {}}] if tool else []
         stamp = "%sT10:00:00.000Z" % old if t == "old" else "%sT%s.000Z" % (day, t)
         return {"type": "assistant", "isSidechain": side, "timestamp": stamp,
                 "message": {"id": mid, "content": content, "usage": {"input_tokens": 10 if mid == "m1" else 0,
@@ -554,9 +555,16 @@ def test_claude_usage_reads_transcripts():
     def effort(level):
         return {"type": "api-request", "params": {"output_config": {"effort": level}}}
 
-    a = [effort("max"), msg("m1", "10:00:00", 0, 30000, 2000, think=True), msg("m1", "10:00:00", 0, 30000, 2000, "x" * 400),
-         msg("s1", "10:00:30", 900000, 0, 9999, "side", side=True), msg("m2", "10:01:00", 449000, 1000, 1000, "y" * 400),
-         effort("high"), msg("m3", "10:02:00", 460000, 0, 600, "z" * 400), msg("m4", "12:30:00", 270000, 200000, 300)]
+    def result(mid, content):
+        return {"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t" + mid,
+                                                                         "content": content}]}}
+
+    a = [effort("max"), msg("m1", "10:00:00", 0, 30000, 2000, think=True),
+         msg("m1", "10:00:00", 0, 30000, 2000, "x" * 400, tool="Bash"), result("m1", "b" * 6000),
+         {"type": "attachment", "attachment": {"type": "hook_success"}, "rendered": [{"content": "a" * 2000}]},
+         msg("s1", "10:00:30", 900000, 0, 9999, "side", side=True), msg("m2", "10:01:00", 449000, 1000, 1000, "y" * 400, tool="Read"),
+         result("m2", [{"type": "text", "text": "r" * 1000}]), effort("high"), msg("m3", "10:02:00", 460000, 0, 600, "z" * 400),
+         msg("m4", "12:30:00", 270000, 200000, 300)]
     b = [effort("max"), msg("o1", "old", 999989, 0, 5000), msg("b1", "11:00:00", 0, 40000, 1500, think=True)]
     keep_env, keep_cache = os.environ.get("CLAUDE_CONFIG_DIR"), D.CLAUDE_CACHE
     with tempfile.TemporaryDirectory() as tmp:
@@ -574,6 +582,8 @@ def test_claude_usage_reads_transcripts():
             assert rows == [["max", "3", "~1,433"], ["high", "2", "~400"]], rows
             assert "auto-compact at 400k: ~51% fewer context tokens, +1 compactions" in out, out
             assert "effort: max ran 60% of requests and thinks 3.6x as much as high" in out, out
+            assert "context by content: Bash output ~65%, start context ~11%, file reads ~1%, earlier thinking ~1%, rest ~22%\n" in out, out
+            assert "tool output: Bash ~65% and file reads ~1% of all context, kept until the next compact" in out, out
             assert "start context ~32k on every request (11% of all context" in out, out
             assert "cache rebuilds: 1 full rewrites (1 after a break over 60 min), 58% of the weighted total" in out, out
             assert json.loads(D.CLAUDE_CACHE.read_text("utf-8")).keys() == {str(proj / "a.jsonl"), str(proj / "b.jsonl")}
