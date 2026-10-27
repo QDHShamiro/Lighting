@@ -40,7 +40,8 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   Lighting's own 34,038-line log from ~779k to ~325 tokens (5 different errors shown), GitHub's pull request list
   from ~147k to ~1k tokens. Replayed on the 3,107 long Bash outputs (4,000+ characters or 60+ lines) of 30 days of
   Claude Code transcripts: 59% fewer characters, and 5 of 3,809 kinds of error line not in view, all inside JSON
-  lists, whose first line counts the items with error words.
+  lists, whose first line counts the items with error words. A big log takes seconds (a 4 MB build log 1.1 s),
+  so after 1 s it goes on in the background, and the hooks and memory commands of other sessions never wait.
 
 ## [2.1.0] - 2026-10-22
 
