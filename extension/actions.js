@@ -354,9 +354,22 @@ export async function type(a, tab) {
   if (typeof v.value === "string" && text && !v.value.includes(text)) await page(tabId, "act.setValue", [f.ref, a.append ? v.value + text : text]);
   const before = (await chrome.tabs.get(tabId)).url;
   const nav = T.watchNav(tabId);
-  if (a.enter) await I.press(tabId, "Enter");
+  let lost = "";
+  if (a.enter) {
+    await page(tabId, "act.armKey", [f.ref]).catch(() => {});
+    await I.press(tabId, "Enter");
+    let seen = null;
+    for (let i = 0; i < 3 && !(seen && seen.seen !== false); i++) {
+      if (i) await new Promise((res) => setTimeout(res, 60));
+      seen = await page(tabId, "act.keySeen", [f.ref]).catch(() => null);
+    }
+    if (seen && seen.seen === false) {
+      const done = await page(tabId, "act.domEnter", [f.ref]).catch(() => null);
+      if (done && done.ok) lost = " (the Enter did not reach the page, so it was sent inside it)";
+    }
+  }
   const shown = a.secret ? text.length + " secret chars" : text.length + " chars";
-  return after(tabId, nav, before, " (typed " + shown + ")");
+  return after(tabId, nav, before, " (typed " + shown + ")" + lost);
 }
 
 function truthy(v) {
