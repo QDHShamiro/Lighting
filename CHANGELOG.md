@@ -108,6 +108,10 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   they run on their own lane. A prompt waited up to 5 s while another session ran `frames` or `selftest` (239
   commands of 2 s or more from 10-18 to 10-25); with four commands queued on the browser lane, `todo` took
   2.8-3.1 s and now takes 0.02-0.04 s.
+- The start info no longer waits for a sleeping disk: the wiki drafts and the model check get 0.3 s, then the drafts
+  are counted from the index (updated every minute, not while a game runs) and the model line is left out. With the vault and the models
+  on a hard disk that sleeps after 20 minutes, a start took 4.1 s, 1.6 s of it for listing the vault inbox. A slow
+  start now logs where its time went (database, git, vault, model).
 - `lighting code "what it does"` no longer fails while the model is paused (a game runs) or its meaning index is
   still building: it lists the code whose names contain the words.
 - Hints while you type need meaning and words also when the model is paused; before, words alone showed unrelated
