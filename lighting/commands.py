@@ -186,9 +186,32 @@ def app_wait(ctx, pos, flags):
     return ctx.kind() == "app" and bool(pos) and not pos[0].isdigit() and not ref_kind(pos[0]) and not pos[0].startswith(("url:", "css:"))
 
 
+AIMED = {"click", "press", "type"}
+
+
+def windowish(p):
+    return ref_kind(p) == "w" or p.lower().startswith("app:")
+
+
+def aim(ctx, name, pos, flags):
+    on, spec = flags.get("on"), None
+    if on is not None and on not in ("web", "app"):
+        if on is True or not windowish(on):
+            raise Fail("--on takes web, app or a window like w3 or app:Name", "lighting %s ... --on app" % name)
+        spec = on
+    elif (name in AIMED and len(pos) >= (3 if name == "type" else 2) and windowish(pos[-1])
+          and ref_kind(pos[0]) not in ("e", "t")):
+        spec, pos = pos[-1], pos[:-1]
+    if spec is None:
+        return pos, flags
+    app().target(ctx, [spec])
+    return pos, dict(flags, on="app")
+
+
 def route(ctx, name, pos, flags):
     if name in SYSTEM:
         return SYSTEM[name](ctx, pos, flags)
+    pos, flags = aim(ctx, name, pos, flags)
     if name == "read":
         if pos and (is_url(pos[0]) or pos[0].lower().endswith((".pdf",) + web().IMAGE_EXT)):
             return web().read_url(ctx, pos, flags)
