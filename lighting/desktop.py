@@ -944,11 +944,13 @@ def cmd_read(ctx, pos, flags):
 
 def cmd_shot(ctx, pos, flags):
     from lighting.browser import save_image, threshold
+    from lighting.common import out_path
+    out = out_path(ctx, flags, D.SHOT_KINDS, "lighting shot w3 --out C:/shots/app.png")
     hwnd, box = region(ctx, pos)
     img = grab(box, hwnd)
     key = "app-%s" % (hwnd or "screen")
     return save_image(ctx, img, key, bool(flags.get("if-changed")),
-                      int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH), threshold(flags))
+                      int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH), threshold(flags), out)
 
 
 def app_text(hwnd):
@@ -1000,7 +1002,7 @@ def cmd_wait(ctx, pos, flags):
 def cmd_video(ctx, pos, flags):
     import subprocess
     from lighting import audio
-    from lighting.common import Pending, outfile
+    from lighting.common import Pending, out_path, outfile
     secs = max(1, min(int(float(flags.get("seconds") or 10)), D.VIDEO_MAX_S))
     if pos and pos[0] != "screen" and ref_kind(pos[0]) != "w" and not pos[0].lower().startswith("app:"):
         raise Fail("a video films the screen or a window", "lighting shot screen --seconds %d  (a browser: lighting windows -f brave, then shot w<N> --seconds %d)" % (secs, secs))
@@ -1009,7 +1011,7 @@ def cmd_video(ctx, pos, flags):
         raise Fail("a video needs ffmpeg", D.FFMPEG_HINT)
     hwnd, (x0, y0, x1, y1) = region(ctx, pos or ["screen"])
     width = int(flags.get("width") or D.VIDEO_WIDTH)
-    out = outfile("video", "mp4")
+    out = out_path(ctx, flags, D.VIDEO_KINDS, "lighting shot w3 --seconds 10 --out C:/shots/clip.mp4") or outfile("video", "mp4")
     encode = ["-c:v", "libx264", "-preset", "veryfast", "-crf", str(D.VIDEO_CRF), "-pix_fmt", "yuv420p", "-movflags",
               "+faststart", str(out)]
     first = win.print_window(hwnd) if hwnd and not flags.get("screen-area") else None
