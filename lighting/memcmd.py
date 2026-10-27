@@ -166,9 +166,10 @@ def cmd_todo(ctx, pos, flags):
         t = M.one("select * from todos where id = ?", (ident(pos[0]),))
         if not t:
             raise Fail("no to-do #%s" % pos[0].lstrip("#"), "lighting todo")
+        notes = [x for x in (t["note"] or "").split("\n") if x.strip()]
         return "#%d %s %s [%s, %s]\n%s%s" % (
             t["id"], time.strftime("%Y-%m-%d", time.localtime(t["updated"])), t["status"], t["list"] or "to-dos",
-            t["project"] or "global", t["task"], "\nnote: " + t["note"] if t["note"] else "")
+            t["project"] or "global", t["task"], "".join(["\nnotes:"] + ["\n  " + x for x in notes]) if notes else "")
     if sub:
         raise Fail("unknown todo command '%s'" % sub, TODO_HELP)
     rows = M.todos(None if flags.get("all") else here)
@@ -177,7 +178,8 @@ def cmd_todo(ctx, pos, flags):
     if not rows:
         return "no open to-dos (lighting todo add \"task\")"
     out = todo_list(rows)
-    return "\n".join(out + (["(lighting todo <id> shows one in full)"] if any("…" in x for x in out) else []))
+    more = any("…" in x for x in out) or any("\n" in (t["note"] or "").strip() for t in rows)
+    return "\n".join(out + (["(lighting todo <id> shows one in full)"] if more else []))
 
 
 def project_lines(here):

@@ -1868,8 +1868,12 @@ def test_memory_store_and_search():
     memcmd.cmd_todo(ctx, ["note", str(tid), note], {})
     listed = memcmd.cmd_todo(ctx, [], {})
     assert note not in listed and listed.endswith("(lighting todo <id> shows one in full)"), listed
-    full = memcmd.cmd_todo(ctx, ["#%d" % tid], {})
-    assert full.startswith("#%d " % tid) and "todo [rel, " in full and full.endswith("Ship it\nnote: " + note), full
+    memcmd.cmd_todo(ctx, ["note", str(tid), "short"], {})
+    listed = memcmd.cmd_todo(ctx, [], {})
+    assert " short)" in listed and listed.endswith("(lighting todo <id> shows one in full)"), listed
+    full = memcmd.cmd_todo(ctx, ["#%d" % tid], {}).split("\n")
+    assert full[0].startswith("#%d " % tid) and "todo [rel, " in full[0], full
+    assert full[1:3] == ["Ship it", "notes:"] and [x[14:] for x in full[3:]] == [note, "short"], full
     try:
         memcmd.cmd_todo(ctx, [str(tid + 1000)], {})
         raise AssertionError("a missing to-do must fail")
