@@ -1503,6 +1503,10 @@ def test_code_map():
         "class Main {\n  void run() { new Wallet(); buy(null); }\n}\n", "utf-8")
     ctx = types.SimpleNamespace(cwd=str(repo / "src"))
     over = codemap.cmd_code(ctx, [], {})
+    for _ in range(3):
+        if "not read yet" not in over:
+            break
+        over = codemap.cmd_code(ctx, [], {})
     assert "1 python files" in over and "1 java files" in over, over
     out = codemap.cmd_code(ctx, ["buy"], {})
     assert "src/shop.py:6 function buy" in out and "src/Main.java:2 in run" in out, out
@@ -1885,6 +1889,6 @@ if __name__ == "__main__":
             print("PASS", name)
         except Exception as e:
             failed += 1
-            print("FAIL", name, "|", type(e).__name__, e)
+            print("FAIL", name, "|", type(e).__name__, str(e).replace("\n", " / "))
     print("%d/%d passed" % (len(tests) - failed, len(tests)))
     sys.exit(1 if failed else 0)
