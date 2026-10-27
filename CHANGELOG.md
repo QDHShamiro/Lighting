@@ -81,6 +81,9 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 - `type o74 "text"` (a ref from `read`, which is screen text) says what works: `click o74`, then
   `type focused "text"`. Before, it said `no field called "o74"` and pointed to `snap`, which had already found
   nothing in that window (Discord); the click and `type focused` is what then sent the message.
+- `upload` says what is missing: the ref of the upload button or file field (it got a CSS selector, the file or
+  nothing) or the files after the ref, with `snap -f "upload|file"` as the way to find the ref. Before, all of these
+  said "upload needs a ref and files": one agent tried `input[type=file]`, `#upz` twice and an empty ref in a row.
 
 ## [2.1.0] - 2026-10-22
 

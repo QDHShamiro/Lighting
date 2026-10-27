@@ -657,15 +657,23 @@ def cmd_dismiss(ctx, pos, flags):
     return out(ctx, "dismiss", {}, 20)
 
 
+def upload_path(ctx, f):
+    p = win_path(f)
+    if not os.path.isabs(p):
+        p = os.path.join(ctx.cwd or os.getcwd(), p)
+    return os.path.normpath(p)
+
+
 def cmd_upload(ctx, pos, flags):
-    if len(pos) < 2 or not REF_RE.match(pos[0]):
-        raise Fail("upload needs a ref and files", "lighting upload e5 C:/path/file.png")
+    if not pos or not REF_RE.match(pos[0]):
+        got = "nothing" if not pos else "the file" if os.path.isfile(upload_path(ctx, pos[0])) else '"%s"' % pos[0]
+        raise Fail("upload needs the ref of the upload button or file field first, got %s" % got,
+                   'lighting snap -f "upload|file", then lighting upload e5 C:/path/file.png')
+    if len(pos) < 2:
+        raise Fail("upload needs the files after the ref", "lighting upload %s C:/path/file.png" % pos[0])
     files = []
     for f in pos[1:]:
-        p = win_path(f)
-        if not os.path.isabs(p):
-            p = os.path.join(ctx.cwd or os.getcwd(), p)
-        p = os.path.normpath(p)
+        p = upload_path(ctx, f)
         if not os.path.exists(p):
             raise Fail("file not found: " + p)
         files.append(p)

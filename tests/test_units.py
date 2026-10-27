@@ -972,6 +972,22 @@ def test_typing_into_screen_text_says_how():
         assert e.hint.startswith("lighting click o74, then lighting type focused"), e.hint
 
 
+def test_upload_says_what_is_missing():
+    from lighting import browser, commands
+    from lighting.common import Fail
+    c = commands.Context(type("F", (), {"events": []})(), "s1")
+    with tempfile.TemporaryDirectory() as d:
+        c.cwd = d
+        open(os.path.join(d, "pack.zip"), "wb").close()
+        for pos, want in ((["input[type=file]", "pack.zip"], 'got "input[type=file]"'), (["pack.zip"], "got the file"),
+                          ([], "got nothing"), (["e5"], "upload needs the files after the ref")):
+            try:
+                browser.cmd_upload(c, pos, {})
+                raise AssertionError("upload %s went on" % pos)
+            except Fail as e:
+                assert want in str(e), (pos, str(e))
+
+
 def test_quick_keys_wait_less():
     from lighting import desktop
     assert all(desktop.quick_key(k) for k in ("tab", "shift+tab", "End", "x", "pgdn", "backspace"))
