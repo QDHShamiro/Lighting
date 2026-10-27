@@ -57,6 +57,11 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 - A UI Automation error from a busy app no longer ends in a COM traceback: `snap` says the app may be busy, and
   `type` and `press` go through, only without the list of changes. In the daemon log 5 times, 4 of them `type` or
   `press` that failed for it, twice after the keys had already been sent.
+- When a session's tab is gone because the browser restarted or the tab was closed in the browser, the error names
+  the last page and the command to open it again (`lighting open <that page>`), as it did after Lighting's own
+  cleanup. Before, it said only "this session has no tab yet": 9 of the 11 times in a week of the action log came in
+  one burst right after the browser had disconnected. The page is not reopened by itself, since the browser may
+  restore the tab.
 
 ## [2.1.0] - 2026-10-22
 

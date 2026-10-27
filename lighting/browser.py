@@ -137,18 +137,24 @@ def session_tab(ctx, cmd, args):
             args["new"] = True
         return ctx.tabs[0] if ctx.tabs else None
     if not ctx.tabs:
-        last = getattr(ctx, "closed_url", None)
-        if last and cmd in REOPEN:
+        last, why = getattr(ctx, "closed_url", None), getattr(ctx, "closed_why", None)
+        if last and not why and cmd in REOPEN:
             call(ctx, "open", {"url": last, "new": True, "quiet": True}, D.LOAD_TIMEOUT + 10)
             if ctx.tabs:
                 note(ctx, "reopened %s: Lighting had closed this session's tab after an earlier reply" % last[:80])
                 return ctx.tabs[0]
         if last:
-            raise Fail("this session has no tab: its tabs were closed after an earlier reply (last page %s)" % last[:80],
-                       "lighting open %s" % last)
+            raise Fail("this session has no tab: %s (last page %s)" % (
+                why or "its tabs were closed after an earlier reply", last[:80]), "lighting open %s" % last)
         raise Fail("this session has no tab yet",
                    "lighting open <url>, lighting tabs + lighting tab t3 to use one, or lighting windows -f <app> for an app")
     return ctx.tabs[0]
+
+
+def lost(ctx, why, tab=None):
+    w = getattr(ctx, "where", None) or {}
+    if w.get("url") and w.get("tab") in (ctx.tabs if tab is None else [tab]):
+        ctx.closed_url, ctx.closed_why = w["url"], why
 
 
 def track(ctx, cmd, msg):
@@ -177,6 +183,7 @@ def call(ctx, cmd, args=None, timeout=D.CALL_TIMEOUT, want=None, tab=None):
     if not msg.get("ok"):
         err = str(msg.get("error") or "browser error")
         if tab is None and own and "no tab yet" in err:
+            lost(ctx, "its tab was closed in the browser", own)
             ctx.tabs = [x for x in ctx.tabs if x != own]
             ctx.owned.discard(own)
             return call(ctx, cmd, args, timeout, want)

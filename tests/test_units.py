@@ -472,6 +472,49 @@ def test_sessions_survive_a_restart():
     assert r.tabs == [] and r.owned == set()
 
 
+def test_a_lost_tab_names_its_last_page():
+    import threading
+    from lighting import browser, daemon
+    from lighting.common import Fail
+
+    class Fake:
+        events, abort_gen, saved, ctx_lock = [], 0, None, threading.Lock()
+        note_epoch = daemon.Daemon.note_epoch
+
+    class Host:
+        brand = "brave"
+
+        def call(self, cmd, args, tab=None, timeout=0, group=None):
+            return {"ok": False, "error": "no tab yet -> try: lighting open <url>"}
+
+    url = "https://shop.example/cart"
+    f = Fake()
+    f.ctxs, f.epochs = {}, {"brave": 5}
+    c = daemon.Daemon.context(f, commands, "s1")
+    c.tabs, c.owned, c.where = ["t4"], {"t4"}, {"tab": "t4", "url": url, "kind": "web"}
+    f.note_epoch("brave", 6)
+    opened, restarted, closed = [], "", ""
+    keep_call, keep_host = browser.call, browser.ensure_host
+    browser.call = lambda *a, **k: opened.append(a) or {}
+    try:
+        browser.session_tab(c, "snap", {})
+    except Fail as e:
+        restarted = e.text()
+    finally:
+        browser.call = keep_call
+    assert "has no tab: the browser restarted (last page %s)" % url in restarted
+    assert restarted.endswith("lighting open " + url) and opened == []
+    c.tabs, c.where, c.closed_url = ["t7"], {"tab": "t7", "url": url, "kind": "web"}, None
+    browser.ensure_host = lambda ctx, want=None: Host()
+    try:
+        browser.call(c, "click", {"ref": "e2"})
+    except Fail as e:
+        closed = e.text()
+    finally:
+        browser.ensure_host = keep_host
+    assert "has no tab: its tab was closed in the browser (last page %s)" % url in closed and c.tabs == []
+
+
 def test_token_overview_counts_used_and_saved():
     import collections
     import datetime

@@ -63,6 +63,7 @@ class Context:
         self.fails = {}
         self.closing = 0.0
         self.closed_url = None
+        self.closed_why = None
         self.refnames = {}
         self.brain_miss = None
         self.side = False
@@ -592,7 +593,7 @@ def close_later(ctx):
 
 def cleanup_now(ctx, quiet, scope):
     if ctx.sid and ctx.tabs and ctx.tabs[0] in ctx.owned and ctx.where and ctx.where.get("kind") == "web":
-        ctx.closed_url = ctx.where.get("url")
+        ctx.closed_url, ctx.closed_why = ctx.where.get("url"), None
     if D.WIN:
         from lighting import desktop, win
         fg = win.foreground()

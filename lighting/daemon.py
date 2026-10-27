@@ -166,7 +166,9 @@ class Daemon:
 
     def note_epoch(self, brand, ep):
         if ep and self.epochs.get(brand, ep) != ep:
+            from lighting import browser
             for c in list(self.ctxs.values()):
+                browser.lost(c, "the browser restarted")
                 c.tabs, c.owned = [], set()
         if ep:
             self.epochs[brand] = ep
