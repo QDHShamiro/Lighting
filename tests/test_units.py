@@ -798,6 +798,36 @@ def test_a_window_named_last_or_in_on_is_the_target():
         commands.app, commands.web = keep
 
 
+def test_scroll_takes_its_way_from_flags_too():
+    from lighting import browser, commands, desktop, win
+    keep = browser.out
+    browser.out = lambda ctx, name, args, t: args
+    try:
+        c = commands.Context(type("F", (), {"events": []})(), "s1")
+        assert browser.cmd_scroll(c, ["3000"], {"up": True}) == {"dir": "up"}
+        assert browser.cmd_scroll(c, ["e5", "top"], {}) == {"ref": "e5", "dir": "top"}
+        assert browser.cmd_scroll(c, [], {}) == {}
+    finally:
+        browser.out = keep
+    if not WINDOWS:
+        return
+    from lighting import uia
+    keep = desktop.target, desktop.wref, win.class_of, uia.main_scroller, uia.scroll
+    ways = []
+    desktop.target = lambda c, pos=None: 5
+    desktop.wref = lambda c, h: "w5"
+    win.class_of = lambda h: "Notepad"
+    uia.main_scroller = lambda h: object()
+    uia.scroll = lambda el, down: ways.append(down) or True
+    try:
+        outs = [desktop.cmd_scroll(c, pos, flags)
+                for flags, pos in (({"up": True}, ["w5", "3000"]), ({}, ["up"]), ({"down": True}, []), ({}, []))]
+        assert ways == [False, False, True, True], ways
+        assert outs[0] == "ok (scrolled w5 up in background)" and outs[3] == "ok (scrolled w5 down in background)", outs
+    finally:
+        desktop.target, desktop.wref, win.class_of, uia.main_scroller, uia.scroll = keep
+
+
 def test_quick_keys_wait_less():
     from lighting import desktop
     assert all(desktop.quick_key(k) for k in ("tab", "shift+tab", "End", "x", "pgdn", "backspace"))
