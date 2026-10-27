@@ -1481,6 +1481,23 @@ def test_memory_store_and_search():
     assert "Spotify" in memcmd.start_text(here)
 
 
+def test_memory_hint_needs_a_word_of_its_title():
+    import types
+    from lighting import memcmd, memory as M
+    rows = [{"id": 901, "kind": "discovery", "project": "", "sim": 0.8, "title": "Figma Weave pricing for images",
+             "body": "the sniper ui filter clicks through three menus and waits for the seller"},
+            {"id": 902, "kind": "rule", "project": "", "sim": 0.8, "title": "sniper-debug-log",
+             "body": "the sniper writes its debug log when the filter clicks through menus"}]
+    keep = memcmd.query_vec, M.search
+    memcmd.query_vec, M.search = (lambda text, wait: ([1.0], None)), (lambda *a, **k: [dict(r) for r in rows])
+    try:
+        ctx = types.SimpleNamespace(cwd="", sid="s-hint", told={})
+        out = memcmd.on_prompt(ctx, "in der sniper ui klickt der filter jedes mal drei menus durch")
+    finally:
+        memcmd.query_vec, M.search = keep
+    assert out == ["Lighting memory may help (lighting recall <id>): #902 sniper-debug-log"], out
+
+
 def test_start_info_does_not_wait_for_a_sleeping_disk():
     import time
     from lighting import memcmd, memory as M, vault
