@@ -614,6 +614,39 @@ def test_claude_usage_reads_transcripts():
                 os.environ["CLAUDE_CONFIG_DIR"] = keep_env
 
 
+def test_claude_usage_days_are_local():
+    import datetime
+    import json
+    import time
+    from lighting import claudeuse
+    from lighting import defaults as D
+    today = datetime.date.today()
+    midnight = time.mktime(today.timetuple())
+
+    def stamp(t):
+        return datetime.datetime.fromtimestamp(t, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+    rows = [{"type": "assistant", "timestamp": stamp(midnight + off), "message": {"id": mid, "content": [], "usage": {
+        "input_tokens": 0, "cache_creation_input_tokens": 1000, "cache_read_input_tokens": 0, "output_tokens": 10}}}
+        for mid, off in (("late", -1800), ("early", 1800))]
+    keep_env, keep_cache = os.environ.get("CLAUDE_CONFIG_DIR"), D.CLAUDE_CACHE
+    with tempfile.TemporaryDirectory() as tmp:
+        proj = Path(tmp) / "projects" / "p"
+        proj.mkdir(parents=True)
+        (proj / "a.jsonl").write_text("\n".join(json.dumps(r, separators=(",", ":")) for r in rows) + "\n", "utf-8")
+        os.environ["CLAUDE_CONFIG_DIR"] = tmp
+        D.CLAUDE_CACHE = Path(tmp) / "cache.json"
+        try:
+            got = claudeuse.load(today)
+        finally:
+            D.CLAUDE_CACHE = keep_cache
+            if keep_env is None:
+                os.environ.pop("CLAUDE_CONFIG_DIR", None)
+            else:
+                os.environ["CLAUDE_CONFIG_DIR"] = keep_env
+    assert [[r[0] for r in s] for s in got] == [[stamp(midnight + 1800)[:19]]], got
+
+
 def test_text_that_speaks_to_an_ai_gets_a_note():
     import collections
     import time

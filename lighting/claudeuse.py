@@ -3,7 +3,7 @@ import os
 import re
 import statistics
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from lighting import defaults as D
@@ -104,6 +104,7 @@ def load(since):
     except (OSError, ValueError):
         cache = {}
     first = time.mktime(since.timetuple())
+    start = datetime.fromtimestamp(first, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     keep_from = time.time() - KEEP_DAYS * 86400
     fresh, sessions = {}, []
     for path in sorted((claude_home() / "projects").glob("*/*.jsonl")):
@@ -122,7 +123,7 @@ def load(since):
         except OSError:
             continue
         fresh[key] = {"s": sig, "r": reqs}
-        reqs = [r for r in reqs if r[0][:10] >= since.isoformat()]
+        reqs = [r for r in reqs if r[0] >= start]
         if reqs:
             sessions.append(reqs)
     try:
