@@ -282,8 +282,11 @@ def disk_lines(c, times):
     times["vault"] = time.perf_counter() - t
     lines = [DRAFTS % waiting] if waiting else []
     if c["q"]:
-        from lighting import memmodel as MM
-        if not (MM.ready("chat") or MM.api("chat", wait=False)):
+        from lighting import games, memmodel as MM
+        game = games.running() if D.config().get("memory_learn") else ""
+        if game:
+            lines.append("(%d sessions wait to be learned: paused while %s runs)" % (c["q"], game))
+        elif not (MM.ready("chat") or MM.api("chat", wait=False)):
             lines.append("(%d sessions wait to be learned: %s)" % (c["q"], MM.status(wait=False)))
     times["model"] = time.perf_counter() - t - times["vault"]
     return lines

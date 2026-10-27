@@ -1940,6 +1940,20 @@ def test_start_info_does_not_wait_for_a_sleeping_disk():
         M.write("delete from notes where origin = ?", (origin,))
 
 
+def test_start_info_says_a_game_holds_the_learner():
+    from lighting import games, memcmd, memmodel as MM, vault
+    real = games.running, vault.drafts, MM.ready, MM.api
+    vault.drafts, MM.ready, MM.api = (lambda: []), (lambda kind: True), (lambda kind, wait=True: ("http://x", "m"))
+    try:
+        games.running = lambda: "minecraft"
+        assert memcmd.disk_lines({"q": 61}, {}) == ["(61 sessions wait to be learned: paused while minecraft runs)"]
+        assert memcmd.disk_lines({"q": 0}, {}) == []
+        games.running = lambda: ""
+        assert memcmd.disk_lines({"q": 61}, {}) == []
+    finally:
+        games.running, vault.drafts, MM.ready, MM.api = real
+
+
 def test_compact_start_info_lists_session_refs():
     import json
     import types
