@@ -18,6 +18,9 @@ EXTRA = {
              ".then((d) => { document.getElementById('n').textContent = 'Items ' + d.items.length; })</script>",
 }
 API_ITEMS = {"items": [{"id": i, "name": "Item %d" % i, "price": i * 1.5} for i in range(40)], "total": 40}
+SEARCH_PROBE = ("[location.href, document.visibilityState, document.hasFocus(), "
+                "document.activeElement ? document.activeElement.outerHTML.slice(0, 60) : '-', "
+                "(document.querySelector('input[name=q]') || {}).value].join(' | ')")
 
 
 def make_pdf(text):
@@ -129,6 +132,15 @@ class Run:
         tail = "" if good else " | " + str(out).replace("\n", " / ")[:180]
         self.rows.append("%s %-26s %5d ms %5d ch%s" % ("PASS" if good else "FAIL", name, (time.perf_counter() - t) * 1000, len(str(out)), tail))
 
+    def diag(self, *argvs):
+        from lighting import commands
+        for argv in argvs:
+            try:
+                out = commands.run(self.ctx, {"argv": argv, "secret": None}).get("out", "")
+            except Exception as e:
+                out = "%s: %s" % (type(e).__name__, e)
+            self.rows.append("DIAG %-26s | %s" % (argv[0], str(out).replace("\n", " / ")[:300]))
+
 
 def printwindow_ocr():
     from lighting import ocr
@@ -166,7 +178,9 @@ def browser(r, base):
     r.step("close count tab", ["close"], ok)
     from lighting import sites
     r.step("finder page", ["open", base + "finder", "--new"], lambda o, e: not e and "Finder" in o)
-    r.step("search learns the URL", ["search", "lighting"], lambda o, e: not e and "learned the search URL" in o)
+    if "learned the search URL" not in r.step("search learns the URL", ["search", "lighting"],
+                                              lambda o, e: not e and "learned the search URL" in o):
+        r.diag(["tabs"], ["js", SEARCH_PROBE])
     r.step("search jumps directly", ["search", "second try"], lambda o, e: not e and "find?q=second+try" in o)
     r.step("jumped to results", ["expect", "Found: second try"], ok)
     r.step("close finder tab", ["close"], ok)
