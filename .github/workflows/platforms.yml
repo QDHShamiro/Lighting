@@ -26,7 +26,7 @@ jobs:
       run:
         working-directory: client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build (macOS universal)
         if: runner.os == 'macOS'
         run: |
@@ -46,7 +46,7 @@ jobs:
           cargo clippy --release --all-targets --locked -- -D warnings
       - name: Hash
         run: shasum -a 256 ${{ matrix.name }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}
           path: client/${{ matrix.name }}
@@ -64,12 +64,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.client }}
           path: bin
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - name: Linux desktop packages
@@ -91,7 +91,7 @@ jobs:
         if: always()
         shell: bash
         run: python3 tests/ci_report.py "$RUNNER_TEMP/lighting-ci.log" "${{ matrix.os }}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: selftest-${{ matrix.os }}
