@@ -504,7 +504,7 @@ args = ["mcp"]
 |---|---|
 | Keep | `remember "fact" [--kind decision] [--global]` · "merk dir …" / "remember …" in a prompt · learned from finished sessions |
 | Find | `recall "words" [--all]` · `recall 42` (in full) · `forget 42` |
-| To-dos | `todo [--all]` · `todo 12` (with all notes) · `todo add "task" --list x` · `todo doing\|done\|drop 12` · `todo note 12 "text"` (adds a dated line) |
+| To-dos | `todo [--all]` · `todo add "task" --list x` · `todo doing\|done\|drop 12` · `todo note 12 "text"` (adds a dated line) |
 | Model | `memory` (state) · `memory model` (download) · `memory learn` · `memory import claude-mem` · `config memory_api <url>` · `memory off` |
 
 **Tokens**
