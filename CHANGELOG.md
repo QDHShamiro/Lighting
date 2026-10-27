@@ -134,9 +134,9 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   commands of 2 s or more from 10-18 to 10-25); with four commands queued on the browser lane, `todo` took
   2.8-3.1 s and now takes 0.02-0.04 s.
 - The start info no longer waits for a sleeping disk: the wiki drafts and the model check get 0.3 s, then the drafts
-  are counted from the index (updated every minute, not while a game runs) and the model line is left out. With the vault and the models
-  on a hard disk that sleeps after 20 minutes, a start took 4.1 s, 1.6 s of it for listing the vault inbox. A slow
-  start now logs where its time went (database, git, vault, model).
+  are counted from the index (updated every minute, not while a game runs) and the model line is left out. With the
+  vault and the models on a hard disk that sleeps after 20 minutes, a start took 4.1 s, 1.6 s of it for listing the
+  vault inbox. A slow start now logs where its time went (database, git, vault, model).
 - `lighting code "what it does"` no longer fails while the model is paused (a game runs) or its meaning index is
   still building: it lists the code whose names contain the words.
 - Hints while you type need meaning and words also when the model is paused; before, words alone showed unrelated
@@ -178,6 +178,9 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   report `ok (typed 8 chars)` while nothing happened: 4 times in the Linux CI, the words sat in the focused field
   and the page had not moved. In the first 14 CI self-tests with the fix it was needed once, and that search went
   through.
+- An action that leaves the page no longer waits 8 s for the page it left. Lighting waited for the old page to be
+  quiet, and when it was left before that (a fast server, or a page that kept changing) the old page never answered.
+  The self-test's `search` that learns a site's search URL took 8.3 s in 27 of 31 runs in October.
 
 ## [2.0.0] - 2026-10-22
 
