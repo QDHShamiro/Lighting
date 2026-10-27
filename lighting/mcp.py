@@ -49,9 +49,10 @@ def run_cmd(line):
         argv = argv[1:]
     if not argv:
         return {"content": [{"type": "text", "text": "err: empty command -> try: help"}], "isError": True}
-    if argv[0] in ("help", "-h", "--help"):
-        from lighting.helptext import HELP
-        return {"content": [{"type": "text", "text": HELP}], "isError": False}
+    from lighting import helptext
+    asked = helptext.wanted(argv)
+    if asked is not None:
+        return {"content": [{"type": "text", "text": helptext.about(asked) or helptext.HELP}], "isError": False}
     if argv[0] in ("daemon", "host", "mcp", "uninstall", "install"):
         return {"content": [{"type": "text", "text": "err: %s is not available through MCP" % argv[0]}], "isError": True}
     if argv[0] == "setup":

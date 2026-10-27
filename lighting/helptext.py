@@ -1,3 +1,5 @@
+import re
+
 HELP = """lighting <command> [args]   browser + Windows desktop for AI agents
 refs: e12 web element | d5 app control | o3 screen text | w2 window | t77 tab
 
@@ -50,3 +52,19 @@ Tasks that repeat become routines by themselves (config learn off to stop learni
 Tabs and apps Lighting opened close on done (Claude Code runs it after every reply); keep hands one to the user.
 Safety: banking/payment sites are read-only, risky clicks, links in chats and long URL data to new sites need --yes,
 Ctrl+Alt+End stops everything."""
+
+
+def about(name):
+    name = name.lower()
+    rows = HELP.split("\n\n")[1].splitlines()
+    hits = [r[8:].strip() for r in rows
+            if any(name in part.split(" ")[0].split("|") for part in re.split(r" {3,}", r[8:].strip()))]
+    return "\n".join(hits) or None
+
+
+def wanted(argv):
+    if not argv or argv[0] in ("help", "-h", "--help"):
+        return argv[1] if len(argv) > 1 else ""
+    if "--help" in argv[1:] or argv[1:] == ["-h"]:
+        return argv[0]
+    return None
