@@ -84,6 +84,10 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 - `upload` says what is missing: the ref of the upload button or file field (it got a CSS selector, the file or
   nothing) or the files after the ref, with `snap -f "upload|file"` as the way to find the ref. Before, all of these
   said "upload needs a ref and files": one agent tried `input[type=file]`, `#upz` twice and an empty ref in a row.
+- `reply "@Luis"` and `inbox "Minecraft Server"` when no window shows that chat name the open chat windows and how
+  to switch (`lighting press ctrl+k w2, then lighting type focused "Luis" --enter`, from the app's known keys). It
+  happened 4 times in a month, because Discord showed another chat or the DM was called "@ItsLuis"; each time
+  the agent needed 1 to 4 more calls to find out.
 
 ## [2.1.0] - 2026-10-22
 

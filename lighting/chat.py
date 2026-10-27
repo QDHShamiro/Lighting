@@ -22,6 +22,7 @@ UNREAD_AT = re.compile(r"^(\d+)\s+(?:erwähnung(?:en)?|mentions?)\W*\s*(.+)$", r
 UNREAD_ANY = re.compile(r"^(?:ungelesene nachrichten|unread messages?),\s*(.+)$", re.I)
 STATUS = re.compile(r",\s*(?:sprachanruf aktiv|bildschirmübertragung aktiv|voice call active|screen share active|"
                     r"live|streamt).*$", re.I)
+SWITCHER = re.compile(r"quick switcher|find a channel|jump to", re.I)
 MEMO = D.HOME / "chat.json"
 _chats = {}
 def props(el):
@@ -75,11 +76,30 @@ def resolve(ctx, spec):
         hits = [w for w in win.windows() if spec.lower() in w["title"].lower()]
         hits.sort(key=lambda w: ((w["exe"] or "").lower() in desktop.BROWSER_EXES, not w["fg"]))
         if not hits:
-            raise Fail('no window matches "%s"' % spec, "lighting windows -f chat")
+            raise no_chat(ctx, spec)
         hwnd = hits[0]["hwnd"]
     desktop.state(ctx).hwnd = hwnd
     ctx.target = ("app", hwnd)
     return hwnd
+
+
+def switch_key(exe):
+    from lighting import keys
+    learned = [(k, v.get("what", "")) for k, v in keys.ranked(exe)]
+    return next((k for k, what in list(keys.SEED.get(exe, {}).items()) + learned if SWITCHER.search(what)), None)
+
+
+def no_chat(ctx, spec):
+    from lighting import desktop
+    chats = [w for w in win.windows() if (w["exe"] or "").lower() in CHAT_EXES]
+    if not chats:
+        return Fail('no window matches "%s"' % spec, "lighting windows -f chat")
+    ref = desktop.wref(ctx, chats[0]["hwnd"])
+    shown = ", ".join('%s "%s"' % (desktop.wref(ctx, w["hwnd"]), w["title"][:40]) for w in chats[:3])
+    key = switch_key((chats[0]["exe"] or "").lower())
+    hint = ('open it first: lighting press %s %s, then lighting type focused "%s" --enter' % (key, ref, spec.lstrip("@#"))
+            if key else "open that chat in the app first, then repeat")
+    return Fail('no chat window shows "%s" (open: %s)' % (spec, shown), hint)
 
 
 def message_list(hwnd):

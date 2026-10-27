@@ -22,8 +22,8 @@ SHARED = {"click", "type", "press", "scroll", "hover"}
 IDLE_S = 45
 KEEP_EPISODES = 300
 MAX_NEST = 3
-TRANSIENT = re.compile(r"nothing matches|nothing called|no field|is gone|no window matches|page changed|no tab yet|"
-                       r"did not react|did not answer|not found|older snapshot|no match|nothing focused|"
+TRANSIENT = re.compile(r"nothing matches|nothing called|no field|is gone|no window matches|no chat window|page changed|"
+                       r"no tab yet|did not react|did not answer|not found|older snapshot|no match|nothing focused|"
                        r"still loading|navigated during", re.I)
 TOKEN = re.compile(r"\w+|[^\w\s]", re.U)
 

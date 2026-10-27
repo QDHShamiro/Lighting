@@ -988,6 +988,32 @@ def test_upload_says_what_is_missing():
                 assert want in str(e), (pos, str(e))
 
 
+def test_a_missing_chat_names_the_open_ones():
+    from lighting import chat, commands, desktop, win
+    from lighting.common import Fail
+    keep = win.windows, desktop.wref
+    rows = [{"hwnd": 7, "title": "@ItsLuis - Discord", "exe": "Discord.exe", "fg": False},
+            {"hwnd": 8, "title": "Notes - Editor", "exe": "notepad.exe", "fg": True}]
+    win.windows = lambda owned=False: rows
+    desktop.wref = lambda c, h: "w%d" % h
+    try:
+        c = commands.Context(type("F", (), {"events": []})(), "s1")
+        try:
+            chat.resolve(c, "@Luis")
+            raise AssertionError("@Luis matched")
+        except Fail as e:
+            assert str(e) == 'no chat window shows "@Luis" (open: w7 "@ItsLuis - Discord")', e
+            assert e.hint == 'open it first: lighting press ctrl+k w7, then lighting type focused "Luis" --enter', e.hint
+        del rows[0]
+        try:
+            chat.resolve(c, "@Luis")
+            raise AssertionError("@Luis matched")
+        except Fail as e:
+            assert str(e) == 'no window matches "@Luis"', e
+    finally:
+        win.windows, desktop.wref = keep
+
+
 def test_quick_keys_wait_less():
     from lighting import desktop
     assert all(desktop.quick_key(k) for k in ("tab", "shift+tab", "End", "x", "pgdn", "backspace"))
