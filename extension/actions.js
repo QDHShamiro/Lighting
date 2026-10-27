@@ -31,7 +31,13 @@ function callLt(fn, args) {
   if (!L || !L.act) return { __missing: true };
   const dot = fn.indexOf(".");
   const f = dot > 0 ? L[fn.slice(0, dot)][fn.slice(dot + 1)] : L[fn];
-  return f.apply(null, args || []);
+  const failed = (e) => ({ __error: String((e && e.message) || e).slice(0, 200) });
+  try {
+    const r = f.apply(null, args || []);
+    return r && typeof r.then === "function" ? r.then((v) => v, failed) : r;
+  } catch (e) {
+    return failed(e);
+  }
 }
 
 function friendly(e, url) {
@@ -111,6 +117,7 @@ export async function page(tabId, fn, args, frameId, ms) {
       [r] = await withDialog(tabId, call(), ms || 15000);
     }
     if (!r) throw new Error("page did not answer");
+    if (r.result && r.result.__error) throw new Error("page script error: " + r.result.__error + " -> try: lighting text or lighting shot");
     return r.result;
   } catch (e) {
     throw friendly(e, tab && tab.url);

@@ -101,6 +101,8 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - macOS and Linux: when `record stop` saves nothing it says why: the app recorder was still reading a click (and
   which part: the window, the control under the mouse or its name), or the clicks went to a window it leaves out
   (a browser, a terminal).
+- When Lighting's script fails on a page, the command names the error (`page script error: ...`) instead of
+  "Cannot read properties of null (reading 'error')": Chrome returns an empty result for errors in injected scripts.
 
 ## [2.0.0] - 2026-10-22
 
