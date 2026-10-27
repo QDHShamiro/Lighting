@@ -39,7 +39,7 @@ def options(pos, flags):
          "ere": bool(flags.get("extended-regexp")), "perl": bool(flags.get("perl-regexp")),
          "files": bool(flags.get("files") or flags.get("files-with-matches") or flags.get("count")),
          "hidden": bool(flags.get("hidden")), "all": bool(flags.get("all")), "text": bool(flags.get("text")), "before": 0,
-         "after": 0}
+         "after": 0, "patterns": []}
     if flags.get("context") not in (None, True):
         o["before"] = o["after"] = number(flags["context"])
     rest, i, done = [], 0, False
@@ -50,6 +50,11 @@ def options(pos, flags):
             rest.append(a)
         elif a == "--":
             done = True
+        elif a == "-e":
+            if i + 1 >= len(pos):
+                raise Fail("-e needs a pattern after it", USAGE)
+            i += 1
+            o["patterns"].append(pos[i])
         elif m:
             val = m.group(2)
             if not val and i + 1 < len(pos):
@@ -148,8 +153,9 @@ def translate(p, ere):
     return "".join(out)
 
 
-def matcher(pattern, o):
-    text = re.escape(pattern) if o["fixed"] else pattern if o["perl"] else translate(pattern, o["ere"])
+def matcher(patterns, o):
+    texts = [re.escape(p) if o["fixed"] else p if o["perl"] else translate(p, o["ere"]) for p in patterns]
+    text = texts[0] if len(texts) == 1 else "|".join("(?:%s)" % t for t in texts)
     if o["word"]:
         text = r"(?<!\w)(?:%s)(?!\w)" % text
     if o["line"]:
@@ -160,7 +166,7 @@ def matcher(pattern, o):
     except re.error as e:
         if o["fixed"]:
             raise Fail("cannot read the pattern: %s" % e, USAGE)
-        rx, pre, _ = matcher(pattern, dict(o, fixed=True))
+        rx, pre, _ = matcher(patterns, dict(o, fixed=True))
         return rx, pre, "not a regex (%s), searched as plain text" % e
     return rx, None if "\\A" in text or "\\Z" in text else re.compile(text, flags | re.M), ""
 
@@ -381,10 +387,11 @@ def search(job, roots, base, o, globs, rx, pre, skipdirs=()):
 
 def cmd_grep(ctx, pos, flags):
     o, rest = options(pos, flags)
-    if not rest:
+    pats = o["patterns"] or rest[:1]
+    if not pats:
         raise Fail("what should I search for?", USAGE)
-    pattern, names = rest[0], rest[1:]
-    rx, pre, warn = matcher(pattern, o)
+    pattern, names = '" or "'.join(pats), rest if o["patterns"] else rest[1:]
+    rx, pre, warn = matcher(pats, o)
     globs = split_list(flags.get("glob")) + split_list(flags.get("include")) + [
         "!" + g for g in split_list(flags.get("exclude"))]
     skipdirs = split_list(flags.get("exclude-dir"))

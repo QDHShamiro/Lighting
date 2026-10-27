@@ -100,7 +100,7 @@ def parse(argv):
                 put(flags, key, val)
                 i += 1
                 continue
-        elif a in ALIAS:
+        elif a in ALIAS and name != "grep":
             key = ALIAS[a]
         if key is None:
             pos.append(a)
