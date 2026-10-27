@@ -11,6 +11,10 @@ from lighting.tokens import short
 
 EFFORT = re.compile(r'"effort":\s*"(\w+)"')
 KEEP_DAYS = 90
+FORMAT = 2
+SLOT = {"Bash": 0, "Read": 1}
+PARTS = (("thinking", "earlier thinking"), ("start", "start context"), ("bash", "Bash output"), ("read", "file reads"),
+         ("said", "Claude's text and tool calls"), ("summary", "summaries after compact"))
 
 
 def claude_home():
@@ -34,15 +38,26 @@ def visible(content):
     return n
 
 
+def size(content):
+    if isinstance(content, str):
+        return len(content)
+    n = 0
+    for b in content if isinstance(content, list) else []:
+        if isinstance(b, dict):
+            n += D.CLAUDE_IMAGE_CHARS if b.get("type") == "image" else len(b.get("text") or "") + size(b.get("content"))
+    return n
+
+
 def parse(path):
-    reqs, index, effort = [], {}, ""
+    reqs, index, tools, effort, got = [], {}, {}, "", [0, 0, 0]
     with path.open(encoding="utf-8", errors="replace") as fh:
         for line in fh:
             if '"type":"api-request"' in line:
                 m = EFFORT.search(line)
                 effort = m.group(1) if m else effort
                 continue
-            if '"type":"assistant"' not in line or '"usage"' not in line:
+            answer = '"type":"assistant"' in line and '"usage"' in line
+            if not answer and '"type":"user"' not in line and '"type":"attachment"' not in line:
                 continue
             try:
                 e = json.loads(line)
@@ -51,6 +66,22 @@ def parse(path):
             if e.get("isSidechain"):
                 continue
             m = e.get("message") or {}
+            if e.get("type") == "attachment":
+                got[2] += size(e.get("rendered"))
+                continue
+            if e.get("type") == "user":
+                content = m.get("content")
+                for b in content if isinstance(content, list) else [{"text": content}]:
+                    if isinstance(b, dict) and b.get("type") == "tool_result":
+                        got[tools.get(b.get("tool_use_id"), 2)] += size(b.get("content"))
+                    else:
+                        got[2] += size([b])
+                continue
+            if not answer or e.get("type") != "assistant":
+                continue
+            for b in m.get("content") or []:
+                if isinstance(b, dict) and b.get("type") == "tool_use":
+                    tools[b.get("id")] = SLOT.get(b.get("name"), 2)
             u = m.get("usage") or {}
             key = m.get("id") or e.get("uuid")
             r = index.get(key)
@@ -59,7 +90,8 @@ def parse(path):
                 ctx = (u.get("input_tokens") or 0) + write + (u.get("cache_read_input_tokens") or 0)
                 if not ctx:
                     continue
-                r = index[key] = [str(e.get("timestamp") or "")[:19], ctx, write, 0, 0, effort]
+                r = index[key] = [str(e.get("timestamp") or "")[:19], ctx, write, 0, 0, effort] + got
+                got = [0, 0, 0]
                 reqs.append(r)
             r[3] = max(r[3], u.get("output_tokens") or 0)
             r[4] += visible(m.get("content"))
@@ -79,7 +111,7 @@ def load(since):
             st = path.stat()
         except OSError:
             continue
-        key, sig = str(path), "%d:%d" % (st.st_size, int(st.st_mtime))
+        key, sig = str(path), "%d:%d:%d" % (FORMAT, st.st_size, int(st.st_mtime))
         hit = cache.get(key)
         if st.st_mtime < first:
             if hit and st.st_mtime >= keep_from:
@@ -130,13 +162,26 @@ def window_set():
 
 def summarize(sessions):
     s = {"sessions": len(sessions), "requests": 0, "ctx": 0, "write": 0, "out": 0, "think": 0, "effort": {},
-         "rebuilds": 0, "breaks": 0, "rebuilt": 0, "ctxs": [], "starts": []}
+         "rebuilds": 0, "breaks": 0, "rebuilt": 0, "ctxs": [], "starts": [], "parts": dict.fromkeys(dict(PARTS), 0)}
     for reqs in sessions:
-        s["starts"].append((reqs[0][0], min(r[1] for r in reqs), len(reqs)))
-        prev = None
+        base = min(r[1] for r in reqs)
+        s["starts"].append((reqs[0][0], base, len(reqs)))
+        prev, run = None, {}
         for r in reqs:
-            t, ctx, write, out, vis, effort = r
+            t, ctx, write, out, vis, effort, bash, read, rest = r
             think = max(0, out - vis // 4)
+            if prev is None or ctx < prev[1] * 0.5:
+                run = dict.fromkeys(s["parts"], 0)
+                run["start"], run["summary"] = base, ctx - base
+            else:
+                gone = max(0, prev[3] - prev[4] // 4)
+                added, chars = max(0, ctx - prev[1] - prev[3]), bash + read + rest
+                run["thinking"] += gone
+                run["said"] += prev[3] - gone
+                run["bash"] += added * bash / chars if chars else 0
+                run["read"] += added * read / chars if chars else 0
+            for k, v in run.items():
+                s["parts"][k] += v
             s["requests"] += 1
             s["ctx"] += ctx
             s["write"] += write
@@ -176,6 +221,11 @@ def tips(s, sessions, weighted):
         out.append((part, "start context ~%s on every request (%d%% of all context, last %d sessions ~%s): /context shows it; "
                           "deny tools you never use, skillOverrides \"name-only\" for rare skills, turn off unused MCP servers"
                     % (short(int(start)), part, D.CLAUDE_START_SESSIONS, short(int(latest)))))
+    share = lambda k: 100 * s["parts"][k] / max(1, s["ctx"])
+    if share("bash") + share("read") >= D.CLAUDE_TIP_PCT:
+        out.append((share("bash") + share("read"), "tool output: Bash ~%d%% and file reads ~%d%% of all context, kept until the "
+                    "next compact. Read line ranges instead of whole files (sed -n 40,90p, Read with offset and limit), cap long "
+                    "output (| tail -40)" % (round(share("bash")), round(share("read")))))
     rebuilt = 100 * s["rebuilt"] * D.CLAUDE_WEIGHTS["write"] / max(1, weighted)
     if rebuilt >= D.CLAUDE_TIP_PCT / 2:
         out.append((rebuilt, "cache rebuilds: %d full rewrites (%d after a break over %d min), %d%% of the weighted total. "
@@ -200,6 +250,10 @@ def report(sessions, days):
                  pct(read * w["read"]), pct(s["write"] * w["write"]), pct(s["out"] * w["output"])),
              "output %s tokens: ~%d%% thinking. Claude Code keeps thinking in the context, so later requests read it again" % (
                  short(s["out"]), 100 * s["think"] // max(1, s["out"]))]
+    part = lambda n: round(100 * n / s["ctx"])
+    order = sorted(PARTS, key=lambda kl: -s["parts"][kl[0]])
+    lines.append("context by content: " + ", ".join(["%s ~%d%%" % (label, part(s["parts"][k])) for k, label in order if part(
+        s["parts"][k])] + ["rest ~%d%%" % part(max(0, s["ctx"] - sum(s["parts"].values())))]))
     known = sorted(((k, v) for k, v in s["effort"].items() if k != "?"), key=lambda kv: -kv[1][0])
     if known:
         lines += ["", "%-8s %9s %22s" % ("effort", "requests", "thinking per request")]
@@ -207,7 +261,8 @@ def report(sessions, days):
     found = tips(s, sessions, weighted)
     lines += [""] + (["fixes, biggest first:"] + ["- " + t for t in found] if found else ["no big fix found"])
     lines += ["", "read from your local Claude Code transcripts; weights: cache read %.1fx, cache write %.0fx (1 h cache), output %.0fx "
-                  "the input price. Thinking = output minus visible text and tool calls (characters / 4)." % (w["read"], w["write"], w["output"])]
+                  "the input price. Thinking = output minus visible text and tool calls (characters / 4). Content = how much each request "
+                  "grew, split by the characters that came in since the one before." % (w["read"], w["write"], w["output"])]
     return "\n".join(lines)
 
 

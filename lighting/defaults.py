@@ -120,6 +120,7 @@ CLAUDE_START_BIG = 30_000
 CLAUDE_START_SESSIONS = 20
 CLAUDE_TIP_PCT = 10
 CLAUDE_MAX_RATIO = 1.5
+CLAUDE_IMAGE_CHARS = 3500
 
 LONG_WAITS = {"inbox": 300_000, "reply": 300_000, "wait": 10_000, "listen": 900_000}
 WEB_SCHEMES = {"http", "https", "file", "about", "chrome", "brave", "edge", "view-source", "data", "blob",
