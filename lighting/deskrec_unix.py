@@ -111,7 +111,7 @@ class DeskRecorder:
         self.busy = "a click (the window under the mouse)"
         root = win.window_at(x, y)
         if self._skip(root):
-            self.skipped.append((win.exe_of(win.pid_of(root)) if root else "") or "no window")
+            self.skipped.append((win.exe_of(win.pid_of(root)) or "an unknown window") if root else "the desktop")
             return
         self.busy = "a click (the control under the mouse)"
         cur, pick, text_name = uia.element_at(x, y), None, ""

@@ -13,8 +13,9 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   then the biggest fixes first (auto-compact window, effort, tool output, start context, cache rebuilds), each with
   the setting to change. The content split uses how much each request grew, so it needs no characters-per-token
   guess (tool output runs ~2.2 characters per token, not 4). On 30 days of real use: earlier thinking 33% of all
-  context (18% from max effort alone, which the effort fix names), Bash output 21%, start context 19%. Measured with 1.9 GB of transcripts: 10 s the first time, under 1.5 s after that
-  (per-file cache in `~/.lighting/claude-usage.json`).
+  context (18% from max effort alone, which the effort fix names), Bash output 21%, start context 19%. Measured
+  with 1.9 GB of transcripts: 10 s the first time, under 1.5 s after that (per-file cache in
+  `~/.lighting/claude-usage.json`).
 - `lighting grep <pattern> [path ...]`: text search for agents. Patterns work as in GNU grep: basic by default
   (`a\|b`, `\(...\)`, `x\+`, while a bare `(` or `+` is a plain character), `-E` extended, `-P` Python, `-F` fixed,
   POSIX classes like `[[:digit:]]`, `-i -w -x -l -c -C`. Results are grouped by file (no path on every line, no
@@ -24,10 +25,10 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   binary files (`-a` searches them as text) and folders like `node_modules`, reads UTF-16 files (Windows
   PowerShell output), counts lines the way grep and editors do (a lone carriage return in a progress log is no
   line break), takes `--include "*.{py,md}"`, `--exclude`, `--exclude-dir` or `--glob "!*.md"`, and searches a
-  pattern that cannot be read as plain text. Replayed 1,500 grep commands from 30 days of Claude Code transcripts against GNU grep: the
-  same hits in 1,486, the others differ by files in skipped folders (`node_modules`, `target`), files GNU grep
-  takes for binary, or a byte-order mark; output 7% shorter for searches with hits; recursive searches over many
-  files save more (31% in 6 searches in Lighting's own code).
+  pattern that cannot be read as plain text. Replayed 1,500 grep commands from 30 days of Claude Code transcripts
+  against GNU grep: the same hits in 1,486, the others differ by files in skipped folders (`node_modules`, `target`),
+  files GNU grep takes for binary, or a byte-order mark; output 7% shorter for searches with hits; recursive searches
+  over many files save more (31% in 6 searches in Lighting's own code).
 - `lighting squeeze`: long command output in short, the idea of [Headroom](https://github.com/chopratejas/headroom)
   run locally (no proxy, nothing leaves the PC). `squeeze <file>`, `<command> 2>&1 | lighting squeeze` or
   `squeeze -- <command>` (keeps the exit code). Error and warning lines stay with the first lines of their stack
