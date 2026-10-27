@@ -261,9 +261,9 @@ def test_recall_finds_routines_by_words():
     from lighting import recall
     r = {"name": "discord-markieren", "tags": ["markiere", "@"], "params": {"user": "Luis"},
          "steps": [{"cmd": "launch", "args": ["discord"], "where": {"kind": "app", "exe": "Discord.exe"}}]}
-    stems = lambda text: {recall.stem(w) for w in recall.words(text)}
-    assert recall.fits(stems("markiere Tom auf Discord"), r)
-    assert not recall.fits(stems("fix the minecraft plugin"), r)
+    said = lambda text: set(recall.typed_words(text))
+    assert recall.fits(said("markiere Tom auf Discord"), r)
+    assert not recall.fits(said("fix the minecraft plugin"), r)
     prompts = []
     recall.note_prompt(prompts, "markiere Luis auf Discord bitte")
     assert recall.tags_for(prompts, time.time(), {"user": "Luis"}) == ["markiere", "discord"]
@@ -826,16 +826,49 @@ def test_hints_need_fixed_text():
 
 def test_suggest_needs_the_app():
     from lighting import recall
-    stems = lambda text: {recall.stem(w) for w in recall.words(text)}
+    said = lambda text: set(recall.typed_words(text))
     r = {"name": "panel-schaue-host", "tags": ["schaue", "website", "udn", "alles"],
          "steps": [{"cmd": "open", "args": ["https://panel.dolphinsmp.net/app"]}]}
-    assert not recall.fits(stems("schaue bei mir spotify udn website alles"), r)
-    assert recall.fits(stems("schaue im panel nach dem host"), r)
+    assert not recall.fits(said("schaue bei mir spotify udn website alles"), r)
+    assert recall.fits(said("schaue im panel nach dem host"), r)
     focus = {"name": "brave-orange-weg", "tags": ["design", "terminal"],
              "steps": [{"cmd": "focus", "args": ["app:brave"]}, {"cmd": "press", "args": ["{text}"]}]}
     assert recall.routine_words(focus)[1] == "brave"
-    assert not recall.fits(stems("mache Lighting zu einer app mit terminal design"), focus)
-    assert recall.fits(stems("in brave das orange design weg"), focus)
+    assert not recall.fits(said("mache Lighting zu einer app mit terminal design"), focus)
+    assert recall.fits(said("in brave das orange design weg"), focus)
+
+
+def test_suggest_reads_only_what_was_typed():
+    import types
+    from lighting import brain, memcmd, recall
+    from lighting import defaults as D
+    back = chr(92)
+    term = routines.new_routine({"steps": [
+        {"cmd": "focus", "args": ["app:WindowsTerminal"], "where": {"kind": "app", "exe": "WindowsTerminal.exe"}},
+        {"cmd": "click", "args": ["Neuer Tab"]}], "params": {}, "check": None}, "learned", 500)
+    term.update(name="windowsterminal-machst-link", tags=["machst", "link", "users", "gigabyte"])
+    routines.save(term)
+    keep = memcmd.on_prompt, brain.weekly_tip
+    memcmd.on_prompt, brain.weekly_tip = (lambda ctx, prompt: []), (lambda: "")
+    try:
+        ctx = types.SimpleNamespace(prompts=[], told={}, cwd="", sid="")
+        ask = lambda text: recall.cmd_suggest(ctx, [text], {})
+        assert ask("teste den link auf windows") == ""
+        assert ask("Lies C:/Users/Gigabyte/hud/PROMPT.md im windowsterminal") == ""
+        assert ask("Lies C:" + back + "Users" + back + "Gigabyte" + back + "a.md und ~/hud/b.md im windowsterminal") == ""
+        assert ask("This session is being continued from a previous conversation. windowsterminal link") == ""
+        assert len(ctx.prompts) == 3 and "users" not in ctx.prompts[-1][1], ctx.prompts
+        for _ in range(D.SUGGEST_IGNORED):
+            ctx.told.clear()
+            assert "lighting run windowsterminal-machst-link" in ask("im windowsterminal den link öffnen")
+        ctx.told.clear()
+        assert ask("im windowsterminal den link öffnen") == ""
+        routines.record_result(next(r for r in routines.load_all() if r["name"] == term["name"]), True, 100, 10)
+        ctx.told.clear()
+        assert "lighting run windowsterminal-machst-link" in ask("im windowsterminal den link öffnen")
+    finally:
+        memcmd.on_prompt, brain.weekly_tip = keep
+        routines.path(term["name"]).unlink()
 
 
 def test_desktop_alias_and_routing_without_a_tab():
