@@ -21,7 +21,7 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   file line when one file is searched), indentation is dropped, very long lines (JSONL, minified files) are cut to
   the part around the hit, and at most 80 lines are shown with the full list in a file. A search with no hits says
   how many files it searched. It follows `.gitignore` in repos (and in repos nested inside the folder), skips
-  binary files and folders like `node_modules`, reads UTF-16 files (Windows PowerShell output), counts lines the
+  binary files (`-a` searches them as text) and folders like `node_modules`, reads UTF-16 files (Windows PowerShell output), counts lines the
   way grep and editors do (a lone carriage return in a progress log is no line break), takes
   `--include "*.{py,md}"`, `--exclude`, `--exclude-dir` or `--glob "!*.md"`, and searches a pattern that cannot be
   read as plain text. Replayed 1,500 grep commands from 30 days of Claude Code transcripts against GNU grep: the

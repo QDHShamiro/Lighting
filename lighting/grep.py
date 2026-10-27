@@ -11,7 +11,7 @@ from lighting import defaults as D
 from lighting.common import Fail, Pending, cap, outfile, trimmed, win_path
 
 LETTERS = {"i": "ignore", "w": "word", "x": "line", "F": "fixed", "E": "ere", "P": "perl", "G": None, "l": "files",
-           "c": "files", "r": None, "R": None, "n": None, "H": None, "I": None, "h": None, "s": None}
+           "c": "files", "a": "text", "r": None, "R": None, "n": None, "H": None, "I": None, "h": None, "s": None}
 TAKEN = {"f": "-f", "s": "-s", "d": "-d", "media": "-m", "gone": "-g"}
 CONTEXT = re.compile(r"-([ABC])(\d*)")
 BARE_BAR = re.compile(r"(?<!\\)\|")
@@ -37,7 +37,8 @@ def options(pos, flags):
          "fixed": bool(flags.get("fixed") or flags.get("fixed-strings")), "line": bool(flags.get("line-regexp")),
          "ere": bool(flags.get("extended-regexp")), "perl": bool(flags.get("perl-regexp")),
          "files": bool(flags.get("files") or flags.get("files-with-matches") or flags.get("count")),
-         "hidden": bool(flags.get("hidden")), "all": bool(flags.get("all")), "before": 0, "after": 0}
+         "hidden": bool(flags.get("hidden")), "all": bool(flags.get("all")), "text": bool(flags.get("text")), "before": 0,
+         "after": 0}
     if flags.get("context") not in (None, True):
         o["before"] = o["after"] = number(flags["context"])
     rest, i, done = [], 0, False
@@ -233,7 +234,7 @@ def candidates(root, base, single, o, globs, skipdirs):
 
 
 def snippet(line, m, rx, keep):
-    text = (line.rstrip() if keep else line.strip()).replace("\r", " ")
+    text = (line.rstrip() if keep else line.strip()).replace("\r", " ").replace("\0", " ")
     if len(text) <= D.GREP_LONG:
         return text
     if m is None:
@@ -292,8 +293,9 @@ def scan(path, rx, pre, o):
             return "big"
         with open(path, "rb") as fh:
             enc = encoding_of(fh.read(8000))
-        if enc is None:
+        if enc is None and not o["text"]:
             return "binary"
+        enc = enc or "utf-8"
         if size > D.GREP_WHOLE:
             return hits(stream(path, enc), rx, o)
         with open(path, "r", encoding=enc, errors="replace", newline="\n") as fh:

@@ -224,8 +224,8 @@ def tips(s, sessions, weighted):
     share = lambda k: 100 * s["parts"][k] / max(1, s["ctx"])
     if share("bash") + share("read") >= D.CLAUDE_TIP_PCT:
         out.append((share("bash") + share("read"), "tool output: Bash ~%d%% and file reads ~%d%% of all context, kept until the "
-                    "next compact. Read line ranges instead of whole files (sed -n 40,90p, Read with offset and limit), cap long "
-                    "output (| tail -40)" % (round(share("bash")), round(share("read")))))
+                    "next compact. Read line ranges instead of whole files (sed -n 40,90p, Read with offset and limit), search "
+                    "with lighting grep, run long commands through lighting squeeze -- <cmd>" % (round(share("bash")), round(share("read")))))
     rebuilt = 100 * s["rebuilt"] * D.CLAUDE_WEIGHTS["write"] / max(1, weighted)
     if rebuilt >= D.CLAUDE_TIP_PCT / 2:
         out.append((rebuilt, "cache rebuilds: %d full rewrites (%d after a break over %d min), %d%% of the weighted total. "

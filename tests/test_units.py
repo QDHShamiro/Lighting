@@ -584,6 +584,7 @@ def test_claude_usage_reads_transcripts():
             assert "effort: max ran 60% of requests and thinks 3.6x as much as high" in out, out
             assert "context by content: Bash output ~65%, start context ~11%, file reads ~1%, earlier thinking ~1%, rest ~22%\n" in out, out
             assert "tool output: Bash ~65% and file reads ~1% of all context, kept until the next compact" in out, out
+            assert "search with lighting grep, run long commands through lighting squeeze -- <cmd>\n" in out, out
             assert "start context ~32k on every request (11% of all context" in out, out
             assert "cache rebuilds: 1 full rewrites (1 after a break over 60 min), 58% of the weighted total" in out, out
             assert json.loads(D.CLAUDE_CACHE.read_text("utf-8")).keys() == {str(proj / "a.jsonl"), str(proj / "b.jsonl")}
@@ -1966,6 +1967,9 @@ def test_grep_searches_right_and_short():
         out = grep.cmd_grep(ctx, ["needle"], {})
         assert "node_modules" not in out and "skipped 1 binary" in out and "2: needles there" in out, out
         assert "Needle here" not in out, out
+        assert grep.cmd_grep(ctx, ["-an", "needle", "bin.dat"], {}) == "1: needle"
+        out = grep.cmd_grep(ctx, ["needle"], {"text": True})
+        assert "bin.dat" in out and "binary" not in out, out
         out = grep.cmd_grep(ctx, ["-iw", "needle", "sub"], {})
         assert "Case.txt" in out and "1: Needle here" in out and "needles" not in out, out
         out = grep.cmd_grep(ctx, ["-l", "needle\\|hit"], {})
