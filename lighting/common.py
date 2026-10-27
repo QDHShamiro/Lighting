@@ -102,6 +102,18 @@ def out_path(ctx, flags, kinds, hint):
     return path
 
 
+def local_server(handler):
+    import http.server
+    import socketserver
+
+    class Server(http.server.ThreadingHTTPServer):
+        def server_bind(self):
+            socketserver.TCPServer.server_bind(self)
+            self.server_name, self.server_port = self.server_address[:2]
+
+    return Server(("127.0.0.1", 0), handler)
+
+
 def cap(text, name, lines=None, chars=D.OUT_CHARS):
     rows = text.split("\n")
     if (lines is None or len(rows) <= lines) and len(text) <= chars:

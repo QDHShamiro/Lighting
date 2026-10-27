@@ -7,7 +7,7 @@ import threading
 import time
 
 from lighting import defaults as D
-from lighting.common import Fail, Pending
+from lighting.common import Fail, Pending, local_server
 
 EXTRA = {
     "/frame": "<title>Frame</title><button onclick=\"this.textContent='Frame clicked'\">Frame button</button>",
@@ -81,7 +81,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 def serve():
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    srv = local_server(Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv
 
