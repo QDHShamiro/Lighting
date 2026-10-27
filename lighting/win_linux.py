@@ -42,6 +42,7 @@ _lock = threading.RLock()
 
 def display():
     if "d" not in _x:
+        import Xlib.threaded
         from Xlib import display as xd
         _x["d"] = xd.Display() if os.environ.get("DISPLAY") else None
     return _x["d"]

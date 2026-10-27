@@ -135,6 +135,9 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - Old `listen` recordings are deleted after a day like other output (181 folders had piled up), the local model's
   logs are kept small, a stop by hotkey can no longer leave the browser channel hanging, and the routine files are
   read from disk only when they changed (10 ms -> 1.5 ms after every action).
+- Linux: commands and the app recorder share one X connection, and python-xlib only locks it after
+  `import Xlib.threaded`. Without the locks a click and the recorder could lose each other's requests, the recorder
+  hung and `record stop` answered "recorded nothing" after exactly 5 s (the flaky Linux selftest).
 
 ## [2.0.0] - 2026-10-22
 

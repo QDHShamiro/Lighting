@@ -1240,6 +1240,33 @@ def test_linux_key_names():
     assert all(w.keysym_of(w.MODSYMS.get(k, k)) for k in list(w.KEYSYMS) + list(w.MODSYMS))
 
 
+def test_linux_display_shared_by_threads():
+    try:
+        import Xlib.display
+    except ImportError:
+        return
+    if not os.environ.get("DISPLAY"):
+        return
+    import threading
+    from lighting import win_linux as w
+    errors = []
+
+    def hammer():
+        try:
+            for _ in range(300):
+                w.foreground()
+                w.display().sync()
+        except Exception as e:
+            errors.append(repr(e))
+
+    threads = [threading.Thread(target=hammer, daemon=True) for _ in range(4)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(20)
+    assert not errors and not any(t.is_alive() for t in threads), errors[:3] or "threads hang on the shared X display"
+
+
 def test_demo_offline():
     import types
     import urllib.request
