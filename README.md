@@ -260,7 +260,8 @@ end of a long output, folds the rest into one-line summaries and puts all of it 
 Every step of an AI agent costs a model round of 1-5 seconds, and everything a tool prints stays in the
 context. So Lighting saves steps first and tokens second:
 
-- **One call instead of two.** `open <url> -f "Issues|Pull"` returns only the matching lines,
+- **One call instead of two.** `open <url> -f "Issues|Pull"` returns only the matching lines, also those below
+  the view, and says which words are only text or not on the page at all,
   `do "fill Email=a@b.c; click Continue; expect Welcome"` (or `batch`) runs a whole sequence, a known task is
   `run <name> k=v`. In a sequence `?dismiss` is optional, `--keep-going` runs every step and reports the failures,
   `--quiet` prints only the last answer, and one step per line works too.
