@@ -2083,6 +2083,8 @@ def test_squeeze_keeps_errors_and_the_original():
     from lighting.common import Fail
     assert squeeze.squeeze("\x1b[31mred\x1b[0m\r\nok") == "red\nok"
     assert squeeze.squeeze("50%\r100%\ndone") == "100%\ndone"
+    near = "\n".join(chr(97 + i // 26) + chr(97 + i % 26) for i in range(61))
+    assert squeeze.squeeze(near) == near
     rows = ["[12:00:%02d] [Server thread/INFO]: Loading plugin number %d" % (i % 60, i) for i in range(300)]
     rows[150:150] = ["[12:01:00] [Server thread/ERROR]: Could not load plugin Foo"] + [
         "[12:01:00] [Server thread/ERROR]: \tat foo.Bar.m%d(Bar.java:%d)" % (i, i) for i in range(20)]

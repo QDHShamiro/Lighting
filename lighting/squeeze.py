@@ -251,14 +251,15 @@ def squeeze(text, name="output"):
     obj, lines_mode = as_json(plain)
     out = squeeze_json(obj, lines_mode) if obj is not None else squeeze_log(lines)
     small = "\n".join(out)
-    if len(small) >= len(plain):
-        return plain
     path = outfile("squeeze-" + name, "txt")
-    path.write_text(plain, "utf-8")
-    trimmed(len(plain) - len(small))
-    return small + "\nsqueezed %s lines (~%s tokens) to %d lines (~%s tokens), all of it: %s" % (
+    tail = "\nsqueezed %s lines (~%s tokens) to %d lines (~%s tokens), all of it: %s" % (
         "{:,}".format(len(lines)), "{:,}".format(len(plain) // 4), len(out), "{:,}".format(len(small) // 4),
         path.as_posix())
+    if len(small) + len(tail) >= len(plain):
+        return plain
+    path.write_text(plain, "utf-8")
+    trimmed(len(plain) - len(small) - len(tail))
+    return small + tail
 
 
 def read_limited(fh):
