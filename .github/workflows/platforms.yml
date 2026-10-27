@@ -74,10 +74,16 @@ jobs:
           node-version: "22"
       - name: Linux desktop packages
         if: runner.os == 'Linux'
+        timeout-minutes: 15
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq xvfb openbox at-spi2-core python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 xclip \
-            tesseract-ocr ffmpeg dbus-x11 x11-utils xdotool > /dev/null
+          pkg() { sudo apt-get -qq -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 "$@"; }
+          for try in 1 2 3; do
+            pkg update && pkg install -y xvfb openbox at-spi2-core python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 xclip \
+              tesseract-ocr ffmpeg dbus-x11 x11-utils xdotool > /dev/null && exit 0
+            echo "apt try $try failed"
+            sleep 20
+          done
+          exit 1
       - name: Chrome for Testing
         shell: bash
         run: |
