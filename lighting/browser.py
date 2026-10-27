@@ -6,8 +6,8 @@ import subprocess
 import time
 
 from lighting import defaults as D
-from lighting.common import (Fail, Pending, best_only, cap, hit, is_url, note, outfile, parse_ms, plain_links, ref_kind,
-                             scroll_dir, terms, tiers, win_path)
+from lighting.common import (Fail, Pending, best_only, cap, hit, is_url, note, out_path, outfile, parse_ms, plain_links,
+                             ref_kind, scroll_dir, terms, tiers, win_path)
 
 REF_RE = re.compile(r"^(?:f\d+\.)?e\d+$")
 FULL_SNAP = re.compile(r"since your last snap[^\n]*\(all \d+ lines, ~([\d,]+) tokens")
@@ -751,6 +751,7 @@ def cmd_shot(ctx, pos, flags):
     from PIL import Image
     import base64
     import io
+    out = out_path(ctx, flags, D.SHOT_KINDS, "lighting shot --out C:/shots/page.png")
     ref = pos[0] if pos and REF_RE.match(pos[0]) else None
     msg = call(ctx, "shot", {"ref": ref, "marks": bool(flags.get("marks"))}, 30)
     img = Image.open(io.BytesIO(base64.b64decode(msg["image"])))
@@ -762,7 +763,7 @@ def cmd_shot(ctx, pos, flags):
         if box[2] > box[0] and box[3] > box[1]:
             img = img.crop(box)
     res = save_image(ctx, img, "web-" + (ref or "view"), bool(flags.get("if-changed")),
-                     int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH), threshold(flags))
+                     int(flags.get("width") or ctx.cfg.get("shot_width") or D.SHOT_WIDTH), threshold(flags), out)
     if flags.get("marks"):
         res += "\n%d orange labels = e-refs (label 12 -> lighting click e12)" % msg.get("marks", 0)
     return res
@@ -876,7 +877,7 @@ def threshold(flags):
         raise Fail("--threshold needs a percent of the picture", "lighting shot --threshold 2")
 
 
-def save_image(ctx, img, key, if_changed, width, threshold=0.0):
+def save_image(ctx, img, key, if_changed, width, threshold=0.0, out=None):
     from PIL import Image
     if img.width > width:
         img = img.resize((width, max(1, round(img.height * width / img.width))), Image.LANCZOS)
@@ -889,8 +890,8 @@ def save_image(ctx, img, key, if_changed, width, threshold=0.0):
                 return "unchanged since the last shot of %s (no new image)" % key
             return "unchanged since the last shot of %s (%.1f%% moved, under --threshold %g; no new image)" % (key, moved, threshold)
     ctx.last_shot[key] = raw
-    path = outfile("shot-" + key, "jpg")
-    img.convert("RGB").save(path, "JPEG", quality=D.JPEG_QUALITY)
+    path = out or outfile("shot-" + key, "jpg")
+    img.convert("RGB").save(path, quality=D.JPEG_QUALITY)
     ctx.image = str(path)
     cost = math.ceil(img.width / 28) * math.ceil(img.height / 28)
     return "shot %s (%dx%d, ~%d image tokens; open it with the Read tool)" % (path.as_posix(), img.width, img.height, cost)

@@ -10,7 +10,7 @@ web     open <url> [-n] [-f "a|b"] [--text]   snap [-f "a|b"] [-s css|ref] [--al
         wait <"text"|url:x|ms|ref> [--gone] [--reload 15s --timeout 10m]   expect <"text"|url:x> [--gone]
         fetch <url> [--pick a.b]   read <url|file.pdf> [url ...] [--links]   js <code|--file f>   dismiss
         upload <ref> <file>   tabs [-f x]   tab <id>   close [id]   back   forward   reload   table <ref|css>
-        shot [ref] [--marks] [--if-changed] [--threshold 2 (% moved)]   viewport <WxH|reset>   snap --media (images too)
+        shot [ref] [--marks] [--if-changed] [--threshold 2 (% moved)] [--out a.png]   viewport <WxH|reset>   snap --media (images too)
         frames <video ref> [--count 6] [--scenes] [--small] [--from m:ss --to m:ss] [--live --every ms]
         read <image url|file> (saved as JPEG to look at)
         dialog accept|dismiss [text]   downloads   console   net [n] [-f x] (JSON the page loaded)
@@ -21,7 +21,7 @@ voice   voice join "Call" | here | leave | say "text" | status | watch on|off | 
 desktop windows [-f x] (one match = chosen)   launch <app|uri|path> [-f x]   focus <w>   close <w>   snap <w> [--web]
         click <d|o|"text">   type <d|"Field"|focused> <text> [--tab] [--enter]   press [w] <keys>   read [w|screen]
         wait "text" [w] [--gone] [--timeout 60s] (in an app)
-        shot [w|screen] [--seconds 10] (video)   clip [get|set <text>]   press playpause|volumeup (no window)
+        shot [w|screen] [--out a.png] [--seconds 10] (video, --out a.mp4)   clip [get|set <text>]   press playpause|volumeup (no window)
         claude ["prompt" --yes] [--dir path] [--name x] [--model m] [--effort e] [--no-remote] [--bg]  new Claude tab with remote control (--bg: no window)
         claude list [--all] | claude logs <id>   background Claude sessions and their last lines
 phone   phone devices|setup   phone snap [-f x]   phone tap <p3|"text"> [--long]   phone type ["text"] [--enter]

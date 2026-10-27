@@ -1,3 +1,4 @@
+import os
 import re
 import threading
 import time
@@ -85,6 +86,20 @@ def outfile(name, ext):
     D.OUT.mkdir(parents=True, exist_ok=True)
     stamp = time.strftime("%H%M%S") + "-%03d" % (int(time.time() * 1000) % 1000)
     return D.OUT / ("%s-%s.%s" % (stamp, re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:30] or "out", ext))
+
+
+def out_path(ctx, flags, kinds, hint):
+    raw = flags.get("out")
+    if raw is None:
+        return None
+    path = win_path(raw) if isinstance(raw, str) else ""
+    if os.path.splitext(path)[1].lower() not in kinds:
+        raise Fail("--out needs a file name ending in %s" % ", ".join(kinds), hint)
+    if not os.path.isabs(path):
+        path = os.path.join(ctx.cwd or os.getcwd(), path)
+    path = Path(os.path.normpath(path))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def cap(text, name, lines=None, chars=D.OUT_CHARS):

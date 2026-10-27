@@ -1527,6 +1527,48 @@ def test_embeds_tabs_filter_and_shot_threshold():
     assert browser.threshold({"threshold": True}) == 2.0 and browser.threshold({"threshold": "5%"}) == 5.0
 
 
+def test_shot_out_saves_where_asked():
+    import base64
+    import io
+    from PIL import Image
+    from lighting import browser
+    from lighting.common import Fail
+    assert commands.parse(["shot", "w2", "-o", "w2_a.png"]) == ("shot", ["w2"], {"out": "w2_a.png"})
+    png = io.BytesIO()
+    Image.new("RGB", (40, 30), (200, 10, 10)).save(png, "PNG")
+    c = commands.Context(type("F", (), {"events": []})(), "s1")
+    keep = browser.call
+    browser.call = lambda ctx, cmd, args=None, timeout=0, want=None, tab=None: {"image": base64.b64encode(png.getvalue())}
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            c.cwd = d
+            out = browser.cmd_shot(c, [], {"out": "shots/page.png"})
+            path = Path(d, "shots", "page.png")
+            assert out.startswith("shot %s (40x30" % path.as_posix()), out
+            assert path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+            browser.call = lambda *a, **k: (_ for _ in ()).throw(AssertionError("shot taken"))
+            try:
+                browser.cmd_shot(c, [], {"out": "page.txt"})
+                raise AssertionError("page.txt went on")
+            except Fail as e:
+                assert str(e) == "--out needs a file name ending in .png, .jpg, .jpeg, .webp", e
+    finally:
+        browser.call = keep
+    if not WINDOWS:
+        return
+    from lighting import desktop
+    keep = desktop.region, desktop.grab
+    desktop.region = lambda ctx, pos: (5, (0, 0, 40, 30))
+    desktop.grab = lambda box, hwnd: Image.new("RGB", (40, 30))
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            bash = "/%s/%s/app.jpg" % (d[0].lower(), d[3:].replace("\\", "/"))
+            assert desktop.cmd_shot(c, ["w5"], {"out": bash}).startswith("shot %s/app.jpg" % Path(d).as_posix())
+            assert Path(d, "app.jpg").read_bytes()[:2] == b"\xff\xd8"
+    finally:
+        desktop.region, desktop.grab = keep
+
+
 def test_doctor():
     import json
     import time
