@@ -224,6 +224,10 @@ def browser(r, base):
     r.step("search box", ["search", "lighting docs"], ok)
     r.step("search submitted", ["expect", "Searched: lighting docs"], ok)
     r.step("filter a|b", ["snap", "-f", "Sign in|Open modal"], lambda o, e: not e and "Sign in" in o and "Open modal" in o)
+    r.step("filter looks past the view", ["snap", "-f", "Sign in|Item 40"],
+           lambda o, e: not e and "Sign in" in o and 'link "Item 40"' in o and ("outside the view" in o or "no match in view" in o))
+    r.step("filter names text and misses", ["snap", "-f", "Sign in|Fact|zqxj"],
+           lambda o, e: not e and "Sign in" in o and '"Fact' in o and 'no match for "zqxj" on the whole page' in o)
     r.step("nameless button hint", ["snap", "--all"], lambda o, e: not e and "button #nameless-save" in o)
     r.step("click by #hint", ["click", "#nameless-save"], ok)
     r.step("hint click worked", ["expect", "Saved via hint"], ok)
