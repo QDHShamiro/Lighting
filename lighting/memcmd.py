@@ -14,6 +14,7 @@ SAY = re.compile(r"(?is)^\s*(?:bitte\s+|please\s+)?(?:merk(?:e)?\s+dir|notier(?:
                  r"(?:(?:bitte|please)\s+)?(?:dass\s+|that\s+)?(.+)")
 TODO_HELP = 'lighting todo | todo <id> | todo add "task" [--list name] | todo done|doing|drop|todo <id> | todo note <id> "text"'
 SOURCE_TAGS = {"vault": "vault", "claude": "claude memory"}
+DRAFTS = "%d wiki drafts wait for a yes or no: lighting wiki"
 MEMORY_HELP = "lighting memory [learn | import claude-mem | model | on | off]"
 
 
@@ -238,6 +239,7 @@ def compact_text(ctx, here):
 
 def start_text(here, cwd="", times=None):
     times = {} if times is None else times
+    t0 = time.perf_counter()
     c = M.counts()
     lines = ['Lighting memory (%s): lighting recall "<words>" searches %d notes (vault, session notes and Claude '
              'memory included), lighting remember "<fact>" keeps one, lighting todo tracks work.'
@@ -255,20 +257,33 @@ def start_text(here, cwd="", times=None):
             lines.append("  %s %s: %s%s" % (M.day(s["last"]), M.oneline(s["title"] or "-", 50),
                                              M.oneline(s["summary"], 100), nxt))
     t = time.perf_counter()
+    times["db"] = t - t0
     if here and cwd:
         lines += commits(cwd)
     times["git"] = time.perf_counter() - t
     lines += rule_lines(here) + note_lines(here)
+    box = []
+    job = threading.Thread(target=lambda: box.append(disk_lines(c, times)), daemon=True)
+    job.start()
+    job.join(D.MEM_START_DISK_S)
+    if box:
+        return "\n".join(lines + box[0])
+    times["late"] = 1
+    n = M.one("select count(*) n from notes where source = 'vault' and kind = 'draft'")["n"]
+    return "\n".join(lines + ([DRAFTS % n] if n else []))
+
+
+def disk_lines(c, times):
     t = time.perf_counter()
     waiting = len(vault.drafts())
     times["vault"] = time.perf_counter() - t
-    if waiting:
-        lines.append("%d wiki drafts wait for a yes or no: lighting wiki" % waiting)
+    lines = [DRAFTS % waiting] if waiting else []
     if c["q"]:
         from lighting import memmodel as MM
         if not (MM.ready("chat") or MM.api("chat", wait=False)):
             lines.append("(%d sessions wait to be learned: %s)" % (c["q"], MM.status(wait=False)))
-    return "\n".join(lines)
+    times["model"] = time.perf_counter() - t - times["vault"]
+    return lines
 
 
 def hook_input(pos):
@@ -295,10 +310,12 @@ def cmd_hook(ctx, pos, flags):
         times = {}
         text = compact_text(ctx, here) if data.get("source") == "compact" else start_text(here, cwd, times)
         t2 = time.perf_counter()
-        if t2 - t0 >= D.HOOK_SLOW_S:
-            print("slow hook start: session %.0f ms, summary %.0f ms (git %.0f ms, vault %.0f ms)" % (
-                (t1 - t0) * 1000, (t2 - t1) * 1000, times.get("git", 0) * 1000, times.get("vault", 0) * 1000),
-                file=sys.stderr, flush=True)
+        if t2 - t0 >= D.HOOK_SLOW_S or times.get("late"):
+            print("slow hook start: session %.0f ms, summary %.0f ms (db %.0f ms, git %.0f ms, vault %.0f ms, "
+                  "model %.0f ms%s)" % (
+                (t1 - t0) * 1000, (t2 - t1) * 1000, times.get("db", 0) * 1000, times.get("git", 0) * 1000,
+                times.get("vault", 0) * 1000, times.get("model", 0) * 1000,
+                ", vault or model slow: drafts from the index" if times.get("late") else ""), file=sys.stderr, flush=True)
         return text
     if event == "compact":
         from lighting import memlearn

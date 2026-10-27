@@ -1406,6 +1406,25 @@ def test_memory_store_and_search():
     assert "Spotify" in memcmd.start_text(here)
 
 
+def test_start_info_does_not_wait_for_a_sleeping_disk():
+    import time
+    from lighting import memcmd, memory as M, vault
+    origin = "vault:sleepy/Inbox/draft.md"
+    M.write("insert into notes(project, kind, title, body, files, source, created, updated, origin) "
+            "values ('', 'draft', 'x', '', '[]', 'vault', 0, 0, ?)", (origin,))
+    n = M.one("select count(*) n from notes where source = 'vault' and kind = 'draft'")["n"]
+    real = vault.drafts
+    vault.drafts = lambda: time.sleep(1.5) or []
+    try:
+        times, t = {}, time.perf_counter()
+        out = memcmd.start_text("", "", times)
+        assert time.perf_counter() - t < 1.0 and times.get("late"), times
+        assert "%d wiki drafts wait" % n in out, out
+    finally:
+        vault.drafts = real
+        M.write("delete from notes where origin = ?", (origin,))
+
+
 def test_compact_start_info_lists_session_refs():
     import json
     import types
