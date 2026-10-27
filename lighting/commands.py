@@ -275,11 +275,11 @@ def unknown(name):
 
 
 def run_one(ctx, argv):
-    from lighting import brain, routines
+    from lighting import brain, helptext, routines
     name, pos, flags = parse(argv)
     if not name:
         raise Fail("no command", "lighting help")
-    if flags.get("help") or pos == ["-h"]:
+    if name not in ("help", "-h", "--help") and helptext.wanted(argv):
         return cmd_help(ctx, [name], {}), "help", [name]
     if flags.get("f") is True:
         raise Fail('-f needs the words to look for, like -f "save|draft"; nothing was done',
