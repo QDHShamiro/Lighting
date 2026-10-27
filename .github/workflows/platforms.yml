@@ -63,6 +63,10 @@ jobs:
             client: lighting-linux-x64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
+    env:
+      APT_PKGS: >-
+        xvfb openbox at-spi2-core python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0
+        xclip tesseract-ocr ffmpeg dbus-x11 x11-utils xdotool
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -72,20 +76,42 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Linux package cache key
+        if: runner.os == 'Linux'
+        run: echo "APT_KEY=apt-$ImageOS-$ImageVersion-$(uname -m)-$(echo "$APT_PKGS" | sha1sum | cut -c1-8)" >> "$GITHUB_ENV"
+      - uses: actions/cache@v6
+        if: runner.os == 'Linux'
+        with:
+          path: ~/apt-debs
+          key: ${{ env.APT_KEY }}
       - name: Linux desktop packages
         if: runner.os == 'Linux'
         timeout-minutes: 15
         run: |
           sudo rm -f /var/lib/man-db/auto-update
-          get() { sudo timeout "$1" apt-get -qq -o Acquire::Retries=3 -o Acquire::http::Timeout=30 "${@:2}"; }
+          opts="-q -o DPkg::Lock::Timeout=60 -o Acquire::Retries=3 -o Acquire::http::Timeout=30"
+          log="$RUNNER_TEMP/apt.log"
+          cached=0
+          if compgen -G "$HOME/apt-debs/*.deb" > /dev/null; then
+            cached=$(ls "$HOME"/apt-debs/*.deb | wc -l)
+            sudo cp "$HOME"/apt-debs/*.deb /var/cache/apt/archives/
+          fi
+          get() { sudo timeout "$1" apt-get $opts -o APT::Keep-Downloaded-Packages=true "${@:2}" > "$log" 2>&1; }
+          mirrors=(http://mirrors.edge.kernel.org/ubuntu/ http://archive.ubuntu.com/ubuntu/)
           for try in 1 2 3; do
             sudo dpkg --configure -a || true
-            get 120 update && get 240 install -y xvfb openbox at-spi2-core python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 \
-              xclip tesseract-ocr ffmpeg dbus-x11 x11-utils xdotool > /dev/null && break
+            get 120 update && get 150 install -y $APT_PKGS && break
+            rc=$?
+            echo "::warning title=apt try $try::exit $rc (124 = hung): $(tail -4 "$log" | tr '\n' ' ')"
             [ "$try" = 3 ] && exit 1
-            echo "apt try $try hung or failed, switching to the main Ubuntu mirror"
-            sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+            next=${mirrors[$((try - 1))]}
+            if [ -f /etc/apt/apt-mirrors.txt ]; then echo "$next" | sudo tee /etc/apt/apt-mirrors.txt > /dev/null; fi
+            sudo grep -rlE 'https?://azure\.archive\.ubuntu\.com/ubuntu/?' /etc/apt | xargs -r sudo sed -i -E "s#https?://azure\.archive\.ubuntu\.com/ubuntu/?#$next#g" || true
           done
+          echo "::notice title=apt::downloaded $(grep -c '^Get:' "$log") packages, $cached came from the cache"
+          if [ "$cached" = 0 ] && compgen -G "/var/cache/apt/archives/*.deb" > /dev/null; then
+            mkdir -p ~/apt-debs && cp /var/cache/apt/archives/*.deb ~/apt-debs/
+          fi
       - name: Chrome for Testing
         shell: bash
         run: |
