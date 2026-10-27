@@ -138,6 +138,9 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - `shot --out shots/a.png` (or `-o`) saves the picture there, as PNG, JPEG or WebP by the file name, and
   `shot w3 --seconds 10 --out clip.mp4` saves the video there. `--out` was ignored before, so the file was missing
   where the agent looked (6 times in a month; one agent printed the whole help, then copied the file by hand).
+- A routine hint (`! routine X can finish this in one call`) needs two or more steps still to do; with one left,
+  running the routine saves nothing. `github-create-pull-request` (open the compare page, click Create) was offered
+  8 times in a week after the page was already open and never run; in a month 1 of 328 hints was followed.
 
 ## [2.0.0] - 2026-10-22
 

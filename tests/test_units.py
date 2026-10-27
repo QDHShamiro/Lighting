@@ -691,18 +691,25 @@ def test_hints_need_fixed_text():
     loose = {"name": "any-page", "params": {"page": "x"}, "steps": [st("open", "https://{page}"), st("click", "Go")]}
     site = {"name": "any-github", "params": {"page": "x"}, "steps": [st("open", "github.com/{page}"), st("click", "New")]}
     tight = {"name": "gh-issues", "params": {"repo": "x"},
-             "steps": [st("open", "github.com/QDHShamiro/{repo}"), st("click", "Issues")]}
+             "steps": [st("open", "github.com/QDHShamiro/{repo}"), st("click", "Issues"), st("click", "New issue")]}
+    short = {"name": "gl-merge", "params": {"repo": "x"},
+             "steps": [st("open", "gitlab.com/QDHShamiro/{repo}"), st("click", "New merge request")]}
     assert routines.literal(loose["steps"][0]) == 0 and routines.literal(site["steps"][0]) == 0
     assert routines.literal(tight["steps"][0]) == 11 and routines.literal(st("click", "Issues")) == 6
-    for r in (loose, site, tight):
+    for r in (loose, site, tight, short):
         routines.save(r)
     try:
         c = commands.Context(F())
         c.ep = {"steps": [st("open", "github.com/QDHShamiro/Lighting")], "hinted": set(), "via": None}
         routines.hint(c)
         assert F.events == ["routine gh-issues can finish this in one call: lighting run gh-issues repo=Lighting"]
+        c.ep = {"steps": [st("open", "gitlab.com/QDHShamiro/Lighting")], "hinted": set(), "via": None}
+        routines.hint(c)
+        c.ep = {"steps": [st("open", "github.com/QDHShamiro/Lighting"), st("click", "Issues")], "hinted": set(), "via": None}
+        routines.hint(c)
+        assert len(F.events) == 1, F.events
     finally:
-        for r in (loose, site, tight):
+        for r in (loose, site, tight, short):
             routines.path(r["name"]).unlink()
 
 
