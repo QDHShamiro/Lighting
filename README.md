@@ -473,7 +473,7 @@ args = ["mcp"]
 
 | | |
 |---|---|
-| Look | `open <url>` · `snap [-f "a\|b"] [-s e40] [--diff] [--all]` · `text` (Markdown via [Defuddle](https://github.com/kepano/defuddle)) · `read <url> [url2 ...]` (pages and PDFs, no browser) · `shot --marks` |
+| Look | `open <url>` · `snap [-f "a\|b"] [-s e40] [--diff] [--all]` · `text` (Markdown via [Defuddle](https://github.com/kepano/defuddle)) · `read <url> [url2 ...]` (pages and PDFs, no browser) · `shot [--marks] [--out a.png]` |
 | Act | `click` · `type` · `fill "Email=a@b.c" --submit` · `press` · `select` · `check` · `hover` · `drag` · `scroll --until "text"` · `upload` |
 | Wait | `wait "text" \| url:/x \| 1500 [--gone]` · `expect "text"` · `wait "Done" w3` (in an app) |
 | Data | `table e8` · `fetch /api/me --pick login` (with your cookies) · `js` |
@@ -487,8 +487,8 @@ args = ["mcp"]
 | | |
 |---|---|
 | Start | `launch spotify` · `launch "spotify:search:SOS"` · `launch calc` (Win+R names and Store apps too) · `close w4` · `close "app:Rechner"` |
-| Look | `windows` · `snap app:spotify` · `snap w2` (accessibility tree) · `read w2` (OCR) · `shot w2` (even when covered) · `shot screen --seconds 10` (a short video) |
-| Act | `click d5` · `click "Save"` · `click o3` (OCR text, real click, cursor goes back) · `type "Search" text` · `type focused text` · `press ctrl+s` · `clip get\|set` |
+| Look | `windows` · `snap app:spotify` · `snap w2` (accessibility tree) · `read w2` (OCR) · `shot w2` (even when covered) · `shot screen --seconds 10` (a short video, `--out a.mp4` keeps it) |
+| Act | `click d5` · `click "Save"` · `click o3` (OCR text, real click, cursor goes back) · `type "Search" text` · `type focused text` · `press ctrl+s` · `press ctrl+k w2` (a window at the end is the target) · `scroll w2 --up` · `clip get\|set` |
 | Claude | `claude "task" --yes` (new terminal tab: Claude with Remote Control, the task sent once it is ready) · `--dir E:/proj` · `--no-remote` · `--bg` (a background session without any window, nothing typed: works while you play; in a git repo its edits land in a worktree under `.claude/worktrees/`; `claude attach <id>` to watch) · `claude list` (why a session waits) · `claude logs <id>` |
 
 **Android phone** (USB debugging on, then `lighting phone setup` downloads Google's platform-tools)
@@ -512,7 +512,7 @@ args = ["mcp"]
 |---|---|
 | Keep | `remember "fact" [--kind decision] [--global]` · "merk dir …" / "remember …" in a prompt · learned from finished sessions |
 | Find | `recall "words" [--all]` · `recall 42` (in full) · `forget 42` |
-| To-dos | `todo [--all]` · `todo 12` (in full) · `todo add "task" --list x` · `todo doing\|done\|drop 12` · `todo note 12 "text"` |
+| To-dos | `todo [--all]` · `todo 12` (in full) · `todo add "task" --list x` · `todo doing\|done\|drop 12` · `todo note 12 "text"` (adds a dated line) |
 | Model | `memory` (state) · `memory model` (download) · `memory learn` · `memory import claude-mem` · `config memory_api <url>` · `memory off` |
 
 **Tokens**
