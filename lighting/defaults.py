@@ -132,6 +132,7 @@ GREP_BUDGET_S = 30
 GREP_INLINE_S = 1.0
 GREP_POLL_S = 0.25
 GREP_MORE_FILES = 30
+GREP_GIT_WORKERS = 8
 GREP_SKIP = {".git", "node_modules", "target", "build", "dist", "out", ".gradle", ".idea", "venv", ".venv",
              "__pycache__", ".next", ".cache"}
 SQUEEZE_MIN_LINES = 60

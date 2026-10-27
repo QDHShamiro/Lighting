@@ -5,6 +5,7 @@ import subprocess
 import threading
 import time
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from lighting import defaults as D
@@ -193,9 +194,15 @@ def git_files(root):
     except (OSError, subprocess.TimeoutExpired):
         return None
     names = out.stdout.decode("utf-8", "replace").split("\0") if out.returncode == 0 else []
+    names = sorted(set(n for n in names if n))
+    nested = [n for n in names if n.endswith("/")]
+    inner = {}
+    if nested:
+        with ThreadPoolExecutor(min(D.GREP_GIT_WORKERS, len(nested))) as pool:
+            inner = dict(zip(nested, pool.map(lambda n: git_files(root / n), nested)))
     found = []
-    for n in sorted(set(n for n in names if n)):
-        found += (git_files(root / n) or []) if n.endswith("/") else [root / n]
+    for n in names:
+        found += (inner[n] or []) if n.endswith("/") else [root / n]
     return found or None
 
 
@@ -222,8 +229,10 @@ def candidates(root, base, single, o, globs, skipdirs):
     listed = git_files(root)
     take = [g for g in globs if not g.startswith("!")]
     drop = [g[1:] for g in globs if g.startswith("!")]
+    top = str(root)
+    cut = len(top) if top.endswith(os.sep) else len(top) + 1
     for p in listed if listed is not None else walk_files(root, o["hidden"], skipdirs):
-        rel = p.relative_to(root).as_posix()
+        rel = str(p)[cut:].replace(os.sep, "/")
         if skipdirs and any(fnmatch.fnmatch(part, g) for part in rel.split("/")[:-1] for g in skipdirs):
             continue
         if take and not any(fnmatch.fnmatch(p.name, g) or fnmatch.fnmatch(rel, g) for g in take):
