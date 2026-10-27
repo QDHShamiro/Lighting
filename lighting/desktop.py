@@ -822,14 +822,16 @@ def quick_key(combo):
 
 
 def cmd_press(ctx, pos, flags):
+    lead = pos[:1] if pos and (ref_kind(pos[0]) == "w" or pos[0].lower().startswith("app:")) else []
+    pos = pos[len(lead):]
     if not pos:
-        raise Fail("press needs keys", "lighting press ctrl+s")
+        raise Fail("press needs keys", "lighting press ctrl+s | lighting press w2 enter")
     if all(p.lower() in win.MEDIA for p in pos):
         for combo in pos:
             win.press(combo)
             time.sleep(0.03)
         return "ok (%s, media key for the whole system)" % " ".join(pos)
-    hwnd = target(ctx)
+    hwnd = target(ctx, lead or None)
     game = bool(flags.get("game"))
     before = None if game else before_action(ctx, hwnd)
     known = {w["hwnd"] for w in win.windows()}

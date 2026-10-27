@@ -17,7 +17,7 @@ video   watch <url|file|ref> [--from m:ss --to m:ss] [--at 1:23,2:45] [--text] [
 sound   listen [ref|url|file] [--from m:ss --to m:ss] [--lang de] [--live] [--local]   frames <ref> --audio
 voice   voice join "Call" | here | leave | say "text" | status | watch on|off | set key=value | persona "Call"  (Windows)
 desktop windows [-f x] (one match = chosen)   launch <app|uri|path> [-f x]   focus <w>   close <w>   snap <w> [--web]
-        click <d|o|"text">   type <d|"Field"|focused> <text> [--tab] [--enter]   press <keys>   read [w|screen]
+        click <d|o|"text">   type <d|"Field"|focused> <text> [--tab] [--enter]   press [w] <keys>   read [w|screen]
         wait "text" [w] [--gone] [--timeout 60s] (in an app)
         shot [w|screen] [--seconds 10] (video)   clip [get|set <text>]   press playpause|volumeup (no window)
         claude ["prompt" --yes] [--dir path] [--name x] [--model m] [--effort e] [--no-remote] [--bg]  new Claude tab with remote control (--bg: no window)

@@ -960,6 +960,36 @@ def test_front_window_only_after_the_agent_saw_it():
         win.foreground, win.alive, win.class_of, win.pid_of, win.exe_of, win.elevated = keep
 
 
+def test_press_takes_a_window_first():
+    if not WINDOWS:
+        return
+    from lighting import commands, desktop, pointer, win
+    keep = (desktop.target, desktop.before_action, desktop.after_action, desktop.label, pointer.with_focus, win.press,
+            win.windows)
+    seen = {"target": [], "keys": []}
+    desktop.target = lambda c, pos=None: seen["target"].append(pos) or 55
+    desktop.before_action = lambda c, h: None
+    desktop.after_action = lambda c, h, before, quiet=None: ""
+    desktop.label = lambda c, h: "w2 Editor - notepad.exe"
+    pointer.with_focus = lambda h, fn, stay=False: fn()
+    win.press = lambda combo, scancode=False: seen["keys"].append(combo)
+    win.windows = lambda owned=False: []
+    try:
+        c = commands.Context(type("F", (), {"events": []})(), "s1")
+        out = desktop.cmd_press(c, ["w2", "ctrl+s"], {})
+        assert seen == {"target": [["w2"]], "keys": ["ctrl+s"]} and out.startswith("ok (ctrl+s sent to w2"), (seen, out)
+        desktop.cmd_press(c, ["enter"], {})
+        assert seen["target"][-1] is None and seen["keys"][-1] == "enter", seen
+        try:
+            desktop.cmd_press(c, ["w2"], {})
+            raise AssertionError("a window without keys must fail")
+        except commands.Fail as e:
+            assert "press needs keys" in str(e), e
+    finally:
+        (desktop.target, desktop.before_action, desktop.after_action, desktop.label, pointer.with_focus, win.press,
+         win.windows) = keep
+
+
 def test_brain_page_keys():
     from lighting import brain
     assert brain.page_key("https://www.github.com/QDHShamiro/Lighting/pull/17/files?x=1") == "github.com/qdhshamiro/lighting/pull/#"

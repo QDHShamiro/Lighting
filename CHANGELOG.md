@@ -44,6 +44,10 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 - `lighting todo <id>` shows one to-do in full (task, note, status, list). The list cuts notes at 80 characters
   and now says so when it did. `todo list [name]` works like `todo [--list name]` (it was an unknown command).
 
+### Fixed
+- `press w2 enter` sends the keys to window w2, like `read w2` or `scroll w2` take a window. Before, `w2` was read
+  as a key name and the command failed with `unknown key 'w2'` (seen in the action log).
+
 ## [2.1.0] - 2026-10-22
 
 Lighting now does the jobs of four tools at once: the memory (claude-mem), the session notes (Context Engine),
