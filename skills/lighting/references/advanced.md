@@ -86,7 +86,7 @@
 
 ## Memory (kept on this PC)
 - Store: `~/.lighting/memory/memory.db` (SQLite). Search mixes words (FTS5) and meaning (local embeddings); notes of the current project rank first, `recall --all` shows others with `[project]`.
-- Hooks: session start prints the summary; every prompt can show up to 2 notes of the same project that clearly fit (`Lighting memory may help`); after each reply the session is queued and learned once it has been quiet 10 minutes or ended.
+- Hooks: session start prints the summary; every prompt can show up to 2 notes of the same project that clearly fit and share a word of their title with the prompt (`Lighting memory may help`); after each reply the session is queued and learned once it has been quiet 10 minutes or ended.
 - Learning uses a local model: Lighting downloads llama.cpp and Qwen3.5 (4B with 12 GB RAM or more, else 2B) plus Qwen3-Embedding by itself, checks the checksums, and never runs or downloads while a game runs. `lighting memory model` shows it or starts the download; `config models_dir <folder>` puts the files on another drive.
 - Own model instead: `config memory_api http://127.0.0.1:9930/v1` + `config memory_api_model <name>` + `config memory_api_embed <name>` (any OpenAI-compatible server), or files you have: `config memory_server <llama-server>`, `config memory_model <gguf>`, `config memory_embed <gguf>`.
 - `memory learn` learns the waiting sessions now, `memory import claude-mem` moves notes, summaries and open to-dos over (safe to repeat), `memory off` stops the hooks, `config memory_learn off` keeps the notes but learns nothing new. `forget <id>` deletes one note.
