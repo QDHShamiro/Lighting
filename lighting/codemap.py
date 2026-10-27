@@ -27,6 +27,7 @@ CODE_STOP = {"function", "funktion", "method", "methode", "class", "klasse", "co
              "aufgerufen", "passiert", "happens", "happen", "wird", "werden", "gets"}
 SKIP_DIRS = {".git", "node_modules", "target", "build", "out", "dist", ".gradle", ".idea", "venv", ".venv",
              "__pycache__", ".next", ".graphify", "vendor", "bin", "obj"}
+OUTPUT_DIRS = {"target", "build", "out", "dist", "bin", "obj"}
 SCHEMA = """
 create table if not exists files(path text primary key, mtime real, lang text, lines integer);
 create table if not exists symbols(id integer primary key, path text, name text, low text, kind text, line integer,
@@ -91,15 +92,19 @@ def parser(lang):
     return _parsers[lang]
 
 
+def git_files(root, args, skip):
+    out = subprocess.run(["git", "-c", "core.quotePath=false", "-C", str(root), "ls-files", "-z", *args, "."],
+                         capture_output=True, timeout=20, creationflags=0x08000000 if D.WIN else 0)
+    if out.returncode:
+        raise OSError("git ls-files exited %d" % out.returncode)
+    names = out.stdout.decode("utf-8", "replace").split("\0")
+    return [root / n for n in names if n and Path(n).suffix.lower() in LANGS
+            and not any(part in skip for part in n.split("/")[:-1])]
+
+
 def listing(root):
     try:
-        out = subprocess.run(["git", "-c", "core.quotePath=false", "-C", str(root), "ls-files", "-z", "-co",
-                              "--exclude-standard", "."],
-                             capture_output=True, timeout=20, creationflags=0x08000000 if D.WIN else 0)
-        if out.returncode == 0:
-            names = out.stdout.decode("utf-8", "replace").split("\0")
-            return [root / n for n in names if n and Path(n).suffix.lower() in LANGS
-                    and not any(part in SKIP_DIRS for part in n.split("/")[:-1])]
+        return git_files(root, ["-c"], SKIP_DIRS - OUTPUT_DIRS) + git_files(root, ["-o", "--exclude-standard"], SKIP_DIRS)
     except (OSError, subprocess.TimeoutExpired):
         pass
     found = []

@@ -206,6 +206,9 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
 - The start info says when a game holds the session learner: "(61 sessions wait to be learned: paused while
   minecraft runs)". With Minecraft open for a day and a half, no session was learned, and the start listed
   sessions 5 to 12 days old as the last ones without a word about the 61 newer ones.
+- `lighting code` reads folders named like build output (`build`, `out`, `bin`, `target`, `dist`, `obj`) when git
+  tracks their files; git already leaves ignored build output out. In a Minecraft mod project the whole package
+  `architect.build`, 38 of 182 files, was missing, and a lookup of its class `Seals` answered "nothing named".
 
 ## [2.0.0] - 2026-10-22
 
