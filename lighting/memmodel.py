@@ -241,7 +241,11 @@ def post(base, path, body, timeout):
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
-        raise NotReady("model answered %d: %s" % (e.code, e.read()[:200].decode("utf-8", "replace"))) from None
+        try:
+            detail = e.read()[:200].decode("utf-8", "replace")
+        except OSError:
+            detail = ""
+        raise NotReady("model answered %d: %s" % (e.code, detail)) from None
     except (OSError, urllib.error.URLError) as e:
         raise NotReady("model not reachable: %s" % e) from None
 
