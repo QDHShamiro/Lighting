@@ -362,6 +362,28 @@ def test_captions_and_noise():
     assert audio.clock(3723) == "1:02:03"
 
 
+def test_listen_and_watch_transcribe_without_captions():
+    from lighting import audio
+    keep = audio.shrink, audio.keys, audio.local
+    heard = []
+
+    def local(path, lang):
+        heard.append((str(path), lang))
+        return [(0.0, "Hello there"), (2.5, "general Kenobi")], "en", "local whisper base"
+
+    audio.shrink, audio.keys, audio.local = (lambda path, tmp: path), (lambda: {}), local
+    try:
+        job = {"lo": None, "hi": None, "lang": "en", "file": "clip.mp3", "url": None, "live": False, "host": None,
+               "tab": None, "ref": None, "duration": None, "local": False}
+        out = audio.pipeline(job)
+        assert out.startswith("transcript (en, local whisper base, ") and out.endswith(
+            ":\n0:00 Hello there\n0:02 general Kenobi"), out
+        assert audio.transcribe(Path("talk.ogg"), None, True)[2] == "local whisper base"
+        assert heard == [("clip.mp3", "en"), ("talk.ogg", None)]
+    finally:
+        audio.shrink, audio.keys, audio.local = keep
+
+
 def test_session_contexts_and_nested_runs():
     from lighting import commands
 
