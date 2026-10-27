@@ -255,11 +255,14 @@ GUESS = {"find": 'snap -f "word" (page), code <name> (code) or recall "words" (m
 HIDDEN = {"hook", "suggest", "doctor-info", "access-prompt", "autoload", "ping"}
 
 
+def known():
+    return (set(SYSTEM) | SHARED | APP_ONLY | CHAT | WEB_ONLY | {"read", "listen", "watch", "voice", "phone", "claude",
+                                                                "desktop"}) - HIDDEN
+
+
 def unknown(name):
     import difflib
-    names = (set(SYSTEM) | SHARED | APP_ONLY | CHAT | WEB_ONLY | {"read", "listen", "watch", "voice", "phone", "claude",
-                                                                  "desktop"}) - HIDDEN
-    close = difflib.get_close_matches(name, sorted(names), 1, 0.75)
+    close = difflib.get_close_matches(name, sorted(known()), 1, 0.75)
     hint = GUESS.get(name) or (close[0] if close else "help")
     return Fail("unknown command '%s'" % name, "lighting " + hint)
 
@@ -269,6 +272,8 @@ def run_one(ctx, argv):
     name, pos, flags = parse(argv)
     if not name:
         raise Fail("no command", "lighting help")
+    if flags.get("help") or pos == ["-h"]:
+        return cmd_help(ctx, [name], {}), "help", [name]
     if flags.get("f") is True:
         raise Fail('-f needs the words to look for, like -f "save|draft"; nothing was done',
                    'lighting %s ... -f "<words>"' % name)
@@ -788,8 +793,13 @@ def cmd_version(ctx, pos, flags):
 
 
 def cmd_help(ctx, pos, flags):
-    from lighting.helptext import HELP
-    return HELP
+    from lighting.helptext import HELP, about
+    if not pos:
+        return HELP
+    name = SAME.get(pos[0].lower(), pos[0].lower())
+    if name not in known() | HIDDEN:
+        raise unknown(name)
+    return about(name) or HELP
 
 
 def cmd_ext_reload(ctx, pos, flags):
