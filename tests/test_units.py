@@ -586,6 +586,7 @@ def test_claude_usage_reads_transcripts():
             assert held == {"max": 7500, "high": 500}, held
             assert "context by content: Bash output ~65%, start context ~11%, file reads ~1%, earlier thinking ~1%, rest ~22%\n" in out, out
             assert "tool output: Bash ~65% and file reads ~1% of all context, kept until the next compact" in out, out
+            assert "(lighting code outline <file>, lighting code body <Name>, sed -n 40,90p)" in out, out
             assert "start context ~32k on every request (11% of all context" in out, out
             assert "cache rebuilds: 1 full rewrites (1 after a break over 60 min), 58% of the weighted total" in out, out
             assert json.loads(D.CLAUDE_CACHE.read_text("utf-8")).keys() == {str(proj / "a.jsonl"), str(proj / "b.jsonl")}
