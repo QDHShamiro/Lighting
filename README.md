@@ -523,7 +523,7 @@ args = ["mcp"]
 | Overview | `tokens` (last 30 days) · `tokens 7` · `tokens today` · `tokens all` · `/lighting:tokens`: used, without Lighting, saved, per group, per day or week, the commands that saved most |
 | Details | `log [20]` (last commands) · `log stats` (runs, errors, time and tokens per command) |
 | Claude Code | `tokens claude [days]`: where your Claude Code tokens go, biggest fixes first |
-| Shorter output | `grep "pattern" [path] [-i -w -x -E -F -l -C 2] [--include "*.py"] [--exclude-dir build]` · `squeeze <file>` · `cmd 2>&1 \| lighting squeeze` · `squeeze -- <cmd>` |
+| Shorter output | `grep "pattern" [path] [-i -w -x -E -F -l -o -v -m 1 -C 2] [--include "*.py"] [--exclude-dir build]` · `squeeze <file>` · `cmd 2>&1 \| lighting squeeze` · `squeeze -- <cmd>` |
 
 On Windows clicks and typing go through UI Automation in the background, your mouse stays where it is.
 `do "fill Email=a@b.c; click Continue; expect Welcome"` runs several steps in one call.
