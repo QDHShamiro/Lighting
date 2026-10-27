@@ -5,6 +5,8 @@ import * as I from "./input.js";
 export const cfg = { blocklist: [], risk: [], pointer: true, navLines: 40, navChars: 1600, abort: false };
 
 const LOAD_MS = 20000;
+const LOADING_WAIT_MS = 8000;
+const EARLY = new Set(["snap", "diff", "act.text", "act.visibleText", "act.table", "act.peek", "act.settle"]);
 
 function trunc(s, n) {
   s = String(s || "");
@@ -26,9 +28,22 @@ function risky(name) {
   return cfg.risk.some((w) => new RegExp("(^|[^\\p{L}])" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^\\p{L}]|$)", "u").test(n));
 }
 
-function callLt(fn, args) {
+function callLt(fn, args, wait) {
   const L = globalThis.__lt;
   if (!L || !L.act) return { __missing: true };
+  const nav = wait ? performance.getEntriesByType("navigation")[0] : null;
+  if (nav && !(nav.domContentLoadedEventStart > 0)) {
+    return new Promise((ok) => {
+      let done = false;
+      const go = (late) => {
+        if (done) return;
+        done = true;
+        Promise.resolve(callLt(fn, args, 0)).then((r) => ok(late && r && typeof r === "object" ? Object.assign(r, { loading: true }) : r));
+      };
+      document.addEventListener("DOMContentLoaded", () => go(false), { once: true });
+      setTimeout(() => go(true), Math.max(0, wait - performance.now()));
+    });
+  }
   const failed = (e) => ({ __error: String((e && e.message) || e).slice(0, 200) });
   try {
     const dot = fn.indexOf(".");
@@ -107,13 +122,14 @@ export async function page(tabId, fn, args, frameId, ms) {
   const fr = !frameId && args && typeof args[0] === "string" ? FRAME_REF.exec(args[0]) : null;
   if (fr) return inFrame(tabId, Number(fr[1]), fn, [fr[2]].concat(args.slice(1)), ms);
   const target = { tabId, frameIds: [frameId || 0] };
-  const call = () => chrome.scripting.executeScript({ target, func: callLt, args: [fn, args || []] });
+  const early = EARLY.has(fn);
+  const call = () => chrome.scripting.executeScript({ target, func: callLt, args: [fn, args || [], early ? LOADING_WAIT_MS : 0], injectImmediately: early });
   let tab = null;
   try {
     tab = await chrome.tabs.get(tabId);
     let [r] = await withDialog(tabId, call(), ms || 15000);
     if (r && r.result && r.result.__missing) {
-      await chrome.scripting.executeScript({ target, files: ["page.js", "page-act.js"] });
+      await chrome.scripting.executeScript({ target, files: ["page.js", "page-act.js"], injectImmediately: early });
       [r] = await withDialog(tabId, call(), ms || 15000);
     }
     if (!r) throw new Error("page did not answer");
@@ -140,6 +156,7 @@ async function guard(tabId, what) {
 function header(tabId, res) {
   let h = "[t" + T.sid(tabId) + "] " + trunc(res.title || "(no title)", 70) + " - " + T.short(res.url || "", 80);
   if (res.scroll !== undefined) h += " (scroll " + res.scroll + "%)";
+  if (res.loading) h += " (still loading)";
   return h;
 }
 
@@ -539,4 +556,4 @@ export async function scroll(a, tab) {
   return "ok (scroll " + Math.max(0, Math.min(100, pct)) + "%)";
 }
 
-export { formatSnap, header, guard, tabOf, blockedHost, trunc, LOAD_MS };
+export { formatSnap, header, guard, tabOf, blockedHost, trunc, LOAD_MS, LOADING_WAIT_MS };
