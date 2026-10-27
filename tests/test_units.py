@@ -990,6 +990,21 @@ def test_press_takes_a_window_first():
          win.windows) = keep
 
 
+def test_fill_takes_refs():
+    import types
+    from lighting import brain, browser
+    assert brain.step_labels("fill", ["e2=x", "Email=y", " e5 =z"]) == ["Email"]
+    ctx = types.SimpleNamespace(last_target=None, secret=None, kind=lambda: "web")
+    assert brain.target_labels(ctx, "fill", ["e2=x", "Email=y"], "ok (filled e2 Name, e3 Email)") == [("Email", None)]
+    assert routines.stable(ctx, "fill", ["e2=x", "Email=y"], {}) is None
+    assert routines.stable(ctx, "fill", ["Email=y"], {})["args"] == ["Email=y"]
+    try:
+        browser.cmd_fill(ctx, ["e2", "hello"], {})
+        raise AssertionError("fill without = must fail")
+    except commands.Fail as e:
+        assert e.hint == 'lighting fill e2="text" | lighting type e2 "text"', e.hint
+
+
 def test_brain_page_keys():
     from lighting import brain
     assert brain.page_key("https://www.github.com/QDHShamiro/Lighting/pull/17/files?x=1") == "github.com/qdhshamiro/lighting/pull/#"

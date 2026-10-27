@@ -88,6 +88,8 @@ def stable(ctx, name, pos, flags):
             return None
         args[0] = label[:80]
         role = t.get("role")
+    if name == "fill" and any(ref_kind(a.partition("=")[0].strip()) for a in args):
+        return None
     if name == "type" and ctx.secret is not None:
         args = args[:1] + ["@secret"]
     kept = {k: v for k, v in flags.items() if k in KEEP_FLAGS}

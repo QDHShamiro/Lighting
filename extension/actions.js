@@ -386,6 +386,7 @@ export async function fill(a, tab) {
   for (let i = 0; i < found.length; i++) {
     const fld = found[i];
     const value = pairs[i].value;
+    if (fld.none && fld.byRef) throw new Error(fld.label + " is no field on this page (filled: " + (done.join(", ") || "none") + ") -> try: lighting snap, refs change with the page");
     if (fld.none) throw new Error('no field for "' + fld.label + '" (filled: ' + (done.join(", ") || "none") + ") -> try: lighting snap -f " + fld.label.split(" ")[0]);
     const r = await page(tabId, "rect", [fld.ref]);
     if (fld.role === "checkbox" || fld.role === "radio" || fld.role === "switch") {

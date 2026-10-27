@@ -103,7 +103,7 @@ def boot():
 
 def step_labels(cmd, args):
     if cmd == "fill":
-        return [a.split("=", 1)[0] for a in args if "=" in a]
+        return [a.split("=", 1)[0] for a in args if "=" in a and not ref_kind(a.split("=", 1)[0].strip())]
     a = args[0] if args else ""
     if not a or ref_kind(a) or a.startswith(("#", "url:", "css:", "@")) or a.lower() in ("focused", "screen"):
         return []
@@ -283,7 +283,7 @@ def blocked(key):
 
 def target_labels(ctx, name, pos, out):
     if name == "fill":
-        return [(p.split("=", 1)[0], None) for p in pos if "=" in p]
+        return [(label, None) for label in step_labels(name, pos)]
     t = getattr(ctx, "last_target", None) or {}
     if t.get("name"):
         return [(t["name"], t.get("role"))]

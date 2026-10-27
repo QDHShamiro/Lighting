@@ -145,8 +145,14 @@
 
   function fields(labels) {
     const pool = [...document.querySelectorAll(FIELD)].filter(visible);
-    const used = new Set();
+    const byRef = (label) => (/^e\d+$/.test(label) ? get(label) : undefined);
+    const used = new Set(labels.map(byRef).filter(Boolean));
     return labels.map((label) => {
+      const own = byRef(label);
+      if (own !== undefined) {
+        if (!own || !own.matches(FIELD)) return { label, none: true, byRef: true };
+        return { label: clean(nameOf(own)) || label, ref: label, role: L.roleOf(own), tag: own.tagName, type: (own.type || "").toLowerCase() };
+      }
       const ll = clean(label).toLowerCase();
       let best = null, bs = 0;
       for (const el of pool) {

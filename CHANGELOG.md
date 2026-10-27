@@ -47,6 +47,10 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
 ### Fixed
 - `press w2 enter` sends the keys to window w2, like `read w2` or `scroll w2` take a window. Before, `w2` was read
   as a key name and the command failed with `unknown key 'w2'` (seen in the action log).
+- `fill e2=text` fills the field with that ref from `snap`, like `click e2` or `type e2` take refs, and a ref that
+  is no field on the page says so. Before, it failed with `no field for "e2"`, and `fill e2 text` showed only the
+  label form (both in the action log); it now names `fill e2="text"` and `type e2 "text"`. A fill by ref is not
+  learned as a routine or a page label, since refs change with the page.
 
 ## [2.1.0] - 2026-10-22
 

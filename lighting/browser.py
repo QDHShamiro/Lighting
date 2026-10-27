@@ -448,6 +448,8 @@ def cmd_fill(ctx, pos, flags):
     pairs = []
     for p in pos:
         label, sep, value = p.partition("=")
+        if not sep and ref_kind(p) == "e":
+            raise Fail("fill wants Label=value pairs", 'lighting fill %s="text" | lighting type %s "text"' % (p, p))
         if not sep:
             raise Fail("fill wants Label=value pairs", 'lighting fill "Email=me@x.de" "Password=@secret" --env PASS')
         if value == "@secret":

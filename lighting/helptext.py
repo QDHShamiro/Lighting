@@ -2,7 +2,7 @@ HELP = """lighting <command> [args]   browser + Windows desktop for AI agents
 refs: e12 web element | d5 app control | o3 screen text | w2 window | t77 tab
 
 web     open <url> [-n] [-f "a|b"] [--text]   snap [-f "a|b"] [-s css|ref] [--all] [--full] [--diff] [--links]   text [-f txt] [--links]
-        click <ref|"text"|#hint> [--yes] [--force]   fill "Label=value" ... [--submit]   search [site] "words"
+        click <ref|"text"|#hint> [--yes] [--force]   fill "Label=value"|ref=value ... [--submit]   search [site] "words"
         type <ref> <text> [--env VAR] [--append]   press <keys>   select <ref> <option>
         check <ref> [off]   hover <ref>   drag <ref> <ref>   scroll [ref|up|down] [--until "text"]
         wait <"text"|url:x|ms|ref> [--gone] [--reload 15s --timeout 10m]   expect <"text"|url:x> [--gone]
