@@ -1,6 +1,5 @@
 import concurrent.futures
 import hashlib
-import io
 import json
 import os
 import re

@@ -168,7 +168,7 @@ def is_browser(hwnd):
     return win.class_of(hwnd) == CHROMIUM_CLASS and win.exe_of(win.pid_of(hwnd)).lower() in BROWSER_EXES
 
 
-BIDI = re.compile("[‎‏‪-‮⁦-⁩]")
+BIDI = re.compile("[\u200e\u200f\u202a-\u202e\u2066-\u2069]")
 
 
 def inside(a, b):
