@@ -162,26 +162,28 @@ def window_set():
 
 def summarize(sessions):
     s = {"sessions": len(sessions), "requests": 0, "ctx": 0, "write": 0, "out": 0, "think": 0, "effort": {},
-         "rebuilds": 0, "breaks": 0, "rebuilt": 0, "ctxs": [], "starts": [], "parts": dict.fromkeys(dict(PARTS), 0)}
+         "rebuilds": 0, "breaks": 0, "rebuilt": 0, "ctxs": [], "starts": [], "parts": dict.fromkeys(dict(PARTS), 0), "held": {}}
     for reqs in sessions:
         base = min(r[1] for r in reqs)
         s["starts"].append((reqs[0][0], base, len(reqs)))
-        prev, run = None, {}
+        prev, run, held = None, {}, {}
         for r in reqs:
             t, ctx, write, out, vis, effort, bash, read, rest = r
             think = max(0, out - vis // 4)
             if prev is None or ctx < prev[1] * 0.5:
-                run = dict.fromkeys(s["parts"], 0)
+                run, held = dict.fromkeys(s["parts"], 0), {}
                 run["start"], run["summary"] = base, ctx - base
             else:
                 gone = max(0, prev[3] - prev[4] // 4)
                 added, chars = max(0, ctx - prev[1] - prev[3]), bash + read + rest
-                run["thinking"] += gone
+                held[prev[5] or "?"] = held.get(prev[5] or "?", 0) + gone
                 run["said"] += prev[3] - gone
                 run["bash"] += added * bash / chars if chars else 0
                 run["read"] += added * read / chars if chars else 0
             for k, v in run.items():
                 s["parts"][k] += v
+            for k, v in held.items():
+                s["held"][k] = s["held"].get(k, 0) + v
             s["requests"] += 1
             s["ctx"] += ctx
             s["write"] += write
@@ -195,6 +197,7 @@ def summarize(sessions):
                 s["breaks"] += seconds(t) - seconds(prev[0]) > D.CLAUDE_BREAK_S
                 s["rebuilt"] += write
             prev = r
+    s["parts"]["thinking"] = sum(s["held"].values())
     return s
 
 
@@ -211,8 +214,9 @@ def tips(s, sessions, weighted):
     if mx and hi and hi[1]:
         share, ratio = 100 * mx[0] / s["requests"], (mx[1] / mx[0]) / (hi[1] / hi[0])
         if share >= D.CLAUDE_TIP_PCT and ratio >= D.CLAUDE_MAX_RATIO:
-            out.append((share, "effort: max ran %d%% of requests and thinks %.1fx as much as high. /effort high for routine work, "
-                               "max for hard problems" % (share, ratio)))
+            out.append((share, "effort: max ran %d%% of requests and thinks %.1fx as much as high; its thinking fills ~%d%% of all "
+                               "context. /effort high for routine work, max for hard problems"
+                        % (share, ratio, round(100 * s["held"].get("max", 0) / s["ctx"]))))
     fixed = sum(c * n for _, c, n in s["starts"])
     start = fixed / max(1, s["requests"])
     if start > D.CLAUDE_START_BIG:
