@@ -42,7 +42,7 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   Claude Code transcripts: 59% fewer characters, and 5 of 3,809 kinds of error line not in view, all inside JSON
   lists, whose first line counts the items with error words.
 - `lighting todo <id>` shows one to-do in full (task, note, status, list). The list cuts notes at 80 characters
-  and now says so when it did.
+  and now says so when it did. `todo list [name]` works like `todo [--list name]` (it was an unknown command).
 
 ## [2.1.0] - 2026-10-22
 

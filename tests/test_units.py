@@ -1342,6 +1342,8 @@ def test_memory_store_and_search():
     tid = int(memcmd.cmd_todo(ctx, ["add", "Ship", "it"], {"list": "rel"}).split("#")[1].split()[0])
     listed = memcmd.cmd_todo(ctx, [], {})
     assert "Ship it" in listed and "in full" not in listed, listed
+    assert memcmd.cmd_todo(ctx, ["list"], {}) == listed and "Ship it" in memcmd.cmd_todo(ctx, ["list", "rel"], {})
+    assert memcmd.cmd_todo(ctx, ["list", "other"], {}).startswith("no open to-dos")
     note = " ".join("step%d" % i for i in range(30))
     memcmd.cmd_todo(ctx, ["note", str(tid), note], {})
     listed = memcmd.cmd_todo(ctx, [], {})

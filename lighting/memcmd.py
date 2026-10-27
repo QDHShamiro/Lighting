@@ -135,6 +135,9 @@ def todo_list(rows, short=False):
 
 def cmd_todo(ctx, pos, flags):
     sub = pos[0].lower() if pos else ""
+    if sub == "list":
+        flags = dict(flags, list=" ".join(pos[1:])) if pos[1:] else flags
+        pos, sub = [], ""
     here = project(ctx, flags)
     if sub == "add":
         task = " ".join(pos[1:])
