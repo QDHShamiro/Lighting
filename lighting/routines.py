@@ -712,7 +712,8 @@ def hint(ctx):
                         break
                 got.update(m)
                 k += 1
-            if ok and k < len(need) and sum(literal(s) for s in need[:k]) >= D.HINT_LITERAL:
+            left = sum(1 for s in need[k:] if not s.get("optional"))
+            if ok and left >= D.HINT_LEFT and sum(literal(s) for s in need[:k]) >= D.HINT_LITERAL:
                 hinted.add(r["name"])
                 ctx.d.events.append("routine %s can finish this in one call: %s" % (r["name"], usage(r, got)))
                 return

@@ -119,7 +119,6 @@ e2 link "All pull requests" ->/pulls
 e3 link "Issues" ->./issues
 e4 link "Pull requests" ->./pulls
 more: 74 below (scroll or snap --all)
-! routine github-issues can finish this in one call: lighting run github-issues page=Lighting
 $ lighting click "Issues"
 ok e3 -> github.com/QDHShamiro/Lighting/issues
 ```
@@ -178,7 +177,7 @@ with earlier ones like DNA sequences; the parts that differ become parameters.
 ```
 
 - **Learns by itself.** Seen twice, a routine exists. No prompt, no naming, no setup.
-- **Speaks up.** Start a known task and the first output says `! routine X can finish this in one call`.
+- **Speaks up.** Start a known task and the first output says `! routine X can finish this in one call` (when two or more steps are left).
 - **Checks its work.** A run passes only when the result shows up (the song in the window title, the repo in the URL).
 - **Repairs itself.** A step breaks, the AI finishes by hand, Lighting rebuilds the routine from what worked (`v2`).
 - **Keeps score.** Runs, success rate, time and tokens saved per routine; three failures in five runs mark it `FLAKY`.
