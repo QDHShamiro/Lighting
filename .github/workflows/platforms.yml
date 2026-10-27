@@ -119,6 +119,7 @@ jobs:
           echo "CHROME=${out#* }" >> "$GITHUB_ENV"
           echo "${out#* }"
       - name: Run the platform checks
+        timeout-minutes: 15
         shell: bash
         run: bash tests/ci_unix.sh "${{ matrix.client }}"
       - name: Report
