@@ -217,6 +217,8 @@ def route(ctx, name, pos, flags):
         if pos and (is_url(pos[0]) or pos[0].lower().endswith((".pdf",) + web().IMAGE_EXT)):
             return web().read_url(ctx, pos, flags)
         return app().cmd_read(ctx, pos, flags)
+    if name == "text" and (flags.get("on") == "app" or (pos and windowish(pos[0]))):
+        return app().cmd_read(ctx, pos, flags)
     if name == "close" and pos and (ref_kind(pos[0]) == "w" or pos[0].lower().startswith("app:")):
         return app().cmd_close(ctx, pos, flags)
     if name in CHAT:

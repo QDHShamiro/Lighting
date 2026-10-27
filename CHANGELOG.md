@@ -201,7 +201,8 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   `--on app:Name`, is the window the command acts on. Before, `--on` with anything but `web` or `app` was ignored
   and a window at the end was taken as a key or as text: in a month of transcripts 4 of 10 such commands went wrong
   (`press ctrl+k w9` failed with `unknown key 'w9'`, Discord's search field got "Sprache w9", `press ctrl+k --on w6`
-  and `click "Nein" --on w6` went to the browser). Other `--on` values now fail instead of being ignored.
+  and `click "Nein" --on w6` went to the browser). Other `--on` values now fail instead of being ignored. `text w3`
+  reads that window's screen text like `read w3`; it read the session's page instead or said it had no tab (3 times).
 
 ## [2.0.0] - 2026-10-22
 
