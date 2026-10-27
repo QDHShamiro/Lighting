@@ -2255,6 +2255,19 @@ def test_code_outline_body_impact():
         D.CODE_IMPACT_LINES = keep
 
 
+def test_code_map_reads_source_folders_named_build():
+    import subprocess
+    from lighting import codemap
+    repo = Path(tempfile.mkdtemp(prefix="lighting-build-"))
+    for rel in ("src/app/build/Seals.java", "src/app/Main.java", "build/Gen.java", "node_modules/x/index.js"):
+        (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+        (repo / rel).write_text("class X {}\n", "utf-8")
+    subprocess.run(["git", "-C", str(repo), "init", "-q"], capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(repo), "add", "src", "node_modules"], capture_output=True, check=True)
+    got = sorted(p.relative_to(repo).as_posix() for p in codemap.listing(repo))
+    assert got == ["src/app/Main.java", "src/app/build/Seals.java"], got
+
+
 def test_code_map_vectors_and_budget():
     import subprocess
     import time
