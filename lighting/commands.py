@@ -169,7 +169,7 @@ def side(ctx, pos, verb, flags=None):
     if pos and (pos[0] == "screen" or pos[0].lower().startswith("app:")):
         return app()
     if verb in ("press", "type", "scroll", "drag") and getattr(ctx, "sid", "") and not ctx.tabs:
-        return app()
+        return web() if getattr(ctx, "closed_why", None) and ctx.kind() == "web" else app()
     if ctx.kind() == "app":
         return app()
     if ctx.kind() == "web":

@@ -504,6 +504,13 @@ def test_a_lost_tab_names_its_last_page():
         browser.call = keep_call
     assert "has no tab: the browser restarted (last page %s)" % url in restarted
     assert restarted.endswith("lighting open " + url) and opened == []
+    c.target = ("web", "brave")
+    assert commands.side(c, ["enter"], "press") is browser
+    c.target = ("app", 1)
+    assert commands.side(c, ["enter"], "press") is not browser
+    browser.track(c, "open", {"where": {"tab": "t9", "url": url}})
+    c.tabs, c.target = [], ("web", "brave")
+    assert commands.side(c, ["enter"], "press") is not browser
     c.tabs, c.where, c.closed_url = ["t7"], {"tab": "t7", "url": url, "kind": "web"}, None
     browser.ensure_host = lambda ctx, want=None: Host()
     try:

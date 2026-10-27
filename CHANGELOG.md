@@ -61,7 +61,9 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   the last page and the command to open it again (`lighting open <that page>`), as it did after Lighting's own
   cleanup. Before, it said only "this session has no tab yet": 9 of the 11 times in a week of the action log came in
   one burst right after the browser had disconnected. The page is not reopened by itself, since the browser may
-  restore the tab.
+  restore the tab. A bare `press`, `type`, `scroll` or `drag` after such a loss gets this error too, if the session
+  worked in the browser last; before, it went to the desktop (3 times "no window chosen" in the same burst, and with
+  a window chosen earlier the keys would have gone to that app).
 
 ## [2.1.0] - 2026-10-22
 

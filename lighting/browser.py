@@ -162,7 +162,7 @@ def track(ctx, cmd, msg):
         return
     t = (msg.get("where") or {}).get("tab")
     if t:
-        ctx.closed_url = None
+        ctx.closed_url = ctx.closed_why = None
     if cmd == "open" and msg.get("created") and t:
         ctx.owned.add(t)
     if t and (cmd in ("open", "tab") or t in ctx.owned or (ctx.tabs and ctx.tabs[0] == t)):
