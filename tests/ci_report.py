@@ -1,6 +1,8 @@
 import re
 import sys
 
+SUITES = ("unit tests", "selftest")
+
 
 def esc(s):
     return s.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
@@ -28,14 +30,26 @@ def main(path, label):
     slow = sorted(rows, key=lambda r: -int(r[1]))[:8]
     if slow:
         print("::notice title=%s slowest checks::%s" % (label, esc(", ".join("%s %s ms" % r for r in slow))))
-    m = re.findall(r"(\d+)/(\d+) passed", text)
-    if m:
-        print("::notice title=%s selftest::%s/%s passed" % (label, m[-1][0], m[-1][1]))
-    bad = [(a, b) for a, b in m if a != b]
-    if not m or bad:
-        print("::error title=%s::%s" % (label, "; ".join("%s/%s passed" % x for x in bad) or "no test result in the log"))
+    parts = re.split(r"^== (.+)$", text, flags=re.M)
+    sections = dict(zip(parts[1::2], parts[2::2]))
+    errors = []
+    for name in SUITES:
+        m = re.findall(r"^(\d+)/(\d+) passed", sections.get(name, ""), re.M)
+        if not m:
+            errors.append("%s: no result (%s)" % (name, last_exit(sections.get(name)) or "not run"))
+            continue
+        print("::notice title=%s %s::%s/%s passed" % (label, name, m[-1][0], m[-1][1]))
+        if m[-1][0] != m[-1][1]:
+            errors.append("%s: %s/%s passed" % ((name,) + m[-1]))
+    if errors:
+        print("::error title=%s::%s" % (label, "; ".join(errors)))
         return 1
     return 0
+
+
+def last_exit(body):
+    m = re.findall(r"^-- (exit .+)$", body or "", re.M)
+    return m[-1] if m else ""
 
 
 if __name__ == "__main__":

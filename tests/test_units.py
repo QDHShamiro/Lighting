@@ -2342,6 +2342,32 @@ def test_memory_model_never_stalls():
     assert recall.cmd_suggest(ctx, [note], {}) == "" and ctx.prompts == []
 
 
+def test_ci_report_needs_the_selftest_result():
+    import contextlib
+    import io
+    sys.path.insert(0, str(ROOT / "tests"))
+    import ci_report
+    units = "== unit tests\nPASS test_a 3 ms\n96/96 passed\n-- exit 0 (6 s)\n"
+    logs = {
+        "hung": units + "== selftest\n\n-- exit 142 (600 s)\n== shot screen\n\n-- exit 142 (600 s)\n",
+        "green": units + "== selftest\nPASS open fixture   120 ms   40 ch\n149/149 passed\n-- exit 0 (61 s)\n",
+        "red": units + "== selftest\nFAIL open fixture   120 ms   40 ch | x\n148/149 passed\n-- exit 0 (61 s)\n",
+        "skipped": units,
+    }
+    got = {}
+    for name, text in logs.items():
+        path = Path(tempfile.mkdtemp(prefix="lighting-ci-")) / "lighting-ci.log"
+        path.write_text(text, encoding="utf-8")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = ci_report.main(str(path), "macos")
+        got[name] = (code, buf.getvalue())
+    assert got["green"][0] == 0 and "::notice title=macos selftest::149/149 passed" in got["green"][1], got["green"]
+    assert got["hung"][0] == 1 and "selftest: no result (exit 142 (600 s))" in got["hung"][1], got["hung"]
+    assert got["red"][0] == 1 and "selftest: 148/149 passed" in got["red"][1], got["red"]
+    assert got["skipped"][0] == 1 and "selftest: no result (not run)" in got["skipped"][1], got["skipped"]
+
+
 if __name__ == "__main__":
     import time
     tests =[(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]

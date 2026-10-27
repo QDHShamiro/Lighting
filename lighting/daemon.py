@@ -1,9 +1,11 @@
 import collections
 import ctypes
+import faulthandler
 import json
 import os
 import queue
 import shutil
+import signal
 import sys
 import threading
 import time
@@ -355,6 +357,8 @@ class Daemon:
         D.PIDFILE.write_text(str(os.getpid()), "utf-8")
         print("%s %s %s pid %d" % (D.DAEMON_STARTED, D.version(), time.strftime("%Y-%m-%d %H:%M:%S"), os.getpid()),
               file=sys.stderr, flush=True)
+        if hasattr(signal, "SIGUSR1"):
+            faulthandler.register(signal.SIGUSR1, file=sys.stderr, all_threads=True)
         from lighting import commands
         self.load_sessions(commands)
         cleanup_out()
