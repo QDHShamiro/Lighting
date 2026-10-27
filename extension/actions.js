@@ -29,10 +29,10 @@ function risky(name) {
 function callLt(fn, args) {
   const L = globalThis.__lt;
   if (!L || !L.act) return { __missing: true };
-  const dot = fn.indexOf(".");
-  const f = dot > 0 ? L[fn.slice(0, dot)][fn.slice(dot + 1)] : L[fn];
   const failed = (e) => ({ __error: String((e && e.message) || e).slice(0, 200) });
   try {
+    const dot = fn.indexOf(".");
+    const f = dot > 0 ? L[fn.slice(0, dot)][fn.slice(dot + 1)] : L[fn];
     const r = f.apply(null, args || []);
     return r && typeof r.then === "function" ? r.then((v) => v, failed) : r;
   } catch (e) {
