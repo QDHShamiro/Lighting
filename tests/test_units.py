@@ -777,9 +777,18 @@ def test_a_window_named_last_or_in_on_is_the_target():
         commands.route(c, "press", ["w2", "enter"], {})
         commands.route(c, "click", ["e5", "w9"], {})
         commands.route(c, "click", ["Send"], {"on": "web"})
+        commands.route(c, "text", [], {})
         assert seen == [("app", "cmd_type", ["d5", "w9"], None), ("app", "cmd_press", ["w2", "enter"], None),
-                        ("web", "cmd_click", ["e5", "w9"], None), ("web", "cmd_click", ["Send"], "web")]
+                        ("web", "cmd_click", ["e5", "w9"], None), ("web", "cmd_click", ["Send"], "web"),
+                        ("web", "cmd_text", [], None)]
         assert aimed == []
+        del seen[:]
+        commands.route(c, "text", ["w3"], {"last": "15"})
+        commands.route(c, "text", ["app:Modrinth App"], {})
+        commands.route(c, "text", [], {"on": "w2"})
+        assert seen == [("app", "cmd_read", ["w3"], None), ("app", "cmd_read", ["app:Modrinth App"], None),
+                        ("app", "cmd_read", [], "app")]
+        assert aimed == ["w2"]
         try:
             commands.route(c, "click", ["Send"], {"on": "chrome"})
             raise AssertionError("--on chrome was ignored")
