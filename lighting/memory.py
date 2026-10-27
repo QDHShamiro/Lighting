@@ -356,8 +356,11 @@ def todo_set(tid, status=None, note_text=None):
     r = one("select * from todos where id = ?", (tid,))
     if not r:
         return None
+    note = r["note"] or ""
+    if note_text and note_text.strip():
+        note = (note + "\n" if note else "") + time.strftime("%m-%d %H:%M ") + " ".join(note_text.split())
     write("update todos set status = ?, note = ?, updated = ? where id = ?",
-          (status or r["status"], r["note"] if note_text is None else note_text, time.time(), tid))
+          (status or r["status"], note, time.time(), tid))
     return one("select * from todos where id = ?", (tid,))
 
 

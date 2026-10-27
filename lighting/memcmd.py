@@ -119,9 +119,10 @@ def cmd_forget(ctx, pos, flags):
 
 def todo_line(t, short=False):
     note_len = 0 if short else 80
+    last = (t["note"] or "").strip().split("\n")[-1]
     return "#%d %s%s%s" % (t["id"], "[doing] " if t["status"] == "doing" else "",
                            M.oneline(t["task"], 80 if short else D.MEM_LINE),
-                           " (%s)" % M.oneline(t["note"], note_len) if t["note"] and note_len else "")
+                           " (%s)" % M.oneline(last, note_len) if last and note_len else "")
 
 
 def todo_list(rows, short=False):
