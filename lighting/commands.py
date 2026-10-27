@@ -250,6 +250,9 @@ def run_one(ctx, argv):
     name, pos, flags = parse(argv)
     if not name:
         raise Fail("no command", "lighting help")
+    if flags.get("f") is True:
+        raise Fail('-f needs the words to look for, like -f "save|draft"; nothing was done',
+                   'lighting %s ... -f "<words>"' % name)
     ctx.last_target = None
     if name in SYSTEM:
         return with_view(ctx, name, flags, route(ctx, name, pos, flags)), name, pos
