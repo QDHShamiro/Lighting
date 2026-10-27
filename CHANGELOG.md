@@ -146,6 +146,10 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   threaded mode: 0 of 12 runs since, and 15 recorded clicks in a row take 71 s instead of 23 minutes.
 - When Lighting's script fails on a page, the command names the error (`page script error: ...`) instead of
   "Cannot read properties of null (reading 'error')": Chrome returns an empty result for errors in injected scripts.
+- `type --enter` and `search`: when the Enter never reaches the page, the form is sent from inside the page (its
+  default button, or the form itself when Enter would send it) and the command says so. Before, `search` could
+  report `ok (typed 8 chars)` while nothing happened: 4 times in the Linux CI, the words sat in the focused field
+  and the page had not moved.
 
 ## [2.0.0] - 2026-10-22
 
