@@ -22,7 +22,7 @@ jobs:
             name: lighting-linux-arm64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build (Windows)
         if: runner.os == 'Windows'
         working-directory: client
@@ -40,7 +40,7 @@ jobs:
         if: runner.os == 'Linux'
         working-directory: client
         run: cargo build --release --locked && cp target/release/lighting ../${{ matrix.name }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}
@@ -53,16 +53,16 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Tag matches the plugin version
         run: |
           v=$(python3 -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
           test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME but plugin.json says $v"; exit 1; }
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: built
           merge-multiple: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - name: Assets
@@ -73,7 +73,7 @@ jobs:
           cp built/lighting.exe built/lighting-macos bin/
           python3 mcpb/build.py "$PWD/dist/lighting.mcpb"
           git archive --format=zip -o "dist/lighting-$GITHUB_REF_NAME.zip" HEAD
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/*
       - name: Checksums
