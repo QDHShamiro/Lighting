@@ -88,6 +88,9 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   to switch (`lighting press ctrl+k w2, then lighting type focused "Luis" --enter`, from the app's known keys). It
   happened 4 times in a month, because Discord showed another chat or the DM was called "@ItsLuis"; each time
   the agent needed 1 to 4 more calls to find out.
+- `frames` no longer waits 4 s for a video that is not loading (no source yet, or `preload="none"`): it waited for
+  the video's length up to 4 s every time, and all 93 `frames` calls of the last two weeks took 4.5 s (3 per
+  self-test, whose demo video has no source). It now waits only while the video is loading, plus 0.3 s.
 
 ## [2.1.0] - 2026-10-22
 
