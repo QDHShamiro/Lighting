@@ -1186,6 +1186,40 @@ def test_press_takes_a_window_first():
          win.windows) = keep
 
 
+def test_click_at_a_screen_spot_from_read():
+    if not WINDOWS:
+        return
+    from lighting import commands, desktop, pointer, win
+    keep = (desktop.target, desktop.before_action, desktop.after_action, desktop.new_windows, desktop.wref, win.rect,
+            win.windows, pointer.blitz_click)
+    clicks = []
+    desktop.target = lambda c, pos=None: 9
+    desktop.before_action = lambda c, h: None
+    desktop.after_action = lambda c, h, before, quiet=None: ""
+    desktop.new_windows = lambda c, known: ""
+    desktop.wref = lambda c, h: "w9"
+    win.rect = lambda h: (2000, 100, 3000, 1100)
+    win.windows = lambda owned=False: []
+    pointer.blitz_click = lambda x, y, button="left", count=1, hwnd=None: clicks.append((x, y, button, count, hwnd))
+    try:
+        c = commands.Context(type("F", (), {"events": []})(), "s1")
+        out = desktop.cmd_click(c, ["@2527,994"], {})
+        assert clicks == [(2527, 994, "left", 1, 9)] and out.startswith("ok @2527,994 (mouse click"), (clicks, out)
+        desktop.cmd_click(c, ["@2527,994"], {"right": True})
+        assert clicks[-1] == (2527, 994, "right", 1, 9), clicks
+        try:
+            desktop.cmd_click(c, ["@32,515"], {})
+            raise AssertionError("a spot outside the window was clicked")
+        except commands.Fail as e:
+            assert str(e).startswith("@32,515 is not in w9"), e
+        assert len(clicks) == 2
+        c.tabs, c.target = ["t1"], ("web", "brave")
+        assert commands.side(c, ["@2527,994"], "click") is desktop
+    finally:
+        (desktop.target, desktop.before_action, desktop.after_action, desktop.new_windows, desktop.wref, win.rect,
+         win.windows, pointer.blitz_click) = keep
+
+
 def test_ui_automation_timeout_is_a_clear_error():
     if not WINDOWS:
         return

@@ -7,7 +7,7 @@ import threading
 import time
 
 from lighting import defaults as D
-from lighting.common import Busy, Fail, Pending, Said, cap, is_url, ref_kind, take_trimmed
+from lighting.common import POINT, Busy, Fail, Pending, Said, cap, is_url, ref_kind, take_trimmed
 
 VALUED = {"f", "s", "d", "max", "browser", "lang", "timeout", "width", "until", "pick", "frame",
           "body", "method", "button", "region", "delta", "file", "role", "last", "on", "count", "every", "from", "to",
@@ -164,7 +164,7 @@ def side(ctx, pos, verb, flags=None):
     kind = ref_kind(pos[0]) if pos else None
     if kind in ("e", "t"):
         return web()
-    if kind in ("d", "o", "w"):
+    if kind in ("d", "o", "w") or (pos and POINT.match(pos[0])):
         return app()
     if pos and (pos[0] == "screen" or pos[0].lower().startswith("app:")):
         return app()

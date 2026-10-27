@@ -6,6 +6,7 @@ from pathlib import Path
 from lighting import defaults as D
 
 REF = re.compile(r"^(?:(f\d+)\.)?(e|d|o|w|t)(\d+)$")
+POINT = re.compile(r"^@(-?\d+),(-?\d+)$")
 _cut = threading.local()
 
 

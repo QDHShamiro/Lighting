@@ -7,7 +7,7 @@ from collections import Counter
 from lighting import defaults as D
 from lighting import pointer
 from lighting import win
-from lighting.common import Busy, Fail, best_only, cap, note, ref_kind, terms, tiers, trimmed
+from lighting.common import POINT, Busy, Fail, best_only, cap, note, ref_kind, terms, tiers, trimmed
 
 BROWSER_EXES = {"brave.exe", "chrome.exe", "msedge.exe", "opera.exe", "vivaldi.exe",
                 "brave browser", "google chrome", "microsoft edge", "chromium", "opera", "vivaldi",
@@ -632,6 +632,18 @@ def ocr_click(ctx, text_or_ref, flags):
     return 'ok (clicked "%s" at %d,%d via mouse, cursor restored)' % (t[:40], x, y)
 
 
+def point_click(ctx, x, y, flags):
+    hwnd = target(ctx)
+    l, t, r, b = win.rect(hwnd)
+    if not (l <= x < r and t <= y < b):
+        raise Fail("@%d,%d is not in %s (%d,%d to %d,%d)" % (x, y, wref(ctx, hwnd), l, t, r, b),
+                   "lighting read %s, then click the o-ref of that text" % wref(ctx, hwnd))
+    before = before_action(ctx, hwnd)
+    known = {w["hwnd"] for w in win.windows()}
+    pointer.blitz_click(x, y, "right" if flags.get("right") else "left", 2 if flags.get("double") else 1, hwnd=hwnd)
+    return "ok @%d,%d (mouse click, cursor restored)%s%s" % (x, y, after_action(ctx, hwnd, before), new_windows(ctx, known))
+
+
 def by_text(ctx, hwnd, text, roles=None):
     from lighting import uia
     tl = text.lower()
@@ -675,6 +687,9 @@ def cmd_click(ctx, pos, flags):
         return ocr_click(ctx, arg, flags)
     if kind == "w" or arg.lower().startswith("app:"):
         return cmd_focus(ctx, pos, flags)
+    at = POINT.match(arg)
+    if at:
+        return point_click(ctx, int(at.group(1)), int(at.group(2)), flags)
     hwnd = target(ctx)
     if kind == "d":
         el = element(ctx, arg)

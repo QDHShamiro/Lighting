@@ -48,6 +48,9 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   so after 1 s it goes on in the background, and the hooks and memory commands of other sessions never wait.
 - `lighting todo <id>` shows one to-do in full (task, note, status, list). The list cuts notes at 80 characters
   and now says so when it did. `todo list [name]` works like `todo [--list name]` (it was an unknown command).
+- `lighting click @2527,994` clicks that spot of the window, the way `read` prints it after each o-ref (in the
+  background or with the cursor put back). A spot outside the window fails. Agents copied these spots into `click`
+  3 times in a month and got `nothing called "@2527,994"`; once the agent then moved the real mouse with Python.
 
 ### Fixed
 - `press w2 enter` sends the keys to window w2, like `read w2` or `scroll w2` take a window. Before, `w2` was read
