@@ -1607,7 +1607,6 @@ def test_todo_note_adds_a_dated_line():
     import re
     import types
     from lighting import memcmd, memory as M
-    from lighting.common import Fail
     ctx = types.SimpleNamespace(cwd=tempfile.mkdtemp(prefix="lighting-proj-"), sid="s-test", told={})
     tid = int(memcmd.cmd_todo(ctx, ["add", "Release", "2.1"], {"list": "rel"}).split("#")[1].split()[0])
     memcmd.cmd_todo(ctx, ["note", str(tid), "CI green"], {})
@@ -1621,15 +1620,6 @@ def test_todo_note_adds_a_dated_line():
                                                     "selftest runs now"], lines
     shown = memcmd.cmd_todo(ctx, [], {})
     assert "selftest runs now)" in shown and "CI green" not in shown, shown
-    assert memcmd.cmd_todo(ctx, ["list"], {}) == shown
-    full = memcmd.cmd_todo(ctx, [str(tid)], {}).split("\n")
-    assert full[0] == "#%d doing in rel: Release 2.1" % tid and len(full) == 4 and "CI green" in full[1], full
-    assert memcmd.cmd_todo(ctx, ["#%d" % tid], {}) == memcmd.cmd_todo(ctx, ["show", str(tid)], {}) == "\n".join(full)
-    try:
-        memcmd.cmd_todo(ctx, [str(tid + 999)], {})
-        raise AssertionError("no error for a missing to-do")
-    except Fail as e:
-        assert "no to-do #%d" % (tid + 999) in str(e), e
 
 
 def test_memory_hint_needs_a_word_of_its_title():

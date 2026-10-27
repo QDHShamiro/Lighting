@@ -207,8 +207,6 @@ own data: 19 of 20 knowledge questions answered with 13,511 tokens (claude-mem: 
   Agents keep these notes as a log: of the 20 they wrote since 2.0, 2 were corrections ("the times in the notes
   above are wrong") that wiped the notes they corrected, and one release to-do kept 1 of its 8 notes. The times
   agents typed in were guesses, 3 of them off by 16 minutes to over 2 hours. `lighting todo` shows the newest line.
-- `lighting todo 36` shows one to-do with all its notes, and `todo list` the list. Both were errors before: 5 of
-  the 89 `todo` calls since 10-21 were a number or `list`, from agents that wanted the whole log of a to-do.
 - The start info says when a game holds the session learner: "(61 sessions wait to be learned: paused while
   minecraft runs)". With Minecraft open for a day and a half, no session was learned, and the start listed
   sessions 5 to 12 days old as the last ones without a word about the 61 newer ones.
