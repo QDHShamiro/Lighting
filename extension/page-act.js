@@ -579,7 +579,7 @@
 
   function armKey() {
     S.keyAt = 0;
-    document.addEventListener("keydown", () => {
+    window.addEventListener("keydown", () => {
       S.keyAt = Date.now();
     }, { capture: true, once: true });
     return { ok: true };
