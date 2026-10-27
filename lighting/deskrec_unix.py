@@ -30,6 +30,8 @@ class DeskRecorder:
         self.started = {}
         self.me = os.getpid()
         self.timer = None
+        self.busy = None
+        self.skipped = []
 
     def start(self):
         self.pids0 = {w["pid"] for w in win.windows()}
@@ -50,6 +52,14 @@ class DeskRecorder:
         self.hook_thread.join(3)
         self.q.put(None)
         self.work_thread.join(5)
+        note = None
+        if self.work_thread.is_alive():
+            note = "the app recorder was still reading %s after 5 s, it is not recorded" % (self.busy or "an input")
+        elif self.skipped and all(s["cmd"] == "#" for s in self.steps):
+            note = "%d click%s went to %s, which the app recorder leaves out" % (
+                len(self.skipped), "" if len(self.skipped) == 1 else "s", ", ".join(sorted(set(self.skipped))))
+        if note:
+            self.steps.append({"t": time.time(), "cmd": "#", "args": [note], "flags": {}})
         return self.steps
 
     def _hooks(self):
@@ -64,6 +74,7 @@ class DeskRecorder:
             if item is None:
                 self._flush()
                 return
+            self.busy = "a click" if item[0] == "m" else "a key"
             try:
                 if item[0] == "m":
                     self._flush()
@@ -71,7 +82,8 @@ class DeskRecorder:
                 else:
                     self._key(*item[1:])
             except Exception:
-                continue
+                pass
+            self.busy = None
 
     def _emit(self, cmd, args, t, **flags):
         flags["on"] = "app"
@@ -96,10 +108,14 @@ class DeskRecorder:
             self._emit("focus", ["app:" + key], t)
 
     def _click(self, x, y, right, t):
+        self.busy = "a click (the window under the mouse)"
         root = win.window_at(x, y)
         if self._skip(root):
+            self.skipped.append((win.exe_of(win.pid_of(root)) if root else "") or "no window")
             return
+        self.busy = "a click (the control under the mouse)"
         cur, pick, text_name = uia.element_at(x, y), None, ""
+        self.busy = "a click (the control's name)"
         for _ in range(6):
             if cur is None:
                 break
