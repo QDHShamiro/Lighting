@@ -1603,6 +1603,25 @@ def test_memory_store_and_search():
     assert "Spotify" in memcmd.start_text(here)
 
 
+def test_todo_note_adds_a_dated_line():
+    import re
+    import types
+    from lighting import memcmd, memory as M
+    ctx = types.SimpleNamespace(cwd=tempfile.mkdtemp(prefix="lighting-proj-"), sid="s-test", told={})
+    tid = int(memcmd.cmd_todo(ctx, ["add", "Release", "2.1"], {"list": "rel"}).split("#")[1].split()[0])
+    memcmd.cmd_todo(ctx, ["note", str(tid), "CI green"], {})
+    memcmd.cmd_todo(ctx, ["note", str(tid), "Correction:", "the", "note", "above", "means", "Linux"], {})
+    memcmd.cmd_todo(ctx, ["doing", str(tid), "selftest   runs\nnow"], {})
+    memcmd.cmd_todo(ctx, ["doing", str(tid)], {})
+    lines = M.one("select note from todos where id = ?", (tid,))["note"].split("\n")
+    stamp = re.compile(r"\d\d-\d\d \d\d:\d\d ")
+    assert all(stamp.match(x) for x in lines), lines
+    assert [stamp.sub("", x, 1) for x in lines] == ["CI green", "Correction: the note above means Linux",
+                                                    "selftest runs now"], lines
+    shown = memcmd.cmd_todo(ctx, [], {})
+    assert "selftest runs now)" in shown and "CI green" not in shown, shown
+
+
 def test_memory_hint_needs_a_word_of_its_title():
     import types
     from lighting import memcmd, memory as M
