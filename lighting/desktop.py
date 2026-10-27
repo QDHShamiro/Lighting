@@ -7,7 +7,7 @@ from collections import Counter
 from lighting import defaults as D
 from lighting import pointer
 from lighting import win
-from lighting.common import POINT, Busy, Fail, best_only, cap, note, ref_kind, terms, tiers, trimmed
+from lighting.common import POINT, Busy, Fail, best_only, cap, note, ref_kind, scroll_dir, terms, tiers, trimmed
 
 BROWSER_EXES = {"brave.exe", "chrome.exe", "msedge.exe", "opera.exe", "vivaldi.exe",
                 "brave browser", "google chrome", "microsoft edge", "chromium", "opera", "vivaldi",
@@ -879,18 +879,18 @@ def new_windows(ctx, known):
 
 def cmd_scroll(ctx, pos, flags):
     from lighting import uia
-    down = not any(p.lower() == "up" for p in pos)
+    down = scroll_dir(pos, flags) not in ("up", "top")
     refs = [p for p in pos if ref_kind(p) == "d"]
     hwnd = target(ctx, [p for p in pos if ref_kind(p) == "w" or p.lower().startswith("app:")] or None)
     if refs:
         el = element(ctx, refs[0])
         if uia.scroll(el, down):
-            return "ok (scrolled %s in background)" % refs[0]
+            return "ok (scrolled %s %s in background)" % (refs[0], "down" if down else "up")
         x, y = center(el)
     else:
         el = None if win.class_of(hwnd) == CHROMIUM_CLASS else uia.main_scroller(hwnd)
         if el is not None and uia.scroll(el, down):
-            return "ok (scrolled %s in background)" % wref(ctx, hwnd)
+            return "ok (scrolled %s %s in background)" % (wref(ctx, hwnd), "down" if down else "up")
         l, t, r, b = win.rect(hwnd)
         x, y = (l + r) // 2, (t + b) // 2
     pointer.show(x, y)

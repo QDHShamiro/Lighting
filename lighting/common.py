@@ -68,6 +68,10 @@ def ref_kind(token):
     return m.group(2) if m else None
 
 
+def scroll_dir(pos, flags):
+    return next((d for d in ("up", "down", "top", "bottom") if flags.get(d) or any(p.lower() == d for p in pos)), None)
+
+
 def is_url(token):
     return bool(re.match(r"^(https?|file)://", token or "", re.I))
 
