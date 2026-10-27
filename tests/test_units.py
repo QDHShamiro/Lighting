@@ -581,7 +581,9 @@ def test_claude_usage_reads_transcripts():
             rows = [x.split() for x in out.splitlines() if x.split()[:1] in (["max"], ["high"])]
             assert rows == [["max", "3", "~1,433"], ["high", "2", "~400"]], rows
             assert "auto-compact at 400k: ~51% fewer context tokens, +1 compactions" in out, out
-            assert "effort: max ran 60% of requests and thinks 3.6x as much as high" in out, out
+            assert "effort: max ran 60% of requests and thinks 3.6x as much as high; its thinking fills ~1% of all context" in out, out
+            held = claudeuse.summarize(claudeuse.load(datetime.date.today() - datetime.timedelta(days=6)))["held"]
+            assert held == {"max": 7500, "high": 500}, held
             assert "context by content: Bash output ~65%, start context ~11%, file reads ~1%, earlier thinking ~1%, rest ~22%\n" in out, out
             assert "tool output: Bash ~65% and file reads ~1% of all context, kept until the next compact" in out, out
             assert "start context ~32k on every request (11% of all context" in out, out

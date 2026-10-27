@@ -13,7 +13,7 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   then the biggest fixes first (auto-compact window, effort, tool output, start context, cache rebuilds), each with
   the setting to change. The content split uses how much each request grew, so it needs no characters-per-token
   guess (tool output runs ~2.2 characters per token, not 4). On 30 days of real use: earlier thinking 33% of all
-  context, Bash output 21%, start context 19%. Measured with 1.9 GB of transcripts: 10 s the first time, under 1.5 s after that
+  context (18% from max effort alone, which the effort fix names), Bash output 21%, start context 19%. Measured with 1.9 GB of transcripts: 10 s the first time, under 1.5 s after that
   (per-file cache in `~/.lighting/claude-usage.json`).
 
 ## [2.1.0] - 2026-10-22
