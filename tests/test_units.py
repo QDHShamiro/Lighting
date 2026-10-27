@@ -1294,6 +1294,20 @@ def test_self_check_and_weekly_tip():
     assert brain.weekly_tip(now + 60) == ""
 
 
+def test_self_check_advises_on_fill_admin_and_wait_errors():
+    import time
+    from lighting import brain
+    now = time.time()
+    errors = {"fill": 'no field for "Email adress" (filled: none)',
+              "snap": "this window runs as administrator; Windows blocks control fr",
+              "wait": "timeout after 8000 ms waiting for pakchunk"}
+    rows = [{"ts": now - 60, "cmd": cmd, "ok": False, "e": e} for cmd, e in errors.items()]
+    advice = {p["cmds"][0]: p["advice"] for p in brain.summary(7, now, rows)["patterns"]}
+    assert advice["fill"].startswith("the name was guessed"), advice
+    assert "lighting read / shot" in advice["snap"], advice
+    assert advice["wait"].startswith("the page was slower"), advice
+
+
 def test_brain_boots_from_episodes():
     import json
     import time

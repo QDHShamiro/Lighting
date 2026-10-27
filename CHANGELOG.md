@@ -72,6 +72,9 @@ Versions follow semver. Every release on GitHub carries the clients (`lighting.e
   spelling (`Sumbit` for `Submit`). Before, whatever was clicked after the same miss twice was clicked on its own the
   next time, and 2 of the 5 fixes learned on this PC had nothing to do with the miss ("alles zeigen" was followed by
   "Einspruch!"). Such a fix still shows up in the error as a hint.
+- `lighting improve` gives advice for a guessed `fill` label (`no field for`), an elevated window and a `wait` that
+  ran into its timeout (`timeout after`). These were 3 of the 5 top errors of the last 3 days, and all of them said
+  only "look at lighting log for the details".
 
 ## [2.1.0] - 2026-10-22
 
