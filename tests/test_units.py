@@ -1962,7 +1962,8 @@ def test_help_on_a_command_shows_it_and_runs_nothing():
     assert "claude list" in helptext.about("claude") and helptext.about("batch").startswith("do|batch")
     assert helptext.about("nosuch") is None
     assert [helptext.wanted(a) for a in (["todo", "--help"], ["help", "todo"], ["todo", "-h"], ["type", "e5", "-h"],
-                                         ["todo"], [])] == ["todo", "todo", "todo", None, None, ""]
+                                         ["todo"], [], ["squeeze", "--", "mvn", "--help"])] == \
+        ["todo", "todo", "todo", None, None, "", None]
     c = commands.Context(type("F", (), {"events": [], "hosts": []})(), "s1")
     keep = commands.route
     commands.route = lambda *a: (_ for _ in ()).throw(AssertionError("ran %s" % (a[1:],)))
@@ -1970,6 +1971,12 @@ def test_help_on_a_command_shows_it_and_runs_nothing():
         out, name, pos = commands.run_one(c, ["claude", "--help"])
         assert (name, pos) == ("help", ["claude"]) and out.startswith("claude [") and "claude list" in out, out
         assert commands.run_one(c, ["todo", "-h"])[0].startswith("todo [--all]")
+        try:
+            commands.run_one(c, ["js", "--", "--help"])
+        except AssertionError as e:
+            assert str(e).startswith("ran ('js'"), e
+        else:
+            raise AssertionError("js -- --help did not run")
         try:
             commands.run_one(c, ["snapp", "--help"])
             raise AssertionError("snapp --help went on")
