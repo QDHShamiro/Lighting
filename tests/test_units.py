@@ -2272,6 +2272,40 @@ def test_grep_searches_right_and_short():
     D.GREP_INLINE_S = keep_inline
 
 
+def test_grep_takes_its_own_short_options():
+    import types
+    from lighting import grep
+    from lighting import defaults as D
+    from lighting.common import Fail
+    keep_inline, D.GREP_INLINE_S = D.GREP_INLINE_S, 30
+    assert commands.parse(["grep", "-a", "-s", "x"]) == ("grep", ["-a", "-s", "x"], {})
+    assert commands.parse(["click", "-a"]) == ("click", [], {"all": True})
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "bin.dat").write_bytes(b"needle\0\0")
+            (root / "calls.txt").write_text("colour\ncolor\nid 42\nuse -v here\n", "utf-8")
+            ctx = types.SimpleNamespace(cwd=tmp)
+
+            def run(*argv):
+                return grep.cmd_grep(ctx, *commands.parse(["grep"] + list(argv))[1:])
+
+            assert run("-a", "needle", "bin.dat") == "1: needle"
+            assert run("-s", "colour", "calls.txt") == "1: colour"
+            assert run("-e", "colour", "-e", "id 4", "calls.txt") == "1: colour\n3: id 42"
+            assert run("-e", "-v", "calls.txt") == "4: use -v here"
+            assert run("-w", "-e", "colo", "-e", "color", "calls.txt") == "2: color"
+            assert run("-e", "zzz", "-e", "yyy", "calls.txt").startswith('no line matches "zzz" or "yyy" in 1 file')
+            for bad in (["-m", "5", "x"], ["x", "-e"]):
+                try:
+                    run(*bad)
+                    raise AssertionError("no error for %s" % bad)
+                except Fail:
+                    pass
+    finally:
+        D.GREP_INLINE_S = keep_inline
+
+
 def test_squeeze_keeps_errors_and_the_original():
     import json
     import types
