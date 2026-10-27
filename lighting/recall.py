@@ -16,7 +16,9 @@ warum wieso weshalb welche welcher welches welchen wann wer wen wem woher wohin 
 this that these those what when where why how have has had get got want need just also more some any all
 """.split())
 TOKEN = re.compile(r"[@#]|[^\W\d_][\w-]*", re.U)
-NOT_TYPED = re.compile(r"\[SYSTEM NOTIFICATION|<task-notification>|^\s*<(?:system-reminder|local-command-\w+|command-name)>")
+NOT_TYPED = re.compile(r"\[SYSTEM NOTIFICATION|<task-notification>|^\s*<(?:system-reminder|local-command-\w+|command-name)>|"
+                       r"^\s*This session is being continued from a previous conversation")
+PATH = re.compile(r"(?<![\w/.:])(?:[A-Za-z]:|~|\.{1,2})?[\\/][^\s\"'<>|]*")
 
 
 def words(text):
@@ -25,6 +27,10 @@ def words(text):
         if t in ("@", "#") or (len(t) > 2 and t not in STOP):
             out.append(t)
     return out
+
+
+def typed_words(text):
+    return words(PATH.sub(" ", text or ""))
 
 
 def stem(w):
@@ -49,24 +55,24 @@ def routine_words(r):
             arg = arg[4:].split()[0] if arg[4:].split() else ""
         app = re.sub(r"^(?:[a-z]+://)?(?:www\.)?", "", arg).split("/")[0].split(".")[0].split(":")[0]
     ws = set(words(r.get("name", "").replace("-", " ")) + list(r.get("tags") or []))
-    return {stem(w) for w in ws if w}, stem(app) if app else ""
+    return {stem(w) for w in ws if w}, app.split()[0] if app.split() else ""
 
 
-def score(prompt_stems, r):
+def score(prompt_words, r):
     ws, app = routine_words(r)
-    shared = prompt_stems & ws
-    app_hit = bool(app) and app in prompt_stems
-    other = shared - {app}
+    shared = {stem(w) for w in prompt_words} & ws
+    app_hit = bool(app) and app in prompt_words
+    other = shared - {stem(app)}
     return app_hit, len(other)
 
 
-def fits(prompt_stems, r):
-    app_hit, other = score(prompt_stems, r)
+def fits(prompt_words, r):
+    app_hit, other = score(prompt_words, r)
     return app_hit and other >= 1
 
 
 def note_prompt(prompts, text):
-    ws = words(text)
+    ws = typed_words(text)
     if ws:
         prompts.append((time.time(), ws))
         del prompts[:-5]
@@ -109,30 +115,35 @@ def cmd_suggest(ctx, pos, flags):
         print("slow hook suggest: memory %.0f ms" % (spent * 1000), file=sys.stderr, flush=True)
     weekly = brain.weekly_tip()
     tip = "\n".join(mem + ([weekly] if weekly else []))
-    stems = {stem(w) for w in words(prompt)}
-    if len(stems) < 2:
+    ws = set(typed_words(prompt))
+    if len({stem(w) for w in ws}) < 2:
         return tip
     now = time.time()
     hits = []
     for r in routines.load_all():
-        if r.get("flaky") or now - ctx.told.get(r["name"], 0) < D.SUGGEST_EVERY_S or not fits(stems, r):
+        if r.get("flaky") or r.get("stats", {}).get("offered", 0) >= D.SUGGEST_IGNORED:
             continue
-        app_hit, other = score(stems, r)
+        if now - ctx.told.get(r["name"], 0) < D.SUGGEST_EVERY_S or not fits(ws, r):
+            continue
+        app_hit, other = score(ws, r)
         hits.append((app_hit, other, r.get("stats", {}).get("ok", 0), r))
     hits.sort(key=lambda h: (h[0], h[1], h[2]), reverse=True)
     lines = []
     for *_, r in hits[:2]:
         ctx.told[r["name"]] = now
+        st = r.setdefault("stats", {})
+        st["offered"] = st.get("offered", 0) + 1
+        routines.save(r)
         lines.append("Lighting routine fits this request (one call, swap the values): %s" % routines.usage(r))
     return "\n".join(lines + ([tip] if tip else []))
 
 
 def find(query):
     from lighting import routines
-    stems = {stem(w) for w in words(query)}
+    ws = set(words(query))
     ranked = []
     for r in routines.load_all():
-        app_hit, other = score(stems, r)
+        app_hit, other = score(ws, r)
         if app_hit or other:
             ranked.append((other + (1 if app_hit else 0), r))
     ranked.sort(key=lambda x: -x[0])
