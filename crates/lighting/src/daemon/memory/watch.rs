@@ -1,7 +1,9 @@
 use std::path::Path;
 
+#[cfg(any(windows, test))]
 const SKIP: &[&str] = &[".obsidian", ".obsidian-mcp", ".trash", "templates", ".git"];
 
+#[cfg(any(windows, test))]
 pub fn matters(rel: &str) -> bool {
     let rel = rel.replace('\\', "/").to_lowercase();
     let first = rel.split('/').next().unwrap_or("");
@@ -101,6 +103,7 @@ mod sys {
         }
         let dir = Dir(handle);
         let work = move || {
+            let dir = dir;
             let mut buf = vec![0u32; BUF_WORDS];
             loop {
                 let mut got = 0u32;
