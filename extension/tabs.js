@@ -146,6 +146,10 @@ export function noteFocus(id) {
   if (id !== chrome.windows.WINDOW_ID_NONE && Date.now() >= settleUntil) focusedAt[id] = Date.now();
 }
 
+export function focusInfo(id) {
+  return { born: born[id] || null, focused: focusedAt[id] || null, now: Date.now() };
+}
+
 export function userPicked(id) {
   if (focusedAt[id] === undefined) return false;
   return born[id] === undefined || focusedAt[id] - born[id] >= FOCUS_GRACE_MS;
@@ -170,9 +174,8 @@ export async function ownWindows() {
 async function tabInOwnWindow(label) {
   const w = await loadWins();
   if (w[label] !== undefined && (await alive(w[label]))) return chrome.tabs.create({ windowId: w[label], url: "about:blank", active: true });
-  const asked = Date.now();
   const nw = await chrome.windows.create({ url: "about:blank", focused: false });
-  born[nw.id] = asked;
+  born[nw.id] = Date.now();
   w[label] = nw.id;
   chrome.storage.local.set({ wins: w }).catch(() => {});
   return nw.tabs && nw.tabs[0] ? nw.tabs[0] : (await chrome.tabs.query({ windowId: nw.id }))[0];

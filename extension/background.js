@@ -728,7 +728,8 @@ async function route(cmd, a, tab) {
       if (shut.length) await chrome.tabs.remove(shut).catch(() => {});
       if (shut.includes(T.getTarget())) T.setTarget(null);
       const why = tabs.filter((t) => !shut.includes(t.id)).map((t) => (own.has(t.windowId) ? "front" : "yours"));
-      return { out: "", closed: shut.length, kept: tabs.length - shut.length, why, shut: shut.map((id) => "t" + T.sid(id)) };
+      const focus = tabs.filter((t) => !shut.includes(t.id)).map((t) => Object.assign({ window: t.windowId, last: last ? last.id : null, lastFocused: !!(last && last.focused) }, T.focusInfo(t.windowId)));
+      return { out: "", closed: shut.length, kept: tabs.length - shut.length, why, focus, shut: shut.map((id) => "t" + T.sid(id)) };
     }
     case "keep": {
       const only = Array.isArray(a.only) ? new Set(a.only.map((x) => T.rid(x)).filter((x) => x !== null)) : null;

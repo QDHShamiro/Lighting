@@ -3,6 +3,7 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use regex::Regex;
+use serde_json::{Value, json};
 
 use super::super::Daemon;
 use super::super::ctx::Ctx;
@@ -96,6 +97,15 @@ fn landed(d: &Daemon, ctx: &mut Ctx, words: &[&str], want: &str) -> (bool, Strin
         thread::sleep(LANDED_GAP);
     }
     (false, out)
+}
+
+fn focus_probe(r: &Run) -> String {
+    let Ok(host) = super::super::web::ensure_host(r.d) else { return "no host".into() };
+    let args = json!({"close": false, "only": r.ctx.owned});
+    match host.call("cleanup", args, None, Duration::from_secs(5), Some(r.ctx.group.as_str())) {
+        Ok(v) => v.get("focus").map_or_else(|| v.to_string(), Value::to_string),
+        Err(_) => "no answer".into(),
+    }
 }
 
 pub fn browser(r: &mut Run, srv: &Server, decoy: &str) {
@@ -227,7 +237,11 @@ pub fn browser(r: &mut Run, srv: &Server, decoy: &str) {
         r.skip("done closes tabs (other Lighting tabs or launched apps are open)");
         r.step("close throwaway tab", &["close", &tref], ok);
     } else {
-        r.step("done closes tabs", &["done"], |o, e| !e && o.starts_with("closed 1 tab"));
+        let probe = focus_probe(r);
+        let out = r.step("done closes tabs", &["done"], |o, e| !e && o.starts_with("closed 1 tab"));
+        if !out.starts_with("closed 1 tab") {
+            r.rows.push(format!("DIAG {:<26} | {probe}", "focus before done"));
+        }
         r.step("done kept the kept tab", &["tabs"], |o, _| !listed(o, &tref, true) && listed(o, decoy, false));
     }
     r.step("close kept tab", &["close", decoy, "--force"], ok);
