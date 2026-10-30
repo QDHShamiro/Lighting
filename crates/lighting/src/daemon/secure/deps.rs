@@ -141,15 +141,21 @@ fn details(id: &str) -> Option<Value> {
 }
 
 fn fixed_in(vuln: &Value, dep: &Dep) -> Option<String> {
-    vuln["affected"].as_array()?.iter().filter(|a| a["package"]["name"].as_str() == Some(dep.name.as_str())).find_map(
-        |a| {
-            a["ranges"]
-                .as_array()?
-                .iter()
-                .flat_map(|r| r["events"].as_array().cloned().unwrap_or_default())
-                .find_map(|e| e["fixed"].as_str().map(String::from))
-        },
-    )
+    let now = version_key(&dep.version);
+    vuln["affected"]
+        .as_array()?
+        .iter()
+        .filter(|a| a["package"]["name"].as_str() == Some(dep.name.as_str()))
+        .flat_map(|a| a["ranges"].as_array().cloned().unwrap_or_default())
+        .filter(|r| r["type"].as_str() != Some("GIT"))
+        .flat_map(|r| r["events"].as_array().cloned().unwrap_or_default())
+        .filter_map(|e| e["fixed"].as_str().map(String::from))
+        .filter(|v| version_key(v) > now)
+        .min_by_key(|v| version_key(v))
+}
+
+pub fn version_key(v: &str) -> Vec<u64> {
+    v.split(|c: char| !c.is_ascii_digit()).filter(|p| !p.is_empty()).map(|p| p.parse().unwrap_or(0)).collect()
 }
 
 fn line_of(root: &Path, dep: &Dep) -> usize {
@@ -198,7 +204,7 @@ pub fn check(root: &Path, deps: &[Dep]) -> Result<Vec<Finding>, String> {
         let shown: Vec<&str> = ids.iter().take(3).map(String::as_str).collect();
         let more = if ids.len() > 3 { format!(" +{}", ids.len() - 3) } else { String::new() };
         let about = if about.is_empty() { String::new() } else { format!(": {about}") };
-        fixes.sort();
+        fixes.sort_by_key(|v| version_key(v));
         let fix = fixes.last().map_or("no fixed version listed yet, check the advisory".to_string(), |v| {
             format!("update to {v} or newer")
         });
@@ -239,6 +245,15 @@ mod tests {
         let names: Vec<String> = req.into_iter().map(|d| format!("{}=={}", d.name, d.version)).collect();
         assert_eq!(names, vec!["requests==2.19.0", "flask==2.0.1"]);
         let pom_text = "<dependency><groupId>org.yaml</groupId><artifactId>snakeyaml</artifactId><version>1.30</version></dependency>\n<dependency><groupId>a</groupId><artifactId>b</artifactId><version>${v}</version></dependency>";
+        let mut fixes = vec!["2.9.0", "2.10.1", "2.10.0"];
+        fixes.sort_by_key(|v| version_key(v));
+        assert_eq!(fixes, vec!["2.9.0", "2.10.0", "2.10.1"]);
+        let vuln = json!({"affected": [{"package": {"name": "requests"}, "ranges": [
+            {"type": "GIT", "events": [{"introduced": "0"}, {"fixed": "74ea7cf7a6a27a4eeb2ae24e162bcc942a6706d5"}]},
+            {"type": "ECOSYSTEM", "events": [{"introduced": "0"}, {"fixed": "1.9.0"}, {"introduced": "2.0"}, {"fixed": "2.20.0"}]}
+        ]}]});
+        let dep = Dep { file: "r.txt".into(), ecosystem: "PyPI", name: "requests".into(), version: "2.19.0".into() };
+        assert_eq!(fixed_in(&vuln, &dep).as_deref(), Some("2.20.0"));
         let deps = pom("pom.xml", pom_text);
         assert_eq!(deps.len(), 1);
         assert_eq!((deps[0].name.as_str(), deps[0].version.as_str()), ("org.yaml:snakeyaml", "1.30"));

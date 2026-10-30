@@ -25,6 +25,15 @@ fn run(home: &Path, args: &[&str]) -> (i32, String) {
     (out.status.code().unwrap_or(-1), String::from_utf8_lossy(&out.stdout).trim_end().to_string())
 }
 
+struct Gone(PathBuf);
+
+impl Drop for Gone {
+    fn drop(&mut self) {
+        let _ = run(&self.0, &["stop"]);
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
 fn model(asked: Arc<Mutex<Vec<Value>>>) -> u16 {
     let server = TcpListener::bind("127.0.0.1:0").unwrap();
     let port = server.local_addr().unwrap().port();
@@ -63,6 +72,7 @@ fn sessions_are_learned_into_notes_and_vault_pages() {
     let _ = fs::remove_dir_all(&home);
     fs::create_dir_all(&home).unwrap();
     fs::write(home.join("v3"), "").unwrap();
+    let _gone = Gone(home.clone());
     let asked = Arc::new(Mutex::new(Vec::new()));
     let port = model(Arc::clone(&asked));
     let cfg =
@@ -111,5 +121,4 @@ fn sessions_are_learned_into_notes_and_vault_pages() {
     );
     let state = run(&home, &["memory"]).1;
     assert!(state.contains("learns with: brain at 127.0.0.1:") && state.contains("0 sessions to learn"), "{state}");
-    let _ = fs::remove_dir_all(&home);
 }

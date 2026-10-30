@@ -45,6 +45,9 @@ const VALUED: &[&str] = &[
     "exclude-dir",
     "max-count",
     "out",
+    "ask",
+    "at",
+    "fps",
 ];
 const MULTI: &[&str] = &["glob", "include", "exclude", "exclude-dir"];
 const ALIAS: &[(&str, &str)] = &[

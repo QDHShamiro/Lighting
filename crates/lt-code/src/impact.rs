@@ -62,7 +62,13 @@ impl Index {
         for s in hits {
             let lang = langs.get(&s.path);
             let refs: Vec<(String, i64, String)> = refs_q
-                .query_map([&s.low], |r| Ok((r.get(0)?, r.get(1)?, r.get::<_, Option<String>>(2)?.unwrap_or_default())))
+                .query_map([&s.low], |r| {
+                    Ok((
+                        r.get::<_, String>(0)?,
+                        r.get::<_, i64>(1)?,
+                        r.get::<_, Option<String>>(2)?.unwrap_or_default(),
+                    ))
+                })
                 .map_err(err)?
                 .filter_map(Result::ok)
                 .filter(|(p, l, _)| keep(p) && langs.get(p) == lang && !(p == &s.path && s.line <= *l && *l <= s.end))

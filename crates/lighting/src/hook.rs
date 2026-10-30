@@ -292,10 +292,25 @@ mod tests {
 
     const SLOW_CI: Duration = Duration::from_secs(20);
 
-    fn scratch(name: &str) -> Paths {
+    struct Scratch(Paths, PathBuf);
+
+    impl std::ops::Deref for Scratch {
+        type Target = Paths;
+        fn deref(&self) -> &Paths {
+            &self.0
+        }
+    }
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.1);
+        }
+    }
+
+    fn scratch(name: &str) -> Scratch {
         let root = env::temp_dir().join(format!("lt-hook-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
-        Paths::new(&root.join(".lighting"))
+        Scratch(Paths::new(&root.join(".lighting")), root)
     }
 
     fn session(holdout: bool) -> String {

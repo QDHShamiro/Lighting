@@ -87,7 +87,9 @@ fn scratch(home: &Path, name: &str) -> PathBuf {
     dir
 }
 
-fn times(c: &Call) -> Result<(Option<f64>, Option<f64>, Vec<f64>), Fail> {
+type Times = (Option<f64>, Option<f64>, Vec<f64>);
+
+fn times(c: &Call) -> Result<Times, Fail> {
     let bad = || Fail::hint("--from, --to and --at take seconds or m:ss", TIMES_HINT);
     let lo = tools::seconds(c.val("from")).map_err(|()| bad())?;
     let hi = tools::seconds(c.val("to")).map_err(|()| bad())?;

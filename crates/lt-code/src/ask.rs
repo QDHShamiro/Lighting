@@ -115,7 +115,7 @@ impl Index {
         }
         let base = if common > 0 { format!("{}/", paths[0][..common].join("/")) } else { String::new() };
         let mut ranked: Vec<(String, usize)> = tops.into_iter().collect();
-        ranked.sort_by(|a, b| b.1.cmp(&a.1));
+        ranked.sort_by_key(|r| std::cmp::Reverse(r.1));
         let folders: Vec<String> = ranked.iter().take(FOLDERS).map(|(k, n)| format!("{k} ({n})")).collect();
         let under = if base.is_empty() { String::new() } else { format!(" under {base}") };
         lines.push(format!("folders{under}: {}", folders.join(", ")));

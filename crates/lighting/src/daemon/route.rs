@@ -129,7 +129,8 @@ fn on_web(d: &Daemon, ctx: &Ctx, c: &Call) -> bool {
         Some("web") => return true,
         _ => {}
     }
-    !(["snap", "click", "type", "press", "scroll", "hover", "drag", "shot"].contains(&verb) && !web::any_browser(d))
+    let needs_browser = ["snap", "click", "type", "press", "scroll", "hover", "drag", "shot"].contains(&verb);
+    !needs_browser || web::any_browser(d)
 }
 
 pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
@@ -182,8 +183,9 @@ fn waits_on_app(ctx: &Ctx, c: &Call) -> bool {
         return true;
     }
     let Some(first) = c.pos.first() else { return false };
+    let number = !first.is_empty() && first.chars().all(|ch| ch.is_ascii_digit());
     ctx.kind() == Some("app")
-        && !(!first.is_empty() && first.chars().all(|ch| ch.is_ascii_digit()))
+        && !number
         && web::ref_kind(first).is_none()
         && !first.starts_with("url:")
         && !first.starts_with("css:")

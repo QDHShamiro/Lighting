@@ -135,7 +135,7 @@ impl Index {
         let wanted: Vec<&str> = todo
             .iter()
             .map(|(_, l, _)| *l)
-            .filter(|l| !lock(&FAILED).get(*l).is_some_and(|at| at.elapsed() < RETRY))
+            .filter(|l| lock(&FAILED).get(*l).is_none_or(|at| at.elapsed() >= RETRY))
             .collect::<HashSet<_>>()
             .into_iter()
             .collect();
