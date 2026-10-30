@@ -3,94 +3,160 @@ name: release
 on:
   push:
     tags: ["v*"]
+    branches: ["feat/lighting-3.0"]
+    paths: [".github/workflows/release.yml", "mcpb/**"]
 
 permissions:
   contents: read
 
+env:
+  CARGO_TERM_COLOR: never
+  CARGO_INCREMENTAL: "0"
+
 jobs:
-  clients:
+  build:
     strategy:
+      fail-fast: true
       matrix:
         include:
           - os: windows-latest
-            name: lighting.exe
+            pack: windows-x64
+            client: lighting.exe
           - os: macos-latest
-            name: lighting-macos
+            pack: macos-universal
+            client: lighting-macos
           - os: ubuntu-24.04
-            name: lighting-linux-x64
+            pack: linux-x64
+            client: lighting-linux-x64
           - os: ubuntu-24.04-arm
-            name: lighting-linux-arm64
+            pack: linux-arm64
+            client: lighting-linux-arm64
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
-      - name: Build (Windows)
-        if: runner.os == 'Windows'
-        working-directory: client
+      - uses: actions/checkout@v7
+      - name: Toolchain
         shell: bash
-        run: cargo build --release --locked && cp target/release/lighting.exe ../${{ matrix.name }}
-      - name: Build (macOS universal)
-        if: runner.os == 'macOS'
-        working-directory: client
         run: |
-          rustup target add x86_64-apple-darwin aarch64-apple-darwin
-          cargo build --release --locked --target aarch64-apple-darwin
-          cargo build --release --locked --target x86_64-apple-darwin
-          lipo -create -output ../${{ matrix.name }} target/aarch64-apple-darwin/release/lighting target/x86_64-apple-darwin/release/lighting
-      - name: Build (Linux)
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          if [ "$RUNNER_OS" = macOS ]; then rustup target add x86_64-apple-darwin aarch64-apple-darwin; fi
+      - name: Linux packages
         if: runner.os == 'Linux'
-        working-directory: client
-        run: cargo build --release --locked && cp target/release/lighting ../${{ matrix.name }}
-      - uses: actions/upload-artifact@v4
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends libxkbcommon-dev libwebkit2gtk-4.1-dev libgtk-3-dev
+      - name: Build
+        shell: bash
+        run: |
+          mkdir out
+          if [ "$RUNNER_OS" = macOS ]; then
+            for t in aarch64-apple-darwin x86_64-apple-darwin; do
+              cargo build --release --locked --target "$t" -p lighting -p lighting-ui
+            done
+            for b in lighting lighting-ui; do
+              lipo -create -output "out/$b" "target/aarch64-apple-darwin/release/$b" "target/x86_64-apple-darwin/release/$b"
+            done
+          else
+            cargo build --release --locked -p lighting -p lighting-ui
+            if [ "$RUNNER_OS" = Windows ]; then
+              cp target/release/lighting.exe target/release/lighting-ui.exe target/release/lighting-task.exe out/
+            else
+              cp target/release/lighting target/release/lighting-ui out/
+            fi
+          fi
+      - name: Pack
+        shell: bash
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          [ "$GITHUB_REF_TYPE" = tag ] || v="$(git rev-parse --short HEAD)"
+          L=out/lighting; [ "$RUNNER_OS" = Windows ] && L=out/lighting.exe
+          "$L" --version
+          d="lighting-$v-${{ matrix.pack }}"
+          mkdir -p "pack/$d/skills" dist
+          cp -R out/. "pack/$d/"
+          cp -R extension "pack/$d/extension"
+          cp -R skills/lighting "pack/$d/skills/lighting"
+          cp LICENSE NOTICE README.md "pack/$d/"
+          cp "$L" "dist/${{ matrix.client }}"
+          if [ "$RUNNER_OS" = Windows ]; then
+            (cd pack && 7z a -tzip -bso0 "../dist/$d.zip" "$d")
+          else
+            tar -C pack -czf "dist/$d.tar.gz" "$d"
+          fi
+          ls -l dist
+      - uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.name }}
-          path: ${{ matrix.name }}
+          name: ${{ matrix.pack }}
+          path: dist/*
 
   release:
-    needs: clients
+    needs: build
     runs-on: ubuntu-24.04
     permissions:
       contents: write
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v4
-      - name: Tag matches the plugin version
+      - uses: actions/checkout@v7
+      - name: Tag matches the versions
+        if: github.ref_type == 'tag'
         run: |
-          v=$(python3 -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
-          test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME but plugin.json says $v"; exit 1; }
-      - uses: actions/download-artifact@v4
+          v="${GITHUB_REF_NAME#v}"
+          p=$(jq -r .version .claude-plugin/plugin.json)
+          c=$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"/\1/p' Cargo.toml)
+          test "$p" = "$v" || { echo "tag $GITHUB_REF_NAME but plugin.json says $p"; exit 1; }
+          test "$c" = "$v" || { echo "tag $GITHUB_REF_NAME but Cargo.toml says $c"; exit 1; }
+      - uses: actions/download-artifact@v7
         with:
-          path: built
+          path: dist
           merge-multiple: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
-      - name: Assets
+      - name: Desktop extension (mcpb) and source
         run: |
-          mkdir dist
-          chmod +x built/lighting-*
-          cp built/* dist/
-          cp built/lighting.exe built/lighting-macos bin/
-          python3 mcpb/build.py "$PWD/dist/lighting.mcpb"
-          git archive --format=zip -o "dist/lighting-$GITHUB_REF_NAME.zip" HEAD
-      - uses: actions/attest-build-provenance@v2
+          chmod +x dist/lighting-macos dist/lighting-linux-*
+          s=mcpb/stage
+          mkdir -p "$s/bin" "$s/skills"
+          cp dist/lighting.exe dist/lighting-macos dist/lighting-linux-x64 dist/lighting-linux-arm64 "$s/bin/"
+          cp -R extension "$s/extension"
+          cp -R skills/lighting "$s/skills/lighting"
+          cp LICENSE NOTICE README.md "$s/"
+          if [ -f docs/icon.png ]; then cp docs/icon.png "$s/icon.png"; fi
+          jq --arg v "$(jq -r .version .claude-plugin/plugin.json)" '.version = $v' mcpb/manifest.json > "$s/manifest.json"
+          npx -y @anthropic-ai/mcpb@2.1.2 pack "$s" "$PWD/dist/lighting.mcpb"
+          rm -rf "$s"
+          git archive --format=zip -o "dist/lighting-${GITHUB_REF_NAME//\//-}-source.zip" HEAD
+      - uses: actions/attest-build-provenance@v3
+        if: github.ref_type == 'tag'
         with:
           subject-path: dist/*
       - name: Checksums
         run: |
           cd dist
           sha256sum * > SHA256SUMS.txt
-          for f in lighting.exe lighting-macos lighting-linux-x64 lighting-linux-arm64; do
-            git -C .. show "HEAD:bin/$f" > "/tmp/$f" 2> /dev/null && echo "$(sha256sum "/tmp/$f" | cut -d' ' -f1)  bin/$f (the file in the repo at this tag)" >> SHA256SUMS.txt
-          done
           cat SHA256SUMS.txt
       - name: Release notes from CHANGELOG.md
         run: |
-          awk -v v="${GITHUB_REF_NAME#v}" 'index($0, "## [" v "]") == 1 {on=1; next} on && index($0, "## [") == 1 {exit} on' CHANGELOG.md > notes.md
+          v="${GITHUB_REF_NAME#v}"
+          [ "$GITHUB_REF_TYPE" = tag ] || v=$(sed -n 's/^## \[\([^]]*\)\].*/\1/p' CHANGELOG.md | head -1)
+          awk -v v="$v" 'index($0, "## [" v "]") == 1 {on=1; next} on && index($0, "## [") == 1 {exit} on' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "no CHANGELOG section [$v]"; exit 1; }
           printf '\n### Checksums (SHA-256)\n```\n' >> notes.md
           cat dist/SHA256SUMS.txt >> notes.md
           printf '```\nEvery file here has a GitHub build attestation: `gh attestation verify <file> -R QDHShamiro/Lighting`\n' >> notes.md
+      - name: Keep the files (dry run)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-dry-run
+          path: |
+            dist/*
+            notes.md
+          retention-days: 7
       - name: Publish
+        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" dist/* --title "Lighting $GITHUB_REF_NAME" --notes-file notes.md
