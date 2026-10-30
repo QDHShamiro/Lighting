@@ -85,7 +85,7 @@ pub fn image_note(d: &Daemon, ctx: &mut Ctx, raw: &[u8]) -> Result<String, Fail>
     save_image(d, ctx, &img, "image", false, width(d, &Call::default(), None)?, 0.0, None)
 }
 
-fn out_path(ctx: &Ctx, c: &Call, kinds: &[&str], hint: &str) -> Result<Option<PathBuf>, Fail> {
+pub fn out_path(ctx: &Ctx, c: &Call, kinds: &[&str], hint: &str) -> Result<Option<PathBuf>, Fail> {
     let raw = match c.flags.get("out") {
         None => return Ok(None),
         Some(Flag::On) => "",

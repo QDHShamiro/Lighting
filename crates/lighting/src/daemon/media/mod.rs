@@ -1,4 +1,4 @@
-mod gemini;
+pub mod gemini;
 mod listen;
 mod scenes;
 pub mod tools;
@@ -16,6 +16,7 @@ use lt_core::{Call, Fail, Flag, out_file};
 use regex::Regex;
 use serde_json::{Map, Value, json};
 
+use super::channels::ledger;
 use super::ctx::Ctx;
 use super::{Daemon, Out, Pending, config, route, web};
 use listen::{Job as ListenJob, Live, Src};
@@ -237,16 +238,78 @@ fn listen(d: &Daemon, ctx: &mut Ctx, c: &Call, before: String) -> Result<Out, Fa
     };
     let home = d.home.clone();
     let dir = scratch(&home, "listen");
+    let page = match &job.src {
+        Src::Url(url) if !job.local && web::any_browser(d) => Some(url.clone()),
+        _ => None,
+    };
+    let url_job = matches!(job.src, Src::Url(_));
+    let fallback = page.is_some();
+    let page_url = page.unwrap_or_default();
+    let question = job.question.clone();
     let work = move || {
         let got = listen::run(&home, &job, &dir);
         let _ = fs::remove_dir_all(&dir);
-        got
+        match got {
+            Err(f) if fallback => Ok(Err(f)),
+            other => other.map(Ok),
+        }
     };
-    let pending = background("listen", LISTEN_WAIT, SHORTER, work, move |d, ctx, text| {
+    let finish = move |d: &Daemon, ctx: &mut Ctx, got: Result<String, Fail>| {
+        let text = match got {
+            Ok(text) => {
+                if url_job {
+                    ledger::note(&d.home, "audio", "yt-dlp", true, "");
+                }
+                text
+            }
+            Err(f) => {
+                ledger::note(&d.home, "audio", "yt-dlp", false, &f.msg);
+                page_captions(d, ctx, &page_url, &f, (lo, hi), question.as_deref())?
+            }
+        };
         let lead = if before.is_empty() { String::new() } else { format!("{before}\n") };
         Ok(web::capped(d, ctx, &format!("{lead}{head}\n{text}"), "listen", None, LISTEN_CHARS))
-    });
-    Ok(Out::Wait(pending))
+    };
+    Ok(Out::Wait(background("listen", LISTEN_WAIT, SHORTER, work, finish)))
+}
+
+fn page_captions(
+    d: &Daemon,
+    ctx: &mut Ctx,
+    target: &str,
+    failed: &Fail,
+    (lo, hi): (Option<f64>, Option<f64>),
+    question: Option<&str>,
+) -> Result<String, Fail> {
+    let t0 = std::time::Instant::now();
+    let url = target;
+    let live = Fail::hint(
+        failed.msg.clone(),
+        format!("lighting open {url}, then lighting listen --live (records the sound in the browser)"),
+    );
+    web::call(d, ctx, "open", web::obj(json!({"url": url, "new": true, "quiet": true})), CUES_TIMEOUT * 2.0)
+        .map_err(|_| live.clone())?;
+    let got = web::call(d, ctx, "media-audio", web::obj(json!({"ref": null, "op": "cues"})), CUES_TIMEOUT)
+        .map_err(|_| live.clone())?;
+    let segs: Vec<(f64, String)> = got
+        .get("cues")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|cue| Some((cue.get(0)?.as_f64()?, cue.get(1)?.as_str()?.to_string())))
+        .collect();
+    if segs.is_empty() {
+        ledger::note(&d.home, "audio", "browser", false, "no captions on the page");
+        return Err(live);
+    }
+    ledger::note(&d.home, "audio", "browser", true, "");
+    let lines = tools::lines_of(&segs, 0.0, lo, hi);
+    if let Some(q) = question {
+        return listen::ask_text(&d.home, q, &lines, t0);
+    }
+    let lang = got.get("lang").and_then(Value::as_str).unwrap_or("?");
+    let why: String = failed.msg.chars().take(120).collect();
+    Ok(format!("transcript ({lang}, captions on the page in the browser; yt-dlp: {why}):\n{}", lines.join("\n")))
 }
 
 fn number(c: &Call, key: &str) -> Result<Option<f64>, Fail> {

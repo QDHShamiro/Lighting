@@ -6,17 +6,18 @@ use std::sync::LazyLock;
 use std::thread;
 use std::time::Duration;
 
-use lt_core::{Call, Fail};
+use lt_core::{Call, Fail, Flag};
 use regex::{Captures, Regex};
 use ureq::ResponseExt;
 use ureq::tls::{RootCerts, TlsConfig};
 
 use super::super::Daemon;
+use super::super::channels::{self, github, ledger};
 use super::super::ctx::Ctx;
 use super::super::words::{hit, terms};
 use super::shot::image_note;
 use super::url::{leak_check, local_file};
-use super::{TEXT_CHARS, capped, head, html, number, re};
+use super::{TEXT_CHARS, any_browser, capped, cmds, head, html, number, re};
 
 const IMAGE_EXT: &[&str] = &[".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"];
 const HTML_EXT: &[&str] = &[".html", ".htm", ".xhtml"];
@@ -32,6 +33,11 @@ static CODE: LazyLock<Regex> = LazyLock::new(|| re(r"```[\s\S]*?```|`[^`\n]*`"))
 static LINK: LazyLock<Regex> = LazyLock::new(|| re(r"!?\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)"));
 static FOOT: LazyLock<Regex> = LazyLock::new(|| re(r"\[\^[^\]]+\](:?)"));
 static PARA: LazyLock<Regex> = LazyLock::new(|| re(r"\n\s*\n"));
+static GATE: LazyLock<Regex> = LazyLock::new(|| {
+    re(
+        r"(?i)<title>\s*(just a moment|attention required|access denied|verify you are human|are you a robot|checking your browser)",
+    )
+});
 static AGENT: LazyLock<ureq::Agent> = LazyLock::new(|| {
     ureq::Agent::config_builder()
         .timeout_global(Some(TIMEOUT))
@@ -69,9 +75,26 @@ pub fn read(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     for url in c.pos.iter().filter(|u| URL.is_match(u)) {
         leak_check(d, url, c)?;
     }
+    let mut lead = String::new();
+    if let [one] = c.pos.as_slice()
+        && !c.on("page")
+        && let Some(page) = github::parse(one)
+    {
+        match github::read(&d.home, &page) {
+            Ok(text) => return Ok(capped(d, ctx, &text, "read", None, chars)),
+            Err(e) => lead = format!("! github: {} (read the page instead)\n", e.text()),
+        }
+    }
     let sources: Vec<Source> = c.pos.iter().map(|u| source(ctx, u)).collect();
     if let [one] = sources.as_slice() {
-        return read_one(d, ctx, grab(one), &c.pos[0], c, chars);
+        let got = match one {
+            Source::Web(url) => direct_or_browser(d, ctx, url, c, chars)?,
+            Source::File(_) => Ok(grab(one)),
+        };
+        return match got {
+            Ok(got) => read_one(d, ctx, got, &c.pos[0], c, chars).map(|t| format!("{lead}{t}")),
+            Err(text) => Ok(format!("{lead}{text}")),
+        };
     }
     let each = (chars / sources.len().max(1)).max(EACH_MIN);
     let parts: Vec<String> = grab_all(&sources)
@@ -97,6 +120,52 @@ fn read_one(
     }
     let top = format!("[read] {} - {} ({})", head(&page.title, 70), head(&page.place, 90), page.how);
     Ok(capped(d, ctx, &format!("{top}\n{text}"), "read", None, chars))
+}
+
+fn gated(got: &Got) -> bool {
+    got.ctype.contains("html") && GATE.is_match(&String::from_utf8_lossy(&got.raw[..got.raw.len().min(30_000)]))
+}
+
+type Tried = Result<Result<Got, Fail>, String>;
+
+fn direct_or_browser(d: &Daemon, ctx: &mut Ctx, url: &str, c: &Call, chars: usize) -> Result<Tried, Fail> {
+    let key = format!("web:{}", channels::site(url));
+    if ledger::skip(&d.home, &key, "direct", "browser") && any_browser(d) {
+        return browser(d, ctx, url, c, chars, "the direct read failed on this site before").map(Err);
+    }
+    let got = grab(&Source::Web(url.to_string()));
+    let why = match &got {
+        Ok(g) if gated(g) => "the site showed a bot check".to_string(),
+        Ok(_) => {
+            ledger::note(&d.home, &key, "direct", true, "");
+            ledger::note(&d.home, "web", "direct", true, "");
+            return Ok(Ok(got));
+        }
+        Err(e) => e.text().lines().next().unwrap_or("").trim_start_matches("err: ").to_string(),
+    };
+    ledger::note(&d.home, &key, "direct", false, &why);
+    ledger::note(&d.home, "web", "direct", false, &why);
+    if !any_browser(d) {
+        return Ok(Ok(got));
+    }
+    browser(d, ctx, url, c, chars, &why).map(Err)
+}
+
+fn browser(d: &Daemon, ctx: &mut Ctx, url: &str, c: &Call, chars: usize, why: &str) -> Result<String, Fail> {
+    let key = format!("web:{}", channels::site(url));
+    let mut open = Call { name: "open".into(), pos: vec![url.to_string()], ..Call::default() };
+    open.flags.insert("new".into(), Flag::On);
+    let mut text = Call { name: "text".into(), ..Call::default() };
+    if let Some(f) = c.flags.get("f") {
+        text.flags.insert("f".into(), f.clone());
+    }
+    let got = cmds::open(d, ctx, &open).and_then(|_| cmds::text(d, ctx, &text));
+    let failed = got.as_ref().err().map(Fail::text).unwrap_or_default();
+    ledger::note(&d.home, &key, "browser", got.is_ok(), &failed);
+    ledger::note(&d.home, "web", "browser", got.is_ok(), &failed);
+    let body = got?;
+    let top = format!("[read] {} (in the browser: {})", head(url, 90), head(why, 120));
+    Ok(capped(d, ctx, &format!("{top}\n{body}"), "read", None, chars))
 }
 
 fn source(ctx: &Ctx, url: &str) -> Source {

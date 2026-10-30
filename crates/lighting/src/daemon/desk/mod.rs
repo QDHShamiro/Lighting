@@ -24,6 +24,8 @@ mod state;
 #[cfg(windows)]
 mod uia;
 #[cfg(windows)]
+mod video;
+#[cfg(windows)]
 mod win;
 
 #[cfg(windows)]
@@ -91,7 +93,7 @@ mod imp {
     use super::super::{Daemon, Out, Pending};
     use super::state::{self, State};
     use super::view::{score, short};
-    use super::{Halt, Res, act, focus, input, launch, look, snap, win};
+    use super::{Halt, Res, act, focus, input, launch, look, snap, video, win};
 
     const BUSY_WAIT_S: u64 = 10;
     const CHROMIUM_CLASS: &str = "Chrome_WidgetWin_1";
@@ -148,6 +150,9 @@ mod imp {
     pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call, aim: Option<String>) -> Result<Out, Fail> {
         if c.name == "wait" {
             return state::with(ctx, |st, ctx| look::wait(&mut Desk { d, st, ctx }, c, aim.as_deref()));
+        }
+        if c.name == "shot" && c.on("seconds") {
+            return state::with(ctx, |st, ctx| video::video(&mut Desk { d, st, ctx }, c));
         }
         match text_cmd(d, ctx, c, aim.as_deref()) {
             Ok(text) => Ok(Out::Text(text)),

@@ -10,6 +10,7 @@ use lt_core::Fail;
 use regex::Regex;
 use serde_json::{Map, Value, json};
 
+use super::super::channels::ledger;
 use super::super::hosts::lock;
 use super::super::web::sheet;
 use super::gemini;
@@ -156,13 +157,19 @@ pub fn run(home: &Path, job: &Job) -> Result<Done, Fail> {
     let mut notes = Vec::new();
     if !job.frames && !job.local && job.at.is_empty() {
         match by_gemini(home, job, &dir) {
-            Ok(lines) => return Ok(Done { lines, sheet: None }),
+            Ok(lines) => {
+                ledger::note(home, "video", "gemini", true, "");
+                return Ok(Done { lines, sheet: None });
+            }
             Err(f) => {
+                ledger::note(home, "video", "gemini", false, &f.msg);
                 notes.push(format!("Gemini: {}; frames + transcript instead", f.text().trim_start_matches("err: ")))
             }
         }
     }
-    let mut done = frames_and_words(home, job, &dir)?;
+    let done = frames_and_words(home, job, &dir);
+    ledger::note(home, "video", "frames", done.is_ok(), done.as_ref().err().map_or("", |f| f.msg.as_str()));
+    let mut done = done?;
     done.lines.extend(notes.into_iter().map(|n| format!("! {n}")));
     Ok(done)
 }

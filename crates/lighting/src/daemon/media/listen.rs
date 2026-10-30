@@ -307,7 +307,7 @@ fn answered(a: &Answer, model: &str, took: f64) -> String {
     format!("answer (Gemini {model}, {} tokens, call {} today, {took:.1} s):\n{}", a.tokens, a.calls, a.text)
 }
 
-fn ask_text(home: &Path, question: &str, lines: &[String], took: Instant) -> Result<String, Fail> {
+pub fn ask_text(home: &Path, question: &str, lines: &[String], took: Instant) -> Result<String, Fail> {
     let g = gemini::gemini(home)?;
     let prompt = format!("{ASK_TEXT}{}\n\n{}", lt_memory::scrub(question), lines.join("\n"));
     let a = g.ask(home, vec![json!({"text": prompt})], false)?;

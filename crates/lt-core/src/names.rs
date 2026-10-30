@@ -2,6 +2,7 @@ use crate::{Fail, close_match};
 
 const SYSTEM: &[&str] = &[
     "do",
+    "channels",
     "ping",
     "stop",
     "status",
@@ -172,7 +173,7 @@ mod tests {
 
     #[test]
     fn the_known_names_are_the_2x_list_and_secure() {
-        let want = "back bench brain call check claude click clip close code config console demo desktop dialog \
+        let want = "back bench brain call channels check claude click clip close code config console demo desktop dialog \
                     dismiss do done downloads drag expect ext-reload fetch fill focus forget forward frames grep help \
                     hover improve inbox js keep keys launch listen log memory net open phone press read recall record \
                     reload remember reply routine routines run scroll search secure select selftest shot snap squeeze \

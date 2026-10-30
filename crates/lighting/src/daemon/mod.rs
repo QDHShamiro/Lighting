@@ -1,3 +1,4 @@
+mod channels;
 mod config;
 mod ctx;
 mod desk;

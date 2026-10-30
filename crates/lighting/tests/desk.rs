@@ -55,4 +55,12 @@ fn apps_list_windows_share_the_clipboard_and_name_missing_windows() {
     assert!(code == 1 && out.starts_with("err: launch needs an app name, URI or path"), "{out}");
     let (code, out) = home.run(&["launch", "ms-msdt:x"]);
     assert!(code == 1 && out.starts_with("err: ms-msdt: links can run programs or open remote files"), "{out}");
+    let (code, out) = home.run(&["shot", "e5", "--seconds", "2"]);
+    assert!(code == 1 && out.starts_with("err: a video films the screen or a window"), "{out}");
+    let ffmpeg = Command::new("ffmpeg").arg("-version").stdout(Stdio::null()).stderr(Stdio::null()).status();
+    if ffmpeg.is_ok_and(|s| s.success()) {
+        let clip = home.0.join("clip.mp4");
+        let (code, out) = home.run(&["shot", "screen", "--seconds", "1", "--out", &clip.display().to_string()]);
+        assert!(code == 0 && out.starts_with("video ") && out.contains("(1 s, ") && clip.is_file(), "{out}");
+    }
 }

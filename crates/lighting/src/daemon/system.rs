@@ -18,7 +18,7 @@ web     open <url> [-n] [-f \"a|b\"] [--text]   snap [-f \"a|b\"] [-s css|ref] [
         upload <ref> <file>   tabs [-f x]   tab <id>   close [id]   back   forward   reload   table <ref|css>
         dialog accept|dismiss [text]   downloads   console   net [n] [-f x] (JSON the page loaded)
         tools   call <tool> '{json}' [--yes] (WebMCP)
-apps    windows   focus <w3|app:Name>   launch <app|uri|file> [--yes]   close <w3>   clip [set \"text\"]
+apps    windows   focus <w3|app:Name>   launch <app|uri|file> [--yes]   close <w3>   clip [set \"text\"]   shot w3|screen --seconds 10 (mp4)
         snap|click|type|press|scroll|drag|read|shot ... w3 (or app:Name)   wait \"text\" --on app [--gone]
 video   watch <link|file|e40> [\"question\"] [--from 1:00 --to 2:00] [--at 0:10,0:20] [--fps n] [--frames] [--text]
         listen <link|file|e40> [\"question\"] [--from --to] [--live] [--lang de] [--local]   shot --ask \"question\"
@@ -28,7 +28,7 @@ memory  recall \"words\" [--all] [--max n] | recall <id>   remember \"fact\" [--
         wiki | wiki accept <n> [folder] | wiki drop <n> | wiki show <n> (drafts in the vault inbox)
 keys    keys [site] [-f x]   keys add <site> \"ctrl+k=what\"   keys rm <site> <key>
 cleanup done [--quiet]   keep [t]   config cleanup on|off
-system  status   stop   abort   config [key value]   log [n] | log stats [n]   version
+system  status   channels   stop   abort   config [key value]   log [n] | log stats [n]   version
         more <ref> (a squeezed tool output in full, --lines a-b, --grep \"word|other\")
         secure [folder] [--history] [--no-deps] (keys, vulnerable dependencies, risky code; not while a game runs)
 

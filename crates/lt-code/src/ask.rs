@@ -383,9 +383,11 @@ impl Index {
             .iter()
             .map(|(id, blob)| {
                 let dot: f32 = blob
-                    .chunks_exact(2)
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .zip(query)
-                    .map(|(b, q)| half::f16::from_le_bytes([b[0], b[1]]).to_f32() * q)
+                    .map(|(b, q)| half::f16::from_le_bytes(*b).to_f32() * q)
                     .sum();
                 (dot, *id)
             })

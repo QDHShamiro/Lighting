@@ -45,7 +45,7 @@ fn app_text(hwnd: isize) -> String {
 }
 
 impl Desk<'_> {
-    fn region(&mut self, first: Option<&str>) -> Res<(isize, Rect)> {
+    pub(super) fn region(&mut self, first: Option<&str>) -> Res<(isize, Rect)> {
         if first == Some("screen") {
             return Ok((0, win::virtual_screen()));
         }
@@ -98,9 +98,6 @@ pub fn read(x: &mut Desk, c: &Call) -> Res<String> {
 }
 
 pub fn shot(x: &mut Desk, c: &Call) -> Res<String> {
-    if c.on("seconds") {
-        return Err(super::super::route::later("shot --seconds (video) on apps").into());
-    }
     let (hwnd, area) = x.region(c.pos.first().map(String::as_str))?;
     let img = DynamicImage::ImageRgb8(grab_area(area, hwnd)?);
     let key = if hwnd == 0 { "app-screen".to_string() } else { format!("app-{hwnd}") };

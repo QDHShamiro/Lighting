@@ -28,7 +28,12 @@ impl Home {
 impl Drop for Home {
     fn drop(&mut self) {
         let _ = self.run(&["stop"]);
-        let _ = fs::remove_dir_all(&self.0);
+        for _ in 0..30 {
+            if fs::remove_dir_all(&self.0).is_ok() || !self.0.exists() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
     }
 }
 
