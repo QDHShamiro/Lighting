@@ -26,7 +26,8 @@ fn until<T>(limit: Duration, mut f: impl FnMut() -> Option<T>) -> Option<T> {
 }
 
 pub fn reload(d: &Daemon) -> Result<String, Fail> {
-    crate::setup::refresh_extension(&d.home).map_err(|e| Fail::new(format!("could not copy the extension files: {e}")))?;
+    crate::setup::refresh_extension(&d.home)
+        .map_err(|e| Fail::new(format!("could not copy the extension files: {e}")))?;
     let Some(old) = until(FIND_WAIT, || Some(d.hosts.alive()).filter(|h| !h.is_empty())) else {
         return Ok("extension files copied (no browser connected to reload)".into());
     };
