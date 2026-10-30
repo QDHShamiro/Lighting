@@ -1,6 +1,10 @@
+mod client;
+mod daemon;
 mod hook;
 mod host;
 mod mcp;
+mod more;
+mod spawn;
 mod v2;
 
 use std::env;
@@ -15,13 +19,8 @@ fn main() -> ExitCode {
         "hook" if args.get(1).is_some_and(|a| a == "post") => hook::post(),
         origin if origin.starts_with("chrome-extension://") => host::serve(origin),
         "version" | "--version" => println!("{}", env!("CARGO_PKG_VERSION")),
-        _ => {
-            let version = env!("CARGO_PKG_VERSION");
-            eprintln!(
-                "lighting {version}: only `mcp`, `host`, `hook post` and `version` are built so far, the 2.x client does the rest"
-            );
-            return ExitCode::from(2);
-        }
+        "daemon" if daemon::may_serve() => return daemon::serve(),
+        _ => return client::run(&args),
     }
     ExitCode::SUCCESS
 }

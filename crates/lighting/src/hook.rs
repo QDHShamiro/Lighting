@@ -40,7 +40,7 @@ static LISTING: LazyLock<Regex> = LazyLock::new(|| {
 static OWN: LazyLock<Regex> = LazyLock::new(|| re(&format!(r"{SEGMENT}(?:\S*[/\\])?lighting(?:\.exe)?\b")));
 static LOGISH: LazyLock<Regex> =
     LazyLock::new(|| re(r"(?i)\.(?:log|jsonl|out|output|txt|csv)\b|/logs?/|results\.md|tasks/"));
-static KEPT: LazyLock<Regex> = LazyLock::new(|| re(r"headroom[/\\]+out[/\\]+(hr-[0-9a-f]{10})"));
+static KEPT: LazyLock<Regex> = LazyLock::new(|| re(r"(?:headroom[/\\]+out[/\\]+|\bmore\s+)(hr-[0-9a-f]{10})"));
 
 struct Paths {
     state: PathBuf,
@@ -417,11 +417,14 @@ mod tests {
         assert!(run(read.to_string().as_bytes(), &paths, Instant::now(), SLOW_CI).0.is_none());
         let grep = bash_event("s", "grep -n ERROR ~/.lighting/headroom/out/hr-abcdefabcd.txt", &big_log());
         assert!(run(&grep, &paths, Instant::now(), SLOW_CI).0.is_none());
+        let more = bash_event("s", "lighting more hr-1234512345 --grep ERROR", &big_log());
+        assert!(run(&more, &paths, Instant::now(), SLOW_CI).0.is_none());
         let refs: Vec<(Value, Value)> = logged(&paths).iter().map(|e| (e["act"].clone(), e["ref"].clone())).collect();
-        assert_eq!(refs, [(json!("reload"), json!("hr-0123456789")), (json!("reload"), json!("hr-abcdefabcd"))]);
+        let want = ["hr-0123456789", "hr-abcdefabcd", "hr-1234512345"].map(|r| (json!("reload"), json!(r)));
+        assert_eq!(refs, want);
         let other = json!({"tool_name": "Read", "tool_input": {"file_path": "src/main.rs"}});
         assert!(run(other.to_string().as_bytes(), &paths, Instant::now(), SLOW_CI).0.is_none());
-        assert_eq!(logged(&paths).len(), 2);
+        assert_eq!(logged(&paths).len(), 3);
     }
 
     #[test]

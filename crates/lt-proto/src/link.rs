@@ -1,9 +1,10 @@
 use std::io;
 use std::path::Path;
+use std::time::Duration;
 
 use crate::Conn;
 
-pub struct Link(sys::Pipe);
+pub struct Link(pub(crate) sys::Pipe);
 
 impl Link {
     pub fn connect(home: &Path) -> Result<Link, Conn> {
@@ -15,23 +16,27 @@ impl Link {
     }
 
     pub fn recv(&self) -> io::Result<Vec<u8>> {
-        self.0.recv()
+        self.0.recv(None)
+    }
+
+    pub fn recv_within(&self, limit: Duration) -> io::Result<Vec<u8>> {
+        self.0.recv(Some(limit))
     }
 }
 
 #[cfg(not(windows))]
-mod sys {
+pub(crate) mod sys {
     use std::io::{self, Read, Write};
     use std::os::unix::net::UnixStream;
     use std::path::Path;
+    use std::time::Duration;
 
     use crate::Conn;
 
-    pub struct Pipe(UnixStream);
+    pub struct Pipe(pub(crate) UnixStream);
 
     pub fn open(home: &Path) -> Result<Pipe, Conn> {
-        let path = home.join(format!("lighting-{}.sock", crate::user()));
-        UnixStream::connect(path).map(Pipe).map_err(|_| Conn::Missing)
+        UnixStream::connect(crate::address(home)).map(Pipe).map_err(|_| Conn::Missing)
     }
 
     impl Pipe {
@@ -43,7 +48,16 @@ mod sys {
             (&self.0).write_all(&framed)
         }
 
-        pub fn recv(&self) -> io::Result<Vec<u8>> {
+        pub fn recv(&self, limit: Option<Duration>) -> io::Result<Vec<u8>> {
+            self.0.set_read_timeout(limit)?;
+            let got = self.read_message();
+            if limit.is_some() {
+                self.0.set_read_timeout(None)?;
+            }
+            got.map_err(|e| if e.kind() == io::ErrorKind::WouldBlock { io::ErrorKind::TimedOut.into() } else { e })
+        }
+
+        fn read_message(&self) -> io::Result<Vec<u8>> {
             let mut sock = &self.0;
             let mut head = [0u8; 4];
             sock.read_exact(&mut head)?;
@@ -63,11 +77,12 @@ mod sys {
 }
 
 #[cfg(windows)]
-mod sys {
+pub(crate) mod sys {
     use std::ffi::c_void;
     use std::io;
     use std::path::Path;
     use std::ptr::{null, null_mut};
+    use std::time::Duration;
 
     use crate::Conn;
 
@@ -75,14 +90,16 @@ mod sys {
     const GENERIC_WRITE: u32 = 0x4000_0000;
     const OPEN_EXISTING: u32 = 3;
     const FILE_FLAG_OVERLAPPED: u32 = 0x4000_0000;
-    pub(super) const PIPE_READMODE_MESSAGE: u32 = 2;
-    const ERROR_IO_PENDING: u32 = 997;
-    pub(super) const ERROR_MORE_DATA: u32 = 234;
+    pub(crate) const PIPE_READMODE_MESSAGE: u32 = 2;
+    pub(crate) const ERROR_IO_PENDING: u32 = 997;
+    pub(crate) const ERROR_MORE_DATA: u32 = 234;
     const ERROR_PIPE_BUSY: u32 = 231;
+    const WAIT_TIMEOUT: u32 = 258;
+    const INFINITE: u32 = u32::MAX;
     const CHUNK: usize = 64 * 1024;
 
     #[repr(C)]
-    pub(super) struct Overlapped {
+    pub(crate) struct Overlapped {
         internal: usize,
         internal_high: usize,
         offset: u32,
@@ -102,21 +119,29 @@ mod sys {
             template: *mut c_void,
         ) -> *mut c_void;
         fn SetNamedPipeHandleState(pipe: *mut c_void, mode: *const u32, count: *const u32, timeout: *const u32) -> i32;
-        pub(super) fn ReadFile(file: *mut c_void, buf: *mut u8, len: u32, read: *mut u32, ov: *mut Overlapped) -> i32;
-        pub(super) fn WriteFile(
+        pub(crate) fn ReadFile(file: *mut c_void, buf: *mut u8, len: u32, read: *mut u32, ov: *mut Overlapped) -> i32;
+        pub(crate) fn WriteFile(
             file: *mut c_void,
             buf: *const u8,
             len: u32,
             done: *mut u32,
             ov: *mut Overlapped,
         ) -> i32;
-        fn GetOverlappedResult(file: *mut c_void, ov: *mut Overlapped, done: *mut u32, wait: i32) -> i32;
+        pub(crate) fn GetOverlappedResult(file: *mut c_void, ov: *mut Overlapped, done: *mut u32, wait: i32) -> i32;
+        pub(crate) fn GetOverlappedResultEx(
+            file: *mut c_void,
+            ov: *mut Overlapped,
+            done: *mut u32,
+            ms: u32,
+            alertable: i32,
+        ) -> i32;
+        pub(crate) fn CancelIoEx(file: *mut c_void, ov: *mut Overlapped) -> i32;
         fn CreateEventW(security: *const c_void, manual: i32, initial: i32, name: *const u16) -> *mut c_void;
-        pub(super) fn CloseHandle(handle: *mut c_void) -> i32;
-        pub(super) fn GetLastError() -> u32;
+        pub(crate) fn CloseHandle(handle: *mut c_void) -> i32;
+        pub(crate) fn GetLastError() -> u32;
     }
 
-    pub struct Pipe(*mut c_void);
+    pub struct Pipe(pub(crate) *mut c_void);
 
     unsafe impl Send for Pipe {}
     unsafe impl Sync for Pipe {}
@@ -127,15 +152,15 @@ mod sys {
         }
     }
 
-    struct Event(*mut c_void);
+    pub(crate) struct Event(*mut c_void);
 
     impl Event {
-        fn new() -> io::Result<Event> {
+        pub(crate) fn new() -> io::Result<Event> {
             let handle = unsafe { CreateEventW(null(), 1, 0, null()) };
             if handle.is_null() { Err(io::Error::last_os_error()) } else { Ok(Event(handle)) }
         }
 
-        fn overlapped(&self) -> Overlapped {
+        pub(crate) fn overlapped(&self) -> Overlapped {
             Overlapped { internal: 0, internal_high: 0, offset: 0, offset_high: 0, event: self.0 }
         }
     }
@@ -146,12 +171,12 @@ mod sys {
         }
     }
 
-    pub(super) fn wide(name: &str) -> Vec<u16> {
+    pub(crate) fn wide(name: &str) -> Vec<u16> {
         name.encode_utf16().chain(Some(0)).collect()
     }
 
-    pub fn open(_home: &Path) -> Result<Pipe, Conn> {
-        open_name(&format!(r"\\.\pipe\lighting-{}", crate::user()))
+    pub fn open(home: &Path) -> Result<Pipe, Conn> {
+        open_name(&crate::address(home).to_string_lossy())
     }
 
     pub(super) fn open_name(name: &str) -> Result<Pipe, Conn> {
@@ -188,7 +213,8 @@ mod sys {
             if done == len { Ok(()) } else { Err(io::Error::other("short write to the lighting daemon")) }
         }
 
-        pub fn recv(&self) -> io::Result<Vec<u8>> {
+        pub fn recv(&self, limit: Option<Duration>) -> io::Result<Vec<u8>> {
+            let ms = limit.map_or(INFINITE, |d| u32::try_from(d.as_millis()).unwrap_or(INFINITE - 1));
             let event = Event::new()?;
             let mut chunk = vec![0u8; CHUNK];
             let mut out = Vec::new();
@@ -202,12 +228,18 @@ mod sys {
                             return Err(io::Error::from_raw_os_error(e as i32));
                         }
                     }
-                    if GetOverlappedResult(self.0, &mut ov, &mut got, 1) != 0 {
+                    if GetOverlappedResultEx(self.0, &mut ov, &mut got, ms, 0) != 0 {
                         false
-                    } else if GetLastError() == ERROR_MORE_DATA {
-                        true
                     } else {
-                        return Err(io::Error::last_os_error());
+                        match GetLastError() {
+                            ERROR_MORE_DATA => true,
+                            WAIT_TIMEOUT => {
+                                CancelIoEx(self.0, &mut ov);
+                                GetOverlappedResult(self.0, &mut ov, &mut got, 1);
+                                return Err(io::ErrorKind::TimedOut.into());
+                            }
+                            e => return Err(io::Error::from_raw_os_error(e as i32)),
+                        }
                     }
                 };
                 out.extend_from_slice(&chunk[..got as usize]);
@@ -286,7 +318,7 @@ mod tests {
             };
             pipe.send(&sent).unwrap();
             pipe.send(b"{\"x\":1}").unwrap();
-            (pipe.recv().unwrap(), pipe.recv().unwrap(), pipe.recv().is_err())
+            (pipe.recv(None).unwrap(), pipe.recv(None).unwrap(), pipe.recv(None).is_err())
         });
         let ok = unsafe { ConnectNamedPipe(server, null_mut()) };
         assert!(ok != 0 || unsafe { GetLastError() } == ERROR_PIPE_CONNECTED);

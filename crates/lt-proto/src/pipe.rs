@@ -7,11 +7,10 @@ pub enum Conn {
 }
 
 #[cfg(windows)]
-pub fn exchange_once(_home: &Path, req: &[u8]) -> Result<Vec<u8>, Conn> {
+pub fn exchange_once(home: &Path, req: &[u8]) -> Result<Vec<u8>, Conn> {
     use std::fs::OpenOptions;
     const ERROR_PIPE_BUSY: i32 = 231;
-    let name = format!(r"\\.\pipe\lighting-{}", crate::user());
-    match OpenOptions::new().read(true).write(true).open(name) {
+    match OpenOptions::new().read(true).write(true).open(crate::address(home)) {
         Ok(mut pipe) => {
             let mut buf = Vec::new();
             if pipe.write_all(req).is_ok() && pipe.read_to_end(&mut buf).is_ok() {
@@ -27,8 +26,7 @@ pub fn exchange_once(_home: &Path, req: &[u8]) -> Result<Vec<u8>, Conn> {
 #[cfg(not(windows))]
 pub fn exchange_once(home: &Path, req: &[u8]) -> Result<Vec<u8>, Conn> {
     use std::os::unix::net::UnixStream;
-    let path = home.join(format!("lighting-{}.sock", crate::user()));
-    let mut sock = UnixStream::connect(path).map_err(|_| Conn::Missing)?;
+    let mut sock = UnixStream::connect(crate::address(home)).map_err(|_| Conn::Missing)?;
     let Ok(size) = u32::try_from(req.len()) else { return Ok(Vec::new()) };
     let mut framed = Vec::with_capacity(req.len() + 4);
     framed.extend_from_slice(&size.to_be_bytes());

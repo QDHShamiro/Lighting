@@ -1,0 +1,132 @@
+pub fn local_now() -> String {
+    let [year, month, day, hour, minute, second] = sys::now();
+    format!("{year:04}-{month:02}-{day:02} {hour:02}:{minute:02}:{second:02}")
+}
+
+pub fn ago(seconds: u64) -> String {
+    match seconds {
+        0..90 => format!("{seconds}s"),
+        90..5400 => format!("{}m", seconds / 60),
+        _ => format!("{}h", seconds / 3600),
+    }
+}
+
+pub fn stamp_secs(stamp: &str) -> Option<i64> {
+    let num = |range: std::ops::Range<usize>| stamp.get(range)?.parse::<i64>().ok();
+    let shape = stamp.len() == 19 && stamp.as_bytes()[4] == b'-' && stamp.as_bytes()[13] == b':';
+    if !shape {
+        return None;
+    }
+    let (y, m, d) = (num(0..4)?, num(5..7)?, num(8..10)?);
+    let (hh, mm, ss) = (num(11..13)?, num(14..16)?, num(17..19)?);
+    let y = if m <= 2 { y - 1 } else { y };
+    let era = y.div_euclid(400);
+    let yoe = y - era * 400;
+    let doy = (153 * (m + if m > 2 { -3 } else { 9 }) + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    let days = era * 146_097 + doe - 719_468;
+    Some(days * 86_400 + hh * 3600 + mm * 60 + ss)
+}
+
+#[cfg(windows)]
+mod sys {
+    #[repr(C)]
+    struct SystemTime {
+        year: u16,
+        month: u16,
+        weekday: u16,
+        day: u16,
+        hour: u16,
+        minute: u16,
+        second: u16,
+        millis: u16,
+    }
+
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetLocalTime(time: *mut SystemTime);
+    }
+
+    pub fn now() -> [u32; 6] {
+        let mut t = SystemTime { year: 0, month: 0, weekday: 0, day: 0, hour: 0, minute: 0, second: 0, millis: 0 };
+        unsafe { GetLocalTime(&mut t) };
+        [t.year, t.month, t.day, t.hour, t.minute, t.second].map(u32::from)
+    }
+}
+
+#[cfg(not(windows))]
+mod sys {
+    use std::ffi::{c_char, c_int, c_long};
+
+    #[repr(C)]
+    struct Tm {
+        sec: c_int,
+        min: c_int,
+        hour: c_int,
+        mday: c_int,
+        mon: c_int,
+        year: c_int,
+        wday: c_int,
+        yday: c_int,
+        isdst: c_int,
+        gmtoff: c_long,
+        zone: *const c_char,
+    }
+
+    unsafe extern "C" {
+        fn time(out: *mut c_long) -> c_long;
+        fn localtime_r(t: *const c_long, out: *mut Tm) -> *mut Tm;
+    }
+
+    pub fn now() -> [u32; 6] {
+        let mut tm = Tm {
+            sec: 0,
+            min: 0,
+            hour: 0,
+            mday: 0,
+            mon: 0,
+            year: 0,
+            wday: 0,
+            yday: 0,
+            isdst: 0,
+            gmtoff: 0,
+            zone: std::ptr::null(),
+        };
+        unsafe {
+            let t = time(std::ptr::null_mut());
+            localtime_r(&t, &mut tm);
+        }
+        [tm.year + 1900, tm.mon + 1, tm.mday, tm.hour, tm.min, tm.sec].map(|v| u32::try_from(v).unwrap_or(0))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn local_time_has_the_2x_log_shape() {
+        let now = local_now();
+        assert_eq!(now.len(), 19, "{now}");
+        assert!(stamp_secs(&now).is_some_and(|s| s > 1_750_000_000), "{now}");
+    }
+
+    #[test]
+    fn stamps_count_seconds_like_datetime() {
+        assert_eq!(stamp_secs("1970-01-01 00:00:00"), Some(0));
+        assert_eq!(stamp_secs("2026-10-30 12:34:56"), Some(1_793_363_696));
+        assert_eq!(stamp_secs("2024-02-29 23:59:59"), Some(1_709_251_199));
+        assert_eq!(stamp_secs("2026-10-30T12:34:56"), Some(1_793_363_696));
+        assert_eq!(stamp_secs("2026-10-30"), None);
+        assert_eq!(stamp_secs("2026/10/30 12:34:56"), None);
+    }
+
+    #[test]
+    fn ages_round_like_2x() {
+        assert_eq!(ago(5), "5s");
+        assert_eq!(ago(89), "89s");
+        assert_eq!(ago(90), "1m");
+        assert_eq!(ago(5399), "89m");
+        assert_eq!(ago(5400), "1h");
+    }
+}

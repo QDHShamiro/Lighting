@@ -11,6 +11,7 @@ name = "lighting"
 path = "src/main.rs"
 
 [dependencies]
+lt-core.workspace = true
 lt-proto.workspace = true
 lt-squeeze.workspace = true
 regex.workspace = true

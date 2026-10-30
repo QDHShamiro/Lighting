@@ -11,6 +11,7 @@ repository = "https://github.com/QDHShamiro/Lighting"
 publish = false
 
 [workspace.dependencies]
+lt-core = { path = "crates/lt-core" }
 lt-proto = { path = "crates/lt-proto" }
 lt-squeeze = { path = "crates/lt-squeeze" }
 proptest = { version = "1", default-features = false, features = ["std"] }

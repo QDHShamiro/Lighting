@@ -37,6 +37,36 @@ fn clean(s: &str) -> String {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub struct Incoming {
+    pub token: String,
+    pub cwd: String,
+    pub sid: String,
+    pub secret: Option<String>,
+    pub argv: Vec<String>,
+}
+
+impl Incoming {
+    pub fn decode(raw: &[u8]) -> Option<Incoming> {
+        let second = raw.starts_with(b"L2\0");
+        if !second && !raw.starts_with(b"L1\0") {
+            return None;
+        }
+        let mut parts: Vec<&str> = std::str::from_utf8(&raw[3..]).ok()?.split('\0').collect();
+        if parts.len() < if second { 4 } else { 3 } {
+            return None;
+        }
+        let sid = if second { parts.remove(2) } else { "" };
+        Some(Incoming {
+            token: parts[0].into(),
+            cwd: parts[1].into(),
+            sid: sid.into(),
+            secret: parts[2].strip_prefix('+').map(String::from),
+            argv: parts[3..].iter().map(|s| (*s).to_string()).collect(),
+        })
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct Reply {
     pub code: i32,
     pub image: String,
@@ -51,6 +81,10 @@ impl Reply {
         let image = parts.next().unwrap_or("").to_string();
         let out = parts.next().unwrap_or("").to_string();
         Reply { code, image, out }
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        format!("{}\0{}\0{}", self.code, self.image, self.out).into_bytes()
     }
 }
 
@@ -75,5 +109,26 @@ mod tests {
         );
         assert_eq!(Reply::decode(b"2\0\0err: x"), Reply { code: 2, image: String::new(), out: "err: x".into() });
         assert_eq!(Reply::decode(b"garbage"), Reply { code: 1, image: String::new(), out: String::new() });
+    }
+
+    #[test]
+    fn incoming_reads_both_fast_formats_like_the_2x_daemon() {
+        let argv: Vec<String> = ["recall", "a b", ""].map(String::from).to_vec();
+        let req = Request { token: "ab", cwd: "C:/x", sid: "s1", secret: Some("k"), argv: &argv };
+        let got = Incoming::decode(&req.encode()).unwrap();
+        assert_eq!((got.token.as_str(), got.cwd.as_str(), got.sid.as_str()), ("ab", "C:/x", "s1"));
+        assert_eq!((got.secret.as_deref(), got.argv), (Some("k"), argv));
+        let old = Incoming::decode(b"L1\0ab\0C:/y\0-\0ping").unwrap();
+        assert_eq!((old.sid.as_str(), old.secret, old.argv), ("", None, vec!["ping".to_string()]));
+        assert!(Incoming::decode(b"L2\0ab\0C:/x\0s1").is_none());
+        assert!(Incoming::decode(b"L1\0ab\0x").is_none());
+        assert!(Incoming::decode(b"{\"argv\":[]}").is_none());
+        assert!(Incoming::decode(b"L2\0\xff\0\0\0-").is_none());
+    }
+
+    #[test]
+    fn reply_round_trips() {
+        let reply = Reply { code: 3, image: "C:/a.jpg".into(), out: "x\0y".into() };
+        assert_eq!(Reply::decode(&reply.encode()), reply);
     }
 }
