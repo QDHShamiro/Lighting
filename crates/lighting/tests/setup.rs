@@ -57,3 +57,10 @@ fn setup_fills_a_home_without_touching_the_browser_and_uninstall_clears_it() {
     assert!(!home.0.join("extension").exists() && !home.0.join("v3").exists());
     assert!(!home.0.join("dev.qdhshamiro.lighting.json").exists());
 }
+
+#[test]
+fn the_skill_stays_within_its_byte_budget() {
+    let skill = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../skills/lighting/SKILL.md");
+    let size = fs::metadata(&skill).unwrap().len();
+    assert!(size <= 3_700, "SKILL.md grew to {size} bytes (budget 3700)");
+}
