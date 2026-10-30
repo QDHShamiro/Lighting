@@ -1,6 +1,7 @@
 use std::ffi::c_void;
 use std::ptr;
 use std::slice;
+use std::sync::OnceLock;
 use std::thread;
 use std::time::Duration;
 
@@ -97,7 +98,7 @@ pub fn exe_of_window(hwnd: isize) -> String {
     exe_of(pid_of(hwnd))
 }
 
-pub fn elevated(pid: u32) -> bool {
+fn elevated(pid: u32) -> bool {
     let Ok(process) = (unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) }) else { return true };
     let mut token = HANDLE::default();
     let mut out = true;
@@ -118,6 +119,11 @@ pub fn elevated(pid: u32) -> bool {
     }
     let _ = unsafe { CloseHandle(process) };
     out
+}
+
+pub fn blocked(pid: u32) -> bool {
+    static SELF: OnceLock<bool> = OnceLock::new();
+    elevated(pid) && !*SELF.get_or_init(|| elevated(std::process::id()))
 }
 
 fn cloaked(hwnd: isize) -> bool {
@@ -303,4 +309,12 @@ pub fn open_target(target: &str) -> bool {
     let file = HSTRING::from(target);
     let done = unsafe { ShellExecuteW(None, w!("open"), &file, PCWSTR::null(), PCWSTR::null(), SW_SHOWNOACTIVATE) };
     done.0 as isize > 32
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn a_process_never_blocks_itself_even_as_administrator() {
+        assert!(!super::blocked(std::process::id()));
+    }
 }

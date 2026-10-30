@@ -363,7 +363,7 @@ mod imp {
             let pid = win::pid_of(hwnd);
             let exe = win::exe_of(pid).to_lowercase();
             let skip = [AGENT_EXES, BROWSER_EXES, CHAT_EXES].iter().any(|list| list.contains(&exe.as_str()));
-            (!exe.is_empty() && !skip && !win::elevated(pid)).then_some(hwnd)
+            (!exe.is_empty() && !skip && !win::blocked(pid)).then_some(hwnd)
         }
 
         pub fn target(&mut self, first: Option<&str>) -> Res<isize> {

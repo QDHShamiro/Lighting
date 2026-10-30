@@ -77,7 +77,7 @@ fn rank(role: &str) -> u8 {
 
 impl Desk<'_> {
     pub fn snapshot(&mut self, hwnd: isize, look: &Look) -> Res<String> {
-        if win::elevated(win::pid_of(hwnd)) {
+        if win::blocked(win::pid_of(hwnd)) {
             return Err(Fail::hint(
                 "this window runs as administrator; Windows blocks control from normal apps",
                 "start the terminal as administrator, or use lighting read / shot",

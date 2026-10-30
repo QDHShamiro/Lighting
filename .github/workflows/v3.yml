@@ -118,16 +118,13 @@ jobs:
           name: setup-evidence
           path: ~/.lighting/out/
           retention-days: 7
-      - name: Selftest (browser if connected, test app, test chat)
+      - name: Selftest in Chrome for Testing (plus test app and chat on Windows)
         id: selftest
-        if: runner.os == 'Windows' && steps.build.outcome == 'success'
+        if: steps.build.outcome == 'success'
         continue-on-error: true
+        timeout-minutes: 12
         shell: bash
-        run: |
-          L="$USERPROFILE/.lighting/bin/lighting.exe"
-          "$L" selftest | tee selftest.txt
-          grep -E "^(FAIL|SKIP)" selftest.txt | sed 's/^/::warning title=selftest::/' || true
-          tail -1 selftest.txt | grep -E "^([0-9]+)/\1 passed$"
+        run: bash scripts/ci-browser.sh
       - name: Result
         if: always()
         shell: bash
