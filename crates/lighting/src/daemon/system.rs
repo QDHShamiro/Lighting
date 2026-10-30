@@ -1,23 +1,42 @@
-use lt_core::{Call, Fail, Flag, OUT_CHARS, ago, built_later, cap, listing, parse, stats, unknown, wants_help};
+use std::path::Path;
+use std::sync::Arc;
 
-use super::{Daemon, Out, Req, VERSION};
+use lt_core::{Call, Fail, Flag, OUT_CHARS, ago, built_later, listing, parse, stats, unknown, wants_help};
 
-const HELP: &str = "lighting 3.0 core (browser, desktop and memory follow in the next milestones)
-  ping                     is the daemon there
-  status                   version, pid and uptime of this daemon
-  log [n] | log stats [n]  the last commands, or counts per command
-  version                  version of this daemon
-  stop | abort             stop the daemon | stop the running and queued commands
-  more <ref>               a squeezed tool output in full (--lines a-b, --grep \"word|other\")";
+use super::ctx::Ctx;
+use super::{Daemon, Out, VERSION, config, route, web};
+
+const HELP: &str = "lighting 3.0 <command> [args]   browser for AI agents (desktop, memory and video follow in the next milestones)
+refs: e12 web element | t77 tab
+
+web     open <url> [-n] [-f \"a|b\"] [--text]   snap [-f \"a|b\"] [-s css|ref] [--all] [--full] [--diff] [--links]   text [-f txt] [--links]
+        click <ref|\"text\"> [--yes] [--force]   fill \"Label=value\" ... [--submit]   search [site] \"words\"
+        type <ref> <text> [--env VAR] [--append]   press <keys>   select <ref> <option>
+        check <ref> [off]   hover <ref>   drag <ref> <ref>   scroll [ref|up|down] [--until \"text\"]
+        wait <\"text\"|url:x|ms|ref> [--gone] [--reload 15s --timeout 10m]   expect <\"text\"|url:x> [--gone]
+        fetch <url> [--pick a.b]   js <code|--file f>   dismiss   viewport <WxH|reset>
+        upload <ref> <file>   tabs [-f x]   tab <id>   close [id]   back   forward   reload   table <ref|css>
+        dialog accept|dismiss [text]   downloads   console   net [n] [-f x] (JSON the page loaded)
+        tools   call <tool> '{json}' [--yes] (WebMCP)
+keys    keys [site] [-f x]   keys add <site> \"ctrl+k=what\"   keys rm <site> <key>
+cleanup done [--quiet]   keep [t]   config cleanup on|off
+system  status   stop   abort   config [key value]   log [n] | log stats [n]   version
+        more <ref> (a squeezed tool output in full, --lines a-b, --grep \"word|other\")
+
+Any action takes -f \"a|b\" to show the matching lines of the result in the same call.
+Output is plain text, one line per action. Big results go to a file (path printed).
+Tabs Lighting opened close on done (Claude Code runs it after every reply); keep hands one to the user.
+Safety: risky clicks and long URL data to new sites need --yes, lighting abort stops everything.";
 const STATS_LINES: usize = 40;
+const KEYS_LINES: usize = 60;
 
-pub fn run_one(d: &Daemon, req: &mut Req) -> Result<(Out, String), Fail> {
-    let call = parse(&req.argv);
+pub fn run_one(d: &Daemon, ctx: &mut Ctx, argv: &[String]) -> Result<(Out, String), Fail> {
+    let call = parse(argv);
     if call.name.is_empty() {
         return Err(Fail::hint("no command", "lighting help"));
     }
     let asks_help = matches!(call.name.as_str(), "help" | "-h" | "--help");
-    if !asks_help && wants_help(&req.argv).is_some() {
+    if !asks_help && wants_help(argv).is_some() {
         return Ok((Out::Text(help(Some(&call.name))?), "help".into()));
     }
     if call.flags.get("f") == Some(&Flag::On) {
@@ -26,38 +45,101 @@ pub fn run_one(d: &Daemon, req: &mut Req) -> Result<(Out, String), Fail> {
             format!("lighting {} ... -f \"<words>\"", call.name),
         ));
     }
-    let out = match call.name.as_str() {
-        "ping" => Out::Text("pong".into()),
-        "version" => Out::Text(VERSION.into()),
-        "stop" => Out::Stop("lighting daemon stopped".into()),
-        "status" => Out::Text(status(d)),
-        "log" => Out::Text(log(d, req, &call)),
-        _ if asks_help => Out::Text(help(call.pos.first().map(String::as_str))?),
-        name if built_later(name) => {
-            return Err(Fail::hint(
-                format!("{name} is not built into Lighting 3.0 yet"),
-                "run it with Lighting 2.x (without LIGHTING_HOME)",
-            ));
+    ctx.last_target = None;
+    let text = match call.name.as_str() {
+        "ping" => "pong".into(),
+        "version" => VERSION.into(),
+        "stop" => return Ok((Out::Stop("lighting daemon stopped".into()), call.name)),
+        "status" => status(d, ctx),
+        "log" => log(d, ctx, &call),
+        "config" => {
+            let (text, changed) = config::command(&d.home, &call.pos)?;
+            if changed {
+                d.hosts.push_config(&d.home);
+            }
+            text
         }
-        name => return Err(unknown(name)),
+        "done" => web::done(d, ctx, &call)?,
+        "keep" => web::keep(d, ctx, &call)?,
+        "keys" => {
+            let text = web::keys::command(&d.home, ctx, &call)?;
+            web::capped(d, ctx, &text, "keys", Some(KEYS_LINES), OUT_CHARS)
+        }
+        _ if asks_help => help(call.pos.first().map(String::as_str))?,
+        _ => {
+            let out = route::route(d, ctx, &call)?;
+            return Ok((route::with_view(d, ctx, &call, out), call.name));
+        }
     };
-    Ok((out, call.name))
+    Ok((Out::Text(text), call.name))
 }
 
 fn help(name: Option<&str>) -> Result<String, Fail> {
-    match name.map(str::to_lowercase) {
-        Some(name) if !name.is_empty() && !built_later(&name) => Err(unknown(&name)),
-        _ => Ok(HELP.into()),
+    let Some(name) = name.map(str::to_lowercase).filter(|n| !n.is_empty()) else { return Ok(HELP.into()) };
+    if !built_later(&name) {
+        return Err(unknown(&name));
     }
+    Ok(about(&name).unwrap_or_else(|| HELP.into()))
 }
 
-fn status(d: &Daemon) -> String {
-    let home = d.home.to_string_lossy().replace('\\', "/");
+fn about(name: &str) -> Option<String> {
+    let rows = HELP.split("\n\n").nth(1)?;
+    let hits: Vec<&str> = rows
+        .lines()
+        .map(|row| row.get(8..).unwrap_or("").trim())
+        .filter(|row| {
+            row.split("   ").any(|part| part.trim().split(' ').next().unwrap_or("").split('|').any(|word| word == name))
+        })
+        .collect();
+    (!hits.is_empty()).then(|| hits.join("\n"))
+}
+
+fn posix(path: &Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
+}
+
+fn status(d: &Daemon, ctx: &Ctx) -> String {
     let up = ago(d.started.elapsed().as_secs());
-    format!("lighting {VERSION} | daemon pid {} up {up} | hotkey unavailable\nhome {home}", d.pid)
+    let mut lines = vec![format!("lighting {VERSION} | daemon pid {} up {up} | hotkey unavailable", d.pid)];
+    web::any_browser(d);
+    let mut hosts = d.hosts.alive();
+    hosts.sort_by(|a, b| b.focused().max(b.connected).total_cmp(&a.focused().max(a.connected)));
+    let pick = web::pick(d);
+    for h in &hosts {
+        let ext = h.info("ext").unwrap_or_default();
+        let in_use = if pick.as_ref().is_some_and(|p| Arc::ptr_eq(p, h)) { " | in use" } else { "" };
+        let update = match (!ext.is_empty() && ext != VERSION, d.hosts.reloaded(&h.brand)) {
+            (false, _) => String::new(),
+            (true, true) => format!(" | updating extension to {VERSION}"),
+            (true, false) => " | OUTDATED, run: lighting setup".into(),
+        };
+        let browser = h.info("browserVersion").unwrap_or_else(|| "?".into());
+        let ext = if ext.is_empty() { "?".into() } else { ext };
+        lines.push(format!("browser {} {browser} | ext {ext}{in_use}{update}", h.brand));
+    }
+    if hosts.is_empty() {
+        lines.push("browser none connected (extension not loaded or browser closed) -> lighting setup".into());
+    }
+    if let Some((kind, name)) = &ctx.target {
+        lines.push(format!("target {kind} {name}"));
+    }
+    let cfg = config::load(&d.home);
+    let onoff = |key: &str| if config::on(&cfg, key) { "on" } else { "off" };
+    let focus = config::text(&cfg, "focus");
+    lines.push(format!(
+        "pointer {} | cleanup {} | own window {} | focus {} | browser pref {} | out {}",
+        onoff("pointer"),
+        onoff("cleanup"),
+        onoff("window"),
+        if focus.is_empty() { "never" } else { focus.as_str() },
+        config::text(&cfg, "browser"),
+        posix(&d.home.join("out")),
+    ));
+    lines.push(format!("home {}", posix(&d.home)));
+    lines.join("\n")
 }
 
-fn log(d: &Daemon, req: &mut Req, call: &Call) -> String {
+fn log(d: &Daemon, ctx: &mut Ctx, call: &Call) -> String {
     let mut pos = call.pos.as_slice();
     let mut counts = call.on("stats");
     if pos.first().is_some_and(|p| p.eq_ignore_ascii_case("stats")) {
@@ -69,7 +151,21 @@ fn log(d: &Daemon, req: &mut Req, call: &Call) -> String {
         return listing(&d.home, n.unwrap_or(15));
     }
     let Some(text) = stats(&d.home, n.unwrap_or(2000)) else { return "log is empty".into() };
-    let (text, cut) = cap(&d.home.join("out"), &text, "log-stats", Some(STATS_LINES), OUT_CHARS);
-    req.cut += cut;
-    text
+    web::capped(d, ctx, &text, "log-stats", Some(STATS_LINES), OUT_CHARS)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn help_names_one_command_like_2x() {
+        assert!(about("tabs").is_some_and(|row| row.starts_with("upload <ref> <file>   tabs [-f x]")));
+        assert!(about("dismiss").is_some_and(|row| row.starts_with("fetch <url>")));
+        assert!(about("abort").is_some_and(|row| row.starts_with("status ")));
+        assert_eq!(about("recall"), None);
+        assert_eq!(help(Some("recall")).ok().as_deref(), Some(HELP));
+        assert_eq!(help(None).ok().as_deref(), Some(HELP));
+        assert!(help(Some("zzz")).is_err());
+    }
 }

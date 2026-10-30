@@ -131,7 +131,7 @@ fn v2(home: &Path, raw: &[String]) -> ExitCode {
     }
 }
 
-fn start(home: &Path) {
+pub fn start(home: &Path) {
     let Ok(exe) = env::current_exe() else { return };
     crate::spawn::detached(&exe, &["daemon"], home, &home.join("daemon.log"));
 }

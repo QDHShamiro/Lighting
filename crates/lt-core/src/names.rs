@@ -33,10 +33,10 @@ const SYSTEM: &[&str] = &[
 const MEMORY: &[&str] = &["remember", "recall", "forget", "todo", "memory", "hook", "wiki", "code"];
 const MEMORY_LANE: &[&str] = &["suggest", "tokens", "grep", "squeeze"];
 const HOOK_LANE: &[&str] = &["suggest", "hook"];
-const SHARED: &[&str] = &["snap", "click", "type", "press", "shot", "scroll", "hover", "drag"];
-const APP_ONLY: &[&str] = &["windows", "focus", "clip", "launch"];
-const CHAT: &[&str] = &["inbox", "reply", "unread"];
-const WEB_ONLY: &[&str] = &[
+pub const SHARED: &[&str] = &["snap", "click", "type", "press", "shot", "scroll", "hover", "drag"];
+pub const APP_ONLY: &[&str] = &["windows", "focus", "clip", "launch"];
+pub const CHAT: &[&str] = &["inbox", "reply", "unread"];
+pub const WEB_ONLY: &[&str] = &[
     "open",
     "text",
     "fill",

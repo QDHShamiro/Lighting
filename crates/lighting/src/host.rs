@@ -64,7 +64,7 @@ fn connect(home: &Path) -> Option<Link> {
             Err(Conn::Busy) => return None,
             Err(Conn::Missing) => {
                 let since = *started.get_or_insert_with(|| {
-                    start_daemon();
+                    start_daemon(home);
                     Instant::now()
                 });
                 if since.elapsed() > BOOT_WAIT {
@@ -76,7 +76,11 @@ fn connect(home: &Path) -> Option<Link> {
     }
 }
 
-fn start_daemon() {
+fn start_daemon(home: &Path) {
+    if home.join(crate::daemon::MARKER).is_file() {
+        crate::client::start(home);
+        return;
+    }
     let Some(exe) = v2::client_exe() else { return };
     let mut cmd = Command::new(exe);
     cmd.arg("ping").stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());

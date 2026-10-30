@@ -12,4 +12,4 @@ pub use clock::{ago, local_now, stamp_secs};
 pub use close::close_match;
 pub use fail::Fail;
 pub use log::{Log, Row, listing, stats};
-pub use names::{Lane, QUIET, built_later, lane, unknown};
+pub use names::{APP_ONLY, CHAT, Lane, QUIET, SHARED, WEB_ONLY, built_later, lane, unknown};
