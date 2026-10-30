@@ -159,7 +159,7 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "shot" if c.on("seconds") => desk::run(d, ctx, c, None),
         "wait" if waits_on_app(ctx, c) => desk::run(d, ctx, c, None),
         "desktop" => desktop(d, ctx, c),
-        _ if CHAT.contains(&name) => Err(later(name)),
+        _ if CHAT.contains(&name) => desk::run(d, ctx, c, None),
         _ if APP_ONLY.contains(&name) => desk::run(d, ctx, c, None),
         _ if SHARED.contains(&name) && !on_web(d, ctx, c) => desk::run(d, ctx, c, None),
         _ if SHARED.contains(&name) || WEB_ONLY.contains(&name) => web::run(d, ctx, c),

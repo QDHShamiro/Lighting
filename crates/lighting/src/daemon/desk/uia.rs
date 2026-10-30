@@ -12,9 +12,9 @@ use windows::Win32::UI::Accessibility::{
     IUIAutomationCondition, IUIAutomationElement, IUIAutomationExpandCollapsePattern, IUIAutomationInvokePattern,
     IUIAutomationLegacyIAccessiblePattern, IUIAutomationScrollPattern, IUIAutomationSelectionItemPattern,
     IUIAutomationTextPattern, IUIAutomationTogglePattern, IUIAutomationValuePattern, ScrollAmount,
-    ScrollAmount_LargeDecrement, ScrollAmount_LargeIncrement, ScrollAmount_NoAmount, TreeScope, TreeScope_Descendants,
-    TreeScope_Subtree, UIA_AcceleratorKeyPropertyId, UIA_AccessKeyPropertyId, UIA_AutomationIdPropertyId,
-    UIA_BoundingRectanglePropertyId, UIA_ClassNamePropertyId, UIA_ControlTypePropertyId,
+    ScrollAmount_LargeDecrement, ScrollAmount_LargeIncrement, ScrollAmount_NoAmount, TreeScope, TreeScope_Children,
+    TreeScope_Descendants, TreeScope_Subtree, UIA_AcceleratorKeyPropertyId, UIA_AccessKeyPropertyId,
+    UIA_AutomationIdPropertyId, UIA_BoundingRectanglePropertyId, UIA_ClassNamePropertyId, UIA_ControlTypePropertyId,
     UIA_ExpandCollapseExpandCollapseStatePropertyId, UIA_ExpandCollapsePatternId, UIA_HasKeyboardFocusPropertyId,
     UIA_InvokePatternId, UIA_IsEnabledPropertyId, UIA_IsExpandCollapsePatternAvailablePropertyId,
     UIA_IsOffscreenPropertyId, UIA_IsPasswordPropertyId, UIA_IsScrollPatternAvailablePropertyId,
@@ -245,6 +245,17 @@ pub fn main_scroller(hwnd: isize) -> Option<El> {
     .flatten()
 }
 
+pub fn find_all(el: &El, children: bool, ctype: Option<i32>) -> Vec<El> {
+    with(|api| {
+        let cond = match ctype {
+            Some(t) => unsafe { api.uia.CreatePropertyCondition(UIA_ControlTypePropertyId, &int_var(t))? },
+            None => unsafe { api.uia.CreateTrueCondition()? },
+        };
+        find(&el.0, if children { TreeScope_Children } else { TreeScope_Descendants }, &cond, &api.cache)
+    })
+    .unwrap_or_default()
+}
+
 pub fn focused() -> Option<El> {
     with(|api| unsafe { api.uia.GetFocusedElement() }.map(El))
 }
@@ -284,6 +295,10 @@ impl El {
 
     pub fn name(&self) -> String {
         self.text(UIA_NamePropertyId).unwrap_or_default().split_whitespace().collect::<Vec<_>>().join(" ")
+    }
+
+    pub fn aid(&self) -> String {
+        self.text(UIA_AutomationIdPropertyId).unwrap_or_default()
     }
 
     pub fn class(&self) -> String {

@@ -3,8 +3,13 @@ mod combo;
 #[cfg(any(windows, test))]
 mod view;
 
+#[cfg(any(windows, test))]
+mod talk;
+
 #[cfg(windows)]
 mod act;
+#[cfg(windows)]
+mod chat;
 #[cfg(windows)]
 mod focus;
 #[cfg(windows)]
@@ -103,7 +108,7 @@ mod imp {
     use super::super::{Daemon, Out, Pending};
     use super::state::{self, State};
     use super::view::{score, short};
-    use super::{Halt, Res, act, focus, input, launch, look, snap, video, win};
+    use super::{Halt, Res, act, chat, focus, input, launch, look, snap, video, win};
 
     const BUSY_WAIT_S: u64 = 10;
     const CHROMIUM_CLASS: &str = "Chrome_WidgetWin_1";
@@ -144,7 +149,7 @@ mod imp {
         "windsurf.exe",
         "claude.exe",
     ];
-    const CHAT_EXES: &[&str] =
+    pub const CHAT_EXES: &[&str] =
         &["discord.exe", "slack.exe", "whatsapp.exe", "ms-teams.exe", "telegram.exe", "signal.exe"];
 
     pub struct Desk<'a> {
@@ -164,8 +169,13 @@ mod imp {
         if c.name == "shot" && c.on("seconds") {
             return state::with(ctx, |st, ctx| video::video(&mut Desk { d, st, ctx }, c));
         }
-        match text_cmd(d, ctx, c, aim.as_deref()) {
-            Ok(text) => Ok(Out::Text(text)),
+        let said = if lt_core::CHAT.contains(&c.name.as_str()) {
+            state::with(ctx, |st, ctx| chat::run(&mut Desk { d, st, ctx }, c, aim.as_deref(), true))
+        } else {
+            text_cmd(d, ctx, c, aim.as_deref()).map(Out::Text)
+        };
+        match said {
+            Ok(out) => Ok(out),
             Err(Halt::Fail(f)) => Err(f),
             Err(Halt::Busy) => Ok(Out::Wait(when_idle(c.clone(), aim))),
         }
@@ -215,6 +225,10 @@ mod imp {
                 "read" | "text" => look::read(&mut x, c),
                 "shot" => look::shot(&mut x, c),
                 "clip" => x.clip(c),
+                "inbox" | "reply" | "unread" => match chat::run(&mut x, c, aim, false)? {
+                    Out::Text(text) => Ok(text),
+                    _ => Ok(String::new()),
+                },
                 other => Err(Fail::new(format!("{other} does not work on apps")).into()),
             }
         })

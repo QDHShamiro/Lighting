@@ -124,7 +124,7 @@ impl Desk<'_> {
             .into())
     }
 
-    fn put_text(&mut self, hwnd: isize, el: &El, label: &str, text: &str, c: &Call) -> Res<String> {
+    pub(super) fn put_text(&mut self, hwnd: isize, el: &El, label: &str, text: &str, c: &Call) -> Res<String> {
         let shown = format!("{} {}chars", text.chars().count(), if self.ctx.secret.is_some() { "secret " } else { "" });
         let keys: Vec<&str> = ["tab", "enter"].into_iter().filter(|k| c.on(k)).collect();
         let plus: String = keys.iter().map(|k| format!(" +{k}")).collect();
