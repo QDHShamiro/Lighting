@@ -4,10 +4,10 @@ use std::sync::Arc;
 use lt_core::{Call, Fail, Flag, OUT_CHARS, ago, built_later, listing, parse, stats, unknown, wants_help};
 
 use super::ctx::Ctx;
-use super::{Daemon, Out, VERSION, config, route, web};
+use super::{Daemon, Out, VERSION, config, media, route, web};
 
-const HELP: &str = "lighting 3.0 <command> [args]   browser and memory for AI agents (desktop and video follow in the next milestones)
-refs: e12 web element | t77 tab
+const HELP: &str = "lighting 3.0 <command> [args]   browser, desktop apps, video and memory for AI agents
+refs: e12 web element | t77 tab | w3 window | d5 app element
 
 web     open <url> [-n] [-f \"a|b\"] [--text]   snap [-f \"a|b\"] [-s css|ref] [--all] [--full] [--diff] [--links]   text [-f txt] [--links]
         click <ref|\"text\"> [--yes] [--force]   fill \"Label=value\" ... [--submit]   search [site] \"words\"
@@ -18,6 +18,10 @@ web     open <url> [-n] [-f \"a|b\"] [--text]   snap [-f \"a|b\"] [-s css|ref] [
         upload <ref> <file>   tabs [-f x]   tab <id>   close [id]   back   forward   reload   table <ref|css>
         dialog accept|dismiss [text]   downloads   console   net [n] [-f x] (JSON the page loaded)
         tools   call <tool> '{json}' [--yes] (WebMCP)
+apps    windows   focus <w3|app:Name>   launch <app|uri|file> [--yes]   close <w3>   clip [set \"text\"]
+        snap|click|type|press|scroll|drag|read|shot ... w3 (or app:Name)   wait \"text\" --on app [--gone]
+video   watch <link|file|e40> [\"question\"] [--from 1:00 --to 2:00] [--at 0:10,0:20] [--fps n] [--frames] [--text]
+        listen <link|file|e40> [\"question\"] [--from --to] [--live] [--lang de] [--local]   shot --ask \"question\"
 memory  recall \"words\" [--all] [--max n] | recall <id>   remember \"fact\" [--kind k]   forget <id>
         todo [--all] | todo add \"task\" [--list name] [--doing] | todo done|doing|drop|open <id> [note] | todo note <id> \"text\"
         memory [learn|on|off]   memory lessons | memory unlearn <n> (fixes learned from failed commands)
@@ -139,6 +143,7 @@ fn status(d: &Daemon, ctx: &Ctx) -> String {
         config::text(&cfg, "browser"),
         posix(&d.home.join("out")),
     ));
+    lines.extend(media::usage(&d.home));
     lines.push(format!("home {}", posix(&d.home)));
     lines.join("\n")
 }
@@ -167,12 +172,13 @@ mod tests {
         assert!(about("tabs").is_some_and(|row| row.starts_with("upload <ref> <file>   tabs [-f x]")));
         assert!(about("dismiss").is_some_and(|row| row.starts_with("fetch <url>")));
         assert!(about("abort").is_some_and(|row| row.starts_with("status ")));
-        assert_eq!(about("listen"), None);
+        assert!(about("listen").is_some_and(|row| row.starts_with("listen <link|file|e40>")));
+        assert_eq!(about("voice"), None);
         assert!(about("recall").is_some_and(|row| row.starts_with("recall \"words\"")));
         assert!(about("todo").is_some_and(|row| row.starts_with("todo [--all]")));
         assert!(about("memory").is_some_and(|row| row.starts_with("memory [learn|on|off]")));
         assert!(about("wiki").is_some_and(|row| row.starts_with("wiki | wiki accept")));
-        assert_eq!(help(Some("listen")).ok().as_deref(), Some(HELP));
+        assert_eq!(help(Some("voice")).ok().as_deref(), Some(HELP));
         assert_eq!(help(None).ok().as_deref(), Some(HELP));
         assert!(help(Some("zzz")).is_err());
     }

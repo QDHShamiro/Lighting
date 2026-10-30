@@ -74,6 +74,11 @@ pub type Res<T> = Result<T, Halt>;
 pub use imp::{Desk, TERMINALS, windowish};
 
 #[cfg(windows)]
+pub fn ocr_lines(img: &image::RgbImage) -> Result<Vec<String>, Fail> {
+    ocr::recognize(img, "auto").map(|lines| lines.into_iter().map(|l| l.0).collect())
+}
+
+#[cfg(windows)]
 mod imp {
     use std::thread;
     use std::time::Duration;

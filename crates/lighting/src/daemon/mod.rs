@@ -4,6 +4,7 @@ mod desk;
 mod game;
 mod hosts;
 mod lane;
+mod media;
 mod memory;
 mod route;
 mod system;

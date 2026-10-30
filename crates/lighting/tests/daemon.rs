@@ -68,8 +68,8 @@ fn a_v3_home_starts_its_daemon_and_answers_like_2x() {
     assert_eq!(code, 0);
     assert!(status.starts_with(&format!("lighting {} | daemon pid ", env!("CARGO_PKG_VERSION"))), "{status}");
     assert_eq!(home.run(&["zzz"]), (1, "err: unknown command 'zzz' -> try: lighting help".into()));
-    let (code, recall) = home.run(&["listen", "x"]);
-    assert!(code == 1 && recall.starts_with("err: listen is not built into Lighting 3.0 yet"), "{recall}");
+    let (code, recall) = home.run(&["voice", "x"]);
+    assert!(code == 1 && recall.starts_with("err: voice is not built into Lighting 3.0 yet"), "{recall}");
     home.run(&["zzz"]);
     let (_, third) = home.run(&["zzz"]);
     assert!(third.ends_with("failed 3 times in a row with this error: repeating it will not help"), "{third}");
@@ -77,7 +77,7 @@ fn a_v3_home_starts_its_daemon_and_answers_like_2x() {
     assert!(log.lines().count() == 2 && log.lines().all(|l| l.contains(" ERR zzz ")), "{log}");
     let rows = home.rows();
     let cmds: Vec<&str> = rows.iter().filter_map(|r| r["cmd"].as_str()).collect();
-    assert_eq!(cmds, ["zzz", "listen", "zzz", "zzz"]);
+    assert_eq!(cmds, ["zzz", "voice", "zzz", "zzz"]);
     let last = rows.last().unwrap();
     assert_eq!((last["sid"].as_str(), last["ok"].as_bool()), (Some("it-1"), Some(false)));
     assert_eq!(last["e"].as_str(), Some("unknown command 'zzz'"));

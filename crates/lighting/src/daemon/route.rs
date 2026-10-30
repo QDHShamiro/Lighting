@@ -5,7 +5,7 @@ use lt_core::{APP_ONLY, CHAT, Call, Fail, Flag, SHARED, WEB_ONLY, built_later, u
 use regex::Regex;
 
 use super::ctx::Ctx;
-use super::{Daemon, Out, desk, web};
+use super::{Daemon, Out, desk, media, web};
 
 const POST_VIEW: &[&str] = &[
     "click", "type", "press", "fill", "select", "check", "scroll", "hover", "drag", "do", "run", "search", "back",
@@ -146,6 +146,9 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "read" => desk::run(d, ctx, c, None),
         "text" if c.val("on") == Some("app") || first.is_some_and(windowish) => desk::run(d, ctx, c, None),
         "close" if first.is_some_and(windowish) => desk::run(d, ctx, c, None),
+        "watch" | "listen" => media::run(d, ctx, c),
+        "frames" if c.on("audio") => media::run(d, ctx, c),
+        "shot" if c.on("ask") => media::ask_shot(d, ctx, c),
         "shot" if c.on("seconds") => desk::run(d, ctx, c, None),
         "wait" if waits_on_app(ctx, c) => desk::run(d, ctx, c, None),
         "desktop" => desktop(d, ctx, c),

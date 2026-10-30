@@ -263,7 +263,7 @@ fn tidy(paths: &Paths) {
     }
 }
 
-fn fnv(parts: &[&str]) -> u64 {
+pub fn fnv(parts: &[&str]) -> u64 {
     let mut h = FNV_START;
     for (i, part) in parts.iter().enumerate() {
         if i > 0 {

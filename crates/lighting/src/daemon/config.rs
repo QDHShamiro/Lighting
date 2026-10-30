@@ -47,6 +47,8 @@ fn defaults() -> Map<String, Value> {
         ("learn", json!(true)),
         ("cleanup", json!(true)),
         ("audio", json!("auto")),
+        ("whisper_api", json!("")),
+        ("whisper_model", json!("whisper-1")),
         ("window", json!(true)),
         ("focus", json!("never")),
         ("brain", json!(true)),

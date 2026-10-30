@@ -43,6 +43,10 @@ jobs:
         id: lint
         continue-on-error: true
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: ffmpeg for the video tests
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg && echo "LT_NEED_FFMPEG=1" >> "$GITHUB_ENV"
       - name: Test
         id: test
         continue-on-error: true

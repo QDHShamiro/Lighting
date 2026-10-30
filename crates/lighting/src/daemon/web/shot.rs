@@ -11,6 +11,7 @@ use lt_core::{Call, Fail, Flag, out_file};
 use serde_json::{Map, Value, json};
 
 use super::super::ctx::Ctx;
+use super::super::media::tools::{clock, seconds};
 use super::super::{Daemon, config};
 use super::url::local_file;
 use super::{REF_RE, call, head, num, number, obj, text_of};
@@ -68,6 +69,14 @@ pub fn save_picture(
 ) -> Result<String, Fail> {
     let out = out_path(ctx, c, SHOT_KINDS, hint)?;
     save_image(d, ctx, img, key, c.on("if-changed"), width(d, c, None)?, threshold(c)?, out)
+}
+
+pub fn thumb(img: &DynamicImage) -> Vec<u8> {
+    luma(img, THUMB, None)
+}
+
+pub fn save_sheet(d: &Daemon, ctx: &mut Ctx, img: &DynamicImage, key: &str) -> Result<String, Fail> {
+    save_image(d, ctx, img, key, false, width(d, &Call::default(), None)?, 0.0, None)
 }
 
 pub fn image_note(d: &Daemon, ctx: &mut Ctx, raw: &[u8]) -> Result<String, Fail> {
@@ -208,24 +217,7 @@ fn write_image(img: &DynamicImage, path: &Path) -> Result<(), String> {
     rgb.save(path).map_err(|e| e.to_string())
 }
 
-fn seconds(text: Option<&str>) -> Result<Option<f64>, ()> {
-    let Some(text) = text.filter(|t| !t.is_empty()) else { return Ok(None) };
-    text.split(':')
-        .try_fold(0.0, |total, part| part.trim().parse::<f64>().map(|v| total * 60.0 + v))
-        .map(Some)
-        .map_err(|_| ())
-}
-
-fn clock(s: f64) -> String {
-    let s = s.max(0.0) as u64;
-    if s >= 3600 {
-        format!("{}:{:02}:{:02}", s / 3600, s / 60 % 60, s % 60)
-    } else {
-        format!("{}:{:02}", s / 60, s % 60)
-    }
-}
-
-fn distinct(thumbs: &[Vec<u8>], n: usize) -> Vec<usize> {
+pub fn distinct(thumbs: &[Vec<u8>], n: usize) -> Vec<usize> {
     let gap =
         |a: usize, b: usize| thumbs[a].iter().zip(&thumbs[b]).map(|(x, y)| u32::from(x.abs_diff(*y))).sum::<u32>();
     let mut chosen = vec![0];
@@ -273,7 +265,7 @@ fn stamp(sheet: &mut RgbImage, x: u32, y: u32, text: &str) {
     }
 }
 
-fn sheet(tiles: &[DynamicImage], stamps: &[String]) -> RgbImage {
+pub fn sheet(tiles: &[DynamicImage], stamps: &[String]) -> RgbImage {
     let cols = if tiles.len() > 4 { 3 } else { 2 };
     let first = &tiles[0];
     let th = (f64::from(first.height()) * f64::from(TILE_W) / f64::from(first.width().max(1))).round().max(1.0) as u32;
@@ -373,9 +365,6 @@ pub fn frames(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         lines.push("captions:".into());
         lines.extend(caps);
     }
-    if c.on("audio") {
-        lines.push(format!("audio: {}", super::super::route::later("listen").text()));
-    }
     Ok(lines.join("\n"))
 }
 
@@ -385,12 +374,9 @@ mod tests {
 
     #[test]
     fn times_and_scenes_read_like_2x() {
-        assert_eq!(seconds(Some("1:30")), Ok(Some(90.0)));
         assert_eq!(seconds(Some("1:02:03")), Ok(Some(3723.0)));
         assert_eq!(seconds(None), Ok(None));
-        assert!(seconds(Some("x")).is_err());
         assert_eq!(clock(83.9), "1:23");
-        assert_eq!(clock(3723.0), "1:02:03");
         let thumbs = vec![vec![0u8; 4], vec![1; 4], vec![200; 4], vec![90; 4], vec![201; 4]];
         assert_eq!(distinct(&thumbs, 3), vec![0, 3, 4]);
         assert_eq!(distinct(&thumbs, 9), vec![0, 1, 2, 3, 4]);

@@ -1,4 +1,4 @@
-mod chat;
+pub mod chat;
 mod embed;
 mod hook;
 pub mod index;

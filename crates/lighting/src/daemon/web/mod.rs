@@ -24,10 +24,12 @@ use super::{Daemon, Out, STOPPED};
 
 pub use clean::{cleanup_now, done, keep};
 pub use data::pystr;
-pub use launch::{any_browser, pick};
+pub use launch::{any_browser, ensure_host, pick};
 pub use read::{read, wants as wants_read};
 #[cfg(windows)]
 pub use shot::save_picture;
+pub use shot::{distinct, save_sheet, sheet, thumb};
+pub use url::{leak_check, local_file, normalize_url};
 #[cfg(windows)]
 pub use wait::parse_ms;
 

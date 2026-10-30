@@ -27,7 +27,14 @@ const INSTRUCTIONS: &str = concat!(
 );
 const BLOCKED: [&str; 5] = ["daemon", "host", "mcp", "uninstall", "install"];
 const LOCAL: [&str; 2] = ["setup", "doctor"];
-const LONG_WAITS: [(&str, u64); 4] = [("inbox", 300_000), ("reply", 300_000), ("wait", 10_000), ("listen", 900_000)];
+const LONG_WAITS: [(&str, u64); 6] = [
+    ("inbox", 300_000),
+    ("reply", 300_000),
+    ("wait", 10_000),
+    ("listen", 900_000),
+    ("watch", 900_000),
+    ("frames", 900_000),
+];
 const CLIENT_TIMEOUT_S: f64 = 180.0;
 const BUSY_WAIT: Duration = Duration::from_secs(12);
 const SECRET_VAR: &str = "LIGHTING_MCP_SECRET";

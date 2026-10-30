@@ -56,8 +56,12 @@ fn user_home() -> PathBuf {
     env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from).unwrap_or_default()
 }
 
-fn gemini_key() -> Option<String> {
-    if let Some(k) = env::var(KEY_NAME).ok().filter(|k| !k.trim().is_empty()) {
+pub fn gemini_key() -> Option<String> {
+    api_key(KEY_NAME)
+}
+
+pub fn api_key(name: &str) -> Option<String> {
+    if let Some(k) = env::var(name).ok().filter(|k| !k.trim().is_empty()) {
         return Some(k.trim().to_string());
     }
     let file = KEY_FILE.iter().fold(user_home(), |p, part| p.join(part));
@@ -65,7 +69,7 @@ fn gemini_key() -> Option<String> {
     text.lines().find_map(|line| {
         let (k, v) = line.split_once('=')?;
         let v = v.trim().trim_matches(['"', '\'']);
-        (k.trim() == KEY_NAME && !v.is_empty()).then(|| v.to_string())
+        (k.trim() == name && !v.is_empty()).then(|| v.to_string())
     })
 }
 
@@ -83,7 +87,7 @@ pub fn provider(home: &Path) -> Option<Provider> {
     (!base.is_empty() && !model.is_empty()).then(|| Provider::Api { base: base.to_string(), model })
 }
 
-fn wait_turn() {
+pub fn wait_turn() {
     let Ok(mut last) = LAST_GEMINI.lock() else { return };
     if let Some(at) = *last {
         let left = GEMINI_GAP.saturating_sub(at.elapsed());
