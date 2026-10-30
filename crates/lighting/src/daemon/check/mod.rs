@@ -35,14 +35,16 @@ pub fn once(d: &Daemon, ctx: &mut Ctx, argv: &[String]) -> (String, bool) {
     if argv.first().is_some_and(|a| a == BLOCKED) {
         return blocked(d, ctx);
     }
-    match run_one(d, ctx, argv) {
+    let (mut out, err) = match run_one(d, ctx, argv) {
         Ok((Out::Text(t) | Out::Stop(t), _)) => (t, false),
         Ok((Out::Wait(p), _)) => match p.settle(d, ctx) {
             Ok(t) => (t, false),
             Err(f) => (f.text(), true),
         },
         Err(f) => (f.text(), true),
-    }
+    };
+    super::lane::add_notes(d, ctx, &mut out);
+    (out, err)
 }
 
 pub fn argv(words: &[&str]) -> Vec<String> {

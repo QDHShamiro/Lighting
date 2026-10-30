@@ -134,12 +134,7 @@ fn close_due(d: &Daemon, ctxs: &mut Contexts, waits: &[Wait]) {
     }
 }
 
-fn finish(d: &Daemon, ctx: &mut Ctx, req: Req, name: &str, mut out: String, code: i32, stop: bool) {
-    system::watch(d, ctx, req.used.as_deref().unwrap_or(&req.argv), &out, code == 0);
-    super::memory::learn::after(d, ctx, name, &req.argv, code, &mut out);
-    if code == 0 && route::foreign(name) {
-        out = route::ai_note(out);
-    }
+pub fn add_notes(d: &Daemon, ctx: &mut Ctx, out: &mut String) {
     let mut extra = mem::take(&mut ctx.notes);
     if !ctx.side {
         for event in d.hosts.take_events() {
@@ -155,6 +150,15 @@ fn finish(d: &Daemon, ctx: &mut Ctx, req: Req, name: &str, mut out: String, code
         }
         out.push_str(&extra.join("\n"));
     }
+}
+
+fn finish(d: &Daemon, ctx: &mut Ctx, req: Req, name: &str, mut out: String, code: i32, stop: bool) {
+    system::watch(d, ctx, req.used.as_deref().unwrap_or(&req.argv), &out, code == 0);
+    super::memory::learn::after(d, ctx, name, &req.argv, code, &mut out);
+    if code == 0 && route::foreign(name) {
+        out = route::ai_note(out);
+    }
+    add_notes(d, ctx, &mut out);
     let row = Row {
         name,
         argv: &req.argv,

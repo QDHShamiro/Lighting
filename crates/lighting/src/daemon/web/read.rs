@@ -29,6 +29,7 @@ const PARALLEL: usize = 8;
 const ACCEPT: &str = "text/markdown, text/plain;q=0.9, text/html;q=0.8, */*;q=0.1";
 
 static URL: LazyLock<Regex> = LazyLock::new(|| re(r"(?i)^(https?|file)://"));
+static BLOCKED: LazyLock<Regex> = LazyLock::new(|| re(r"(?i)bot check|http status: (401|403|429|451|503)\b"));
 static CODE: LazyLock<Regex> = LazyLock::new(|| re(r"```[\s\S]*?```|`[^`\n]*`"));
 static LINK: LazyLock<Regex> = LazyLock::new(|| re(r"!?\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)"));
 static FOOT: LazyLock<Regex> = LazyLock::new(|| re(r"\[\^[^\]]+\](:?)"));
@@ -145,7 +146,7 @@ fn direct_or_browser(d: &Daemon, ctx: &mut Ctx, url: &str, c: &Call, chars: usiz
     };
     ledger::note(&d.home, &key, "direct", false, &why);
     ledger::note(&d.home, "web", "direct", false, &why);
-    if !any_browser(d) {
+    if !BLOCKED.is_match(&why) || !any_browser(d) {
         return Ok(Ok(got));
     }
     browser(d, ctx, url, c, chars, &why).map(Err)
@@ -159,7 +160,12 @@ fn browser(d: &Daemon, ctx: &mut Ctx, url: &str, c: &Call, chars: usize, why: &s
     if let Some(f) = c.flags.get("f") {
         text.flags.insert("f".into(), f.clone());
     }
+    let (target, tabs) = (ctx.target.clone(), ctx.tabs.clone());
     let got = cmds::open(d, ctx, &open).and_then(|_| cmds::text(d, ctx, &text));
+    if let Some(tab) = ctx.tabs.iter().find(|t| !tabs.contains(t)).cloned() {
+        let _ = cmds::close(d, ctx, &Call { name: "close".into(), pos: vec![tab], ..Call::default() });
+    }
+    ctx.target = target;
     let failed = got.as_ref().err().map(Fail::text).unwrap_or_default();
     ledger::note(&d.home, &key, "browser", got.is_ok(), &failed);
     ledger::note(&d.home, "web", "browser", got.is_ok(), &failed);

@@ -12,7 +12,7 @@ function stillBusy(calm, res) {
   if (calm && calm.changed && calm.ms >= SETTLE_MAX_MS - 30 && res && !res.error) res.notes = (res.notes || []).concat(BUSY_NOTE);
   return res;
 }
-const { cfg, page, formatSnap, header, guard, tabOf, trunc, LOAD_MS } = A;
+const { cfg, page, formatSnap, header, guard, tabOf, trunc, LOAD_MS, LOADING_WAIT_MS } = A;
 let port = null;
 let backoff = 300;
 let timer = null;
@@ -112,7 +112,7 @@ async function openTab(a, tab) {
   lap("tab");
   await C.attach(tabId).catch(() => {});
   lap("attach");
-  const nav = await T.navigate(tabId, a.url, LOAD_MS);
+  const nav = await T.navigate(tabId, a.url, LOAD_MS, LOADING_WAIT_MS);
   lap("load");
   const calm = await page(tabId, "act.settle", [300, SETTLE_MAX_MS, 0, 150], 0, 8000).catch(() => null);
   lap("settle");
@@ -259,14 +259,14 @@ async function text(a, tab) {
   let why = "";
   if (!a.raw) {
     try {
-      const [probe] = await chrome.scripting.executeScript({ target: { tabId }, func: () => !!globalThis.Defuddle });
-      if (!probe.result) await chrome.scripting.executeScript({ target: { tabId }, files: ["defuddle.js"] });
+      const [probe] = await chrome.scripting.executeScript({ target: { tabId }, func: () => !!globalThis.Defuddle, injectImmediately: true });
+      if (!probe.result) await chrome.scripting.executeScript({ target: { tabId }, files: ["defuddle.js"], injectImmediately: true });
     } catch (e) {
       why = String((e && e.message) || e).slice(0, 120);
     }
   }
   const res = await page(tabId, "act.text", [{ filter: a.filter || null, raw: !!a.raw, links: !!a.links, why }], 0, 25000);
-  return header(tabId, { title: res.title, url: res.url }) + "\n" + res.text;
+  return header(tabId, { title: res.title, url: res.url, loading: res.loading }) + "\n" + res.text;
 }
 
 async function table(a, tab) {

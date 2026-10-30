@@ -5,6 +5,8 @@ import * as I from "./input.js";
 export const cfg = { blocklist: [], risk: [], pointer: true, navLines: 40, navChars: 1600, abort: false };
 
 const LOAD_MS = 20000;
+const LOADING_WAIT_MS = 8000;
+const EARLY = new Set(["snap", "diff", "act.text", "act.visibleText", "act.table", "act.peek", "act.settle"]);
 
 function trunc(s, n) {
   s = String(s || "");
@@ -26,12 +28,31 @@ function risky(name) {
   return cfg.risk.some((w) => new RegExp("(^|[^\\p{L}])" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^\\p{L}]|$)", "u").test(n));
 }
 
-function callLt(fn, args) {
+function callLt(fn, args, wait) {
   const L = globalThis.__lt;
   if (!L || !L.act) return { __missing: true };
-  const dot = fn.indexOf(".");
-  const f = dot > 0 ? L[fn.slice(0, dot)][fn.slice(dot + 1)] : L[fn];
-  return f.apply(null, args || []);
+  const nav = wait ? performance.getEntriesByType("navigation")[0] : null;
+  if (nav && !(nav.domContentLoadedEventStart > 0)) {
+    return new Promise((ok) => {
+      let done = false;
+      const go = (late) => {
+        if (done) return;
+        done = true;
+        Promise.resolve(callLt(fn, args, 0)).then((r) => ok(late && r && typeof r === "object" ? Object.assign(r, { loading: true }) : r));
+      };
+      document.addEventListener("DOMContentLoaded", () => go(false), { once: true });
+      setTimeout(() => go(true), Math.max(0, wait - performance.now()));
+    });
+  }
+  const failed = (e) => ({ __error: String((e && e.message) || e).slice(0, 200) });
+  try {
+    const dot = fn.indexOf(".");
+    const f = dot > 0 ? L[fn.slice(0, dot)][fn.slice(dot + 1)] : L[fn];
+    const r = f.apply(null, args || []);
+    return r && typeof r.then === "function" ? r.then((v) => v, failed) : r;
+  } catch (e) {
+    return failed(e);
+  }
 }
 
 function friendly(e, url) {
@@ -101,16 +122,18 @@ export async function page(tabId, fn, args, frameId, ms) {
   const fr = !frameId && args && typeof args[0] === "string" ? FRAME_REF.exec(args[0]) : null;
   if (fr) return inFrame(tabId, Number(fr[1]), fn, [fr[2]].concat(args.slice(1)), ms);
   const target = { tabId, frameIds: [frameId || 0] };
-  const call = () => chrome.scripting.executeScript({ target, func: callLt, args: [fn, args || []] });
+  const early = EARLY.has(fn);
+  const call = () => chrome.scripting.executeScript({ target, func: callLt, args: [fn, args || [], early ? LOADING_WAIT_MS : 0], injectImmediately: early });
   let tab = null;
   try {
     tab = await chrome.tabs.get(tabId);
     let [r] = await withDialog(tabId, call(), ms || 15000);
     if (r && r.result && r.result.__missing) {
-      await chrome.scripting.executeScript({ target, files: ["page.js", "page-act.js"] });
+      await chrome.scripting.executeScript({ target, files: ["page.js", "page-act.js"], injectImmediately: early });
       [r] = await withDialog(tabId, call(), ms || 15000);
     }
     if (!r) throw new Error("page did not answer");
+    if (r.result && r.result.__error) throw new Error("page script error: " + r.result.__error + " -> try: lighting text or lighting shot");
     return r.result;
   } catch (e) {
     throw friendly(e, tab && tab.url);
@@ -133,6 +156,7 @@ async function guard(tabId, what) {
 function header(tabId, res) {
   let h = "[t" + T.sid(tabId) + "] " + trunc(res.title || "(no title)", 70) + " - " + T.short(res.url || "", 80);
   if (res.scroll !== undefined) h += " (scroll " + res.scroll + "%)";
+  if (res.loading) h += " (still loading)";
   return h;
 }
 
@@ -161,7 +185,8 @@ function formatSnap(tabId, res, limit, whole) {
   for (const n of res.notes || []) out.push(n);
   if (res.delta) {
     const d = res.delta;
-    out.push(res.lines.length || d.gone ? "changed since your last snap: +" + res.lines.length + (d.gone ? ", -" + d.gone + " gone" : "") + " (all " + d.total + " lines: lighting snap --full)" : "no change since your last snap (all " + d.total + " lines: lighting snap --full)");
+    const all = " (all " + d.total + " lines" + (d.chars ? ", ~" + Math.round(d.chars / 4).toLocaleString("en-US") + " tokens" : "") + ": lighting snap --full)";
+    out.push(res.lines.length || d.gone ? "changed since your last snap: +" + res.lines.length + (d.gone ? ", -" + d.gone + " gone" : "") + all : "no change since your last snap" + all);
     out.push(...res.lines);
     return out.join("\n");
   }
@@ -235,7 +260,7 @@ async function after(tabId, nav, beforeUrl, extra, mark, startBudget, beforeTitl
   if (mark) mark("nav");
   const navigated = st.started || st.dcl;
   if (navigated || st.spa) {
-    await quiet;
+    if (!navigated) await quiet;
     if (st.spa && !navigated && beforeTitle !== undefined) await titleChange(tabId, beforeTitle, 3000);
     await page(tabId, "act.settle", [250, 3000], 0, 8000).catch(() => {});
   } else {
@@ -346,9 +371,22 @@ export async function type(a, tab) {
   if (typeof v.value === "string" && text && !v.value.includes(text)) await page(tabId, "act.setValue", [f.ref, a.append ? v.value + text : text]);
   const before = (await chrome.tabs.get(tabId)).url;
   const nav = T.watchNav(tabId);
-  if (a.enter) await I.press(tabId, "Enter");
+  let lost = "";
+  if (a.enter) {
+    await page(tabId, "act.armKey", [f.ref]).catch(() => {});
+    await I.press(tabId, "Enter");
+    let seen = null;
+    for (let i = 0; i < 3 && !(seen && seen.seen !== false); i++) {
+      if (i) await new Promise((res) => setTimeout(res, 60));
+      seen = await page(tabId, "act.keySeen", [f.ref]).catch(() => null);
+    }
+    if (seen && seen.seen === false) {
+      const done = await page(tabId, "act.domEnter", [f.ref]).catch(() => null);
+      if (done && done.ok) lost = " (the Enter did not reach the page, so it was sent inside it)";
+    }
+  }
   const shown = a.secret ? text.length + " secret chars" : text.length + " chars";
-  return after(tabId, nav, before, " (typed " + shown + ")");
+  return after(tabId, nav, before, " (typed " + shown + ")" + lost);
 }
 
 function truthy(v) {
@@ -518,4 +556,4 @@ export async function scroll(a, tab) {
   return "ok (scroll " + Math.max(0, Math.min(100, pct)) + "%)";
 }
 
-export { formatSnap, header, guard, tabOf, blockedHost, trunc, LOAD_MS };
+export { formatSnap, header, guard, tabOf, blockedHost, trunc, LOAD_MS, LOADING_WAIT_MS };
