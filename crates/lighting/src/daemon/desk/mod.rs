@@ -51,7 +51,7 @@ mod win;
 #[cfg(windows)]
 use lt_core::Fail;
 #[cfg(not(windows))]
-pub use xa::{cleanup, keep, run};
+pub use xa::{access, cleanup, keep, run};
 
 #[cfg(not(windows))]
 fn windowish(p: &str) -> bool {
@@ -85,6 +85,11 @@ pub type Res<T> = Result<T, Halt>;
 
 #[cfg(windows)]
 pub use imp::{Desk, TERMINALS, windowish};
+
+#[cfg(windows)]
+pub fn access() -> String {
+    "apps ok (Windows UI Automation needs no permission)".into()
+}
 
 #[cfg(windows)]
 pub fn app_where(hwnd: isize) -> Option<(String, String)> {

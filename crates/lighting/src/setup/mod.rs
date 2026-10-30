@@ -89,6 +89,11 @@ fn setup(home: &Path, manual: bool, global: bool, browser: Option<&str>) -> Resu
         println!("browser link and PATH left alone (LIGHTING_HOME is set; --register writes them for this folder)");
     }
     println!("browsers found: {}", if browsers.is_empty() { "none".into() } else { browsers.join(", ") });
+    if !cfg!(windows)
+        && let Ok(access) = installed(home, &exe, &["access-prompt"])
+    {
+        println!("{access}");
+    }
     let mut lines = connected(home, &exe);
     if lines.is_empty() && !manual && global && !browsers.is_empty() {
         println!("loading the extension by itself (takes ~10 s) ...");

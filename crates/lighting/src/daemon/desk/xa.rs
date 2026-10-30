@@ -56,6 +56,13 @@ pub fn with<T>(ctx: &mut Ctx, f: impl FnOnce(&mut State, &mut Ctx) -> T) -> T {
     })
 }
 
+pub fn access() -> String {
+    match App::list() {
+        Ok(apps) => format!("apps ok ({} readable)", apps.len()),
+        Err(e) => format!("apps missing: {}", fail(&e).text()),
+    }
+}
+
 pub fn fail(e: &Error) -> Fail {
     match e {
         Error::PermissionDenied { .. } | Error::AccessibilityNotEnabled { .. } => {

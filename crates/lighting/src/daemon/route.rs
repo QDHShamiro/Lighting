@@ -154,6 +154,7 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "selftest" => super::check::selftest(d, ctx, c).map(Out::Text),
         "bench" => super::check::bench(d, ctx, c),
         "demo" => super::check::demo(d, ctx, c).map(Out::Text),
+        "access-prompt" => Ok(Out::Text(desk::access())),
         "do" => flow::run(d, ctx, c),
         "run" | "routine" | "routines" => routines::command(d, ctx, c),
         "channels" => channels::run(d, ctx, c),

@@ -27,7 +27,6 @@ const SYSTEM: &[&str] = &[
     "suggest",
     "brain",
     "improve",
-    "doctor-info",
     "access-prompt",
     "tokens",
     "grep",
@@ -70,7 +69,7 @@ pub const WEB_ONLY: &[&str] = &[
     "frames",
 ];
 const MORE: &[&str] = &["read", "listen", "watch", "voice", "phone", "claude", "desktop"];
-const HIDDEN: &[&str] = &["hook", "suggest", "board", "doctor-info", "access-prompt", "autoload", "ping"];
+const HIDDEN: &[&str] = &["hook", "suggest", "board", "access-prompt", "autoload", "ping"];
 const GUESS: &[(&str, &str)] = &[
     ("find", "snap -f \"word\" (page), code <name> (code) or recall \"words\" (memory)"),
     ("url", "tabs (every tab with its URL)"),
@@ -93,7 +92,6 @@ pub const QUIET: &[&str] = &[
     "config",
     "brain",
     "improve",
-    "doctor-info",
     "access-prompt",
     "tokens",
     "board",
