@@ -5,6 +5,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde_json::{Map, Value, json};
 
+use super::memory::learn::{Failed, Offered};
+
 pub const SESSION_IDLE_S: f64 = 12.0 * 3600.0;
 const REPEAT_NOTE_AT: u32 = 3;
 const REPEAT_BRAKE_AT: u32 = 5;
@@ -80,6 +82,8 @@ pub struct Ctx {
     pub image: String,
     pub shots: HashMap<String, Vec<u8>>,
     pub told: HashMap<String, f64>,
+    pub failed: Option<Failed>,
+    pub offered: Option<Offered>,
 }
 
 impl Ctx {
@@ -105,6 +109,8 @@ impl Ctx {
             image: String::new(),
             shots: HashMap::new(),
             told: HashMap::new(),
+            failed: None,
+            offered: None,
         }
     }
 

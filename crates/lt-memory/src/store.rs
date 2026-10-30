@@ -47,6 +47,8 @@ create table if not exists todos(id integer primary key, project text, list text
   status text default 'todo', note text default '', created real, updated real, origin text default '');
 create index if not exists todos_project on todos(project, status);
 create table if not exists meta(k text primary key, v text);
+create table if not exists lessons(sig text primary key, cmd text, target text, kind text, fix text,
+  ups integer default 1, downs integer default 0, created real, updated real);
 ";
 const MIGRATE: &[&str] = &[
     "alter table sessions add column why text default ''",

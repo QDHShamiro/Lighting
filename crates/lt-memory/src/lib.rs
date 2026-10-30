@@ -1,8 +1,10 @@
+mod lessons;
 mod project;
 mod start;
 mod store;
 mod text;
 
+pub use lessons::Lesson;
 pub use project::project_of;
 pub use start::Session;
 pub use store::{Hit, NewNote, Note, Store, Todo, VEC_DIM, date, day, now};
