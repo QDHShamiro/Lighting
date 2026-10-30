@@ -20,3 +20,4 @@ pub use transcript::{CHUNK_CHARS, Condensed, chunks, condense, project_of_files}
 pub use vault::{Page, claude_dirs, parse as parse_page};
 pub use wiki::{Draft, accept as accept_draft, drafts, drop_draft, rel_path};
 pub type DbResult<T> = rusqlite::Result<T>;
+pub type DbError = rusqlite::Error;

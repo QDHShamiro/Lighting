@@ -63,6 +63,9 @@ pub fn hook(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
     let sid = Some(data_text(&data, "session_id")).filter(|s| !s.is_empty()).unwrap_or(ctx.sid.as_str()).to_string();
     let transcript = data_text(&data, "transcript_path");
     with_store(d, |s| s.session_seen(&sid, &here, &cwd, transcript, event == "end"))?;
+    if event == "compact" {
+        super::index::learn_now();
+    }
     if event != "start" {
         return Ok(String::new());
     }

@@ -20,7 +20,7 @@ web     open <url> [-n] [-f \"a|b\"] [--text]   snap [-f \"a|b\"] [-s css|ref] [
         tools   call <tool> '{json}' [--yes] (WebMCP)
 memory  recall \"words\" [--all] [--max n] | recall <id>   remember \"fact\" [--kind k]   forget <id>
         todo [--all] | todo add \"task\" [--list name] [--doing] | todo done|doing|drop|open <id> [note] | todo note <id> \"text\"
-        memory [on|off]   memory lessons | memory unlearn <n> (fixes learned from failed commands)
+        memory [learn|on|off]   memory lessons | memory unlearn <n> (fixes learned from failed commands)
         wiki | wiki accept <n> [folder] | wiki drop <n> | wiki show <n> (drafts in the vault inbox)
 keys    keys [site] [-f x]   keys add <site> \"ctrl+k=what\"   keys rm <site> <key>
 cleanup done [--quiet]   keep [t]   config cleanup on|off
@@ -170,7 +170,7 @@ mod tests {
         assert_eq!(about("listen"), None);
         assert!(about("recall").is_some_and(|row| row.starts_with("recall \"words\"")));
         assert!(about("todo").is_some_and(|row| row.starts_with("todo [--all]")));
-        assert!(about("memory").is_some_and(|row| row.starts_with("memory [on|off]")));
+        assert!(about("memory").is_some_and(|row| row.starts_with("memory [learn|on|off]")));
         assert!(about("wiki").is_some_and(|row| row.starts_with("wiki | wiki accept")));
         assert_eq!(help(Some("listen")).ok().as_deref(), Some(HELP));
         assert_eq!(help(None).ok().as_deref(), Some(HELP));

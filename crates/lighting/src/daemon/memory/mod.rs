@@ -1,7 +1,9 @@
+mod chat;
 mod embed;
 mod hook;
 pub mod index;
 pub mod learn;
+mod learner;
 mod status;
 mod watch;
 mod wiki;

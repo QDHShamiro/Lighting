@@ -3,9 +3,9 @@ use lt_memory::{now, oneline};
 
 use super::super::route::later;
 use super::super::{Daemon, config, game};
-use super::{embed, index, with_store};
+use super::{chat, embed, index, learner, with_store};
 
-const MEMORY_HELP: &str = "lighting memory [on | off | lessons | unlearn <n>]";
+const MEMORY_HELP: &str = "lighting memory [learn | on | off | lessons | unlearn <n>]";
 const FIX_CHARS: usize = 80;
 
 pub fn memory(d: &Daemon, c: &Call) -> Result<String, Fail> {
@@ -18,7 +18,8 @@ pub fn memory(d: &Daemon, c: &Call) -> Result<String, Fail> {
         }
         "lessons" => lessons(d),
         "unlearn" => unlearn(d, c),
-        "learn" | "import" | "model" => Err(later(&format!("memory {sub}"))),
+        "learn" => learn(d),
+        "import" | "model" => Err(later(&format!("memory {sub}"))),
         _ => Err(Fail::hint(format!("unknown memory command '{sub}'"), MEMORY_HELP)),
     }
 }
@@ -36,6 +37,16 @@ fn status(d: &Daemon) -> Result<String, Fail> {
         c.queued
     )];
     lines.push(format!("model: {}", embed::status(&d.home)));
+    let teacher =
+        chat::provider(&d.home).map_or_else(|| "none (GEMINI_API_KEY or memory_api_model)".into(), |p| p.name());
+    lines.push(format!("learns with: {teacher}"));
+    let st = learner::state();
+    if !st.last.is_empty() {
+        lines.push(format!("last: {} ({} notes learned since the start)", st.last, st.learned));
+    }
+    if !st.error.is_empty() {
+        lines.push(format!("learner problem: {}", st.error));
+    }
     let game = if c.vecs < c.notes { game::running() } else { String::new() };
     if !game.is_empty() {
         lines.push(format!("vectors wait: {game} runs"));
@@ -53,6 +64,13 @@ fn status(d: &Daemon) -> Result<String, Fail> {
     let db = d.home.join("memory").join("memory.db");
     lines.push(format!("kept on this PC only ({}) | {MEMORY_HELP}", db.display().to_string().replace('\\', "/")));
     Ok(lines.join("\n"))
+}
+
+fn learn(d: &Daemon) -> Result<String, Fail> {
+    with_store(d, |s| s.sessions_retry_all())?;
+    let queued = with_store(d, |s| s.counts())?.queued;
+    index::learn_now();
+    Ok(format!("learning {queued} sessions in the background (lighting memory shows the state)"))
 }
 
 fn lessons(d: &Daemon) -> Result<String, Fail> {

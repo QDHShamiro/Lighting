@@ -1,5 +1,6 @@
 use std::env;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, RecvTimeoutError, SyncSender};
 use std::sync::{Mutex, OnceLock};
 use std::thread;
@@ -8,9 +9,10 @@ use std::time::{Duration, Instant};
 use lt_memory::{Store, claude_dirs};
 
 use super::super::{config, game};
-use super::{embed, watch};
+use super::{embed, learner, watch};
 
 const EVERY: Duration = Duration::from_secs(300);
+const TICK: Duration = Duration::from_secs(60);
 const RETRY: Duration = Duration::from_secs(2);
 const VAULT_WATCHED: Duration = Duration::from_secs(3600);
 const SETTLE: Duration = Duration::from_secs(3);
@@ -21,6 +23,7 @@ const VAULT_DIR: &str = "vault";
 
 static WAKE: OnceLock<SyncSender<()>> = OnceLock::new();
 static PROBLEM: Mutex<String> = Mutex::new(String::new());
+static SOON: AtomicBool = AtomicBool::new(false);
 
 #[derive(Default)]
 struct Last {
@@ -42,7 +45,7 @@ pub fn start(home: PathBuf) {
         let (mut store, mut last, mut force) = (None, Last::default(), true);
         loop {
             let wait = match pass(&home, &mut store, &mut last, force, vault_every) {
-                Ok(()) => EVERY,
+                Ok(()) => TICK,
                 Err(why) => {
                     store = None;
                     if let Ok(mut p) = PROBLEM.lock() {
@@ -68,6 +71,11 @@ pub fn nudge() {
     if let Some(tx) = WAKE.get() {
         let _ = tx.try_send(());
     }
+}
+
+pub fn learn_now() {
+    SOON.store(true, Ordering::Relaxed);
+    nudge();
 }
 
 pub fn problem() -> String {
@@ -110,6 +118,7 @@ fn pass(
     if let Ok(mut p) = PROBLEM.lock() {
         p.clear();
     }
+    learner::tick(home, store, SOON.swap(false, Ordering::Relaxed));
     embed_some(home, store);
     Ok(())
 }
