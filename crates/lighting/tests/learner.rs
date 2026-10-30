@@ -77,6 +77,7 @@ fn sessions_are_learned_into_notes_and_vault_pages() {
     let transcript = home.join("t.jsonl");
     fs::write(&transcript, lines.iter().map(|l| l.to_string() + "\n").collect::<String>()).unwrap();
     let end = json!({"session_id": "abcdef123456", "transcript_path": transcript.display().to_string(), "cwd": home.display().to_string()});
+    assert!(run(&home, &["memory"]).1.starts_with("memory on: "));
     assert_eq!(run(&home, &["hook", "end", &end.to_string()]).0, 0);
     let (code, said) = run(&home, &["memory", "learn"]);
     assert!(
