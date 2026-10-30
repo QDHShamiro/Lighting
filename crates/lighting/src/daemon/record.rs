@@ -6,6 +6,7 @@ use serde_json::{Map, Value, json};
 use super::ctx::{Ctx, now};
 use super::{Daemon, Out, routines, web};
 
+#[cfg(windows)]
 const MINUTES: u64 = 15;
 const NOTES: usize = 5;
 const WEB_CMDS: &[&str] = &["click", "fill", "press", "scroll", "reload", "type"];

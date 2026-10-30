@@ -58,7 +58,6 @@ pub fn shot(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     Ok(res)
 }
 
-#[cfg(windows)]
 pub fn save_picture(
     d: &Daemon,
     ctx: &mut Ctx,
