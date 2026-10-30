@@ -56,6 +56,14 @@ pub fn with<T>(ctx: &mut Ctx, f: impl FnOnce(&mut State, &mut Ctx) -> T) -> T {
     })
 }
 
+const BROWSER_APPS: &[&str] = &["chrome", "chromium", "brave", "edge", "vivaldi", "opera"];
+
+pub fn browser_in_front() -> bool {
+    App::list().is_ok_and(|apps| {
+        apps.iter().any(|a| a.is_foreground() && BROWSER_APPS.iter().any(|b| a.name.to_lowercase().contains(b)))
+    })
+}
+
 pub fn access() -> String {
     match App::list() {
         Ok(apps) => format!("apps ok ({} readable)", apps.len()),

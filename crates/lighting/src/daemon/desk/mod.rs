@@ -51,7 +51,7 @@ mod win;
 #[cfg(windows)]
 use lt_core::Fail;
 #[cfg(not(windows))]
-pub use xa::{access, cleanup, keep, run};
+pub use xa::{access, browser_in_front, cleanup, keep, run};
 
 #[cfg(not(windows))]
 fn windowish(p: &str) -> bool {
@@ -85,6 +85,12 @@ pub type Res<T> = Result<T, Halt>;
 
 #[cfg(windows)]
 pub use imp::{Desk, TERMINALS, windowish};
+
+#[cfg(windows)]
+pub fn browser_in_front() -> bool {
+    let fg = win::foreground();
+    fg != 0 && Desk::is_browser(fg)
+}
 
 #[cfg(windows)]
 pub fn access() -> String {

@@ -136,8 +136,14 @@ export function setOwnWindow(on) {
   ownWindow = on;
 }
 
+let settleUntil = 0;
+
+export function noteShift() {
+  settleUntil = Date.now() + FOCUS_GRACE_MS;
+}
+
 export function noteFocus(id) {
-  if (id !== chrome.windows.WINDOW_ID_NONE) focusedAt[id] = Date.now();
+  if (id !== chrome.windows.WINDOW_ID_NONE && Date.now() >= settleUntil) focusedAt[id] = Date.now();
 }
 
 export function userPicked(id) {

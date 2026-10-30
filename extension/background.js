@@ -829,6 +829,9 @@ chrome.downloads.onChanged.addListener(async (d) => {
   if (item) event("download done: " + item.filename);
 });
 
+chrome.tabs.onRemoved.addListener(() => T.noteShift());
+chrome.windows.onRemoved.addListener(() => T.noteShift());
+
 chrome.windows.onFocusChanged.addListener((id) => {
   T.noteFocus(id);
   post({ event: "focus", focused: id !== chrome.windows.WINDOW_ID_NONE });

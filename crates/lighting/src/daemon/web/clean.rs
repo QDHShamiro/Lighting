@@ -56,7 +56,9 @@ pub fn cleanup_now(d: &Daemon, ctx: &mut Ctx, quiet: bool) -> Result<String, Fai
     if !ctx.sid.is_empty() && web_tab && ctx.tabs.first().is_some_and(|t| ctx.owned.contains(t)) {
         ctx.closed_url = Some(ctx.url());
     }
-    let replies = browsers(d, ctx, "cleanup", scope(ctx))?;
+    let mut args = scope(ctx);
+    args.insert("front".into(), json!(desk::browser_in_front()));
+    let replies = browsers(d, ctx, "cleanup", args)?;
     let tabs: i64 = replies.iter().map(|r| num(r.get("closed"))).sum();
     let viewed: i64 = replies.iter().map(|r| num(r.get("kept"))).sum();
     let list = |r: &Map<String, Value>, key: &str| -> Vec<String> {
