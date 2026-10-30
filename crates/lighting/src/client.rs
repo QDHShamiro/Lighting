@@ -13,7 +13,7 @@ use crate::daemon::MARKER;
 const HOOK_INPUT_WAIT: Duration = Duration::from_millis(1000);
 const HOOK_INPUT_MAX: u64 = 64 * 1024;
 const START_WAIT: Duration = Duration::from_secs(12);
-const NOT_BUILT: &[&str] = &["setup", "install", "uninstall", "doctor"];
+const NOT_BUILT: &[&str] = &["setup", "install", "uninstall"];
 
 pub fn run(raw: &[String]) -> ExitCode {
     let args: Vec<String> = match msys_root() {
@@ -27,6 +27,9 @@ pub fn run(raw: &[String]) -> ExitCode {
     }
     if !home.join(MARKER).is_file() {
         return v2(&home, raw);
+    }
+    if first == "doctor" {
+        return crate::daemon::doctor(&home, &args[1..], ask);
     }
     if NOT_BUILT.contains(&first) {
         eprintln!("lighting {first}: not built into Lighting 3.0 yet");
@@ -115,6 +118,15 @@ fn send(home: &Path, args: &[String]) -> ExitCode {
         let _ = so.flush();
     }
     ExitCode::from(u8::try_from(reply.code).unwrap_or(1))
+}
+
+pub fn ask(home: &Path, argv: &[&str]) -> Result<(i32, String), String> {
+    let token = lt_proto::key_token(home).or_else(|| first_key(home)).ok_or("the daemon made no key")?;
+    let cwd = env::current_dir().map(|p| p.display().to_string()).unwrap_or_default();
+    let argv: Vec<String> = argv.iter().map(|a| (*a).to_string()).collect();
+    let req = Request { token: &token, cwd: &cwd, sid: "", secret: None, argv: &argv }.encode();
+    let reply = Reply::decode(&exchange(home, &req, None)?);
+    Ok((reply.code, reply.out))
 }
 
 fn v2(home: &Path, raw: &[String]) -> ExitCode {

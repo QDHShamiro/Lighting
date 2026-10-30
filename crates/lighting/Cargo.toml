@@ -21,7 +21,9 @@ lt-proto.workspace = true
 lt-squeeze.workspace = true
 pdf-extract.workspace = true
 regex.workspace = true
+rusqlite.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
 ureq.workspace = true
 
 [target.'cfg(windows)'.dependencies]

@@ -2,6 +2,7 @@ mod channels;
 mod config;
 mod ctx;
 mod desk;
+mod doctor;
 mod game;
 mod hosts;
 mod lane;
@@ -120,6 +121,8 @@ enum Msg {
     Cmd(Incoming, bool),
     Hello(Map<String, Value>),
 }
+
+pub use doctor::run as doctor;
 
 pub fn may_serve() -> bool {
     let home = lt_proto::home();

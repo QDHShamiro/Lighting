@@ -83,3 +83,22 @@ fn channels_list_the_ways_and_remember_what_failed_where() {
     let (code, out) = home.run(&["channels", "x"]);
     assert!(code == 1 && out.starts_with("err: channels takes no argument"), "{out}");
 }
+
+#[test]
+fn doctor_checks_the_parts_and_takes_only_fix() {
+    let base = if cfg!(windows) { std::env::temp_dir() } else { PathBuf::from("/tmp") };
+    let path = base.join(format!("ltd-doctor-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&path);
+    fs::create_dir_all(&path).unwrap();
+    fs::write(path.join("v3"), "").unwrap();
+    fs::write(path.join("config.json"), "{broken").unwrap();
+    let home = Home(path);
+    let (code, out) = home.run(&["doctor"]);
+    assert!(out.starts_with("lighting doctor "), "{out}");
+    for part in ["\nok   daemon  pid ", "\nok   gh      ", "\nFAIL data    ", "config.json"] {
+        assert!(out.contains(part) || (part.contains("gh") && out.contains(" gh ")), "{part:?} missing:\n{out}");
+    }
+    assert!(code == 1 && out.lines().last().unwrap_or("").starts_with("1 problem, "), "{out}");
+    let (code, _) = home.run(&["doctor", "--bogus"]);
+    assert_eq!(code, 2);
+}

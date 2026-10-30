@@ -723,7 +723,9 @@ dependencies = [
  "lt-squeeze",
  "pdf-extract",
  "regex",
+ "rusqlite",
  "serde_json",
+ "sha2 0.10.9",
  "ureq",
  "windows",
 ]
