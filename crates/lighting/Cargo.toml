@@ -10,6 +10,10 @@ publish.workspace = true
 name = "lighting"
 path = "src/main.rs"
 
+[[bin]]
+name = "lighting-task"
+path = "src/task.rs"
+
 [dependencies]
 base64.workspace = true
 encoding_rs.workspace = true

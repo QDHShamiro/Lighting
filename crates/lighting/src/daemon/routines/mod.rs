@@ -3,6 +3,7 @@ mod diff;
 mod episode;
 mod learn;
 mod run;
+mod schedule;
 mod store;
 
 use std::collections::{BTreeMap, HashSet};
@@ -12,7 +13,6 @@ use lt_core::{Call, Fail, OUT_CHARS};
 use serde_json::{Value, json};
 
 use super::ctx::{Ctx, now};
-use super::route::later;
 use super::words::{terms, tiers};
 use super::{Daemon, Out, web};
 pub use episode::Episode;
@@ -168,7 +168,12 @@ pub fn command(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
             let r = load(&d.home, need(rest, "rm")?)?;
             let name = text(&r["name"]);
             fs::remove_file(file(&d.home, &name)).map_err(|e| Fail::new(format!("cannot remove {name} ({e})")))?;
-            format!("removed routine {name}")
+            if schedule::load(&d.home).contains_key(&name) {
+                schedule::remove(&d.home, &name)?;
+                format!("removed routine {name} and its schedule")
+            } else {
+                format!("removed routine {name}")
+            }
         }
         "rename" => {
             let [old, new, ..] = rest else {
@@ -195,9 +200,9 @@ pub fn command(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
             Some(r) => format!("learned {}", text(&r["name"])),
             None => "nothing new to learn".into(),
         },
-        "schedule" | "unschedule" | "schedules" => {
-            return Err(later(&format!("routine {sub}")));
-        }
+        "schedules" => schedule::listing(&d.home),
+        "unschedule" => schedule::remove(&d.home, need(rest, "unschedule")?)?,
+        "schedule" => schedule::add(&d.home, need(rest, "schedule")?, &rest[1..])?,
         other => return Err(Fail::hint(format!("unknown routine command {other}"), SUBS)),
     };
     Ok(Out::Text(text_out))

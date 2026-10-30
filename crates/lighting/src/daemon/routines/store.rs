@@ -63,7 +63,7 @@ pub fn save(home: &Path, r: &Value) -> Result<(), Fail> {
     fs::write(file(home, name), indent_one(&text)).map_err(|e| Fail::new(format!("cannot save routine {name} ({e})")))
 }
 
-fn indent_one(pretty: &str) -> String {
+pub fn indent_one(pretty: &str) -> String {
     pretty
         .lines()
         .map(|l| {
