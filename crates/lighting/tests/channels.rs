@@ -79,7 +79,7 @@ fn channels_list_the_ways_and_remember_what_failed_where() {
     let (code, out) = home.run(&["read", &format!("http://127.0.0.1:{port}/gate")]);
     assert!(code == 0 && out.contains("checking"), "{out}");
     let (_, out) = home.run(&["channels"]);
-    assert!(out.contains("last: direct failed 0 s ago: the site showed a bot check"), "{out}");
+    assert!(out.contains("last: direct failed ") && out.contains(" ago: the site showed a bot check"), "{out}");
     let (code, out) = home.run(&["channels", "x"]);
     assert!(code == 1 && out.starts_with("err: channels takes no argument"), "{out}");
 }

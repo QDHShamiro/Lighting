@@ -3,6 +3,7 @@ mod config;
 mod ctx;
 mod desk;
 mod doctor;
+mod flow;
 mod game;
 mod hosts;
 mod lane;

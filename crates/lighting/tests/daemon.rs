@@ -337,3 +337,21 @@ fn more_reads_kept_outputs_without_a_daemon() {
     let (code, missing) = home.run(&["more", "hr-ffffffffff"]);
     assert!(code == 1 && missing.starts_with("err: hr-ffffffffff is not kept any more"), "{missing}");
 }
+
+#[test]
+fn do_runs_steps_in_order_waits_and_stops_at_the_first_error() {
+    let home = Home::new("do", true);
+    assert_eq!(home.run(&["do", "version; ping"]), (0, "1 3.0.0-dev.0\n2 pong".into()));
+    let (_, out) = home.run(&["do", "ping; nonsense; ping"]);
+    assert!(
+        out.starts_with("1 pong\n2 err: unknown command 'nonsense'") && out.ends_with("(stopped, 1 skipped)"),
+        "{out}"
+    );
+    let (_, out) = home.run(&["do", "?nonsense; wait 200; ping", "--quiet"]);
+    assert!(out.starts_with("1 skipped, err: unknown command") && out.contains("\n2 ok (200 ms)"), "{out}");
+    let (_, out) = home.run(&["batch", "ping; nonsense; ping", "--keep-going"]);
+    assert!(out.ends_with("3 pong\n1 of 3 steps failed"), "{out}");
+    assert_eq!(home.run(&["do", "ping; ping", "--quiet"]).1, "ok 2/2\n2 pong");
+    let (_, out) = home.run(&["do", "do ping"]);
+    assert!(out.starts_with("err: do cannot run inside do"), "{out}");
+}
