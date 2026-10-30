@@ -20,6 +20,8 @@ use super::channels::ledger;
 use super::ctx::Ctx;
 use super::{Daemon, Out, Pending, config, route, web};
 use listen::{Job as ListenJob, Live, Src};
+#[cfg(windows)]
+pub use listen::{multipart, spoken, whisper_service};
 use watch::{Job, Kind};
 
 const LISTEN_WAIT: Duration = Duration::from_secs(900);

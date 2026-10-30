@@ -175,7 +175,7 @@ pub fn shrink(home: &Path, path: &Path, dir: &Path) -> PathBuf {
     if ok && fs::metadata(&out).is_ok_and(|m| m.len() > 0) { out } else { path.to_path_buf() }
 }
 
-fn multipart(fields: &[(&str, &str)], filename: &str, data: &[u8]) -> (Vec<u8>, String) {
+pub fn multipart(fields: &[(&str, &str)], filename: &str, data: &[u8]) -> (Vec<u8>, String) {
     let boundary = format!("lighting{:x}{:x}", std::process::id(), lt_memory::now().to_bits());
     let mut body = Vec::with_capacity(data.len() + 1024);
     for (k, v) in fields {
@@ -244,6 +244,13 @@ fn post_audio(
     serde_json::from_str(&text).map_err(|_| (status, "no JSON".into()))
 }
 
+pub fn whisper_service(home: &Path) -> (String, String) {
+    let cfg = config::load(home);
+    let base = config::text(&cfg, "whisper_api");
+    let base = base.trim_end_matches('/');
+    (base.strip_suffix("/v1").unwrap_or(base).to_string(), config::text(&cfg, "whisper_model"))
+}
+
 pub fn transcribe(home: &Path, path: &Path, lang: Option<&str>, local: bool) -> Result<Heard, Fail> {
     if !local {
         for (env, url, model, name) in CLOUDS {
@@ -261,14 +268,10 @@ pub fn transcribe(home: &Path, path: &Path, lang: Option<&str>, local: bool) -> 
             }
         }
     }
-    let cfg = config::load(home);
-    let base = config::text(&cfg, "whisper_api");
-    let base = base.trim_end_matches('/');
-    let base = base.strip_suffix("/v1").unwrap_or(base);
+    let (base, model) = whisper_service(home);
     if base.is_empty() {
         return Err(Fail::hint("no speech-to-text service", NO_ASR));
     }
-    let model = config::text(&cfg, "whisper_model");
     let url = format!("{base}/v1/audio/transcriptions");
     match post_audio(&url, None, &model, lang, path) {
         Ok(data) => Ok(read_segments(&data, &format!("{model} at {base}"), lang)),

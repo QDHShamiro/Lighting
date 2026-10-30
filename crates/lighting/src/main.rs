@@ -6,6 +6,8 @@ mod mcp;
 mod more;
 mod spawn;
 mod v2;
+#[cfg(windows)]
+mod voice;
 
 use std::env;
 use std::process::ExitCode;
@@ -20,6 +22,8 @@ fn main() -> ExitCode {
         origin if origin.starts_with("chrome-extension://") => host::serve(origin),
         "version" | "--version" => println!("{}", env!("CARGO_PKG_VERSION")),
         "daemon" if daemon::may_serve() => return daemon::serve(),
+        #[cfg(windows)]
+        "voice-session" | "voice-watch" => return voice::main(&args),
         _ => return client::run(&args),
     }
     ExitCode::SUCCESS

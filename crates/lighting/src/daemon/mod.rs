@@ -133,6 +133,12 @@ enum Msg {
 }
 
 pub use doctor::run as doctor;
+#[cfg(windows)]
+pub use media::tools::{ffmpeg, run as run_tool, which};
+#[cfg(windows)]
+pub use media::{multipart, spoken, whisper_service};
+#[cfg(windows)]
+pub use memory::chat::api_key;
 
 pub fn may_serve() -> bool {
     let home = lt_proto::home();

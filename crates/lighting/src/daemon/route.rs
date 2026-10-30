@@ -157,6 +157,7 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "claude" => claude::run(d, ctx, c),
         "phone" => phone::run(d, ctx, c),
         "record" => record::run(d, ctx, c),
+        "voice" => voice(d, c),
         "frames" if c.on("audio") => media::run(d, ctx, c),
         "shot" if c.on("ask") => media::ask_shot(d, ctx, c),
         "shot" if c.on("seconds") => desk::run(d, ctx, c, None),
@@ -169,6 +170,16 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         _ if built_later(name) => Err(later(name)),
         _ => Err(unknown(name)),
     }
+}
+
+#[cfg(windows)]
+fn voice(d: &Daemon, c: &Call) -> Result<Out, Fail> {
+    crate::voice::command(&d.home, &c.pos).map(Out::Text)
+}
+
+#[cfg(not(windows))]
+fn voice(_: &Daemon, _: &Call) -> Result<Out, Fail> {
+    Err(Fail::new("voice works on Windows only for now (it talks through VB-Cable)"))
 }
 
 fn desktop(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {

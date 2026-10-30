@@ -96,10 +96,12 @@ fn sessions_are_learned_into_notes_and_vault_pages() {
             && said.ends_with("sessions in the background (lighting memory shows the state)"),
         "{said}"
     );
+    let sessions = home.join("vault").join("Sessions").join("general");
+    let paged = || fs::read_dir(&sessions).is_ok_and(|mut d| d.next().is_some());
     let mut found = String::new();
     for _ in 0..100 {
         found = run(&home, &["recall", "redis", "cart"]).1;
-        if found.contains("decision: cart uses redis") {
+        if found.contains("decision: cart uses redis") && paged() {
             break;
         }
         thread::sleep(Duration::from_millis(100));
@@ -112,7 +114,6 @@ fn sessions_are_learned_into_notes_and_vault_pages() {
         user.contains("Session title: Shop cart") && user.contains("USER: please move the shopping cart"),
         "{user}"
     );
-    let sessions = home.join("vault").join("Sessions").join("general");
     let page = fs::read_dir(&sessions).unwrap().flatten().next().unwrap().path();
     let text = fs::read_to_string(&page).unwrap();
     assert!(
