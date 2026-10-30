@@ -1,4 +1,5 @@
 pub mod chat;
+mod code;
 mod embed;
 mod hook;
 pub mod index;
@@ -46,6 +47,7 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         "suggest" => hook::suggest(d, ctx, c),
         "memory" => status::memory(d, c),
         "wiki" => wiki::wiki(d, c),
+        "code" => code::code(d, ctx, c),
         name => Err(super::route::later(name)),
     }
 }

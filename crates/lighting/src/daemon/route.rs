@@ -5,7 +5,7 @@ use lt_core::{APP_ONLY, CHAT, Call, Fail, Flag, SHARED, WEB_ONLY, built_later, u
 use regex::Regex;
 
 use super::ctx::Ctx;
-use super::{Daemon, Out, desk, media, web};
+use super::{Daemon, Out, desk, media, secure, web};
 
 const POST_VIEW: &[&str] = &[
     "click", "type", "press", "fill", "select", "check", "scroll", "hover", "drag", "do", "run", "search", "back",
@@ -139,7 +139,7 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     }
     let first = c.pos.first().map(String::as_str);
     match name {
-        "recall" | "remember" | "forget" | "todo" | "memory" | "wiki" | "hook" | "suggest" => {
+        "recall" | "remember" | "forget" | "todo" | "memory" | "wiki" | "hook" | "suggest" | "code" => {
             super::memory::run(d, ctx, c).map(Out::Text)
         }
         "read" if first.is_some_and(web::wants_read) => web::read(d, ctx, c).map(Out::Text),
@@ -147,6 +147,7 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "text" if c.val("on") == Some("app") || first.is_some_and(windowish) => desk::run(d, ctx, c, None),
         "close" if first.is_some_and(windowish) => desk::run(d, ctx, c, None),
         "watch" | "listen" => media::run(d, ctx, c),
+        "secure" => secure::run(d, ctx, c),
         "frames" if c.on("audio") => media::run(d, ctx, c),
         "shot" if c.on("ask") => media::ask_shot(d, ctx, c),
         "shot" if c.on("seconds") => desk::run(d, ctx, c, None),

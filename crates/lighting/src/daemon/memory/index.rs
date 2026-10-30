@@ -120,6 +120,7 @@ fn pass(
     }
     learner::tick(home, store, SOON.swap(false, Ordering::Relaxed));
     embed_some(home, store);
+    super::code::background(home);
     Ok(())
 }
 

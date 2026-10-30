@@ -32,6 +32,7 @@ const FRAMES_DEFAULT: i64 = 12;
 const FRAMES_MIN: i64 = 4;
 const FRAMES_MAX: i64 = 24;
 const FPS_MAX: f64 = 24.0;
+const SHORTER: &str = "try a shorter part with --from/--to";
 const TIMES_HINT: &str = "lighting watch <link> --from 1:30 --to 2:00";
 const ASK_PROMPT: &str =
     "Answer the question about this screenshot. Name visible labels exactly as written. Plain text, short.\nQuestion: ";
@@ -47,9 +48,10 @@ static VIDEO_FILE: LazyLock<Regex> = LazyLock::new(|| {
 });
 static LOCAL: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^([a-zA-Z]:|\.{1,2}[\\/]|[\\/~])").expect("local"));
 
-fn background<T: Send + 'static>(
+pub fn background<T: Send + 'static>(
     name: &'static str,
     limit: Duration,
+    hint: &'static str,
     work: impl FnOnce() -> Result<T, Fail> + Send + 'static,
     mut finish: impl FnMut(&Daemon, &mut Ctx, T) -> Result<String, Fail> + Send + 'static,
 ) -> Pending {
@@ -67,10 +69,9 @@ fn background<T: Send + 'static>(
         match rx.try_recv() {
             Ok(Ok(v)) => finish(d, ctx, v).map(Some),
             Ok(Err(f)) => Err(f),
-            Err(TryRecvError::Empty) if last => Err(Fail::hint(
-                format!("{name} took longer than {} s", limit.as_secs()),
-                "try a shorter part with --from/--to",
-            )),
+            Err(TryRecvError::Empty) if last => {
+                Err(Fail::hint(format!("{name} took longer than {} s", limit.as_secs()), hint))
+            }
             Err(TryRecvError::Empty) => Ok(None),
             Err(TryRecvError::Disconnected) => {
                 broken = true;
@@ -239,7 +240,7 @@ fn listen(d: &Daemon, ctx: &mut Ctx, c: &Call, before: String) -> Result<Out, Fa
         let _ = fs::remove_dir_all(&dir);
         got
     };
-    let pending = background("listen", LISTEN_WAIT, work, move |d, ctx, text| {
+    let pending = background("listen", LISTEN_WAIT, SHORTER, work, move |d, ctx, text| {
         let lead = if before.is_empty() { String::new() } else { format!("{before}\n") };
         Ok(web::capped(d, ctx, &format!("{lead}{head}\n{text}"), "listen", None, LISTEN_CHARS))
     });
@@ -326,6 +327,7 @@ fn watch(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     let pending = background(
         "watch",
         WATCH_WAIT,
+        SHORTER,
         move || watch::run(&home, &job),
         |d, ctx, done| {
             let mut lines = done.lines;
@@ -361,7 +363,7 @@ pub fn ask_shot(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         let model = g.model.clone();
         g.ask(&home, parts, true).map(|a| (a, model))
     };
-    let pending = background("shot --ask", ASK_WAIT, work, move |_, _, (a, model)| {
+    let pending = background("shot --ask", ASK_WAIT, "ask again in a minute", work, move |_, _, (a, model)| {
         Ok(format!("{shot}\nanswer (Gemini {model}, {} tokens, call {} today):\n{}", a.tokens, a.calls, a.text))
     });
     Ok(Out::Wait(pending))

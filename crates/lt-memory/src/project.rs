@@ -72,25 +72,11 @@ fn scratch(p: &Path, home: &Path) -> bool {
     same(p, home) || under(p, &tmp) || SCRATCH.iter().any(|s| under(p, &home.join(s)))
 }
 
-fn find(p: &Path) -> String {
+pub fn root_of(p: &Path) -> Option<PathBuf> {
     let home = home();
-    let mut root = None;
-    for d in p.ancestors() {
-        if same(d, &home) {
-            break;
-        }
-        if d.join(".git").exists() {
-            root = Some(d);
-            break;
-        }
-    }
-    let Some(root) = root else {
-        let found = p.ancestors().find(|d| !same(d, &home) && built(d));
-        return match found {
-            Some(d) => name(d),
-            None if scratch(p, &home) => String::new(),
-            None => name(p),
-        };
+    let git = p.ancestors().take_while(|d| !same(d, &home)).find(|d| d.join(".git").exists());
+    let Some(root) = git else {
+        return p.ancestors().find(|d| !same(d, &home) && built(d)).map(Path::to_path_buf);
     };
     if !same(p, root)
         && monorepo(root)
@@ -98,10 +84,18 @@ fn find(p: &Path) -> String {
     {
         let child = root.join(first);
         if built(&child) {
-            return name(&child);
+            return Some(child);
         }
     }
-    name(root)
+    Some(root.to_path_buf())
+}
+
+fn find(p: &Path) -> String {
+    match root_of(p) {
+        Some(root) => name(&root),
+        None if scratch(p, &home()) => String::new(),
+        None => name(p),
+    }
 }
 
 pub fn project_of(cwd: &str) -> String {

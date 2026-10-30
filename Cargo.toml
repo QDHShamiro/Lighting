@@ -20,11 +20,14 @@ ureq = { version = "3", default-features = false, features = ["rustls-no-provide
 lt-core = { path = "crates/lt-core" }
 lt-memory = { path = "crates/lt-memory" }
 lt-proto = { path = "crates/lt-proto" }
+lt-code = { path = "crates/lt-code" }
 lt-squeeze = { path = "crates/lt-squeeze" }
 proptest = { version = "1", default-features = false, features = ["std"] }
 rusqlite = { version = "0.41", features = ["bundled"] }
 regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-perl", "unicode-case"] }
 serde_json = { version = "1", features = ["preserve_order"] }
+tree-sitter = "0.27"
+tree-sitter-language-pack = { version = "1.22", default-features = false, features = ["download"] }
 windows = { version = "0.62", features = [
     "Foundation_Collections",
     "Globalization",

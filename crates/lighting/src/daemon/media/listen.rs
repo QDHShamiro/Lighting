@@ -70,12 +70,13 @@ pub fn captions(home: &Path, url: &str, lang: Option<&str>, dir: &Path) -> Resul
     let mut langs: Vec<String> = lang.map(|l| format!("{l}.*")).into_iter().collect();
     langs.extend(["de.*".to_string(), "en.*".to_string()]);
     let out = dir.join("sub").display().to_string();
+    let joined = langs.join(",");
     let args = [
         "--skip-download",
         "--write-subs",
         "--write-auto-subs",
         "--sub-langs",
-        langs.join(",").as_str(),
+        joined.as_str(),
         "--sub-format",
         "vtt",
         "--no-playlist",
