@@ -105,7 +105,7 @@ impl Res {
 }
 
 enum Work {
-    Job(Req),
+    Job(Box<Req>),
     Wake,
 }
 
@@ -227,7 +227,7 @@ fn handle(d: &Daemon, link: Link, lanes: &[Sender<Work>]) {
             reply,
         };
         let lane = LANES.iter().position(|l| *l == lt_core::lane(&name)).unwrap_or(0);
-        if lanes[lane].send(Work::Job(req)).is_ok() {
+        if lanes[lane].send(Work::Job(Box::new(req))).is_ok() {
             answer.recv().unwrap_or_else(|_| Res::new(1, "err: the command ended without an answer, see daemon.log"))
         } else {
             Res::new(1, "err: the lighting daemon is stopping")

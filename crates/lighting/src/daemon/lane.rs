@@ -41,7 +41,7 @@ pub fn work(d: &Daemon, jobs: &Receiver<Work>, mut ctxs: Contexts, main: bool) {
                     d.abort.store(false, Ordering::SeqCst);
                 }
                 ctxs.note_resets(d.hosts.resets());
-                waits.extend(run(d, &mut ctxs, req));
+                waits.extend(run(d, &mut ctxs, *req));
             }
         }
         let (t, generation) = (Instant::now(), d.generation());
