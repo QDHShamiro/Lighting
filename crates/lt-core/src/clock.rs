@@ -115,7 +115,7 @@ mod sys {
     unsafe extern "C" {
         fn time(out: *mut c_long) -> c_long;
         fn localtime_r(t: *const c_long, out: *mut Tm) -> *mut Tm;
-        fn mktime(tm: *mut Tm) -> c_long;
+        fn mktime(tm: *mut Tm) -> i64;
     }
 
     pub fn to_utc(local: i64) -> Option<i64> {
@@ -134,7 +134,7 @@ mod sys {
             zone: std::ptr::null(),
         };
         let t = unsafe { mktime(&mut tm) };
-        (t != -1).then_some(i64::from(t))
+        (t != -1).then_some(t)
     }
 
     pub fn now() -> [u32; 6] {

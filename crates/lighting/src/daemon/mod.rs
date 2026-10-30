@@ -7,6 +7,7 @@ mod desk;
 mod doctor;
 mod flow;
 mod game;
+mod grep;
 mod hosts;
 mod lane;
 mod media;
