@@ -14,6 +14,8 @@ mod talk;
 #[cfg(windows)]
 mod act;
 #[cfg(windows)]
+mod autoload;
+#[cfg(windows)]
 mod chat;
 #[cfg(windows)]
 mod focus;
@@ -54,6 +56,8 @@ fn windowish(p: &str) -> bool {
     super::web::ref_kind(p) == Some("w") || p.to_lowercase().starts_with("app:")
 }
 
+#[cfg(windows)]
+pub use autoload::autoload;
 #[cfg(windows)]
 pub use imp::{cleanup, keep, run};
 #[cfg(windows)]

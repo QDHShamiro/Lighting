@@ -141,9 +141,10 @@ fn status(d: &Daemon, ctx: &Ctx) -> String {
     for h in &hosts {
         let ext = h.info("ext").unwrap_or_default();
         let in_use = if pick.as_ref().is_some_and(|p| Arc::ptr_eq(p, h)) { " | in use" } else { "" };
-        let update = match (!ext.is_empty() && ext != VERSION, d.hosts.reloaded(&h.brand)) {
+        let want = lt_core::ext_version(VERSION);
+        let update = match (!ext.is_empty() && ext != want, d.hosts.reloaded(&h.brand)) {
             (false, _) => String::new(),
-            (true, true) => format!(" | updating extension to {VERSION}"),
+            (true, true) => format!(" | updating extension to {want}"),
             (true, false) => " | OUTDATED, run: lighting setup".into(),
         };
         let browser = h.info("browserVersion").unwrap_or_else(|| "?".into());

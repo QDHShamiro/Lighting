@@ -90,8 +90,35 @@ jobs:
           path: |
             target/release/lighting.exe
             target/release/lighting-ui.exe
+            target/release/lighting-task.exe
+          retention-days: 7
+      - name: Setup loads the extension into Edge
+        id: setup
+        if: runner.os == 'Windows' && steps.build.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          target/release/lighting.exe setup edge
+          L="$USERPROFILE/.lighting/bin/lighting.exe"
+          "$L" status
+          "$L" status | grep -E "^browser .*edge"
+      - name: Setup evidence
+        if: steps.setup.outcome == 'failure'
+        continue-on-error: true
+        shell: bash
+        run: |
+          L="$USERPROFILE/.lighting/bin/lighting.exe"
+          "$L" windows
+          "$L" shot screen
+          tail -40 "$USERPROFILE/.lighting/daemon.log"
+      - name: Keep the setup evidence
+        if: steps.setup.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: setup-evidence
+          path: ~/.lighting/out/
           retention-days: 7
       - name: Result
         if: always()
         shell: bash
-        run: echo "::notice title=v3 ${{ matrix.os }}::fmt=${{ steps.fmt.outcome }} lint=${{ steps.lint.outcome }} test=${{ steps.test.outcome }} web=${{ steps.web.outcome }} xdesk=${{ steps.xdesk.outcome }} deny=${{ steps.deny.outcome }} build=${{ steps.build.outcome }}"
+        run: echo "::notice title=v3 ${{ matrix.os }}::fmt=${{ steps.fmt.outcome }} lint=${{ steps.lint.outcome }} test=${{ steps.test.outcome }} web=${{ steps.web.outcome }} xdesk=${{ steps.xdesk.outcome }} deny=${{ steps.deny.outcome }} build=${{ steps.build.outcome }} setup=${{ steps.setup.outcome }}"

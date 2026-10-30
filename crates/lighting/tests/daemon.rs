@@ -144,7 +144,7 @@ fn a_browser_host_gets_the_session_tab_and_done_closes_it() {
     assert_eq!(home.run(&["ping"]).1, "pong");
     let Some(token) = lt_proto::key_token(&home.0) else { panic!("no key") };
     let Ok(link) = lt_proto::Link::connect(&home.0) else { panic!("no daemon") };
-    let version = env!("CARGO_PKG_VERSION");
+    let version = lt_core::ext_version(env!("CARGO_PKG_VERSION"));
     let hello = json!({"type": "hello", "token": token, "brand": "Brave", "browserVersion": "1.80", "ext": version,
                        "focused": true, "epoch": 1});
     link.send(hello.to_string().as_bytes()).unwrap();

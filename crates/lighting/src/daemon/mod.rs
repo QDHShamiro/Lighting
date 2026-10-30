@@ -5,6 +5,7 @@ mod config;
 mod ctx;
 mod desk;
 mod doctor;
+mod ext;
 mod flow;
 mod game;
 mod grep;
@@ -143,6 +144,7 @@ pub use media::{multipart, spoken, whisper_service};
 #[cfg(windows)]
 pub use memory::chat::api_key;
 pub use squeeze::{MAX_BYTES as SQUEEZE_MAX_BYTES, USAGE as SQUEEZE_USAGE};
+pub use web::installed_browsers;
 
 pub fn may_serve() -> bool {
     let home = lt_proto::home();

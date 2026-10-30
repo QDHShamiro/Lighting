@@ -16,6 +16,7 @@ ignore = [
     { id = "RUSTSEC-2026-0370", reason = "zvariant was merged into zbus 6, not vulnerable; xa11y-linux (Linux desktop) still uses zbus 5" },
     { id = "RUSTSEC-2026-0371", reason = "zbus_names was merged into zbus 6, not vulnerable; xa11y-linux (Linux desktop) still uses zbus 5" },
     { id = "RUSTSEC-2026-0372", reason = "zvariant_derive was merged into zbus 6, not vulnerable; xa11y-linux (Linux desktop) still uses zbus 5" },
+    { id = "RUSTSEC-2024-0370", reason = "proc-macro-error is unmaintained, not vulnerable; only glib-macros 0.18 (GTK3 bindings for the Linux window webview via wry) uses it at build time" },
 ]
 
 [licenses]

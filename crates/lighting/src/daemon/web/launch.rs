@@ -103,7 +103,7 @@ fn exes(name: &str) -> &'static [&'static str] {
 }
 
 #[cfg(windows)]
-fn browser_exe(name: &str) -> Option<PathBuf> {
+pub fn browser_exe(name: &str) -> Option<PathBuf> {
     let base = |key: &str, default: &str| env::var(key).unwrap_or_else(|_| default.to_string());
     let bases = [
         base("PROGRAMFILES", r"C:\Program Files"),
@@ -117,14 +117,18 @@ fn browser_exe(name: &str) -> Option<PathBuf> {
 }
 
 #[cfg(target_os = "macos")]
-fn browser_exe(name: &str) -> Option<PathBuf> {
+pub fn browser_exe(name: &str) -> Option<PathBuf> {
     exes(name).iter().map(PathBuf::from).find(|p| p.exists())
 }
 
 #[cfg(all(unix, not(target_os = "macos")))]
-fn browser_exe(name: &str) -> Option<PathBuf> {
+pub fn browser_exe(name: &str) -> Option<PathBuf> {
     let path = env::var_os("PATH")?;
     exes(name).iter().find_map(|exe| env::split_paths(&path).map(|dir| dir.join(exe)).find(|p| p.is_file()))
+}
+
+pub fn installed_browsers() -> Vec<&'static str> {
+    ORDER.iter().copied().filter(|n| browser_exe(n).is_some()).collect()
 }
 
 fn base_name(path: &Path) -> String {

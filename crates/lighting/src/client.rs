@@ -13,7 +13,6 @@ use crate::daemon::MARKER;
 const HOOK_INPUT_WAIT: Duration = Duration::from_millis(1000);
 const HOOK_INPUT_MAX: u64 = 64 * 1024;
 const START_WAIT: Duration = Duration::from_secs(12);
-const NOT_BUILT: &[&str] = &["setup", "install", "uninstall"];
 
 pub fn run(raw: &[String]) -> ExitCode {
     let args: Vec<String> = match msys_root() {
@@ -25,6 +24,9 @@ pub fn run(raw: &[String]) -> ExitCode {
     if first == "more" {
         return crate::more::run(&home, &args[1..]);
     }
+    if matches!(first, "setup" | "install" | "uninstall") {
+        return crate::setup::run(&home, &args);
+    }
     if !home.join(MARKER).is_file() {
         return v2(&home, raw);
     }
@@ -33,10 +35,6 @@ pub fn run(raw: &[String]) -> ExitCode {
     }
     if first == "ui" {
         return open_ui(&home);
-    }
-    if NOT_BUILT.contains(&first) {
-        eprintln!("lighting {first}: not built into Lighting 3.0 yet");
-        return ExitCode::from(2);
     }
     if first == "squeeze" {
         return crate::pipe::squeeze(&home, &args);

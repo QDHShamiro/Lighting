@@ -149,6 +149,8 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "close" if first.is_some_and(windowish) => desk::run(d, ctx, c, None),
         "watch" | "listen" => media::run(d, ctx, c),
         "secure" => secure::run(d, ctx, c),
+        "autoload" => autoload(d, c),
+        "ext-reload" => super::ext::reload(d).map(Out::Text),
         "do" => flow::run(d, ctx, c),
         "run" | "routine" | "routines" => routines::command(d, ctx, c),
         "channels" => channels::run(d, ctx, c),
@@ -183,6 +185,16 @@ fn voice(d: &Daemon, c: &Call) -> Result<Out, Fail> {
 #[cfg(not(windows))]
 fn voice(_: &Daemon, _: &Call) -> Result<Out, Fail> {
     Err(Fail::new("voice works on Windows only for now (it talks through VB-Cable)"))
+}
+
+#[cfg(windows)]
+fn autoload(d: &Daemon, c: &Call) -> Result<Out, Fail> {
+    desk::autoload(d, c).map(Out::Text)
+}
+
+#[cfg(not(windows))]
+fn autoload(_: &Daemon, _: &Call) -> Result<Out, Fail> {
+    Err(Fail::new("loading the extension by itself works on Windows; follow the manual steps lighting setup prints"))
 }
 
 fn desktop(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {

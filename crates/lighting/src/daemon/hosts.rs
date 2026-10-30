@@ -237,7 +237,7 @@ impl Hosts {
 
     fn on_connect(&self, home: &Path, host: &Host) {
         host.post("config", config::payload(home));
-        let outdated = host.info("ext").is_some_and(|ext| !ext.is_empty() && ext != VERSION);
+        let outdated = host.info("ext").is_some_and(|ext| !ext.is_empty() && ext != lt_core::ext_version(VERSION));
         if outdated
             && home.join("extension").join("manifest.json").exists()
             && lock(&self.reloaded).insert(host.brand.clone())
