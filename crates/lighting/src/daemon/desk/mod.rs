@@ -27,6 +27,8 @@ mod snap;
 #[cfg(windows)]
 mod state;
 #[cfg(windows)]
+mod tab;
+#[cfg(windows)]
 mod uia;
 #[cfg(windows)]
 mod video;
@@ -60,6 +62,8 @@ pub fn keep(_: &Daemon, _: &mut Ctx, _: Option<&str>) -> Result<usize, Fail> {
 
 #[cfg(windows)]
 pub use imp::{cleanup, keep, run};
+#[cfg(windows)]
+pub use tab::{find_tab, tab_text, type_prompt};
 
 #[cfg(windows)]
 pub enum Halt {

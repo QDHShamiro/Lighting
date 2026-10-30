@@ -1,5 +1,6 @@
 mod brain;
 mod channels;
+mod claude;
 mod config;
 mod ctx;
 mod desk;

@@ -22,7 +22,7 @@ fn lang(x: &Desk, c: &Call) -> String {
     c.val("lang").map(String::from).unwrap_or_else(|| config::text(&config::load(&x.d.home), "ocr_lang"))
 }
 
-fn grab_area(area: Rect, hwnd: isize) -> Res<RgbImage> {
+pub(super) fn grab_area(area: Rect, hwnd: isize) -> Res<RgbImage> {
     if hwnd != 0
         && hwnd != win::foreground()
         && let Some(img) = grab::print_window(hwnd)
