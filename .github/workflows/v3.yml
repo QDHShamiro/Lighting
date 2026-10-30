@@ -46,7 +46,7 @@ jobs:
       - name: Test
         id: test
         continue-on-error: true
-        run: cargo nextest run --workspace --locked --no-tests=pass
+        run: cargo nextest run --workspace --locked --no-tests=pass --no-fail-fast
       - name: Licenses and advisories
         id: deny
         if: runner.os == 'Linux'

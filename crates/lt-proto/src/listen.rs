@@ -94,7 +94,7 @@ mod sys {
             out_size: u32,
             in_size: u32,
             timeout: u32,
-            security: *const SecurityAttributes,
+            security: *const c_void,
         ) -> *mut c_void;
         fn ConnectNamedPipe(pipe: *mut c_void, ov: *mut Overlapped) -> i32;
         fn GetCurrentProcess() -> *mut c_void;
@@ -161,7 +161,16 @@ mod sys {
                 PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | if first { FILE_FLAG_FIRST_PIPE_INSTANCE } else { 0 };
             let mode = PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_REJECT_REMOTE_CLIENTS;
             let handle = unsafe {
-                CreateNamedPipeW(self.name.as_ptr(), open, mode, PIPE_UNLIMITED_INSTANCES, BUFFER, BUFFER, 0, &attrs)
+                CreateNamedPipeW(
+                    self.name.as_ptr(),
+                    open,
+                    mode,
+                    PIPE_UNLIMITED_INSTANCES,
+                    BUFFER,
+                    BUFFER,
+                    0,
+                    (&raw const attrs).cast(),
+                )
             };
             if handle.addr() != usize::MAX {
                 return Ok(Pipe(handle));

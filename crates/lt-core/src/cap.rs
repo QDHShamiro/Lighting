@@ -53,20 +53,21 @@ mod tests {
     fn long_texts_are_cut_and_kept_like_2x() {
         let dir = std::env::temp_dir().join(format!("lt-core-cap-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
-        let text: String = (1..=50).map(|i| format!("line {i}")).collect::<Vec<_>>().join("\n");
+        let text: String = (1..=500).map(|i| format!("line {i}")).collect::<Vec<_>>().join("\n");
         assert_eq!(cap(&dir, "short", "x", Some(40), 12_000), ("short".to_string(), 0));
         let (out, cut) = cap(&dir, &text, "Log Stats!", Some(40), 12_000);
         let lines: Vec<&str> = out.lines().collect();
         assert_eq!(lines.len(), 41);
         assert_eq!(lines[39], "line 40");
-        assert!(lines[40].starts_with("... +10 more lines (full: "), "{out}");
+        assert!(lines[40].starts_with("... +460 more lines (full: "), "{out}");
         assert!(lines[40].contains("-log-stats.txt)"), "{out}");
         let kept = lines[40].split("(full: ").nth(1).unwrap().trim_end_matches(')');
         assert_eq!(fs::read_to_string(kept).unwrap(), text);
         assert_eq!(cut, text.chars().count() - out.chars().count());
-        let (out, _) = cap(&dir, &"ä".repeat(30), "", None, 10);
+        let (out, cut) = cap(&dir, &"ä".repeat(30), "", None, 10);
         assert_eq!(out.lines().next(), Some("ääääääääää"));
         assert!(out.contains("... +0 more lines") && out.contains("-out.txt"), "{out}");
+        assert_eq!(cut, 0);
         fs::remove_dir_all(&dir).unwrap();
     }
 }
