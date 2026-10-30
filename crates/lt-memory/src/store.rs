@@ -104,7 +104,7 @@ pub struct NewNote<'a> {
 }
 
 pub struct Store {
-    db: Connection,
+    pub(crate) db: Connection,
     vecs: Option<(i64, Vec<i64>, Vec<f32>)>,
 }
 
@@ -266,6 +266,7 @@ impl Store {
         project: &str,
         limit: usize,
         vec: Option<&[f32]>,
+        min_sim: f32,
     ) -> rusqlite::Result<Vec<Hit>> {
         let mut score: Vec<(i64, f64)> = Vec::new();
         let mut add = |id: i64, rank: usize| match score.iter_mut().find(|(i, _)| *i == id) {
@@ -295,7 +296,7 @@ impl Store {
                 .map(|(row, id)| (row.iter().zip(q).map(|(a, b)| a * b).sum(), *id))
                 .collect();
             all.sort_unstable_by(|a, b| b.0.total_cmp(&a.0));
-            for (rank, (sim, id)) in all.into_iter().take(POOL).take_while(|(sim, _)| *sim >= 0.0).enumerate() {
+            for (rank, (sim, id)) in all.into_iter().take(POOL).take_while(|(sim, _)| *sim >= min_sim).enumerate() {
                 sims.push((id, sim));
                 add(id, rank);
             }
@@ -408,16 +409,16 @@ mod tests {
         let b = s.add_note(&new("Deploy with ship.sh and token: abcdefgh1", "other")).unwrap().unwrap();
         assert_eq!(s.add_note(&new("   ", "x")).unwrap(), None);
         assert_eq!(s.note(b).unwrap().unwrap().title, "Deploy with ship.sh and token: [secret]");
-        let hits = s.search("which browser", "lighting", 8, None).unwrap();
+        let hits = s.search("which browser", "lighting", 8, None, 0.0).unwrap();
         assert_eq!(hits.iter().map(|h| h.note.id).collect::<Vec<_>>(), [a]);
         s.save_vecs(&[(a, unit(1)), (b, unit(2))]).unwrap();
-        let hits = s.search("zzz", "", 8, Some(&unit(2))).unwrap();
+        let hits = s.search("zzz", "", 8, Some(&unit(2)), 0.0).unwrap();
         assert_eq!(hits[0].note.id, b);
         assert!(hits[0].sim.is_some_and(|v| (v - 1.0).abs() < 1e-3));
         s.touch(&[a]).unwrap();
         assert_eq!(s.note(a).unwrap().unwrap().hits, 1);
         assert_eq!(s.forget(a).unwrap(), Ok(1));
-        assert!(s.note(a).unwrap().is_none() && s.search("browser", "", 8, None).unwrap().is_empty());
+        assert!(s.note(a).unwrap().is_none() && s.search("browser", "", 8, None, 0.0).unwrap().is_empty());
         drop(s);
         let _ = fs::remove_dir_all(&dir);
     }

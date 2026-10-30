@@ -246,6 +246,33 @@ fn memory_keeps_notes_and_todos_in_memory_db() {
 }
 
 #[test]
+fn hooks_show_the_start_info_and_keep_what_the_user_says() {
+    let home = Home::new("hook", true);
+    assert_eq!(home.run(&["todo", "add", "ship it"]).1, "to-do #1 added");
+    let cwd = std::env::current_dir().unwrap().display().to_string();
+    let start = json!({"cwd": cwd, "session_id": "it-1", "source": "startup"}).to_string();
+    let (code, info) = home.run(&["hook", "start", &start]);
+    assert!(
+        code == 0
+            && info.starts_with("Lighting memory (")
+            && info.contains("): lighting recall \"<words>\" searches 0 notes"),
+        "{info}"
+    );
+    assert!(info.contains("\nOpen to-dos:\n  to-dos:\n    #1 ship it"), "{info}");
+    let compact = json!({"cwd": cwd, "session_id": "it-1", "source": "compact"}).to_string();
+    let (_, after) = home.run(&["hook", "start", &compact]);
+    assert!(after.starts_with("Lighting after the summary ("), "{after}");
+    let say = json!({"prompt": "merk dir dass Brave der einzige Browser ist"}).to_string();
+    let (code, saved) = home.run(&["suggest", &say]);
+    let want = "Lighting memory saved #1: \"Brave der einzige Browser ist\" (lighting forget 1 if that was not meant to be kept)";
+    assert_eq!((code, saved.as_str()), (0, want));
+    let noise = json!({"prompt": "<system-reminder>merk dir dass nichts</system-reminder>"}).to_string();
+    assert_eq!(home.run(&["suggest", &noise]), (0, String::new()));
+    let (_, full) = home.run(&["recall", "1"]);
+    assert!(full.contains(" preference [") && full.contains("\nBrave der einzige Browser ist"), "{full}");
+}
+
+#[test]
 fn more_reads_kept_outputs_without_a_daemon() {
     let home = Home::new("more", false);
     let out = home.0.join("headroom").join("out");

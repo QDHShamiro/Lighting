@@ -79,6 +79,7 @@ pub struct Ctx {
     pub cut: usize,
     pub image: String,
     pub shots: HashMap<String, Vec<u8>>,
+    pub told: HashMap<String, f64>,
 }
 
 impl Ctx {
@@ -103,6 +104,7 @@ impl Ctx {
             cut: 0,
             image: String::new(),
             shots: HashMap::new(),
+            told: HashMap::new(),
         }
     }
 
