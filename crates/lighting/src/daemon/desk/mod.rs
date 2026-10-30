@@ -15,6 +15,8 @@ mod focus;
 #[cfg(windows)]
 mod grab;
 #[cfg(windows)]
+mod hook;
+#[cfg(windows)]
 mod input;
 #[cfg(windows)]
 mod launch;
@@ -22,6 +24,8 @@ mod launch;
 mod look;
 #[cfg(windows)]
 mod ocr;
+#[cfg(windows)]
+mod rec;
 #[cfg(windows)]
 mod snap;
 #[cfg(windows)]
@@ -62,6 +66,8 @@ pub fn keep(_: &Daemon, _: &mut Ctx, _: Option<&str>) -> Result<usize, Fail> {
 
 #[cfg(windows)]
 pub use imp::{cleanup, keep, run};
+#[cfg(windows)]
+pub use rec::Recorder;
 #[cfg(windows)]
 pub use tab::{find_tab, tab_text, type_prompt};
 

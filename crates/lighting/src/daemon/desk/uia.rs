@@ -256,6 +256,10 @@ pub fn find_all(el: &El, children: bool, ctype: Option<i32>) -> Vec<El> {
     .unwrap_or_default()
 }
 
+pub fn api<T>(f: impl FnOnce(&IUIAutomation) -> windows::core::Result<T>) -> Option<T> {
+    with(|a| f(&a.uia))
+}
+
 pub fn focused() -> Option<El> {
     with(|api| unsafe { api.uia.GetFocusedElement() }.map(El))
 }

@@ -31,6 +31,20 @@ const OFFER_EVERY_S: f64 = 600.0;
 const OFFER_IGNORED: u64 = 5;
 const OFFERS: usize = 2;
 
+pub fn recorded(d: &Daemon, ctx: &Ctx, name: &str, steps: &[Value], pairs: &[String]) -> Result<String, Fail> {
+    let task = learn::Task { steps, cost: 0, start: &Value::Null };
+    let r = learn::from_steps(&d.home, name, pairs, "recorded", &task, &d.prompts_of(&ctx.sid))?;
+    let list = r["steps"].as_array().cloned().unwrap_or_default();
+    let mut lines = vec![format!(
+        "saved routine {} ({} steps) -> {}",
+        r["name"].as_str().unwrap_or(name),
+        list.len(),
+        usage(&r, &BTreeMap::new())
+    )];
+    lines.extend(list.iter().enumerate().map(|(i, s)| format!("{} {}", i + 1, step_line(s, None))));
+    Ok(lines.join("\n"))
+}
+
 pub fn episodes_text(home: &std::path::Path) -> String {
     fs::read(episode::file(home)).map(|b| String::from_utf8_lossy(&b).into_owned()).unwrap_or_default()
 }

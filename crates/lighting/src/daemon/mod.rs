@@ -12,6 +12,7 @@ mod lane;
 mod media;
 mod memory;
 mod phone;
+mod record;
 mod route;
 mod routines;
 mod secure;
