@@ -24,6 +24,7 @@ lt-code = { path = "crates/lt-code" }
 lt-squeeze = { path = "crates/lt-squeeze" }
 proptest = { version = "1", default-features = false, features = ["std"] }
 rusqlite = { version = "0.41", features = ["bundled"] }
+roxmltree = "0.21"
 regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-perl", "unicode-case"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 sha2 = "0.10"

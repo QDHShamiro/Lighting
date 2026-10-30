@@ -30,6 +30,7 @@ pub type Seg = (f64, String);
 
 pub struct Ran {
     pub ok: bool,
+    pub bytes: Vec<u8>,
     pub out: String,
     pub err: String,
 }
@@ -77,11 +78,11 @@ pub fn ytdlp(home: &Path) -> Result<PathBuf, Fail> {
     })
 }
 
-fn drain(mut pipe: impl Read + Send + 'static) -> thread::JoinHandle<String> {
+fn drain(mut pipe: impl Read + Send + 'static) -> thread::JoinHandle<Vec<u8>> {
     thread::spawn(move || {
         let mut raw = Vec::new();
         let _ = pipe.read_to_end(&mut raw);
-        String::from_utf8_lossy(&raw).into_owned()
+        raw
     })
 }
 
@@ -109,10 +110,11 @@ pub fn run(exe: &Path, args: &[String], limit: Duration) -> Result<Ran, Fail> {
     let out = child.stdout.take().map(drain);
     let err = child.stderr.take().map(drain);
     let done = wait(&mut child, limit);
-    let text = |h: Option<thread::JoinHandle<String>>| h.and_then(|h| h.join().ok()).unwrap_or_default();
-    let (out, err) = (text(out), text(err));
+    let bytes = |h: Option<thread::JoinHandle<Vec<u8>>>| h.and_then(|h| h.join().ok()).unwrap_or_default();
+    let (bytes, err) = (bytes(out), String::from_utf8_lossy(&bytes(err)).into_owned());
+    let out = String::from_utf8_lossy(&bytes).into_owned();
     match done {
-        Some(ok) => Ok(Ran { ok, out, err }),
+        Some(ok) => Ok(Ran { ok, bytes, out, err }),
         None => Err(Fail::new(format!("{name} took longer than {} s", limit.as_secs()))),
     }
 }

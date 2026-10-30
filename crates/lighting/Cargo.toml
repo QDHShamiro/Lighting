@@ -25,6 +25,7 @@ lt-proto.workspace = true
 lt-squeeze.workspace = true
 pdf-extract.workspace = true
 regex.workspace = true
+roxmltree.workspace = true
 rusqlite.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
