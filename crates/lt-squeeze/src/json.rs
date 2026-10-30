@@ -298,7 +298,7 @@ fn dump(out: &mut String, v: &Value, ascii: bool, tight: bool) {
     }
 }
 
-fn object(out: &mut String, pairs: impl Iterator<Item = (&String, &Value)>, ascii: bool, tight: bool) {
+fn object<'a>(out: &mut String, pairs: impl Iterator<Item = (&'a String, &'a Value)>, ascii: bool, tight: bool) {
     out.push('{');
     for (i, (k, v)) in pairs.enumerate() {
         if i > 0 {

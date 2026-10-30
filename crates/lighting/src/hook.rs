@@ -39,16 +39,17 @@ static LISTING: LazyLock<Regex> = LazyLock::new(|| {
 static OWN: LazyLock<Regex> = LazyLock::new(|| re(&format!(r"{SEGMENT}(?:\S*[/\\])?lighting(?:\.exe)?\b")));
 static LOGISH: LazyLock<Regex> =
     LazyLock::new(|| re(r"(?i)\.(?:log|jsonl|out|output|txt|csv)\b|/logs?/|results\.md|tasks/"));
-static KEPT: LazyLock<Regex> = LazyLock::new(|| re(r"\.lighting[/\\]+out[/\\]+(hr-[0-9a-f]{10})"));
+static KEPT: LazyLock<Regex> = LazyLock::new(|| re(r"headroom[/\\]+out[/\\]+(hr-[0-9a-f]{10})"));
 
-pub(crate) struct Paths {
-    pub(crate) state: PathBuf,
-    pub(crate) out: PathBuf,
+struct Paths {
+    state: PathBuf,
+    out: PathBuf,
 }
 
 impl Paths {
     fn new(root: &Path) -> Self {
-        Paths { state: root.join("headroom"), out: root.join("out") }
+        let state = root.join("headroom");
+        Paths { out: state.join("out"), state }
     }
 }
 
@@ -410,9 +411,10 @@ mod tests {
     #[test]
     fn reading_a_kept_output_counts_as_a_reload() {
         let paths = scratch("reload");
-        let read = json!({"tool_name": "Read", "session_id": "s", "tool_input": {"file_path": "C:\\Users\\x\\.lighting\\out\\hr-0123456789.txt"}});
+        let kept = "C:\\Users\\x\\.lighting\\headroom\\out\\hr-0123456789.txt";
+        let read = json!({"tool_name": "Read", "session_id": "s", "tool_input": {"file_path": kept}});
         assert!(run(read.to_string().as_bytes(), &paths, Instant::now(), SLOW_CI).0.is_none());
-        let grep = bash_event("s", "grep -n ERROR ~/.lighting/out/hr-abcdefabcd.txt", &big_log());
+        let grep = bash_event("s", "grep -n ERROR ~/.lighting/headroom/out/hr-abcdefabcd.txt", &big_log());
         assert!(run(&grep, &paths, Instant::now(), SLOW_CI).0.is_none());
         let refs: Vec<(Value, Value)> = logged(&paths).iter().map(|e| (e["act"].clone(), e["ref"].clone())).collect();
         assert_eq!(refs, [(json!("reload"), json!("hr-0123456789")), (json!("reload"), json!("hr-abcdefabcd"))]);
