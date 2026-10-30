@@ -9,10 +9,10 @@ use lt_core::{Call, Fail, Flag, OUT_CHARS};
 use regex::Regex;
 use serde_json::{Map, Value, json};
 
-use super::super::Daemon;
 use super::super::config::NAV_LINES;
 use super::super::ctx::Ctx;
 use super::super::words::{best_only, terms, tiers};
+use super::super::{Daemon, brain};
 use super::url::{leak_check, local_file, normalize_url, watch_url, web_scheme};
 use super::{
     CALL_TIMEOUT, LOAD_TIMEOUT, REF_RE, SNAP_LINES, TEXT_CHARS, call, capped, flag, keys, num, number, obj, out,
@@ -79,6 +79,7 @@ pub fn snap(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     }
     let scope =
         if c.on("s") { Some(flag(c, "s")) } else { c.pos.first().filter(|p| REF_RE.is_match(p)).map(|p| json!(p)) };
+    let trim = scope.is_none() && brain::wants_prune(c);
     if let Some(scope) = scope {
         args.insert("scope".into(), scope);
     }
@@ -92,7 +93,8 @@ pub fn snap(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         let tokens: usize = m[1].replace(',', "").parse().unwrap_or(0);
         ctx.cut += tokens.saturating_mul(4).min(OUT_CHARS).saturating_sub(text.chars().count());
     }
-    Ok(capped(d, ctx, text, "snap", Some(limit), OUT_CHARS))
+    let text = if trim { brain::prune(d, ctx, text, &brain::page_key(&ctx.url())) } else { text.to_string() };
+    Ok(capped(d, ctx, &text, "snap", Some(limit), OUT_CHARS))
 }
 
 pub fn text(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {

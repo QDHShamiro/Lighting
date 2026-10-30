@@ -7,6 +7,7 @@ use lt_core::{Call, Fail, OUT_CHARS};
 use regex::Regex;
 use serde_json::{Value, json};
 
+use super::super::brain;
 use super::super::ctx::now;
 use super::super::web::{SNAP_LINES, keys};
 use super::super::words::{best_only, terms, tiers};
@@ -329,5 +330,7 @@ pub fn snap(x: &mut Desk, c: &Call) -> Res<String> {
         return Ok(x.cap(&format!("{head}\n{delta}"), "app-snap", Some(SNAP_LINES), OUT_CHARS));
     }
     let hint = keys::hint(&x.d.home, &exe);
-    Ok(x.cap(&format!("{head}{hint}\n{rest}"), "app-snap", Some(SNAP_LINES), OUT_CHARS))
+    let text = format!("{head}{hint}\n{rest}");
+    let text = if c.on("full") || c.on("web") { text } else { brain::prune(x.d, x.ctx, &text, &format!("app:{exe}")) };
+    Ok(x.cap(&text, "app-snap", Some(SNAP_LINES), OUT_CHARS))
 }

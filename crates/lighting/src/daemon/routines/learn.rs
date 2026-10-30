@@ -276,7 +276,7 @@ pub fn learn(d: &Daemon, ctx: &Ctx, ep: &Value, past: &[Value]) -> Result<Option
     let cost = (old["cost"].as_u64().unwrap_or(0) as usize + ep["cost"].as_u64().unwrap_or(0) as usize) / 2;
     let mut r = new_routine(body, "learned", cost);
     let t0 = ep["t0"].as_f64().filter(|t| *t != 0.0).unwrap_or_else(now);
-    r["tags"] = json!(tags_for(&ctx.prompts, t0, &r["params"]));
+    r["tags"] = json!(tags_for(&d.prompts_of(&ctx.sid), t0, &r["params"]));
     r["name"] = json!(auto_name(&d.home, &r));
     save(&d.home, &r)?;
     prune(&d.home);
@@ -356,7 +356,7 @@ pub fn save_current(
         }
     }
     let task = Task { steps: &steps, cost, start: &start };
-    let r = from_steps(&d.home, name, pairs, "saved", &task, &ctx.prompts)?;
+    let r = from_steps(&d.home, name, pairs, "saved", &task, &d.prompts_of(&ctx.sid))?;
     ctx.ep = Episode::default();
     Ok(format!(
         "saved routine {} ({} steps) -> {}",

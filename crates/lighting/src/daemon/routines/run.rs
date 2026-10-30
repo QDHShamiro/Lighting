@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 
 use super::super::ctx::{Ctx, now};
 use super::super::web::parse_ms;
-use super::super::{Daemon, Out, Pending, system};
+use super::super::{Daemon, Out, Pending, brain, system};
 use super::align::{Pairs, put};
 use super::episode::{close, observe};
 use super::store::{self, check_of, kv, place, record, step_line, text, usage, verify, where_of};
@@ -31,6 +31,7 @@ static TRANSIENT: LazyLock<Regex> = LazyLock::new(|| {
 
 struct Attempt {
     argv: Vec<String>,
+    used: Option<Vec<String>>,
     deadline: Instant,
     pending: Option<Pending>,
     again_at: Option<Instant>,
@@ -117,19 +118,21 @@ impl Job {
         let timeout = s["flags"]["timeout"].as_str().map(|t| Flag::Val(t.to_string()));
         let ms = parse_ms(timeout.as_ref(), STEP_MS).unwrap_or(STEP_MS);
         let limit = Duration::from_millis(ms).clamp(STEP_MIN, STEP_MAX);
-        Ok(Attempt { argv, deadline: Instant::now() + limit, pending: None, again_at: None })
+        Ok(Attempt { argv, used: None, deadline: Instant::now() + limit, pending: None, again_at: None })
     }
 
     fn outcome(&mut self, d: &Daemon, ctx: &mut Ctx, attempt: &mut Attempt, got: Result<String, Fail>) -> Step {
+        let used = attempt.used.take().unwrap_or_else(|| attempt.argv.clone());
         match got {
             Ok(text) => {
-                observe(d, ctx, &attempt.argv, &text, true);
+                system::watch(d, ctx, &used, &text, true);
                 Step::Done
             }
             Err(fail) => {
+                brain::observe(d, ctx, &used, &fail.text(), false);
                 let step = self.judge(d, attempt, &fail);
                 if matches!(step, Step::Stop(_)) {
-                    observe(d, ctx, &attempt.argv, &fail.text(), false);
+                    observe(d, ctx, &used, &fail.text(), false);
                 }
                 step
             }
@@ -162,7 +165,9 @@ impl Job {
             }
             attempt.again_at = None;
         }
-        let got = match system::run_one(d, ctx, &attempt.argv) {
+        let ran = system::run_one(d, ctx, &attempt.argv);
+        attempt.used = ctx.retried.take();
+        let got = match ran {
             Ok((Out::Wait(pending), _)) => {
                 attempt.pending = Some(pending);
                 return None;

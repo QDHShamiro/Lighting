@@ -67,6 +67,7 @@ fn run(d: &Daemon, ctxs: &mut Contexts, mut req: Req) -> Option<Wait> {
     }
     let done = panic::catch_unwind(AssertUnwindSafe(|| system::run_one(d, ctx, &req.argv)));
     ctx.secret = None;
+    req.used = ctx.retried.take();
     req.cut += mem::take(&mut ctx.cut);
     let (out, code, name, stop) = match done {
         Ok(Ok((Out::Wait(pending), name))) => {
@@ -134,7 +135,7 @@ fn close_due(d: &Daemon, ctxs: &mut Contexts, waits: &[Wait]) {
 }
 
 fn finish(d: &Daemon, ctx: &mut Ctx, req: Req, name: &str, mut out: String, code: i32, stop: bool) {
-    super::routines::observe(d, ctx, &req.argv, &out, code == 0);
+    system::watch(d, ctx, req.used.as_deref().unwrap_or(&req.argv), &out, code == 0);
     super::memory::learn::after(d, ctx, name, &req.argv, code, &mut out);
     if code == 0 && route::foreign(name) {
         out = route::ai_note(out);

@@ -5,6 +5,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde_json::{Map, Value, json};
 
+use super::brain::Miss;
 use super::memory::learn::{Failed, Offered};
 use super::routines::Episode;
 
@@ -88,7 +89,9 @@ pub struct Ctx {
     pub run_stack: Vec<String>,
     pub ep: Episode,
     pub quiet_steps: usize,
-    pub prompts: Vec<(f64, Vec<String>)>,
+    pub refnames: Vec<(String, Map<String, Value>)>,
+    pub brain_miss: Option<Miss>,
+    pub retried: Option<Vec<String>>,
 }
 
 impl Ctx {
@@ -119,7 +122,9 @@ impl Ctx {
             run_stack: Vec::new(),
             ep: Episode::default(),
             quiet_steps: 0,
-            prompts: Vec::new(),
+            refnames: Vec::new(),
+            brain_miss: None,
+            retried: None,
         }
     }
 

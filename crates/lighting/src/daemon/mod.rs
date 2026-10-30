@@ -1,3 +1,4 @@
+mod brain;
 mod channels;
 mod config;
 mod ctx;
@@ -18,7 +19,7 @@ mod words;
 
 use std::any::Any;
 use std::backtrace::Backtrace;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io;
 use std::panic;
@@ -44,6 +45,8 @@ const STOPPED: &str = "stopped (Ctrl+Alt+End or lighting abort)";
 const ABORTED: &str = "stopped the running and queued commands";
 const LANES: [Lane; 3] = [Lane::Main, Lane::Memory, Lane::Hook];
 
+pub type Prompts = Vec<(f64, Vec<String>)>;
+
 pub struct Daemon {
     pub home: PathBuf,
     pub pid: u32,
@@ -51,6 +54,7 @@ pub struct Daemon {
     pub abort: AtomicBool,
     pub hosts: Hosts,
     pub seen: Mutex<HashSet<String>>,
+    pub prompts: Mutex<HashMap<String, Prompts>>,
     token: String,
     log: Log,
     next_id: AtomicU64,
@@ -92,6 +96,7 @@ pub struct Req {
     pub sid: String,
     pub cut: usize,
     pub stages: Vec<(&'static str, u64)>,
+    pub used: Option<Vec<String>>,
     secret: Option<String>,
     cwd: String,
     id: String,
@@ -172,6 +177,7 @@ pub fn serve() -> ExitCode {
         abort: AtomicBool::new(false),
         hosts,
         seen: Mutex::new(HashSet::new()),
+        prompts: Mutex::new(HashMap::new()),
         token,
         next_id: AtomicU64::new(0),
         generation: AtomicU64::new(0),
@@ -231,6 +237,7 @@ fn handle(d: &Daemon, link: Link, lanes: &[Sender<Work>]) {
             sid: msg.sid,
             cut: 0,
             stages: Vec::new(),
+            used: None,
             secret: msg.secret,
             cwd: msg.cwd,
             id: format!("{}.{}", d.pid, d.next_id.fetch_add(1, Ordering::Relaxed) + 1),
@@ -289,6 +296,10 @@ fn decode(raw: &[u8]) -> Option<Msg> {
 }
 
 impl Daemon {
+    pub fn prompts_of(&self, sid: &str) -> Prompts {
+        self.prompts.lock().unwrap_or_else(|e| e.into_inner()).get(sid).cloned().unwrap_or_default()
+    }
+
     fn generation(&self) -> u64 {
         self.generation.load(Ordering::SeqCst)
     }

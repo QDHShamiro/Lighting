@@ -98,7 +98,7 @@ pub fn payload(home: &Path) -> Value {
            "window": on(&cfg, "window"), "navLines": NAV_LINES, "navChars": NAV_CHARS})
 }
 
-fn blocklist(home: &Path) -> Vec<String> {
+pub fn blocklist(home: &Path) -> Vec<String> {
     let Ok(text) = fs::read_to_string(home.join("blocklist.txt")) else { return Vec::new() };
     text.lines()
         .map(str::trim)

@@ -18,6 +18,7 @@ use super::{Daemon, Out, web};
 pub use episode::Episode;
 use store::{file, load, load_all, save, score, slug, stem, step_line, text, usage};
 
+pub use align::truthy;
 pub use episode::{close, observe};
 pub use run::run;
 pub use store::words;
@@ -30,12 +31,18 @@ const OFFER_EVERY_S: f64 = 600.0;
 const OFFER_IGNORED: u64 = 5;
 const OFFERS: usize = 2;
 
+pub fn episodes_text(home: &std::path::Path) -> String {
+    fs::read(episode::file(home)).map(|b| String::from_utf8_lossy(&b).into_owned()).unwrap_or_default()
+}
+
 pub fn offer(d: &Daemon, ctx: &mut Ctx, typed: Vec<String>) -> Vec<String> {
     let t = now();
     if !typed.is_empty() {
-        ctx.prompts.push((t, typed.clone()));
-        let extra = ctx.prompts.len().saturating_sub(PROMPTS);
-        ctx.prompts.drain(..extra);
+        let mut all = d.prompts.lock().unwrap_or_else(|e| e.into_inner());
+        let mine = all.entry(ctx.sid.clone()).or_default();
+        mine.push((t, typed.clone()));
+        let extra = mine.len().saturating_sub(PROMPTS);
+        mine.drain(..extra);
     }
     if typed.iter().map(|w| stem(w)).collect::<HashSet<_>>().len() < 2 {
         return Vec::new();

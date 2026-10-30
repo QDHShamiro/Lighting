@@ -228,6 +228,10 @@ pub fn suggest(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     {
         lines.push(tip);
     }
+    let weekly = super::super::brain::weekly_tip(&d.home);
+    if !weekly.is_empty() {
+        lines.push(weekly);
+    }
     Ok(lines.join("\n"))
 }
 

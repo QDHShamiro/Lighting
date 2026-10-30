@@ -39,6 +39,15 @@ Safety: risky clicks and long URL data to new sites need --yes, lighting abort s
 const STATS_LINES: usize = 40;
 const KEYS_LINES: usize = 60;
 
+pub fn watch(d: &Daemon, ctx: &mut Ctx, argv: &[String], out: &str, ok: bool) {
+    super::routines::observe(d, ctx, argv, out, ok);
+    super::brain::observe(d, ctx, argv, out, ok);
+}
+
+pub fn used(ctx: &mut Ctx, argv: &[String]) -> Vec<String> {
+    ctx.retried.take().unwrap_or_else(|| argv.to_vec())
+}
+
 pub fn run_one(d: &Daemon, ctx: &mut Ctx, argv: &[String]) -> Result<(Out, String), Fail> {
     let call = parse(argv);
     if call.name.is_empty() {
@@ -55,11 +64,13 @@ pub fn run_one(d: &Daemon, ctx: &mut Ctx, argv: &[String]) -> Result<(Out, Strin
         ));
     }
     ctx.last_target = None;
+    ctx.retried = None;
     let text = match call.name.as_str() {
         "ping" => "pong".into(),
         "version" => VERSION.into(),
         "stop" => {
             super::routines::close(d, ctx);
+            super::brain::save(&d.home);
             return Ok((Out::Stop("lighting daemon stopped".into()), call.name));
         }
         "status" => status(d, ctx),
@@ -79,7 +90,16 @@ pub fn run_one(d: &Daemon, ctx: &mut Ctx, argv: &[String]) -> Result<(Out, Strin
         }
         _ if asks_help => help(call.pos.first().map(String::as_str))?,
         _ => {
-            let out = route::route(d, ctx, &call)?;
+            let out = match route::route(d, ctx, &call) {
+                Ok(out) => out,
+                Err(fail) => match super::brain::retry(d, ctx, &call, &fail) {
+                    Some((out, used)) => {
+                        ctx.retried = Some(used);
+                        out
+                    }
+                    None => return Err(super::brain::hint_for(d, ctx, &call, fail)),
+                },
+            };
             return Ok((route::with_view(d, ctx, &call, out), call.name));
         }
     };

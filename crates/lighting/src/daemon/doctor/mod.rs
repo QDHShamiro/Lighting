@@ -1,12 +1,15 @@
 mod install;
 
 use std::fs;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 use std::process::ExitCode;
 use std::time::{Duration, Instant};
 
 use serde_json::Value;
 
+use super::brain;
+use super::ctx::now;
 use super::media::tools;
 use super::memory::chat::api_key;
 use install::{Check, TOOLS};
@@ -16,6 +19,13 @@ pub type Ask = fn(&Path, &[&str]) -> Result<(i32, String), String>;
 const VERSION_WAIT: Duration = Duration::from_secs(10);
 const BIG_LOG: u64 = 50_000_000;
 const BIG_OUT: u64 = 500_000_000;
+const LOG_TAIL: u64 = 262_144;
+const STARTED: &str = "lighting daemon started";
+const PANIC: &str = " panic in ";
+const FAIL_PCT: f64 = 10.0;
+const MIN_FAILS: usize = 10;
+const SHOWN_CHARS: usize = 100;
+const ERROR_CHARS: usize = 60;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Level {
@@ -161,7 +171,7 @@ fn mb(n: u64) -> String {
 
 fn data_rows(home: &Path) -> Vec<Row> {
     let mut rows = Vec::new();
-    let bad: Vec<String> = ["config.json", "channels.json", "sessions.json", "keys.json"]
+    let bad: Vec<String> = ["config.json", "channels.json", "sessions.json", "keys.json", "brain.json", "improve.json"]
         .iter()
         .filter_map(|f| readable(&home.join(f)).err())
         .collect();
@@ -196,6 +206,61 @@ fn data_rows(home: &Path) -> Vec<Row> {
     } else {
         row(Level::Ok, "disk", text, "")
     });
+    rows
+}
+
+fn panics(home: &Path) -> (usize, String) {
+    let Ok(mut f) = fs::File::open(home.join("daemon.log")) else { return (0, String::new()) };
+    let len = f.metadata().map_or(0, |m| m.len());
+    let mut bytes = Vec::new();
+    if f.seek(SeekFrom::Start(len.saturating_sub(LOG_TAIL))).and_then(|_| f.read_to_end(&mut bytes)).is_err() {
+        return (0, String::new());
+    }
+    let text = String::from_utf8_lossy(&bytes);
+    let text = text.rfind(STARTED).map_or(&text[..], |at| &text[at..]);
+    let n = text.matches(PANIC).count();
+    let last = text
+        .rfind(PANIC)
+        .map(|at| text[at + PANIC.len()..].lines().next().unwrap_or("").to_string())
+        .and_then(|l| l.split_once(": ").map(|(_, why)| why.to_string()))
+        .unwrap_or_default();
+    (n, last)
+}
+
+fn error_rows(home: &Path) -> Vec<Row> {
+    let mut rows = Vec::new();
+    let (n, last) = panics(home);
+    if n > 0 {
+        let last: String = last.chars().take(SHOWN_CHARS).collect();
+        rows.push(row(
+            Level::Warn,
+            "errors",
+            format!(
+                "{n} error{} inside the daemon since it started, last: {}",
+                if n == 1 { "" } else { "s" },
+                if last.is_empty() { "?" } else { &last }
+            ),
+            format!("report it with {}: github.com/QDHShamiro/Lighting/issues", home.join("daemon.log").display()),
+        ));
+    }
+    let s = brain::summary(home, 7, now());
+    if s.runs == 0 {
+        rows.push(row(Level::Ok, "errors", "no commands in the last 7 days", ""));
+        return rows;
+    }
+    let rate = brain::pct(s.failed, s.runs);
+    match s.patterns.first() {
+        Some(p) if s.failed >= MIN_FAILS && rate >= FAIL_PCT => {
+            let most: String = p.error.chars().take(ERROR_CHARS).collect();
+            rows.push(row(
+                Level::Warn,
+                "errors",
+                format!("{rate:.0}% of {} commands failed in 7 days, most often: {most}", s.runs),
+                "lighting improve",
+            ));
+        }
+        _ => rows.push(row(Level::Ok, "errors", format!("{} commands in 7 days, {rate:.1}% failed", s.runs), "")),
+    }
     rows
 }
 
@@ -251,5 +316,6 @@ pub fn run(home: &Path, args: &[String], ask: Ask) -> ExitCode {
     rows.extend(tool_rows(home));
     rows.extend(key_rows());
     rows.extend(data_rows(home));
+    rows.extend(error_rows(home));
     print(&rows)
 }
