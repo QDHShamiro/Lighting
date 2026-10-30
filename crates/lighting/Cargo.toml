@@ -34,3 +34,6 @@ ureq.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 windows.workspace = true
+
+[target.'cfg(not(windows))'.dependencies]
+xa11y.workspace = true

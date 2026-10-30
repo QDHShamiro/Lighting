@@ -1,7 +1,12 @@
 #[cfg(any(windows, test))]
 mod combo;
-#[cfg(any(windows, test))]
 mod view;
+#[cfg(not(windows))]
+mod xa;
+#[cfg(not(windows))]
+mod xact;
+#[cfg(any(not(windows), test))]
+mod xview;
 
 #[cfg(any(windows, test))]
 mod talk;
@@ -42,26 +47,11 @@ mod win;
 #[cfg(windows)]
 use lt_core::Fail;
 #[cfg(not(windows))]
-use lt_core::{Call, Fail};
+pub use xa::{cleanup, keep, run};
 
 #[cfg(not(windows))]
-use super::ctx::Ctx;
-#[cfg(not(windows))]
-use super::{Daemon, Out};
-
-#[cfg(not(windows))]
-pub fn run(_: &Daemon, _: &mut Ctx, c: &Call, _: Option<String>) -> Result<Out, Fail> {
-    Err(super::route::later(&format!("{} on apps on this system", c.name)))
-}
-
-#[cfg(not(windows))]
-pub fn cleanup(_: &mut Ctx) -> (Vec<String>, Vec<String>) {
-    (Vec::new(), Vec::new())
-}
-
-#[cfg(not(windows))]
-pub fn keep(_: &Daemon, _: &mut Ctx, _: Option<&str>) -> Result<usize, Fail> {
-    Err(super::route::later("keep for apps on this system"))
+fn windowish(p: &str) -> bool {
+    super::web::ref_kind(p) == Some("w") || p.to_lowercase().starts_with("app:")
 }
 
 #[cfg(windows)]

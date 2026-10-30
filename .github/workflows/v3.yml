@@ -35,6 +35,13 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-nextest,cargo-deny
+      - name: Linux packages
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends libxkbcommon-dev ffmpeg xvfb xauth at-spi2-core zenity
+          echo "LT_NEED_FFMPEG=1" >> "$GITHUB_ENV"
       - name: Format
         id: fmt
         continue-on-error: true
@@ -43,14 +50,15 @@ jobs:
         id: lint
         continue-on-error: true
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
-      - name: ffmpeg for the video tests
-        if: runner.os == 'Linux'
-        continue-on-error: true
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg && echo "LT_NEED_FFMPEG=1" >> "$GITHUB_ENV"
       - name: Test
         id: test
         continue-on-error: true
         run: cargo nextest run --workspace --locked --no-tests=pass --no-fail-fast
+      - name: Linux desktop through AT-SPI
+        id: xdesk
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: LT_XDESK=1 dbus-run-session -- xvfb-run -a cargo nextest run -p lighting --test xdesk --locked --no-fail-fast
       - name: Licenses and advisories
         id: deny
         if: runner.os == 'Linux'
@@ -74,4 +82,4 @@ jobs:
       - name: Result
         if: always()
         shell: bash
-        run: echo "::notice title=v3 ${{ matrix.os }}::fmt=${{ steps.fmt.outcome }} lint=${{ steps.lint.outcome }} test=${{ steps.test.outcome }} deny=${{ steps.deny.outcome }} build=${{ steps.build.outcome }}"
+        run: echo "::notice title=v3 ${{ matrix.os }}::fmt=${{ steps.fmt.outcome }} lint=${{ steps.lint.outcome }} test=${{ steps.test.outcome }} xdesk=${{ steps.xdesk.outcome }} deny=${{ steps.deny.outcome }} build=${{ steps.build.outcome }}"

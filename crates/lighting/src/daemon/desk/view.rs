@@ -97,6 +97,7 @@ pub fn score(spec: &str, title: &str, exe: &str) -> u8 {
     }
 }
 
+#[cfg(any(windows, test))]
 pub fn hint_words(hint: &str) -> Vec<String> {
     hint.to_lowercase().split(|c: char| !c.is_ascii_alphanumeric()).filter(|w| w.len() > 2).map(String::from).collect()
 }
