@@ -6,7 +6,14 @@ pub fn local_now() -> String {
 pub fn local_parts(epoch: f64) -> [u32; 6] {
     let utc = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs() as i64);
     let offset = stamp_secs(&local_now()).map_or(0, |local| (local - utc + 450).div_euclid(900) * 900);
-    let secs = epoch as i64 + offset;
+    civil(epoch as i64 + offset).map(|v| u32::try_from(v).unwrap_or(0))
+}
+
+pub fn local_to_utc(local: i64) -> i64 {
+    sys::to_utc(local).unwrap_or(local)
+}
+
+fn civil(secs: i64) -> [i64; 6] {
     let (days, rest) = (secs.div_euclid(86_400), secs.rem_euclid(86_400));
     let z = days + 719_468;
     let era = z.div_euclid(146_097);
@@ -17,7 +24,7 @@ pub fn local_parts(epoch: f64) -> [u32; 6] {
     let day = doy - (153 * mp + 2) / 5 + 1;
     let month = if mp < 10 { mp + 3 } else { mp - 9 };
     let year = yoe + era * 400 + i64::from(month <= 2);
-    [year, month, day, rest / 3600, rest / 60 % 60, rest % 60].map(|v| u32::try_from(v).unwrap_or(0))
+    [year, month, day, rest / 3600, rest / 60 % 60, rest % 60]
 }
 
 pub fn ago(seconds: u64) -> String {
@@ -62,6 +69,21 @@ mod sys {
     #[link(name = "kernel32")]
     unsafe extern "system" {
         fn GetLocalTime(time: *mut SystemTime);
+        fn TzSpecificLocalTimeToSystemTime(zone: *const u8, local: *const SystemTime, utc: *mut SystemTime) -> i32;
+    }
+
+    pub fn to_utc(local: i64) -> Option<i64> {
+        let [year, month, day, hour, minute, second] = super::civil(local).map(|v| u16::try_from(v).unwrap_or(0));
+        let local = SystemTime { year, month, weekday: 0, day, hour, minute, second, millis: 0 };
+        let mut utc = SystemTime { year: 0, month: 0, weekday: 0, day: 0, hour: 0, minute: 0, second: 0, millis: 0 };
+        if unsafe { TzSpecificLocalTimeToSystemTime(std::ptr::null(), &local, &mut utc) } == 0 {
+            return None;
+        }
+        let stamp = format!(
+            "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+            utc.year, utc.month, utc.day, utc.hour, utc.minute, utc.second
+        );
+        super::stamp_secs(&stamp)
     }
 
     pub fn now() -> [u32; 6] {
@@ -93,6 +115,26 @@ mod sys {
     unsafe extern "C" {
         fn time(out: *mut c_long) -> c_long;
         fn localtime_r(t: *const c_long, out: *mut Tm) -> *mut Tm;
+        fn mktime(tm: *mut Tm) -> c_long;
+    }
+
+    pub fn to_utc(local: i64) -> Option<i64> {
+        let [year, mon, mday, hour, min, sec] = super::civil(local).map(|v| c_int::try_from(v).unwrap_or(0));
+        let mut tm = Tm {
+            sec,
+            min,
+            hour,
+            mday,
+            mon: mon - 1,
+            year: year - 1900,
+            wday: 0,
+            yday: 0,
+            isdst: -1,
+            gmtoff: 0,
+            zone: std::ptr::null(),
+        };
+        let t = unsafe { mktime(&mut tm) };
+        (t != -1).then_some(i64::from(t))
     }
 
     pub fn now() -> [u32; 6] {
@@ -147,6 +189,13 @@ mod tests {
         assert!(gap.abs() <= 2, "{shown} vs {}", local_now());
         let later = local_parts(utc + 86_400.0 * 400.0);
         assert!(later[0] > y || later[1] != mo, "{later:?}");
+    }
+
+    #[test]
+    fn local_midnight_turns_into_utc() {
+        let local = stamp_secs(&local_now()).unwrap();
+        let utc = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
+        assert!((local_to_utc(local) - utc).abs() <= 2, "{} vs {utc}", local_to_utc(local));
     }
 
     #[test]

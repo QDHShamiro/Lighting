@@ -8,7 +8,7 @@ mod names;
 
 pub use args::{Call, Flag, parse, wants_help};
 pub use cap::{OUT_CHARS, cap, out_file};
-pub use clock::{ago, local_now, local_parts, stamp_secs};
+pub use clock::{ago, local_now, local_parts, local_to_utc, stamp_secs};
 pub use close::close_match;
 pub use fail::Fail;
 pub use log::{Log, Row, listing, stats};

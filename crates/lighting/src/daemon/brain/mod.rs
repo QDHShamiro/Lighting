@@ -310,6 +310,10 @@ fn write(s: &mut State) {
     }
 }
 
+pub fn stats(home: &Path) -> Value {
+    with(home, |s| s.data["stats"].clone())
+}
+
 pub fn save(home: &Path) {
     let mut guard = STATE.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(s) = guard.as_mut().filter(|s| s.home == home) {
