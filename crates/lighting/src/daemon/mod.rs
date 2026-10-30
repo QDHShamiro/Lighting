@@ -2,6 +2,7 @@ mod config;
 mod ctx;
 mod hosts;
 mod lane;
+mod memory;
 mod route;
 mod system;
 mod web;

@@ -67,8 +67,8 @@ fn a_v3_home_starts_its_daemon_and_answers_like_2x() {
     assert_eq!(code, 0);
     assert!(status.starts_with(&format!("lighting {} | daemon pid ", env!("CARGO_PKG_VERSION"))), "{status}");
     assert_eq!(home.run(&["zzz"]), (1, "err: unknown command 'zzz' -> try: lighting help".into()));
-    let (code, recall) = home.run(&["recall", "x"]);
-    assert!(code == 1 && recall.starts_with("err: recall is not built into Lighting 3.0 yet"), "{recall}");
+    let (code, recall) = home.run(&["listen", "x"]);
+    assert!(code == 1 && recall.starts_with("err: listen is not built into Lighting 3.0 yet"), "{recall}");
     home.run(&["zzz"]);
     let (_, third) = home.run(&["zzz"]);
     assert!(third.ends_with("failed 3 times in a row with this error: repeating it will not help"), "{third}");
@@ -76,7 +76,7 @@ fn a_v3_home_starts_its_daemon_and_answers_like_2x() {
     assert!(log.lines().count() == 2 && log.lines().all(|l| l.contains(" ERR zzz ")), "{log}");
     let rows = home.rows();
     let cmds: Vec<&str> = rows.iter().filter_map(|r| r["cmd"].as_str()).collect();
-    assert_eq!(cmds, ["zzz", "recall", "zzz", "zzz"]);
+    assert_eq!(cmds, ["zzz", "listen", "zzz", "zzz"]);
     let last = rows.last().unwrap();
     assert_eq!((last["sid"].as_str(), last["ok"].as_bool()), (Some("it-1"), Some(false)));
     assert_eq!(last["e"].as_str(), Some("unknown command 'zzz'"));
@@ -220,6 +220,29 @@ fn read_turns_local_pages_and_pictures_into_text() {
     assert!(code == 0 && seen.contains("(image)\nshot ") && seen.contains("(4x2, ~1 image tokens"), "{seen}");
     let (code, gone) = home.run(&["read", &home.0.join("gone.pdf").display().to_string()]);
     assert!(code == 1 && gone.starts_with("err: cannot read "), "{gone}");
+}
+
+#[test]
+fn memory_keeps_notes_and_todos_in_memory_db() {
+    let home = Home::new("mem", true);
+    let said = home.run(&["remember", "Brave is the only browser.", "Never Chrome."]).1;
+    assert_eq!(said, "remembered #1 (lighting forget 1 undoes it)");
+    let (code, found) = home.run(&["recall", "which", "browser"]);
+    assert!(code == 0 && found.starts_with("#1 ") && found.contains(" fact: Brave is the only browser. | "), "{found}");
+    assert!(found.ends_with("~Nt = its size; words only, the model is not running)"), "{found}");
+    let (code, full) = home.run(&["recall", "#1"]);
+    let body = "\nBrave is the only browser.\nBrave is the only browser. Never Chrome.";
+    assert!(code == 0 && full.contains(", user, ") && full.ends_with(body), "{full}");
+    let none = "nothing remembered about \"zebra\" (words only, the model is not running)";
+    assert_eq!(home.run(&["recall", "zebra"]).1, none);
+    assert_eq!(home.run(&["todo", "add", "ship it", "--list", "release"]).1, "to-do #1 added to release");
+    assert_eq!(home.run(&["todo"]).1, "release:\n  #1 ship it");
+    assert_eq!(home.run(&["todo", "done", "1", "all", "good"]).1, "#1 is done: ship it");
+    assert_eq!(home.run(&["todo"]).1, "no open to-dos (lighting todo add \"task\")");
+    assert_eq!(home.run(&["forget", "1"]).1, "forgot #1");
+    assert_eq!(home.run(&["forget", "1"]).1, "no note #1");
+    assert_eq!(home.run(&["recall", "1"]), (1, "err: no note #1 -> try: lighting recall \"<words>\"".into()));
+    assert!(home.0.join("memory").join("memory.db").is_file());
 }
 
 #[test]

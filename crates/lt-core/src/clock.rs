@@ -3,6 +3,23 @@ pub fn local_now() -> String {
     format!("{year:04}-{month:02}-{day:02} {hour:02}:{minute:02}:{second:02}")
 }
 
+pub fn local_parts(epoch: f64) -> [u32; 6] {
+    let utc = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs() as i64);
+    let offset = stamp_secs(&local_now()).map_or(0, |local| (local - utc + 450).div_euclid(900) * 900);
+    let secs = epoch as i64 + offset;
+    let (days, rest) = (secs.div_euclid(86_400), secs.rem_euclid(86_400));
+    let z = days + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = yoe + era * 400 + i64::from(month <= 2);
+    [year, month, day, rest / 3600, rest / 60 % 60, rest % 60].map(|v| u32::try_from(v).unwrap_or(0))
+}
+
 pub fn ago(seconds: u64) -> String {
     match seconds {
         0..90 => format!("{seconds}s"),
@@ -119,6 +136,17 @@ mod tests {
         assert_eq!(stamp_secs("2026-10-30T12:34:56"), Some(1_793_363_696));
         assert_eq!(stamp_secs("2026-10-30"), None);
         assert_eq!(stamp_secs("2026/10/30 12:34:56"), None);
+    }
+
+    #[test]
+    fn epochs_turn_into_local_dates() {
+        let utc = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64();
+        let [y, mo, d, h, mi, s] = local_parts(utc);
+        let shown = format!("{y:04}-{mo:02}-{d:02} {h:02}:{mi:02}:{s:02}");
+        let gap = stamp_secs(&shown).unwrap() - stamp_secs(&local_now()).unwrap();
+        assert!(gap.abs() <= 2, "{shown} vs {}", local_now());
+        let later = local_parts(utc + 86_400.0 * 400.0);
+        assert!(later[0] > y || later[1] != mo, "{later:?}");
     }
 
     #[test]

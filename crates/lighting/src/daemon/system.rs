@@ -6,7 +6,7 @@ use lt_core::{Call, Fail, Flag, OUT_CHARS, ago, built_later, listing, parse, sta
 use super::ctx::Ctx;
 use super::{Daemon, Out, VERSION, config, route, web};
 
-const HELP: &str = "lighting 3.0 <command> [args]   browser for AI agents (desktop, memory and video follow in the next milestones)
+const HELP: &str = "lighting 3.0 <command> [args]   browser and memory for AI agents (desktop and video follow in the next milestones)
 refs: e12 web element | t77 tab
 
 web     open <url> [-n] [-f \"a|b\"] [--text]   snap [-f \"a|b\"] [-s css|ref] [--all] [--full] [--diff] [--links]   text [-f txt] [--links]
@@ -18,6 +18,8 @@ web     open <url> [-n] [-f \"a|b\"] [--text]   snap [-f \"a|b\"] [-s css|ref] [
         upload <ref> <file>   tabs [-f x]   tab <id>   close [id]   back   forward   reload   table <ref|css>
         dialog accept|dismiss [text]   downloads   console   net [n] [-f x] (JSON the page loaded)
         tools   call <tool> '{json}' [--yes] (WebMCP)
+memory  recall \"words\" [--all] [--max n] | recall <id>   remember \"fact\" [--kind k]   forget <id>
+        todo [--all] | todo add \"task\" [--list name] [--doing] | todo done|doing|drop|open <id> [note] | todo note <id> \"text\"
 keys    keys [site] [-f x]   keys add <site> \"ctrl+k=what\"   keys rm <site> <key>
 cleanup done [--quiet]   keep [t]   config cleanup on|off
 system  status   stop   abort   config [key value]   log [n] | log stats [n]   version
@@ -163,8 +165,10 @@ mod tests {
         assert!(about("tabs").is_some_and(|row| row.starts_with("upload <ref> <file>   tabs [-f x]")));
         assert!(about("dismiss").is_some_and(|row| row.starts_with("fetch <url>")));
         assert!(about("abort").is_some_and(|row| row.starts_with("status ")));
-        assert_eq!(about("recall"), None);
-        assert_eq!(help(Some("recall")).ok().as_deref(), Some(HELP));
+        assert_eq!(about("listen"), None);
+        assert!(about("recall").is_some_and(|row| row.starts_with("recall \"words\"")));
+        assert!(about("todo").is_some_and(|row| row.starts_with("todo [--all]")));
+        assert_eq!(help(Some("listen")).ok().as_deref(), Some(HELP));
         assert_eq!(help(None).ok().as_deref(), Some(HELP));
         assert!(help(Some("zzz")).is_err());
     }

@@ -15,6 +15,7 @@ base64.workspace = true
 encoding_rs.workspace = true
 image.workspace = true
 lt-core.workspace = true
+lt-memory.workspace = true
 lt-proto.workspace = true
 lt-squeeze.workspace = true
 pdf-extract.workspace = true

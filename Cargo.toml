@@ -13,13 +13,16 @@ publish = false
 [workspace.dependencies]
 base64 = "0.22"
 encoding_rs = "0.8"
+half = { version = "2", default-features = false }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp"] }
 pdf-extract = "0.12"
 ureq = { version = "3", default-features = false, features = ["rustls-no-provider", "_ring", "platform-verifier", "gzip"] }
 lt-core = { path = "crates/lt-core" }
+lt-memory = { path = "crates/lt-memory" }
 lt-proto = { path = "crates/lt-proto" }
 lt-squeeze = { path = "crates/lt-squeeze" }
 proptest = { version = "1", default-features = false, features = ["std"] }
+rusqlite = { version = "0.41", features = ["bundled"] }
 regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-perl", "unicode-case"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 

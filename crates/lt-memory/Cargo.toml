@@ -1,0 +1,13 @@
+[package]
+name = "lt-memory"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+half.workspace = true
+lt-core.workspace = true
+regex.workspace = true
+rusqlite.workspace = true
