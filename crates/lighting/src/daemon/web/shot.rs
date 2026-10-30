@@ -57,6 +57,19 @@ pub fn shot(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     Ok(res)
 }
 
+#[cfg(windows)]
+pub fn save_picture(
+    d: &Daemon,
+    ctx: &mut Ctx,
+    c: &Call,
+    img: &DynamicImage,
+    key: &str,
+    hint: &str,
+) -> Result<String, Fail> {
+    let out = out_path(ctx, c, SHOT_KINDS, hint)?;
+    save_image(d, ctx, img, key, c.on("if-changed"), width(d, c, None)?, threshold(c)?, out)
+}
+
 pub fn image_note(d: &Daemon, ctx: &mut Ctx, raw: &[u8]) -> Result<String, Fail> {
     let img = image::load_from_memory(raw)
         .map_err(|e| Fail::new(format!("not a readable image ({})", head(&e.to_string(), 80))))?;

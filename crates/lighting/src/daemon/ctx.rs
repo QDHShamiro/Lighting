@@ -129,6 +129,10 @@ impl Ctx {
         }
     }
 
+    pub fn launched_apps(&self) -> bool {
+        self.desk.get("launched").and_then(Value::as_object).is_some_and(|m| !m.is_empty())
+    }
+
     pub fn kind(&self) -> Option<&str> {
         self.target.as_ref().map(|(kind, _)| kind.as_str())
     }

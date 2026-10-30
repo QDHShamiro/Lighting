@@ -5,7 +5,7 @@ use lt_core::{APP_ONLY, CHAT, Call, Fail, Flag, SHARED, WEB_ONLY, built_later, u
 use regex::Regex;
 
 use super::ctx::Ctx;
-use super::{Daemon, Out, web};
+use super::{Daemon, Out, desk, web};
 
 const POST_VIEW: &[&str] = &[
     "click", "type", "press", "fill", "select", "check", "scroll", "hover", "drag", "do", "run", "search", "back",
@@ -55,10 +55,6 @@ pub fn later(name: &str) -> Fail {
     Fail::hint(format!("{name} is not built into Lighting 3.0 yet"), "run it with Lighting 2.x (without LIGHTING_HOME)")
 }
 
-fn apps(name: &str) -> Fail {
-    later(&format!("{name} on apps"))
-}
-
 pub fn foreign(name: &str) -> bool {
     FOREIGN.contains(&name) || POST_VIEW.contains(&name)
 }
@@ -76,10 +72,10 @@ fn windowish(p: &str) -> bool {
     web::ref_kind(p) == Some("w") || p.to_lowercase().starts_with("app:")
 }
 
-fn aimed_at_app(c: &Call) -> Result<bool, Fail> {
+fn aim(c: &Call) -> Result<Option<(String, Call)>, Fail> {
     match c.flags.get("on") {
-        Some(Flag::Val(on)) if on == "web" || on == "app" => Ok(false),
-        Some(Flag::Val(on)) if windowish(on) => Ok(true),
+        Some(Flag::Val(on)) if on == "web" || on == "app" => Ok(None),
+        Some(Flag::Val(on)) if windowish(on) => Ok(Some((on.clone(), c.clone()))),
         Some(_) => Err(Fail::hint(
             "--on takes web, app or a window like w3 or app:Name",
             format!("lighting {} ... --on app", c.name),
@@ -88,10 +84,16 @@ fn aimed_at_app(c: &Call) -> Result<bool, Fail> {
             let need = if c.name == "type" { 3 } else { 2 };
             let first_web =
                 c.pos.first().map(String::as_str).and_then(web::ref_kind).is_some_and(|k| k == "e" || k == "t");
-            Ok(AIMED.contains(&c.name.as_str())
+            let aimed = AIMED.contains(&c.name.as_str())
                 && c.pos.len() >= need
                 && c.pos.last().is_some_and(|p| windowish(p))
-                && !first_web)
+                && !first_web;
+            if !aimed {
+                return Ok(None);
+            }
+            let mut rest = c.clone();
+            let spec = rest.pos.pop().unwrap_or_default();
+            Ok(Some((spec, rest)))
         }
     }
 }
@@ -132,8 +134,8 @@ fn on_web(d: &Daemon, ctx: &Ctx, c: &Call) -> bool {
 
 pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     let name = c.name.as_str();
-    if aimed_at_app(c)? {
-        return Err(apps(name));
+    if let Some((spec, rest)) = aim(c)? {
+        return desk::run(d, ctx, &rest, Some(spec));
     }
     let first = c.pos.first().map(String::as_str);
     match name {
@@ -141,16 +143,30 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
             super::memory::run(d, ctx, c).map(Out::Text)
         }
         "read" if first.is_some_and(web::wants_read) => web::read(d, ctx, c).map(Out::Text),
-        "read" => Err(apps(name)),
-        "text" if c.val("on") == Some("app") || first.is_some_and(windowish) => Err(apps(name)),
-        "close" if first.is_some_and(windowish) => Err(apps(name)),
-        "shot" if c.on("seconds") => Err(apps(name)),
-        "wait" if waits_on_app(ctx, c) => Err(apps(name)),
-        _ if CHAT.contains(&name) || APP_ONLY.contains(&name) || name == "desktop" => Err(later(name)),
-        _ if SHARED.contains(&name) && !on_web(d, ctx, c) => Err(apps(name)),
+        "read" => desk::run(d, ctx, c, None),
+        "text" if c.val("on") == Some("app") || first.is_some_and(windowish) => desk::run(d, ctx, c, None),
+        "close" if first.is_some_and(windowish) => desk::run(d, ctx, c, None),
+        "shot" if c.on("seconds") => desk::run(d, ctx, c, None),
+        "wait" if waits_on_app(ctx, c) => desk::run(d, ctx, c, None),
+        "desktop" => desktop(d, ctx, c),
+        _ if CHAT.contains(&name) => Err(later(name)),
+        _ if APP_ONLY.contains(&name) => desk::run(d, ctx, c, None),
+        _ if SHARED.contains(&name) && !on_web(d, ctx, c) => desk::run(d, ctx, c, None),
         _ if SHARED.contains(&name) || WEB_ONLY.contains(&name) => web::run(d, ctx, c),
         _ if built_later(name) => Err(later(name)),
         _ => Err(unknown(name)),
+    }
+}
+
+fn desktop(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
+    match c.pos.first().map(|p| p.to_lowercase()) {
+        None => desk::run(d, ctx, c, None),
+        Some(sub) if sub == "desktop" => desk::run(d, ctx, c, None),
+        Some(sub) => {
+            let mut flags = c.flags.clone();
+            flags.insert("on".into(), Flag::Val("app".into()));
+            route(d, ctx, &Call { name: sub, pos: c.pos[1..].to_vec(), flags })
+        }
     }
 }
 

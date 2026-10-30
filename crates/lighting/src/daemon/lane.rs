@@ -127,7 +127,7 @@ fn close_due(d: &Daemon, ctxs: &mut Contexts, waits: &[Wait]) {
             continue;
         }
         ctx.closing = 0.0;
-        if ctx.sid.is_empty() || !ctx.owned.is_empty() {
+        if ctx.sid.is_empty() || !ctx.owned.is_empty() || ctx.launched_apps() {
             let _ = panic::catch_unwind(AssertUnwindSafe(|| web::cleanup_now(d, ctx, true)));
         }
     }

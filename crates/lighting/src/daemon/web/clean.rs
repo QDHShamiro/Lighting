@@ -5,7 +5,7 @@ use serde_json::{Map, Value, json};
 
 use super::super::ctx::{Ctx, now};
 use super::super::hosts::Called;
-use super::super::{Daemon, STOPPED, config};
+use super::super::{Daemon, STOPPED, config, desk};
 use super::{num, obj, plural, ref_kind, secs};
 
 const DONE_GRACE_S: f64 = 20.0;
@@ -40,7 +40,7 @@ pub fn done(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
             "left everything open (cleanup is off: lighting config cleanup on)".into()
         });
     }
-    if !ctx.sid.is_empty() && ctx.owned.is_empty() {
+    if !ctx.sid.is_empty() && ctx.owned.is_empty() && !ctx.launched_apps() {
         return Ok(if quiet { String::new() } else { "nothing to close".into() });
     }
     if quiet && !ctx.sid.is_empty() {
@@ -65,6 +65,7 @@ pub fn cleanup_now(d: &Daemon, ctx: &mut Ctx, quiet: bool) -> Result<String, Fai
             .map(|a| a.iter().filter_map(Value::as_str).map(String::from).collect())
             .unwrap_or_default()
     };
+    let (apps, left) = desk::cleanup(ctx);
     if !ctx.sid.is_empty() {
         let gone: BTreeSet<String> = replies.iter().flat_map(|r| list(r, "shut")).collect();
         ctx.tabs.retain(|t| !gone.contains(t));
@@ -73,7 +74,15 @@ pub fn cleanup_now(d: &Daemon, ctx: &mut Ctx, quiet: bool) -> Result<String, Fai
     if quiet {
         return Ok(String::new());
     }
-    let mut lines = vec![if tabs > 0 { format!("closed {}", plural(tabs, "tab")) } else { "nothing to close".into() }];
+    let mut parts = Vec::new();
+    if tabs > 0 {
+        parts.push(plural(tabs, "tab"));
+    }
+    if !apps.is_empty() {
+        parts.push(format!("{} ({})", plural(apps.len() as i64, "app"), apps.join(", ")));
+    }
+    let mut lines =
+        vec![if parts.is_empty() { "nothing to close".into() } else { format!("closed {}", parts.join(", ")) }];
     if viewed > 0 {
         let why: BTreeSet<String> = replies.iter().flat_map(|r| list(r, "why")).collect();
         let place = if why.contains("yours") {
@@ -91,9 +100,6 @@ pub fn cleanup_now(d: &Daemon, ctx: &mut Ctx, quiet: bool) -> Result<String, Fai
 pub fn keep(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let spec = c.pos.first();
     let kind = spec.map(String::as_str).and_then(ref_kind);
-    if spec.is_some_and(|s| kind == Some("w") || s.to_lowercase().starts_with("app:")) {
-        return Err(super::super::route::later("keep for apps"));
-    }
     let mut tabs = 0;
     if spec.is_none() || kind == Some("t") {
         let mut args = obj(json!({"id": spec}));
@@ -102,8 +108,14 @@ pub fn keep(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         }
         tabs = browsers(d, ctx, "keep", args)?.iter().map(|r| num(r.get("kept"))).sum();
     }
-    if tabs == 0 {
+    let mut apps = 0;
+    if spec.is_none_or(|s| kind == Some("w") || s.to_lowercase().starts_with("app:")) {
+        apps = desk::keep(d, ctx, spec.map(String::as_str)).unwrap_or(0) as i64;
+    }
+    let parts: Vec<String> =
+        [(tabs, "tab"), (apps, "app")].into_iter().filter(|(n, _)| *n > 0).map(|(n, w)| plural(n, w)).collect();
+    if parts.is_empty() {
         return Ok("nothing to keep".into());
     }
-    Ok(format!("kept {}: stays open after the task", plural(tabs, "tab")))
+    Ok(format!("kept {}: stays open after the task", parts.join(" and ")))
 }

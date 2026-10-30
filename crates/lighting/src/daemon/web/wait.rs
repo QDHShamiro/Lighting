@@ -33,7 +33,7 @@ pub fn spec(c: &Call) -> Result<Map<String, Value>, Fail> {
     Ok(s)
 }
 
-fn parse_ms(value: Option<&Flag>, default: u64) -> Result<u64, Fail> {
+pub fn parse_ms(value: Option<&Flag>, default: u64) -> Result<u64, Fail> {
     let Some(Flag::Val(raw)) = value else { return Ok(default) };
     if raw.is_empty() {
         return Ok(default);

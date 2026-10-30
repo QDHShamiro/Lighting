@@ -1,5 +1,6 @@
 mod config;
 mod ctx;
+mod desk;
 mod game;
 mod hosts;
 mod lane;

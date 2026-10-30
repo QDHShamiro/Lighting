@@ -67,7 +67,7 @@ pub enum Flag {
     Val(String),
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Call {
     pub name: String,
     pub pos: Vec<String>,

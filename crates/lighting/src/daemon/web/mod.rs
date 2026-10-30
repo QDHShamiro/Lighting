@@ -26,6 +26,10 @@ pub use clean::{cleanup_now, done, keep};
 pub use data::pystr;
 pub use launch::{any_browser, pick};
 pub use read::{read, wants as wants_read};
+#[cfg(windows)]
+pub use shot::save_picture;
+#[cfg(windows)]
+pub use wait::parse_ms;
 
 pub const CALL_TIMEOUT: f64 = 20.0;
 pub const LOAD_TIMEOUT: f64 = 25.0;
