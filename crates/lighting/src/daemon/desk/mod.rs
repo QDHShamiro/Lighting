@@ -201,7 +201,7 @@ mod imp {
     }
 
     pub fn cleanup(ctx: &mut Ctx) -> (Vec<String>, Vec<String>) {
-        state::with(ctx, |st, ctx| launch::cleanup(st, ctx))
+        state::with(ctx, launch::cleanup)
     }
 
     pub fn keep(d: &Daemon, ctx: &mut Ctx, spec: Option<&str>) -> Result<usize, Fail> {
@@ -275,13 +275,14 @@ mod imp {
                     self.list_windows();
                 }
                 let hwnd = self.st.windows.get(spec).copied().unwrap_or(0);
-                if hwnd != 0 && !win::alive(hwnd) {
-                    if let Some(new) = self.successor(spec) {
-                        self.st.windows.insert(spec.to_string(), new);
-                        let exe = self.st.info.get(spec).map(|i| i.0.clone()).unwrap_or_default();
-                        self.note(&format!("the old {spec} was closed; {spec} is now the new {exe} window"));
-                        return Ok(new);
-                    }
+                if hwnd != 0
+                    && !win::alive(hwnd)
+                    && let Some(new) = self.successor(spec)
+                {
+                    self.st.windows.insert(spec.to_string(), new);
+                    let exe = self.st.info.get(spec).map(|i| i.0.clone()).unwrap_or_default();
+                    self.note(&format!("the old {spec} was closed; {spec} is now the new {exe} window"));
+                    return Ok(new);
                 }
                 if hwnd == 0 || !win::alive(hwnd) {
                     return Err(Fail::hint(format!("window {spec} is gone (closed)"), "lighting windows").into());
