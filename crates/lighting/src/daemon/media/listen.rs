@@ -87,7 +87,7 @@ pub fn captions(home: &Path, url: &str, lang: Option<&str>, dir: &Path) -> Resul
     ];
     tools::run(&tools::ytdlp(home)?, &args.map(String::from), CAPTION_WAIT)?;
     let mut files: Vec<PathBuf> = fs::read_dir(dir)
-        .map(|r| r.flatten().map(|e| e.path()).collect())
+        .map(|r| r.flatten().map(|e| e.path()).collect::<Vec<PathBuf>>())
         .unwrap_or_default()
         .into_iter()
         .filter(|p| {
