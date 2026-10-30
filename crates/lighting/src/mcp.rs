@@ -1,12 +1,13 @@
 use std::env;
 use std::fs;
 use std::io::{self, BufRead, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
+use crate::v2;
 use lt_proto::{Conn, Reply, Request};
 use serde_json::{Value, json};
 
@@ -30,10 +31,8 @@ const LONG_WAITS: [(&str, u64); 4] = [("inbox", 300_000), ("reply", 300_000), ("
 const CLIENT_TIMEOUT_S: f64 = 180.0;
 const BUSY_WAIT: Duration = Duration::from_secs(12);
 const SECRET_VAR: &str = "LIGHTING_MCP_SECRET";
-#[cfg(windows)]
-const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
-type Daemon = dyn Fn(&[String], Option<&str>) -> Value;
+type Daemon<'a> = dyn Fn(&[String], Option<&str>) -> Value + 'a;
 
 enum Got {
     Bytes(Vec<u8>),
@@ -66,7 +65,7 @@ pub fn serve() {
     }
 }
 
-fn answer(raw: &str, call: &Daemon) -> Vec<Value> {
+fn answer(raw: &str, call: &Daemon<'_>) -> Vec<Value> {
     match serde_json::from_str::<Value>(raw) {
         Ok(Value::Array(batch)) => batch.iter().filter_map(|m| handle(m, call)).collect(),
         Ok(msg) => handle(&msg, call).into_iter().collect(),
@@ -74,7 +73,7 @@ fn answer(raw: &str, call: &Daemon) -> Vec<Value> {
     }
 }
 
-fn handle(msg: &Value, call: &Daemon) -> Option<Value> {
+fn handle(msg: &Value, call: &Daemon<'_>) -> Option<Value> {
     let id = msg.get("id").filter(|v| !v.is_null())?.clone();
     let method = msg.get("method").and_then(Value::as_str).unwrap_or("");
     let params = msg.get("params").filter(|p| p.is_object()).cloned().unwrap_or_else(|| json!({}));
@@ -137,7 +136,7 @@ fn reply_text(out: &str, is_error: bool) -> Value {
     json!({"content": [{"type": "text", "text": out}], "isError": is_error})
 }
 
-fn run_cmd(line: &str, call: &Daemon) -> Value {
+fn run_cmd(line: &str, call: &Daemon<'_>) -> Value {
     let mut argv = match lt_proto::words(line.trim()) {
         Ok(argv) => argv,
         Err(e) => return reply_text(&format!("err: {e}"), true),
@@ -265,7 +264,7 @@ fn exchange(home: &Path, req: &[u8]) -> Got {
 }
 
 fn delegate(argv: &[String], secret: Option<&str>) -> Value {
-    let Some(exe) = client_exe() else {
+    let Some(exe) = v2::client_exe() else {
         return reply_text(
             "err: the Lighting 2.x client was not found (~/.lighting/client-root) -> run its setup",
             true,
@@ -277,11 +276,7 @@ fn delegate(argv: &[String], secret: Option<&str>) -> Value {
         cmd.env(SECRET_VAR, value).args(["--env", SECRET_VAR]);
     }
     cmd.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(CREATE_NO_WINDOW);
-    }
+    v2::hide(&mut cmd);
     match cmd.output() {
         Ok(done) => {
             let out = String::from_utf8_lossy(&done.stdout);
@@ -289,26 +284,6 @@ fn delegate(argv: &[String], secret: Option<&str>) -> Value {
             reply_text(out.trim(), !done.status.success())
         }
         Err(e) => reply_text(&format!("err: cannot start {} ({e})", exe.display()), true),
-    }
-}
-
-fn client_exe() -> Option<PathBuf> {
-    let root = fs::read_to_string(lt_proto::home().join("client-root")).ok()?;
-    let exe = PathBuf::from(root.trim()).join("bin").join(default_client());
-    let me = env::current_exe().ok().and_then(|p| p.canonicalize().ok());
-    let same = me.is_some() && exe.canonicalize().ok() == me;
-    (exe.is_file() && !same).then_some(exe)
-}
-
-fn default_client() -> &'static str {
-    if cfg!(windows) {
-        "lighting.exe"
-    } else if cfg!(target_os = "macos") {
-        "lighting-macos"
-    } else if cfg!(target_arch = "aarch64") {
-        "lighting-linux-arm64"
-    } else {
-        "lighting-linux-x64"
     }
 }
 

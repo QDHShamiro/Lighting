@@ -60,6 +60,13 @@ jobs:
         if: steps.build.outcome == 'success'
         shell: bash
         run: ls -l target/release/ | grep -E "lighting(\.exe)?$"
+      - name: Keep the Windows exe
+        if: runner.os == 'Windows' && steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighting-v3-windows
+          path: target/release/lighting.exe
+          retention-days: 7
       - name: Result
         if: always()
         shell: bash
