@@ -53,6 +53,8 @@ pub fn running() -> String {
 
 #[cfg(windows)]
 mod sys {
+    use std::os::windows::io::RawHandle;
+
     use super::{MINECRAFT, file_name, is_game};
 
     type Handle = isize;
@@ -106,15 +108,15 @@ mod sys {
 
     #[link(name = "kernel32")]
     unsafe extern "system" {
-        fn OpenProcess(access: u32, inherit: i32, pid: u32) -> Handle;
-        fn QueryFullProcessImageNameW(process: Handle, flags: u32, buf: *mut u16, size: *mut u32) -> i32;
-        fn CloseHandle(handle: Handle) -> i32;
+        fn OpenProcess(access: u32, inherit: i32, pid: u32) -> RawHandle;
+        fn QueryFullProcessImageNameW(process: RawHandle, flags: u32, buf: *mut u16, size: *mut u32) -> i32;
+        fn CloseHandle(handle: RawHandle) -> i32;
         fn K32EnumProcesses(pids: *mut u32, bytes: u32, needed: *mut u32) -> i32;
     }
 
     fn path_of(pid: u32) -> String {
         let process = unsafe { OpenProcess(QUERY_LIMITED, 0, pid) };
-        if process == 0 {
+        if process.is_null() {
             return String::new();
         }
         let mut buf = [0u16; PATH_UNITS];

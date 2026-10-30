@@ -26,7 +26,7 @@ const KIND_DIRS: &[(&str, &str)] = &[
 ];
 
 static FRONT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?s)\A---\s*\n(.*?)\n---\s*\n").expect("front pattern"));
-static HEAD: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?m)^#\s+(.+)$").expect("head pattern"));
+pub(crate) static HEAD: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?m)^#\s+(.+)$").expect("head pattern"));
 
 pub struct Page {
     pub project: String,
@@ -35,11 +35,11 @@ pub struct Page {
     pub body: String,
 }
 
-fn posix(p: &Path) -> String {
+pub(crate) fn posix(p: &Path) -> String {
     p.to_string_lossy().replace('\\', "/")
 }
 
-fn front(text: &str) -> (HashMap<String, String>, &str) {
+pub(crate) fn front(text: &str) -> (HashMap<String, String>, &str) {
     let Some(m) = FRONT.captures(text) else { return (HashMap::new(), text) };
     let mut meta = HashMap::new();
     for line in m[1].lines() {

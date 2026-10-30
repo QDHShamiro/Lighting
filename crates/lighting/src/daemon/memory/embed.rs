@@ -75,6 +75,25 @@ fn normalized(raw: &Value) -> Option<Vec<f32>> {
     Some(v)
 }
 
+fn shown(base: &str) -> &str {
+    let rest = base.split_once("://").map_or(base, |(_, r)| r);
+    let host = rest.split('/').next().unwrap_or(rest);
+    host.rsplit_once('@').map_or(host, |(_, h)| h)
+}
+
+pub fn status(home: &Path) -> String {
+    let Some((base, model)) = api(home) else {
+        return "none set, recall finds words only (lighting config memory_api <url>, memory_api_embed <model>)".into();
+    };
+    let at = format!("{model} at {}", shown(&base));
+    if let Some((until, why)) = STATE.lock().ok().and_then(|s| s.down.clone())
+        && Instant::now() < until
+    {
+        return format!("{at}: {why}");
+    }
+    if reachable(&base) { format!("{at}: ready") } else { format!("{at}: not reachable") }
+}
+
 pub fn embed(home: &Path, texts: &[String], query: bool, budget: Duration) -> Result<Vec<Vec<f32>>, String> {
     if let Some((until, why)) = STATE.lock().ok().and_then(|s| s.down.clone())
         && Instant::now() < until
@@ -128,6 +147,7 @@ mod tests {
         assert_eq!(v.len(), VEC_DIM);
         assert!((v[0] - std::f32::consts::FRAC_1_SQRT_2).abs() < 1e-6 && v[2] == 0.0);
         assert!(normalized(&json!([1.0, 2.0])).is_none());
+        assert_eq!(shown("https://user:key@api.example.com/v1"), "api.example.com");
         assert!(local("http://127.0.0.1:9930") && local("http://localhost/v1") && !local("https://api.example.com"));
     }
 }

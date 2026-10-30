@@ -2,6 +2,15 @@ use rusqlite::{OptionalExtension, params};
 
 use super::store::{Store, now};
 
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct Counts {
+    pub notes: i64,
+    pub vecs: i64,
+    pub todos: i64,
+    pub summaries: i64,
+    pub queued: i64,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Session {
     pub last: f64,
@@ -60,6 +69,29 @@ impl Store {
 
     pub fn note_count(&self) -> rusqlite::Result<i64> {
         self.db.query_row("select count(*) from notes", [], |r| r.get(0))
+    }
+
+    pub fn counts(&self) -> rusqlite::Result<Counts> {
+        self.db.query_row(
+            "select (select count(*) from notes), (select count(*) from vecs), \
+             (select count(*) from todos where status in ('todo', 'doing')), \
+             (select count(*) from sessions where summary != ''), \
+             (select count(*) from sessions where status = 'open' and transcript != '')",
+            [],
+            |r| {
+                Ok(Counts {
+                    notes: r.get(0)?,
+                    vecs: r.get(1)?,
+                    todos: r.get(2)?,
+                    summaries: r.get(3)?,
+                    queued: r.get(4)?,
+                })
+            },
+        )
+    }
+
+    pub fn meta(&self, key: &str) -> rusqlite::Result<Option<String>> {
+        self.db.query_row("select v from meta where k = ?1", [key], |r| r.get(0)).optional()
     }
 
     pub fn drafts(&self) -> rusqlite::Result<i64> {
@@ -133,6 +165,9 @@ mod tests {
         assert_eq!(mine, ["Brave only", "Use pnpm"]);
         assert!(s.titles("", true, 5).unwrap().is_empty());
         assert_eq!((s.note_count().unwrap(), s.drafts().unwrap()), (3, 0));
+        let c = s.counts().unwrap();
+        assert_eq!((c.notes, c.vecs, c.todos, c.summaries, c.queued), (3, 0, 0, 1, 1));
+        assert_eq!(s.meta("vault_indexed").unwrap(), None);
         assert_eq!(s.project_about("web").unwrap(), "");
         drop(s);
         let _ = fs::remove_dir_all(&dir);

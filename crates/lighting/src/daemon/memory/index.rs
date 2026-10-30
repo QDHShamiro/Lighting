@@ -1,7 +1,7 @@
 use std::env;
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
 use std::sync::mpsc::{self, RecvTimeoutError, SyncSender};
+use std::sync::{Mutex, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -11,12 +11,14 @@ use super::super::{config, game};
 use super::embed;
 
 const EVERY: Duration = Duration::from_secs(300);
+const RETRY: Duration = Duration::from_secs(2);
 const EMBED_PASS: Duration = Duration::from_secs(50);
 const EMBED_WAIT: Duration = Duration::from_secs(30);
 const EMBED_BATCH: usize = 32;
 const VAULT_DIR: &str = "vault";
 
 static WAKE: OnceLock<SyncSender<()>> = OnceLock::new();
+static PROBLEM: Mutex<String> = Mutex::new(String::new());
 
 pub fn start(home: PathBuf) {
     let (tx, rx) = mpsc::sync_channel(1);
@@ -26,8 +28,17 @@ pub fn start(home: PathBuf) {
     let work = move || {
         let mut store = None;
         loop {
-            pass(&home, &mut store);
-            if let Err(RecvTimeoutError::Disconnected) = rx.recv_timeout(EVERY) {
+            let wait = match pass(&home, &mut store) {
+                Ok(()) => EVERY,
+                Err(why) => {
+                    store = None;
+                    if let Ok(mut p) = PROBLEM.lock() {
+                        *p = why;
+                    }
+                    RETRY
+                }
+            };
+            if let Err(RecvTimeoutError::Disconnected) = rx.recv_timeout(wait) {
                 return;
             }
         }
@@ -41,6 +52,10 @@ pub fn nudge() {
     }
 }
 
+pub fn problem() -> String {
+    PROBLEM.lock().map(|p| p.clone()).unwrap_or_default()
+}
+
 fn user_home() -> PathBuf {
     env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from).unwrap_or_default()
 }
@@ -50,21 +65,23 @@ pub fn vault(home: &Path) -> PathBuf {
     if own.trim().is_empty() { home.join(VAULT_DIR) } else { PathBuf::from(own.trim()) }
 }
 
-fn pass(home: &Path, slot: &mut Option<Store>) {
+fn pass(home: &Path, slot: &mut Option<Store>) -> Result<(), String> {
     let cfg = config::load(home);
     if !config::on(&cfg, "memory") {
-        return;
+        return Ok(());
     }
     if slot.is_none() {
-        *slot = Store::open(home).ok();
+        *slot = Some(Store::open(home).map_err(|e| format!("cannot open memory.db ({e})"))?);
     }
-    let Some(store) = slot.as_mut() else { return };
+    let Some(store) = slot.as_mut() else { return Ok(()) };
     let inbox = config::text(&cfg, "vault_inbox");
-    if store.index_files(&vault(home), &inbox, &claude_dirs(&user_home())).is_err() {
-        *slot = None;
-        return;
+    let dirs = claude_dirs(&user_home());
+    store.index_files(&vault(home), &inbox, &dirs).map_err(|e| format!("vault index: {e}"))?;
+    if let Ok(mut p) = PROBLEM.lock() {
+        p.clear();
     }
     embed_some(home, store);
+    Ok(())
 }
 
 fn embed_some(home: &Path, store: &mut Store) {

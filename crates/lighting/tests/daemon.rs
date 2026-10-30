@@ -249,6 +249,15 @@ fn memory_keeps_notes_and_todos_in_memory_db() {
     assert_eq!(home.run(&["forget", "1"]).1, "no note #1");
     assert_eq!(home.run(&["recall", "1"]), (1, "err: no note #1 -> try: lighting recall \"<words>\"".into()));
     assert!(home.0.join("memory").join("memory.db").is_file());
+    let state = home.run(&["memory"]).1;
+    assert!(
+        state.starts_with("memory on: 0 notes (0 with vectors), 0 open to-dos") && state.contains("\nmodel: none set")
+    );
+    let none = "no learned fixes yet (one is kept when a command fails and another works right after)";
+    assert_eq!(home.run(&["memory", "lessons"]).1, none);
+    assert_eq!(home.run(&["memory", "unlearn", "1"]).0, 1);
+    assert_eq!(home.run(&["memory", "off"]).1, "memory off");
+    assert!(home.run(&["memory"]).1.starts_with("memory off: "));
 }
 
 #[test]
@@ -261,7 +270,7 @@ fn vault_and_claude_memory_files_are_found_by_recall() {
     fs::write(rules.join("browser.md"), "---\ntitle: Brave only\n---\nNever Chrome.").unwrap();
     fs::write(claude.join("style.md"), "---\nname: Short answers\ntype: feedback\n---\nKeep replies short.").unwrap();
     let mut found = String::new();
-    for _ in 0..50 {
+    for _ in 0..100 {
         found = home.run(&["recall", "brave", "short", "replies"]).1;
         if found.contains(" rule (vault): Brave only") && found.contains(" feedback (claude memory): Short answers") {
             break;
@@ -270,9 +279,24 @@ fn vault_and_claude_memory_files_are_found_by_recall() {
     }
     assert!(
         found.contains(" rule (vault): Brave only") && found.contains(" feedback (claude memory): Short answers"),
-        "{found}"
+        "{found}\n{}",
+        home.run(&["memory"]).1
     );
     assert_eq!(home.run(&["forget", "1"]).1.split(" is the file ").next(), Some("err: #1"));
+    let inbox = home.0.join("vault").join("Inbox");
+    fs::create_dir_all(&inbox).unwrap();
+    let draft = "---\ntype: rule\nproject: web\ndraft: true\n---\n# Use pnpm\n";
+    fs::write(inbox.join("2026-10-30 rule Use pnpm.md"), draft).unwrap();
+    let list = home.run(&["wiki"]).1;
+    assert!(
+        list.starts_with("1 drafts wait in ") && list.ends_with("\n  1 rule [web]: 2026-10-30 rule Use pnpm"),
+        "{list}"
+    );
+    let accepted = "accepted -> Rules/Use pnpm.md (registered in its INDEX)";
+    assert_eq!(home.run(&["wiki", "accept", "1"]), (0, accepted.into()));
+    assert!(!fs::read_to_string(rules.join("Use pnpm.md")).unwrap().contains("draft: true"));
+    let (code, none) = home.run(&["wiki", "drop", "1"]);
+    assert!(code == 1 && none.starts_with("err: no drafts wait -> try: lighting wiki"), "{none}");
 }
 
 #[test]

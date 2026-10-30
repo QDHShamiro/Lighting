@@ -2,6 +2,8 @@ mod embed;
 mod hook;
 pub mod index;
 pub mod learn;
+mod status;
+mod wiki;
 
 use std::cell::RefCell;
 use std::thread;
@@ -39,6 +41,8 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         "todo" => todo(d, ctx, c),
         "hook" => hook::hook(d, ctx, c),
         "suggest" => hook::suggest(d, ctx, c),
+        "memory" => status::memory(d, c),
+        "wiki" => wiki::wiki(d, c),
         name => Err(super::route::later(name)),
     }
 }
