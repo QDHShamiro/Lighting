@@ -30,6 +30,7 @@ impl Home {
         let out = Command::new(EXE)
             .args(args)
             .env("LIGHTING_HOME", &self.0)
+            .env(if cfg!(windows) { "USERPROFILE" } else { "HOME" }, &self.0)
             .env("CLAUDE_CODE_SESSION_ID", "it-1")
             .env_remove("MSYSTEM")
             .stdin(Stdio::null())
@@ -248,6 +249,30 @@ fn memory_keeps_notes_and_todos_in_memory_db() {
     assert_eq!(home.run(&["forget", "1"]).1, "no note #1");
     assert_eq!(home.run(&["recall", "1"]), (1, "err: no note #1 -> try: lighting recall \"<words>\"".into()));
     assert!(home.0.join("memory").join("memory.db").is_file());
+}
+
+#[test]
+fn vault_and_claude_memory_files_are_found_by_recall() {
+    let home = Home::new("vault", true);
+    let rules = home.0.join("vault").join("Rules");
+    let claude = home.0.join(".claude").join("projects").join("p").join("memory");
+    fs::create_dir_all(&rules).unwrap();
+    fs::create_dir_all(&claude).unwrap();
+    fs::write(rules.join("browser.md"), "---\ntitle: Brave only\n---\nNever Chrome.").unwrap();
+    fs::write(claude.join("style.md"), "---\nname: Short answers\ntype: feedback\n---\nKeep replies short.").unwrap();
+    let mut found = String::new();
+    for _ in 0..50 {
+        found = home.run(&["recall", "brave", "short", "replies"]).1;
+        if found.contains(" rule (vault): Brave only") && found.contains(" feedback (claude memory): Short answers") {
+            break;
+        }
+        thread::sleep(Duration::from_millis(100));
+    }
+    assert!(
+        found.contains(" rule (vault): Brave only") && found.contains(" feedback (claude memory): Short answers"),
+        "{found}"
+    );
+    assert_eq!(home.run(&["forget", "1"]).1.split(" is the file ").next(), Some("err: #1"));
 }
 
 #[test]

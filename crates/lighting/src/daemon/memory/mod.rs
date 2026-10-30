@@ -1,5 +1,6 @@
 mod embed;
 mod hook;
+pub mod index;
 pub mod learn;
 
 use std::cell::RefCell;

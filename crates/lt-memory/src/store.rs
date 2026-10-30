@@ -107,7 +107,7 @@ pub struct NewNote<'a> {
 
 pub struct Store {
     pub(crate) db: Connection,
-    vecs: Option<(i64, Vec<i64>, Vec<f32>)>,
+    pub(crate) vecs: Option<(i64, Vec<i64>, Vec<f32>)>,
 }
 
 pub fn now() -> f64 {

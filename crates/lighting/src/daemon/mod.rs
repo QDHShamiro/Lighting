@@ -1,5 +1,6 @@
 mod config;
 mod ctx;
+mod game;
 mod hosts;
 mod lane;
 mod memory;
@@ -166,6 +167,7 @@ pub fn serve() -> ExitCode {
         next_id: AtomicU64::new(0),
         generation: AtomicU64::new(0),
     });
+    memory::index::start(d.home.clone());
     let mut sessions = Some(sessions);
     let mut senders = Vec::with_capacity(LANES.len());
     for lane in LANES {

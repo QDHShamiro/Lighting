@@ -66,6 +66,7 @@ pub fn hook(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
     if event != "start" {
         return Ok(String::new());
     }
+    super::index::nudge();
     if data_text(&data, "source") == "compact" {
         return with_store(d, |s| compact_text(s, &here));
     }
