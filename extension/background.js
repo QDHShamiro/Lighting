@@ -71,6 +71,7 @@ async function onMessage(msg) {
   const id = msg.id;
   const busy = !NO_TAB.has(msg.cmd) && !msg.cmd.startsWith("record") && msg.cmd !== "where";
   const t0 = performance.now();
+  if (busy) T.acts(true);
   try {
     if (busy) await T.paint("orange", msg.group);
     const res = await run(msg.cmd, Object.assign(msg.args || {}, msg.group ? { group: msg.group } : {}), msg.tab);
@@ -78,6 +79,8 @@ async function onMessage(msg) {
   } catch (e) {
     if (busy) T.paint("red", msg.group);
     if (id) post({ id, ok: false, error: String((e && e.message) || e) });
+  } finally {
+    if (busy) T.acts(false);
   }
 }
 
@@ -829,9 +832,6 @@ chrome.downloads.onChanged.addListener(async (d) => {
   const [item] = await chrome.downloads.search({ id: d.id });
   if (item) event("download done: " + item.filename);
 });
-
-chrome.tabs.onRemoved.addListener(() => T.noteShift());
-chrome.windows.onRemoved.addListener(() => T.noteShift());
 
 chrome.windows.onFocusChanged.addListener((id) => {
   T.noteFocus(id);
