@@ -4,12 +4,14 @@ use std::time::{Duration, Instant};
 
 use lt_core::{Call, Fail, Flag};
 use regex::Regex;
-use serde_json::Value;
+use serde_json::{Value, json};
 
-use super::super::ctx::Ctx;
+use super::super::ctx::{Ctx, now};
 use super::super::web::parse_ms;
 use super::super::{Daemon, Out, Pending, system};
-use super::store::{self, check_of, place, record, step_line, text, usage, verify, where_of};
+use super::align::{Pairs, put};
+use super::episode::{close, observe};
+use super::store::{self, check_of, kv, place, record, step_line, text, usage, verify, where_of};
 
 const MAX_NEST: usize = 3;
 const LIMIT: Duration = Duration::from_secs(900);
@@ -45,6 +47,8 @@ struct Job {
     t0: Instant,
     generation: u64,
     now: Option<Attempt>,
+    nested: bool,
+    quiet: usize,
 }
 
 enum Step {
@@ -116,6 +120,22 @@ impl Job {
         Ok(Attempt { argv, deadline: Instant::now() + limit, pending: None, again_at: None })
     }
 
+    fn outcome(&mut self, d: &Daemon, ctx: &mut Ctx, attempt: &mut Attempt, got: Result<String, Fail>) -> Step {
+        match got {
+            Ok(text) => {
+                observe(d, ctx, &attempt.argv, &text, true);
+                Step::Done
+            }
+            Err(fail) => {
+                let step = self.judge(d, attempt, &fail);
+                if matches!(step, Step::Stop(_)) {
+                    observe(d, ctx, &attempt.argv, &fail.text(), false);
+                }
+                step
+            }
+        }
+    }
+
     fn try_once(&mut self, d: &Daemon, ctx: &mut Ctx, attempt: &mut Attempt, last: bool) -> Option<Step> {
         if let Some(mut pending) = attempt.pending.take() {
             let now = Instant::now();
@@ -124,16 +144,17 @@ impl Job {
                 return None;
             }
             let final_poll = last || now >= pending.deadline;
-            return match (pending.poll)(d, ctx, final_poll) {
+            let got = match (pending.poll)(d, ctx, final_poll) {
                 Ok(None) if !final_poll => {
                     pending.due = Instant::now() + pending.interval;
                     attempt.pending = Some(pending);
-                    None
+                    return None;
                 }
-                Ok(None) => Some(self.judge(d, attempt, &Fail::new("the step did not finish in time"))),
-                Ok(Some(_)) => Some(Step::Done),
-                Err(fail) => Some(self.judge(d, attempt, &fail)),
+                Ok(None) => Err(Fail::new("the step did not finish in time")),
+                Ok(Some(text)) => Ok(text),
+                Err(fail) => Err(fail),
             };
+            return Some(self.outcome(d, ctx, attempt, got));
         }
         if let Some(at) = attempt.again_at {
             if Instant::now() < at && !last {
@@ -141,14 +162,15 @@ impl Job {
             }
             attempt.again_at = None;
         }
-        match system::run_one(d, ctx, &attempt.argv) {
+        let got = match system::run_one(d, ctx, &attempt.argv) {
             Ok((Out::Wait(pending), _)) => {
                 attempt.pending = Some(pending);
-                None
+                return None;
             }
-            Ok(_) => Some(Step::Done),
-            Err(fail) => Some(self.judge(d, attempt, &fail)),
-        }
+            Ok((Out::Text(text) | Out::Stop(text), _)) => Ok(text),
+            Err(fail) => Err(fail),
+        };
+        Some(self.outcome(d, ctx, attempt, got))
     }
 
     fn finish(&mut self, d: &Daemon, ctx: &mut Ctx) -> Result<String, Fail> {
@@ -156,6 +178,18 @@ impl Job {
         let w = where_of(ctx);
         let status = verify(&self.r, w.as_ref(), &self.params);
         let done = self.n() - self.skipped;
+        if !self.nested {
+            close(d, ctx);
+        } else if self.quiet == 0 && status != "not verified" {
+            let mut call = vec![self.name.clone()];
+            call.extend(self.params.iter().map(|(p, v)| kv(p, v)));
+            let t = now();
+            let at = w.clone().map_or(Value::Null, Value::Object);
+            ctx.ep
+                .steps
+                .push(json!({"cmd": "run", "args": call, "flags": {}, "where": at, "t": (t * 100.0).round() / 100.0}));
+            ctx.ep.last = t;
+        }
         if status == "not verified" {
             record(&d.home, &mut self.r, false, ms, 0, Some("result not verified".into()));
             return Err(Fail::hint(
@@ -172,12 +206,10 @@ impl Job {
         let line = format!("ok {}: {done} steps in {:.1} s{status}{shown}", self.name, ms / 1000.0);
         let has = self.r["check"]["has"].as_array().is_some_and(|h| !h.is_empty());
         if w.is_some() && !has {
-            let values: BTreeMap<String, String> = self
-                .params
-                .iter()
-                .filter(|(_, v)| v.chars().count() >= 2)
-                .map(|(p, v)| (v.clone(), p.clone()))
-                .collect();
+            let mut values = Pairs::new();
+            for (p, v) in self.params.iter().filter(|(_, v)| v.chars().count() >= 2) {
+                put(&mut values, v.clone(), p.clone());
+            }
             let better = check_of(w.as_ref(), &values);
             if better["has"].as_array().is_some_and(|h| !h.is_empty()) {
                 self.r["check"] = better;
@@ -224,9 +256,13 @@ impl Job {
     }
 }
 
-fn leave(ctx: &mut Ctx, name: &str) {
-    if let Some(at) = ctx.run_stack.iter().rposition(|n| n == name) {
+fn leave(ctx: &mut Ctx, job: &Job, failed: bool) {
+    if let Some(at) = ctx.run_stack.iter().rposition(|n| *n == job.name) {
         ctx.run_stack.truncate(at);
+    }
+    ctx.quiet_steps = job.quiet;
+    if failed && !job.nested && ctx.ep.via.as_ref() == Some(&job.name) && ctx.ep.failed.is_none() {
+        ctx.ep.failed = Some(ctx.ep.steps.len());
     }
 }
 
@@ -276,6 +312,13 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
             "flatten one of them",
         ));
     }
+    let nested = !ctx.run_stack.is_empty() || (!ctx.ep.steps.is_empty() && ctx.ep.via.is_none());
+    let quiet = ctx.quiet_steps;
+    if !nested {
+        ctx.ep.via = Some(name.clone());
+        ctx.ep.params = json!(params);
+    }
+    ctx.quiet_steps = quiet + usize::from(nested);
     ctx.run_stack.push(name.clone());
     let mut job = Job {
         r,
@@ -288,21 +331,23 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         t0: Instant::now(),
         generation: d.generation(),
         now: None,
+        nested,
+        quiet,
     };
     let first = job.advance(d, ctx, false);
     match first {
         Ok(Some(text)) => {
-            leave(ctx, &name);
+            leave(ctx, &job, false);
             Ok(Out::Text(text))
         }
         Err(f) => {
-            leave(ctx, &name);
+            leave(ctx, &job, true);
             Err(f)
         }
         Ok(None) => Ok(Out::Wait(Pending::new(LIMIT, TICK, move |d, ctx, last| {
             let got = job.advance(d, ctx, last);
             if !matches!(got, Ok(None)) {
-                leave(ctx, &job.name);
+                leave(ctx, &job, got.is_err());
             }
             got
         }))),

@@ -6,6 +6,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use serde_json::{Map, Value, json};
 
 use super::memory::learn::{Failed, Offered};
+use super::routines::Episode;
 
 pub const SESSION_IDLE_S: f64 = 12.0 * 3600.0;
 const REPEAT_NOTE_AT: u32 = 3;
@@ -85,6 +86,9 @@ pub struct Ctx {
     pub failed: Option<Failed>,
     pub offered: Option<Offered>,
     pub run_stack: Vec<String>,
+    pub ep: Episode,
+    pub quiet_steps: usize,
+    pub prompts: Vec<(f64, Vec<String>)>,
 }
 
 impl Ctx {
@@ -113,6 +117,9 @@ impl Ctx {
             failed: None,
             offered: None,
             run_stack: Vec::new(),
+            ep: Episode::default(),
+            quiet_steps: 0,
+            prompts: Vec::new(),
         }
     }
 

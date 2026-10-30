@@ -58,7 +58,10 @@ pub fn run_one(d: &Daemon, ctx: &mut Ctx, argv: &[String]) -> Result<(Out, Strin
     let text = match call.name.as_str() {
         "ping" => "pong".into(),
         "version" => VERSION.into(),
-        "stop" => return Ok((Out::Stop("lighting daemon stopped".into()), call.name)),
+        "stop" => {
+            super::routines::close(d, ctx);
+            return Ok((Out::Stop("lighting daemon stopped".into()), call.name));
+        }
         "status" => status(d, ctx),
         "log" => log(d, ctx, &call),
         "config" => {

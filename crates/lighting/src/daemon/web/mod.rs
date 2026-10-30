@@ -30,7 +30,6 @@ pub use shot::{distinct, save_sheet, sheet, thumb};
 #[cfg(windows)]
 pub use shot::{out_path, save_picture};
 pub use url::{leak_check, local_file, normalize_url};
-#[cfg(windows)]
 pub use wait::parse_ms;
 
 pub const CALL_TIMEOUT: f64 = 20.0;

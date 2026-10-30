@@ -161,6 +161,14 @@ impl Hosts {
         lock(&self.events).iter().cloned().collect()
     }
 
+    pub fn event(&self, text: String) {
+        let mut events = lock(&self.events);
+        if events.len() >= EVENTS_KEPT {
+            events.pop_front();
+        }
+        events.push_back(text);
+    }
+
     pub fn take_events(&self) -> Vec<String> {
         lock(&self.events).drain(..).collect()
     }

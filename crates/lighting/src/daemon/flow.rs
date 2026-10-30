@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 use lt_core::{Call, Fail, parse};
 
 use super::ctx::Ctx;
+use super::routines::observe;
 use super::{Daemon, Out, Pending, STOPPED, system};
 
 const LIMIT: Duration = Duration::from_secs(900);
@@ -70,6 +71,7 @@ struct Step {
     pending: Pending,
     name: String,
     optional: bool,
+    argv: Vec<String>,
 }
 
 struct Job {
@@ -149,12 +151,17 @@ impl Job {
                     }
                     Ok(None) => {
                         let fail = Fail::new(format!("{} did not finish in time", step.name));
+                        observe(d, ctx, &step.argv, &fail.text(), false);
                         if !self.failed_one(self.next, step.optional, &fail) {
                             return Ok(Some(self.summary()));
                         }
                     }
-                    Ok(Some(text)) => self.done_one(self.next, &step.name, &text),
+                    Ok(Some(text)) => {
+                        observe(d, ctx, &step.argv, &text, true);
+                        self.done_one(self.next, &step.name, &text);
+                    }
                     Err(fail) => {
+                        observe(d, ctx, &step.argv, &fail.text(), false);
                         if !self.failed_one(self.next, step.optional, &fail) {
                             return Ok(Some(self.summary()));
                         }
@@ -187,9 +194,13 @@ impl Job {
                 continue;
             }
             match system::run_one(d, ctx, &argv) {
-                Ok((Out::Wait(pending), name)) => self.current = Some(Step { pending, name, optional }),
-                Ok((Out::Text(text) | Out::Stop(text), name)) => self.done_one(i, &name, &text),
+                Ok((Out::Wait(pending), name)) => self.current = Some(Step { pending, name, optional, argv }),
+                Ok((Out::Text(text) | Out::Stop(text), name)) => {
+                    observe(d, ctx, &argv, &text, true);
+                    self.done_one(i, &name, &text);
+                }
                 Err(fail) => {
+                    observe(d, ctx, &argv, &fail.text(), false);
                     if !self.failed_one(i, optional, &fail) {
                         return Ok(Some(self.summary()));
                     }

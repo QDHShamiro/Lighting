@@ -1,24 +1,73 @@
+mod align;
+mod diff;
+mod episode;
+mod learn;
 mod run;
 mod store;
 
+use std::collections::{BTreeMap, HashSet};
 use std::fs;
 
 use lt_core::{Call, Fail, OUT_CHARS};
 use serde_json::{Value, json};
 
-use super::ctx::Ctx;
+use super::ctx::{Ctx, now};
 use super::route::later;
 use super::words::{terms, tiers};
 use super::{Daemon, Out, web};
-use store::{file, load, load_all, save, slug, step_line, text};
+pub use episode::Episode;
+use store::{file, load, load_all, save, score, slug, stem, step_line, text, usage};
 
+pub use episode::{close, observe};
 pub use run::run;
+pub use store::words;
 
 const LIST_LINES: usize = 60;
 const NAME_WORDS: usize = 6;
 const SUBS: &str = "lighting routine list|show|save|rm|rename|forget|schedule|schedules";
+const PROMPTS: usize = 5;
+const OFFER_EVERY_S: f64 = 600.0;
+const OFFER_IGNORED: u64 = 5;
+const OFFERS: usize = 2;
+
+pub fn offer(d: &Daemon, ctx: &mut Ctx, typed: Vec<String>) -> Vec<String> {
+    let t = now();
+    if !typed.is_empty() {
+        ctx.prompts.push((t, typed.clone()));
+        let extra = ctx.prompts.len().saturating_sub(PROMPTS);
+        ctx.prompts.drain(..extra);
+    }
+    if typed.iter().map(|w| stem(w)).collect::<HashSet<_>>().len() < 2 {
+        return Vec::new();
+    }
+    let mut hits: Vec<(bool, usize, u64, Value)> = Vec::new();
+    for r in load_all(&d.home) {
+        let key = format!("r:{}", text(&r["name"]));
+        let ignored = r["stats"]["offered"].as_u64().unwrap_or(0) >= OFFER_IGNORED;
+        if r["flaky"] == true || ignored || t - ctx.told.get(&key).copied().unwrap_or(0.0) < OFFER_EVERY_S {
+            continue;
+        }
+        let (app_hit, other) = score(&typed, &r);
+        if app_hit && other >= 1 {
+            hits.push((app_hit, other, r["stats"]["ok"].as_u64().unwrap_or(0), r));
+        }
+    }
+    hits.sort_by_key(|h| std::cmp::Reverse((h.0, h.1, h.2)));
+    let mut lines = Vec::new();
+    for (_, _, _, mut r) in hits.into_iter().take(OFFERS) {
+        ctx.told.insert(format!("r:{}", text(&r["name"])), t);
+        r["stats"]["offered"] = json!(r["stats"]["offered"].as_u64().unwrap_or(0) + 1);
+        let _ = save(&d.home, &r);
+        lines.push(format!(
+            "Lighting routine fits this request (one call, swap the values): {}",
+            usage(&r, &BTreeMap::new())
+        ));
+    }
+    lines
+}
 
 fn listing(d: &Daemon, ctx: &mut Ctx, c: &Call) -> String {
+    learn::prune(&d.home);
     let mut rs = load_all(&d.home);
     if let Some(f) = c.val("f").filter(|f| !f.is_empty()) {
         let ws = terms(f);
@@ -129,7 +178,17 @@ pub fn command(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
             save(&d.home, &r)?;
             format!("renamed to {wanted}")
         }
-        "save" | "forget" | "learn" | "schedule" | "unschedule" | "schedules" => {
+        "save" => learn::save_current(d, ctx, need(rest, "save")?, &rest[1..], c.val("last"))?,
+        "forget" => {
+            let _ = fs::remove_file(episode::file(&d.home));
+            ctx.ep = Episode::default();
+            "task history cleared (routines stay)".into()
+        }
+        "learn" => match close(d, ctx) {
+            Some(r) => format!("learned {}", text(&r["name"])),
+            None => "nothing new to learn".into(),
+        },
+        "schedule" | "unschedule" | "schedules" => {
             return Err(later(&format!("routine {sub}")));
         }
         other => return Err(Fail::hint(format!("unknown routine command {other}"), SUBS)),

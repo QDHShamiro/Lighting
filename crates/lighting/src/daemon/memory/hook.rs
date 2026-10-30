@@ -10,7 +10,7 @@ use regex::Regex;
 use serde_json::Value;
 
 use super::super::ctx::Ctx;
-use super::super::{Daemon, config};
+use super::super::{Daemon, config, routines};
 use super::{LINE, embed, keep, todo_list, with_store};
 
 const START_TODOS: usize = 12;
@@ -219,7 +219,20 @@ pub fn suggest(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         .and_then(|v| v.get("prompt").and_then(Value::as_str).map(String::from))
         .unwrap_or(raw);
     let head: String = prompt.chars().take(TYPED_PREFIX).collect();
-    if prompt.is_empty() || NOT_TYPED.is_match(&head) || !config::on(&config::load(&d.home), "memory") {
+    if prompt.is_empty() || NOT_TYPED.is_match(&head) {
+        return Ok(String::new());
+    }
+    let mut lines = routines::offer(d, ctx, routines::words(&without_paths(&prompt)));
+    if let Ok(tip) = memory_tip(d, ctx, prompt).map(|t| t.trim().to_string())
+        && !tip.is_empty()
+    {
+        lines.push(tip);
+    }
+    Ok(lines.join("\n"))
+}
+
+fn memory_tip(d: &Daemon, ctx: &mut Ctx, prompt: String) -> Result<String, Fail> {
+    if !config::on(&config::load(&d.home), "memory") {
         return Ok(String::new());
     }
     if let Some(m) = SAY.captures(&prompt)

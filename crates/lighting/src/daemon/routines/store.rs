@@ -22,7 +22,7 @@ const STOP: &str = "a an and are auf aus bei bin bis bitte can da dann das dass 
     schnell einfach auch alle alles aber also hier dort mehr sehr gut kurz neu neue schau schaue guck gucke check checke \
     look see warum wieso weshalb welche welcher welches welchen wann wer wen wem woher wohin womit wofür this that these \
     those what when where why how have has had get got want need just also more some any all";
-const APP_PREFIX: usize = 4;
+const APP_PREFIX: usize = 5;
 const RECENT: usize = 10;
 
 pub fn dir(home: &Path) -> PathBuf {
@@ -101,7 +101,7 @@ pub fn words(text: &str) -> Vec<String> {
         .collect()
 }
 
-fn stem(w: &str) -> String {
+pub fn stem(w: &str) -> String {
     w.chars().take(5).collect()
 }
 
@@ -126,7 +126,7 @@ fn app_word(r: &Value) -> String {
     host.split_whitespace().next().unwrap_or("").to_string()
 }
 
-fn score(query: &[String], r: &Value) -> (bool, usize) {
+pub fn score(query: &[String], r: &Value) -> (bool, usize) {
     let app = app_word(r);
     let mut own: Vec<String> = words(&r["name"].as_str().unwrap_or("").replace('-', " "));
     own.extend(r["tags"].as_array().into_iter().flatten().filter_map(|t| t.as_str().map(String::from)));
@@ -274,7 +274,7 @@ pub fn verify(r: &Value, w: Option<&Map<String, Value>>, params: &BTreeMap<Strin
     if ok { "verified" } else { "not verified" }
 }
 
-pub fn check_of(w: Option<&Map<String, Value>>, values: &BTreeMap<String, String>) -> Value {
+pub fn check_of(w: Option<&Map<String, Value>>, values: &[(String, String)]) -> Value {
     let Some(w) = w else { return Value::Null };
     let hay =
         format!("{} {}", w.get("title").map(text).unwrap_or_default(), w.get("url").map(text).unwrap_or_default())
