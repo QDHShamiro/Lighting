@@ -159,6 +159,7 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "record" => record::run(d, ctx, c),
         "tokens" => super::tokens::run(d, c).map(Out::Text),
         "grep" => super::grep::run(d, ctx, c),
+        "squeeze" => super::squeeze::run(d, ctx, c),
         "voice" => voice(d, c),
         "frames" if c.on("audio") => media::run(d, ctx, c),
         "shot" if c.on("ask") => media::ask_shot(d, ctx, c),

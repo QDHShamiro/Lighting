@@ -4,6 +4,7 @@ mod hook;
 mod host;
 mod mcp;
 mod more;
+mod pipe;
 mod spawn;
 mod v2;
 #[cfg(windows)]

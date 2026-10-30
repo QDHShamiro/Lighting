@@ -35,6 +35,9 @@ pub fn run(raw: &[String]) -> ExitCode {
         eprintln!("lighting {first}: not built into Lighting 3.0 yet");
         return ExitCode::from(2);
     }
+    if first == "squeeze" {
+        return crate::pipe::squeeze(&home, &args);
+    }
     let args = if matches!(first, "" | "-h" | "--help") {
         std::iter::once("help".to_string()).chain(args.into_iter().skip(1)).collect()
     } else {
@@ -43,7 +46,7 @@ pub fn run(raw: &[String]) -> ExitCode {
     send(&home, &args)
 }
 
-fn send(home: &Path, args: &[String]) -> ExitCode {
+pub fn send(home: &Path, args: &[String]) -> ExitCode {
     let first = args.first().map(String::as_str).unwrap_or("");
     let quiet = args.iter().any(|a| a == "--quiet");
     let event = args.get(1).map(String::as_str).unwrap_or("");
