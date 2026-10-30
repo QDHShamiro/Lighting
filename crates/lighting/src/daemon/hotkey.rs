@@ -8,6 +8,8 @@ static ON: OnceLock<Action> = OnceLock::new();
 static READY: AtomicBool = AtomicBool::new(false);
 
 pub const NAME: &str = "Ctrl+Alt+End";
+#[cfg(windows)]
+const RETRY: std::time::Duration = std::time::Duration::from_secs(5);
 
 pub fn start(action: impl Fn() + Send + Sync + 'static) {
     if ON.set(Box::new(action)).is_ok() {
@@ -29,8 +31,16 @@ fn fire() {
 fn listen() {
     use windows::Win32::UI::Input::KeyboardAndMouse::{MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, RegisterHotKey, VK_END};
     use windows::Win32::UI::WindowsAndMessaging::{GetMessageW, MSG, WM_HOTKEY};
-    if unsafe { RegisterHotKey(None, 1, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, u32::from(VK_END.0)) }.is_err() {
-        return;
+    let mut told = false;
+    while let Err(e) = unsafe { RegisterHotKey(None, 1, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, u32::from(VK_END.0)) } {
+        if !told {
+            eprintln!("lighting daemon: {NAME} not free yet ({e}), trying again every {RETRY:?}");
+            told = true;
+        }
+        thread::sleep(RETRY);
+    }
+    if told {
+        eprintln!("lighting daemon: {NAME} registered");
     }
     READY.store(true, Ordering::SeqCst);
     let mut msg = MSG::default();
