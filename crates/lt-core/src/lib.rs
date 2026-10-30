@@ -7,7 +7,7 @@ mod log;
 mod names;
 
 pub use args::{Call, Flag, parse, wants_help};
-pub use cap::{OUT_CHARS, cap};
+pub use cap::{OUT_CHARS, cap, out_file};
 pub use clock::{ago, local_now, stamp_secs};
 pub use close::close_match;
 pub use fail::Fail;

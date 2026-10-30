@@ -101,6 +101,7 @@ fn poll(d: &Daemon, ctxs: &mut Contexts, mut wait: Wait) -> Option<Wait> {
     }
     let last = Instant::now() >= wait.pending.deadline;
     let saved = (ctx.target.clone(), ctx.place.clone(), ctx.last_target.clone());
+    ctx.image.clear();
     let polled = panic::catch_unwind(AssertUnwindSafe(|| (wait.pending.poll)(d, ctx, last)));
     (ctx.target, ctx.place, ctx.last_target) = saved;
     wait.req.cut += mem::take(&mut ctx.cut);
@@ -165,5 +166,7 @@ fn finish(d: &Daemon, ctx: &mut Ctx, req: Req, name: &str, mut out: String, code
         stages: &req.stages,
     };
     d.log.write(&row);
-    let _ = req.reply.send(Res { code, out, stop });
+    let image = if code == 0 { mem::take(&mut ctx.image) } else { String::new() };
+    ctx.image.clear();
+    let _ = req.reply.send(Res { code, out, image, stop });
 }

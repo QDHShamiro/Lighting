@@ -8,7 +8,7 @@ use super::super::ctx::Ctx;
 use super::super::words::{hit, terms};
 use super::super::{Daemon, hosts::truthy};
 use super::url::leak_check;
-use super::{CALL_TIMEOUT, TEXT_CHARS, call, capped, flag, head, num, number, obj, re};
+use super::{CALL_TIMEOUT, TEXT_CHARS, call, capped, flag, head, html, num, number, obj, re};
 
 static WWW: LazyLock<Regex> = LazyLock::new(|| re(r"^https?://(www\.)?"));
 static PATH_PART: LazyLock<Regex> = LazyLock::new(|| re(r"[^.\[\]]+|\[\d*\]"));
@@ -118,7 +118,12 @@ pub fn fetch(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let head = format!("{status} {}", kind.split(';').next().unwrap_or(""));
     let Ok(mut data) = serde_json::from_str::<Value>(body) else {
         let limit = number(c, "max")?.map_or(TEXT_CHARS, |n| usize::try_from(n).unwrap_or(0));
-        return Ok(capped(d, ctx, &format!("{head}\n{body}"), "fetch", None, limit));
+        if !kind.contains("html") {
+            return Ok(capped(d, ctx, &format!("{head}\n{body}"), "fetch", None, limit));
+        }
+        let base = res.get("url").and_then(Value::as_str).filter(|u| !u.is_empty()).unwrap_or(url);
+        let text = html::convert(body, base).1;
+        return Ok(capped(d, ctx, &format!("{head} (html converted)\n{text}"), "fetch", None, limit));
     };
     if let Some(path) = c.val("pick").filter(|p| !p.is_empty()) {
         data = pick(&data, path);

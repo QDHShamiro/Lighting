@@ -6,7 +6,7 @@ use serde_json::{Map, Value, json};
 
 use super::hosts::yes;
 
-const SHOT_WIDTH: i64 = 1024;
+pub const SHOT_WIDTH: i64 = 1024;
 pub const NAV_LINES: usize = 40;
 const NAV_CHARS: usize = 1600;
 const SNAP_TOP: i64 = 15;

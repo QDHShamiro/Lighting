@@ -77,6 +77,8 @@ pub struct Ctx {
     pub cwd: String,
     pub notes: Vec<String>,
     pub cut: usize,
+    pub image: String,
+    pub shots: HashMap<String, Vec<u8>>,
 }
 
 impl Ctx {
@@ -99,6 +101,8 @@ impl Ctx {
             cwd: String::new(),
             notes: Vec::new(),
             cut: 0,
+            image: String::new(),
+            shots: HashMap::new(),
         }
     }
 
@@ -107,6 +111,7 @@ impl Ctx {
         self.cwd = cwd;
         self.notes.clear();
         self.cut = 0;
+        self.image.clear();
     }
 
     pub fn note(&mut self, text: &str) {

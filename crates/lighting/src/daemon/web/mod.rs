@@ -1,8 +1,12 @@
 mod clean;
 mod cmds;
 mod data;
+mod entity;
+mod html;
 pub mod keys;
 mod launch;
+mod read;
+mod shot;
 mod sites;
 mod url;
 mod wait;
@@ -21,6 +25,7 @@ use super::{Daemon, Out, STOPPED};
 pub use clean::{cleanup_now, done, keep};
 pub use data::pystr;
 pub use launch::{any_browser, pick};
+pub use read::{read, wants as wants_read};
 
 pub const CALL_TIMEOUT: f64 = 20.0;
 pub const LOAD_TIMEOUT: f64 = 25.0;
@@ -90,6 +95,8 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "tools" => data::tools(d, ctx)?,
         "call" => data::call_tool(d, ctx, c)?,
         "fetch" => data::fetch(d, ctx, c)?,
+        "shot" => shot::shot(d, ctx, c)?,
+        "frames" => shot::frames(d, ctx, c)?,
         name => return Err(super::route::later(name)),
     };
     Ok(Out::Text(text))

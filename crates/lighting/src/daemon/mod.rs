@@ -95,12 +95,13 @@ pub struct Req {
 struct Res {
     code: i32,
     out: String,
+    image: String,
     stop: bool,
 }
 
 impl Res {
     fn new(code: i32, out: impl Into<String>) -> Res {
-        Res { code, out: out.into(), stop: false }
+        Res { code, out: out.into(), image: String::new(), stop: false }
     }
 }
 
@@ -234,9 +235,13 @@ fn handle(d: &Daemon, link: Link, lanes: &[Sender<Work>]) {
         }
     };
     let bytes = if fast {
-        Reply { code: res.code, image: String::new(), out: res.out }.encode()
+        Reply { code: res.code, image: res.image, out: res.out }.encode()
     } else {
-        json!({"out": res.out, "code": res.code}).to_string().into_bytes()
+        let mut v = json!({"out": res.out, "code": res.code});
+        if !res.image.is_empty() {
+            v["image"] = json!(res.image);
+        }
+        v.to_string().into_bytes()
     };
     if res.stop {
         d.release();

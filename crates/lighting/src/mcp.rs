@@ -292,9 +292,17 @@ fn reply_content(reply: Reply) -> Value {
     if !reply.image.is_empty()
         && let Ok(bytes) = fs::read(&reply.image)
     {
-        content.push(json!({"type": "image", "data": base64(&bytes), "mimeType": "image/jpeg"}));
+        content.push(json!({"type": "image", "data": base64(&bytes), "mimeType": mime(&reply.image)}));
     }
     json!({"content": content, "isError": reply.code != 0})
+}
+
+fn mime(path: &str) -> &'static str {
+    match path.rsplit('.').next().unwrap_or("").to_ascii_lowercase().as_str() {
+        "png" => "image/png",
+        "webp" => "image/webp",
+        _ => "image/jpeg",
+    }
 }
 
 fn base64(bytes: &[u8]) -> String {
@@ -441,6 +449,8 @@ mod tests {
         assert_eq!(res["content"][1]["data"], "Zm9v");
         assert_eq!(res["content"][1]["mimeType"], "image/jpeg");
         assert_eq!(res["isError"], false);
+        assert_eq!(mime("C:/out/x.PNG"), "image/png");
+        assert_eq!(mime("C:/out/x.webp"), "image/webp");
         let gone = dir.join("gone.jpg").display().to_string();
         let res = reply_content(Reply { code: 3, image: gone, out: String::new() });
         assert_eq!(res["content"].as_array().map(Vec::len), Some(1));

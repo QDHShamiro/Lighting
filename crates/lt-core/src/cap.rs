@@ -29,7 +29,7 @@ pub fn cap(out_dir: &Path, text: &str, name: &str, lines: Option<usize>, chars: 
     (out, cut)
 }
 
-fn out_file(dir: &Path, name: &str, ext: &str) -> PathBuf {
+pub fn out_file(dir: &Path, name: &str, ext: &str) -> PathBuf {
     let now = local_now();
     let millis = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.subsec_millis());
     let mut slug = String::new();
