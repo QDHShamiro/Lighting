@@ -5,7 +5,7 @@ use lt_core::{APP_ONLY, CHAT, Call, Fail, Flag, SHARED, WEB_ONLY, built_later, u
 use regex::Regex;
 
 use super::ctx::Ctx;
-use super::{Daemon, Out, channels, desk, flow, media, secure, web};
+use super::{Daemon, Out, channels, desk, flow, media, routines, secure, web};
 
 const POST_VIEW: &[&str] = &[
     "click", "type", "press", "fill", "select", "check", "scroll", "hover", "drag", "do", "run", "search", "back",
@@ -150,6 +150,7 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "watch" | "listen" => media::run(d, ctx, c),
         "secure" => secure::run(d, ctx, c),
         "do" => flow::run(d, ctx, c),
+        "run" | "routine" | "routines" => routines::command(d, ctx, c),
         "channels" => channels::run(d, ctx, c),
         "frames" if c.on("audio") => media::run(d, ctx, c),
         "shot" if c.on("ask") => media::ask_shot(d, ctx, c),

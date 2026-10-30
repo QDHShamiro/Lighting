@@ -355,3 +355,31 @@ fn do_runs_steps_in_order_waits_and_stops_at_the_first_error() {
     let (_, out) = home.run(&["do", "do ping"]);
     assert!(out.starts_with("err: do cannot run inside do"), "{out}");
 }
+
+#[test]
+fn routines_from_2x_run_with_params_and_count_their_runs() {
+    let home = Home::new("routines", true);
+    fs::create_dir_all(home.0.join("routines")).unwrap();
+    let routine = json!({"name": "local-check", "version": 1, "source": "saved", "created": "2026-10-30 18:00",
+        "params": {"word": "x"}, "steps": [
+            {"cmd": "remember", "args": ["routine note {word}"], "flags": {}},
+            {"cmd": "wait", "args": ["200"], "flags": {}},
+            {"cmd": "nonsense", "args": [], "flags": {}, "optional": true},
+            {"cmd": "recall", "args": ["routine note {word}"], "flags": {}}],
+        "check": null, "cost": 400, "stats": {"runs": 0, "ok": 0, "fail": 0, "ms": 0, "saved": 0, "seen": 1, "recent": []},
+        "flaky": false});
+    fs::write(home.0.join("routines").join("local-check.json"), routine.to_string()).unwrap();
+    let (code, out) = home.run(&["run", "local-check", "word=alpha"]);
+    assert!(code == 0 && out.starts_with("ok local-check: 3 steps in "), "{out}");
+    let (code, out) = home.run(&["run", "local"]);
+    assert!(code == 1 && out == "err: local-check needs word -> try: lighting run local-check word=x", "{out}");
+    let (_, out) = home.run(&["routines"]);
+    assert!(out.starts_with("local-check word= | 1x ok | "), "{out}");
+    let (_, out) = home.run(&["routine", "show", "local-check"]);
+    assert!(out.contains("\n3 nonsense (optional)\n4 recall ") && out.contains("\nruns 1, ok 1, fail 0, "), "{out}");
+    let saved: Value =
+        serde_json::from_str(&fs::read_to_string(home.0.join("routines").join("local-check.json")).unwrap()).unwrap();
+    assert_eq!(saved["stats"]["recent"], json!([1]));
+    let (code, out) = home.run(&["run", "nothing-like-this"]);
+    assert!(code == 1 && out.starts_with("err: no routine"), "{out}");
+}

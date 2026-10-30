@@ -76,6 +76,16 @@ pub type Res<T> = Result<T, Halt>;
 pub use imp::{Desk, TERMINALS, windowish};
 
 #[cfg(windows)]
+pub fn app_where(hwnd: isize) -> Option<(String, String)> {
+    win::alive(hwnd).then(|| (win::exe_of_window(hwnd), win::text_of(hwnd)))
+}
+
+#[cfg(not(windows))]
+pub fn app_where(_: isize) -> Option<(String, String)> {
+    None
+}
+
+#[cfg(windows)]
 pub fn ocr_lines(img: &image::RgbImage) -> Result<Vec<String>, Fail> {
     ocr::recognize(img, "auto").map(|lines| lines.into_iter().map(|l| l.0).collect())
 }

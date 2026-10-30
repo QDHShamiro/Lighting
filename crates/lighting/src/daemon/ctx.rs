@@ -84,6 +84,7 @@ pub struct Ctx {
     pub told: HashMap<String, f64>,
     pub failed: Option<Failed>,
     pub offered: Option<Offered>,
+    pub run_stack: Vec<String>,
 }
 
 impl Ctx {
@@ -111,6 +112,7 @@ impl Ctx {
             told: HashMap::new(),
             failed: None,
             offered: None,
+            run_stack: Vec::new(),
         }
     }
 
