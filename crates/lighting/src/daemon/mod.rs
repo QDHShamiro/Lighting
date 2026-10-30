@@ -1,5 +1,6 @@
 mod brain;
 mod channels;
+mod check;
 mod claude;
 mod config;
 mod ctx;
@@ -91,6 +92,21 @@ impl Pending {
     ) -> Pending {
         let now = Instant::now();
         Pending { due: now + interval, deadline: now + timeout, interval, poll: Box::new(poll) }
+    }
+
+    pub fn settle(mut self, d: &Daemon, ctx: &mut Ctx) -> Result<String, Fail> {
+        loop {
+            let now = Instant::now();
+            if now < self.due {
+                thread::sleep(self.due - now);
+            }
+            let last = Instant::now() >= self.deadline;
+            match (self.poll)(d, ctx, last)? {
+                Some(text) => return Ok(text),
+                None if last => return Err(Fail::new("did not finish in time")),
+                None => self.due = Instant::now() + self.interval,
+            }
+        }
     }
 
     fn said_after(wait: Duration, text: String) -> Pending {

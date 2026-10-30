@@ -68,8 +68,7 @@ fn a_v3_home_starts_its_daemon_and_answers_like_2x() {
     assert_eq!(code, 0);
     assert!(status.starts_with(&format!("lighting {} | daemon pid ", env!("CARGO_PKG_VERSION"))), "{status}");
     assert_eq!(home.run(&["zzz"]), (1, "err: unknown command 'zzz' -> try: lighting help".into()));
-    let (code, recall) = home.run(&["bench", "x"]);
-    assert!(code == 1 && recall.starts_with("err: bench is not built into Lighting 3.0 yet"), "{recall}");
+    assert_eq!(home.run(&["bench"]), (1, "err: bench needs the browser -> try: lighting setup".into()));
     home.run(&["zzz"]);
     let (_, third) = home.run(&["zzz"]);
     assert!(third.ends_with("failed 3 times in a row with this error: repeating it will not help"), "{third}");

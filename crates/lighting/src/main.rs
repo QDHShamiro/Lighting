@@ -7,6 +7,8 @@ mod more;
 mod pipe;
 mod setup;
 mod spawn;
+#[cfg(windows)]
+mod testapp;
 mod v2;
 #[cfg(windows)]
 mod voice;
@@ -26,6 +28,8 @@ fn main() -> ExitCode {
         "daemon" if daemon::may_serve() => return daemon::serve(),
         #[cfg(windows)]
         "voice-session" | "voice-watch" => return voice::main(&args),
+        #[cfg(windows)]
+        "testapp" => testapp::main(&args),
         _ => return client::run(&args),
     }
     ExitCode::SUCCESS

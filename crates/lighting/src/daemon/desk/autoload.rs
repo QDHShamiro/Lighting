@@ -134,6 +134,12 @@ fn load(d: &Daemon, name: &str, log: &mut Vec<String>) -> Result<Arc<Host>, Fail
         return Ok(host);
     }
     let hwnd = wait(PAGE_WAIT, || browser_window(&exe_name, true))
+        .or_else(|| {
+            browser_window(&exe_name, false)?;
+            crate::spawn::detached(&exe, &[page(name)], exe.parent().unwrap_or(&d.home), &d.home.join("daemon.log"));
+            log.push(format!("{name} opened a start page first, asked again for the extensions page"));
+            wait(PAGE_WAIT, || browser_window(&exe_name, true))
+        })
         .ok_or_else(|| Fail::new(format!("the extensions page did not open in {name}")))?;
     let dev = wait(FIND_WAIT, || dev_switch(hwnd))
         .ok_or_else(|| Fail::new("developer mode switch not found on the extensions page"))?;

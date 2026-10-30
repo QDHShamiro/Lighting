@@ -128,6 +128,10 @@ impl Ctx {
         }
     }
 
+    pub fn scratch(sid: &str, group: &str) -> Ctx {
+        Ctx::new(sid, group.to_string(), false)
+    }
+
     pub fn begin(&mut self, secret: Option<String>, cwd: String) {
         self.secret = secret;
         self.cwd = cwd;

@@ -118,7 +118,17 @@ jobs:
           name: setup-evidence
           path: ~/.lighting/out/
           retention-days: 7
+      - name: Selftest (browser if connected, test app, test chat)
+        id: selftest
+        if: runner.os == 'Windows' && steps.build.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          L="$USERPROFILE/.lighting/bin/lighting.exe"
+          "$L" selftest | tee selftest.txt
+          grep -E "^(FAIL|SKIP)" selftest.txt | sed 's/^/::warning title=selftest::/' || true
+          tail -1 selftest.txt | grep -E "^([0-9]+)/\1 passed$"
       - name: Result
         if: always()
         shell: bash
-        run: echo "::notice title=v3 ${{ matrix.os }}::fmt=${{ steps.fmt.outcome }} lint=${{ steps.lint.outcome }} test=${{ steps.test.outcome }} web=${{ steps.web.outcome }} xdesk=${{ steps.xdesk.outcome }} deny=${{ steps.deny.outcome }} build=${{ steps.build.outcome }} setup=${{ steps.setup.outcome }}"
+        run: echo "::notice title=v3 ${{ matrix.os }}::fmt=${{ steps.fmt.outcome }} lint=${{ steps.lint.outcome }} test=${{ steps.test.outcome }} web=${{ steps.web.outcome }} xdesk=${{ steps.xdesk.outcome }} deny=${{ steps.deny.outcome }} build=${{ steps.build.outcome }} setup=${{ steps.setup.outcome }} selftest=${{ steps.selftest.outcome }}"

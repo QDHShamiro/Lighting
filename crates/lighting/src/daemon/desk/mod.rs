@@ -32,6 +32,8 @@ mod look;
 #[cfg(windows)]
 mod ocr;
 #[cfg(windows)]
+pub mod probe;
+#[cfg(windows)]
 mod rec;
 #[cfg(windows)]
 mod snap;

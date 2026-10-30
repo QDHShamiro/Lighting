@@ -16,12 +16,12 @@ use super::ctx::{Ctx, now};
 use super::words::{terms, tiers};
 use super::{Daemon, Out, web};
 pub use episode::Episode;
-use store::{file, load, save, score, slug, stem, step_line, text, usage};
+use store::{file, load, save, score, slug, stem, text, usage};
 
-pub use align::truthy;
+pub use align::{align, build, truthy};
 pub use episode::{close, observe};
 pub use run::run;
-pub use store::{load_all, words};
+pub use store::{load_all, step_line, words};
 
 const LIST_LINES: usize = 60;
 const NAME_WORDS: usize = 6;
