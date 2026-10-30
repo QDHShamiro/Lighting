@@ -3,9 +3,9 @@ name: v3
 on:
   push:
     branches: ["feat/lighting-3.0"]
-    paths: ["crates/**", "Cargo.toml", "Cargo.lock", "deny.toml", "rustfmt.toml", ".cargo/**", ".github/workflows/v3.yml"]
+    paths: ["crates/**", "extension/**", "scripts/**", "skills/**", "Cargo.toml", "Cargo.lock", "deny.toml", "rustfmt.toml", ".cargo/**", ".github/workflows/v3.yml"]
   pull_request:
-    paths: ["crates/**", "Cargo.toml", "Cargo.lock", "deny.toml", "rustfmt.toml", ".cargo/**", ".github/workflows/v3.yml"]
+    paths: ["crates/**", "extension/**", "scripts/**", "skills/**", "Cargo.toml", "Cargo.lock", "deny.toml", "rustfmt.toml", ".cargo/**", ".github/workflows/v3.yml"]
   workflow_dispatch:
 
 permissions:
