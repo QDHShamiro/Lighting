@@ -64,6 +64,12 @@ mod sys {
 
     unsafe impl Send for Dir {}
 
+    impl Dir {
+        fn raw(&self) -> RawHandle {
+            self.0
+        }
+    }
+
     impl Drop for Dir {
         fn drop(&mut self) {
             unsafe { CloseHandle(self.0) };
@@ -103,13 +109,12 @@ mod sys {
         }
         let dir = Dir(handle);
         let work = move || {
-            let dir = dir;
             let mut buf = vec![0u32; BUF_WORDS];
             loop {
                 let mut got = 0u32;
                 let ok = unsafe {
                     ReadDirectoryChangesW(
-                        dir.0,
+                        dir.raw(),
                         buf.as_mut_ptr().cast(),
                         (BUF_WORDS * 4) as u32,
                         1,
