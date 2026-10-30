@@ -174,7 +174,7 @@ fn xy(x: i32, y: i32) -> isize {
     (((y & 0xFFFF) << 16) | (x & 0xFFFF)) as isize
 }
 
-fn child_at(hwnd: isize, x: i32, y: i32) -> (isize, i32, i32) {
+pub fn child_at(hwnd: isize, x: i32, y: i32) -> (isize, i32, i32) {
     let mut cur = hwnd;
     loop {
         let mut pt = POINT { x, y };

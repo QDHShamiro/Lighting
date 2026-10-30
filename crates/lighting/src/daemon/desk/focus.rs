@@ -62,7 +62,9 @@ pub fn front(hwnd: isize) -> bool {
 pub fn click(bg: bool, x: i32, y: i32, button: Button, count: u32, hwnd: isize) -> Res<()> {
     if bg {
         calm(hwnd)?;
+        let right = matches!(button, Button::Right);
         input::bg_click(hwnd, x, y, button, count);
+        super::hook::background_click(x, y, right, hwnd);
         return Ok(());
     }
     if !wait_idle() {

@@ -12,7 +12,7 @@ use windows::Win32::UI::WindowsAndMessaging::{GA_ROOT, GetAncestor, WindowFromPo
 
 use super::hook::{self, Ev};
 use super::uia::{self, role_name};
-use super::win;
+use super::{input, win};
 
 const SKIP_EXES: &[&str] = &[
     "brave.exe",
@@ -76,6 +76,7 @@ const VK_NAMES: &[(u32, &str)] = &[
     (0x09, "tab"),
 ];
 const CHAIN: usize = 5;
+const DESCEND: usize = 8;
 const CLICK_CHARS: usize = 80;
 const FIELD_CHARS: usize = 60;
 const READY: Duration = Duration::from_secs(3);
@@ -119,6 +120,36 @@ fn chain_at(x: i32, y: i32) -> Vec<(&'static str, String)> {
     uia::api(|u| unsafe {
         let walker = u.ControlViewWalker()?;
         let mut cur = Some(u.ElementFromPoint(POINT { x, y })?);
+        let mut out = Vec::new();
+        for _ in 0..CHAIN {
+            let Some(el) = cur else { break };
+            let name = el.CurrentName().map(|n| n.to_string().trim().to_string()).unwrap_or_default();
+            out.push((role_name(el.CurrentControlType().map_or(0, |t| t.0)), name));
+            cur = walker.GetParentElement(&el).ok();
+        }
+        Ok(out)
+    })
+    .unwrap_or_default()
+}
+
+fn chain_in(hwnd: isize, x: i32, y: i32) -> Vec<(&'static str, String)> {
+    uia::api(|u| unsafe {
+        let walker = u.ControlViewWalker()?;
+        let mut el = u.ElementFromHandle(HWND(input::child_at(hwnd, x, y).0 as *mut _))?;
+        for _ in 0..DESCEND {
+            let mut cur = walker.GetFirstChildElement(&el).ok();
+            while let Some(c) = cur.take() {
+                let r = c.CurrentBoundingRectangle()?;
+                if r.left <= x && x < r.right && r.top <= y && y < r.bottom {
+                    cur = Some(c);
+                    break;
+                }
+                cur = walker.GetNextSiblingElement(&c).ok();
+            }
+            let Some(next) = cur else { break };
+            el = next;
+        }
+        let mut cur = Some(el);
         let mut out = Vec::new();
         for _ in 0..CHAIN {
             let Some(el) = cur else { break };
@@ -202,13 +233,15 @@ impl Work {
         }
     }
 
-    fn click(&mut self, x: i32, y: i32, right: bool, t: f64) {
-        let root = root_of(unsafe { WindowFromPoint(POINT { x, y }) }.0 as isize);
+    fn click(&mut self, x: i32, y: i32, right: bool, t: f64, hwnd: isize) {
+        let at = if hwnd == 0 { unsafe { WindowFromPoint(POINT { x, y }) }.0 as isize } else { hwnd };
+        let root = root_of(at);
         if self.skip(root) {
             return;
         }
         let (mut pick, mut text_name) = (None, String::new());
-        for (role, name) in chain_at(x, y) {
+        let chain = if hwnd == 0 { chain_at(x, y) } else { chain_in(hwnd, x, y) };
+        for (role, name) in chain {
             if role == "text" && !name.is_empty() && text_name.is_empty() {
                 text_name.clone_from(&name);
             }
@@ -285,9 +318,9 @@ impl Work {
     fn run(mut self, rx: &Receiver<Ev>) {
         while let Ok(ev) = rx.recv() {
             match ev {
-                Ev::Click { x, y, right, t } => {
+                Ev::Click { x, y, right, t, hwnd } => {
                     self.flush();
-                    self.click(x, y, right, t);
+                    self.click(x, y, right, t, hwnd);
                 }
                 Ev::Key { vk, scan, mods, fg, hkl, t } => self.key(vk, scan, mods, fg, hkl, t),
             }

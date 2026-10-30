@@ -34,7 +34,7 @@ const WHITE: u32 = 0x00FF_FFFF;
 const FONT_PX: i32 = 15;
 
 pub enum Ev {
-    Click { x: i32, y: i32, right: bool, t: f64 },
+    Click { x: i32, y: i32, right: bool, t: f64, hwnd: isize },
     Key { vk: u32, scan: u32, mods: [bool; 5], fg: isize, hkl: isize, t: f64 },
 }
 
@@ -47,6 +47,10 @@ fn send(ev: Ev) {
     }
 }
 
+pub fn background_click(x: i32, y: i32, right: bool, hwnd: isize) {
+    send(Ev::Click { x, y, right, t: now(), hwnd });
+}
+
 fn down(vk: i32) -> bool {
     unsafe { GetAsyncKeyState(vk) as u16 & 0x8000 != 0 }
 }
@@ -56,7 +60,7 @@ unsafe extern "system" fn on_mouse(code: i32, wp: WPARAM, lp: LPARAM) -> LRESULT
     if code == 0 && (msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN) {
         let info = unsafe { &*(lp.0 as *const MSLLHOOKSTRUCT) };
         if INJECTED.load(Ordering::Relaxed) || info.flags & MOUSE_INJECTED == 0 {
-            send(Ev::Click { x: info.pt.x, y: info.pt.y, right: msg == WM_RBUTTONDOWN, t: now() });
+            send(Ev::Click { x: info.pt.x, y: info.pt.y, right: msg == WM_RBUTTONDOWN, t: now(), hwnd: 0 });
         }
     }
     unsafe { CallNextHookEx(None, code, wp, lp) }
