@@ -13,6 +13,9 @@ all-features = true
 yanked = "deny"
 ignore = [
     { id = "RUSTSEC-2026-0192", reason = "ttf-parser is unmaintained, not vulnerable; lopdf needs it for pdf-extract and has no alternative" },
+    { id = "RUSTSEC-2026-0370", reason = "zvariant was merged into zbus 6, not vulnerable; xa11y-linux (Linux desktop) still uses zbus 5" },
+    { id = "RUSTSEC-2026-0371", reason = "zbus_names was merged into zbus 6, not vulnerable; xa11y-linux (Linux desktop) still uses zbus 5" },
+    { id = "RUSTSEC-2026-0372", reason = "zvariant_derive was merged into zbus 6, not vulnerable; xa11y-linux (Linux desktop) still uses zbus 5" },
 ]
 
 [licenses]
