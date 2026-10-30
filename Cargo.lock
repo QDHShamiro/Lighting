@@ -613,6 +613,7 @@ dependencies = [
  "lt-core",
  "regex",
  "rusqlite",
+ "serde_json",
 ]
 
 [[package]]

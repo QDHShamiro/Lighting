@@ -197,17 +197,24 @@ impl Store {
         Ok(changed)
     }
 
-    pub fn index_files(&mut self, vault: &Path, inbox: &str, claude: &[PathBuf]) -> rusqlite::Result<usize> {
+    pub fn index_vault(&mut self, vault: &Path, inbox: &str) -> rusqlite::Result<usize> {
         let inbox = inbox.trim_matches('/').to_lowercase();
         let inbox = if inbox.is_empty() { "inbox".to_string() } else { inbox };
         let t = super::store::now();
-        let n = self.index_source("vault", &[vault.to_path_buf()], false, &inbox)?
-            + self.index_source("claude", claude, true, &inbox)?;
+        let n = self.index_source("vault", &[vault.to_path_buf()], false, &inbox)?;
         self.db.execute(
             "insert into meta(k, v) values ('vault_indexed', ?1) on conflict(k) do update set v = excluded.v",
             [t.to_string()],
         )?;
         Ok(n)
+    }
+
+    pub fn index_claude(&mut self, dirs: &[PathBuf]) -> rusqlite::Result<usize> {
+        self.index_source("claude", dirs, true, "")
+    }
+
+    pub fn index_files(&mut self, vault: &Path, inbox: &str, claude: &[PathBuf]) -> rusqlite::Result<usize> {
+        Ok(self.index_vault(vault, inbox)? + self.index_claude(claude)?)
     }
 
     pub fn unembedded(&self, limit: usize) -> rusqlite::Result<Vec<(i64, String)>> {

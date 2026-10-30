@@ -1,16 +1,22 @@
+mod learner;
 mod lessons;
+mod pages;
 mod project;
 mod start;
 mod store;
 mod text;
+mod transcript;
 mod vault;
 mod wiki;
 
+pub use learner::{Due, Record, points, titled};
 pub use lessons::Lesson;
+pub use pages::{WIKI_KINDS, render as render_page, safe_name, template, write_draft, write_session};
 pub use project::project_of;
 pub use start::{Counts, Session};
 pub use store::{Hit, NewNote, Note, Store, Todo, VEC_DIM, date, day, now};
 pub use text::{fts_query, oneline, scrub, short, similar, stop_word};
+pub use transcript::{CHUNK_CHARS, Condensed, chunks, condense, project_of_files};
 pub use vault::{Page, claude_dirs, parse as parse_page};
 pub use wiki::{Draft, accept as accept_draft, drafts, drop_draft, rel_path};
 pub type DbResult<T> = rusqlite::Result<T>;

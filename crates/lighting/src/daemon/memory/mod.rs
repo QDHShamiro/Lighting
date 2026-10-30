@@ -3,6 +3,7 @@ mod hook;
 pub mod index;
 pub mod learn;
 mod status;
+mod watch;
 mod wiki;
 
 use std::cell::RefCell;

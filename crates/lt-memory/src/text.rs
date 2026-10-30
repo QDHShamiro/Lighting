@@ -70,7 +70,7 @@ pub fn fts_query(text: &str) -> String {
     out.join(" OR ")
 }
 
-fn title_words(text: &str) -> HashSet<String> {
+pub(crate) fn title_words(text: &str) -> HashSet<String> {
     tokens(&text.to_lowercase()).filter(|w| w.chars().count() > 2).collect()
 }
 
