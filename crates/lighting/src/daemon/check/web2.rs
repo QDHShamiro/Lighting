@@ -101,7 +101,8 @@ fn landed(d: &Daemon, ctx: &mut Ctx, words: &[&str], want: &str) -> (bool, Strin
 
 fn focus_probe(r: &Run) -> String {
     let Ok(host) = super::super::web::ensure_host(r.d) else { return "no host".into() };
-    let args = json!({"close": false, "only": r.ctx.owned});
+    let args =
+        if r.ctx.sid.is_empty() { json!({"close": false}) } else { json!({"close": false, "only": r.ctx.owned}) };
     match host.call("cleanup", args, None, Duration::from_secs(5), Some(r.ctx.group.as_str())) {
         Ok(v) => v.get("focus").map_or_else(|| v.to_string(), Value::to_string),
         Err(_) => "no answer".into(),
