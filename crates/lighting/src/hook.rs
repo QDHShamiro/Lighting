@@ -2,6 +2,7 @@ use lt_proto::home;
 use lt_squeeze::{commas, squeeze};
 use regex::Regex;
 use serde_json::{Map, Value, json};
+use std::cmp::Reverse;
 use std::fs::{self, OpenOptions};
 use std::io::{self, Read, Write};
 use std::panic;
@@ -167,7 +168,7 @@ fn bash(
     entry.insert("out".into(), json!(small));
     entry.insert("kind".into(), json!(if s.json { "json" } else { "log" }));
     entry.insert("ref".into(), json!(name));
-    if fnv(&[event["session_id"].as_str().unwrap_or_default()]) % HOLDOUT_EVERY == 0 {
+    if fnv(&[event["session_id"].as_str().unwrap_or_default()]).is_multiple_of(HOLDOUT_EVERY) {
         return act(entry, "holdout");
     }
     fs::create_dir_all(&paths.out)
@@ -207,7 +208,7 @@ fn failed(paths: &Paths, why: &str) -> Option<String> {
         .collect();
     times.push(now);
     let _ = fs::create_dir_all(&paths.state);
-    let _ = fs::write(&file, times.iter().map(|t| format!("{t}\n")).collect::<String>());
+    let _ = fs::write(&file, times.iter().map(u64::to_string).collect::<Vec<_>>().join("\n") + "\n");
     note(paths, &json!({"t": unix_ms(), "act": "error", "why": why}));
     if times.len() < ERRORS_MAX {
         return None;
@@ -252,7 +253,7 @@ fn tidy(paths: &Paths) {
             Some((meta.modified().ok()?, meta.len(), e.path()))
         })
         .collect();
-    files.sort_by(|a, b| b.0.cmp(&a.0));
+    files.sort_by_key(|f| Reverse(f.0));
     let mut total = 0;
     for (when, size, path) in files {
         total += size;
@@ -300,7 +301,7 @@ mod tests {
     fn session(holdout: bool) -> String {
         (0..)
             .map(|i| format!("s{i}"))
-            .find(|s| (fnv(&[s.as_str()]) % HOLDOUT_EVERY == 0) == holdout)
+            .find(|s| fnv(&[s.as_str()]).is_multiple_of(HOLDOUT_EVERY) == holdout)
             .expect("session id")
     }
 

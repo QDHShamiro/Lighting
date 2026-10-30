@@ -31,7 +31,7 @@ pub fn squeeze(text: &str) -> Option<Squeezed> {
     };
     let body = out.join("\n");
     let chars_out = text::len(&body);
-    (chars_out < chars_in).then(|| Squeezed {
+    (chars_out < chars_in).then_some(Squeezed {
         lines_in: lines.len(),
         lines_out: out.len(),
         chars_in,
@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     fn reports_sizes_of_both_sides() {
-        let text: String = (0..500).map(|i| format!("row {i} fine\n")).collect();
+        let text = (0..500).map(|i| format!("row {i} fine")).collect::<Vec<_>>().join("\n") + "\n";
         let s = squeeze(&text).expect("squeezed");
         assert_eq!((s.lines_in, s.chars_in, s.json), (500, text.chars().count() - 1, false));
         assert_eq!((s.lines_out, s.chars_out), (s.body.lines().count(), s.body.chars().count()));

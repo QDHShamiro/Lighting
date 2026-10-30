@@ -21,11 +21,8 @@ pub(crate) fn clean(text: &str) -> Vec<String> {
     let mut out: Vec<String> = plain
         .split('\n')
         .map(|line| {
-            let line = if line.contains('\r') {
-                line.split('\r').filter(|p| !strip(p).is_empty()).next_back().unwrap_or("")
-            } else {
-                line
-            };
+            let line =
+                if line.contains('\r') { line.split('\r').rfind(|p| !strip(p).is_empty()).unwrap_or("") } else { line };
             rstrip(line).to_string()
         })
         .collect();
