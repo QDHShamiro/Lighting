@@ -31,6 +31,9 @@ pub fn run(raw: &[String]) -> ExitCode {
     if first == "doctor" {
         return crate::daemon::doctor(&home, &args[1..], ask);
     }
+    if first == "ui" {
+        return open_ui(&home);
+    }
     if NOT_BUILT.contains(&first) {
         eprintln!("lighting {first}: not built into Lighting 3.0 yet");
         return ExitCode::from(2);
@@ -44,6 +47,22 @@ pub fn run(raw: &[String]) -> ExitCode {
         args
     };
     send(&home, &args)
+}
+
+fn open_ui(home: &Path) -> ExitCode {
+    let name = if cfg!(windows) { "lighting-ui.exe" } else { "lighting-ui" };
+    let ui = env::current_exe().ok().and_then(|p| p.parent().map(|d| d.join(name))).filter(|p| p.is_file());
+    let Some(ui) = ui else {
+        println!("err: {name} is missing next to lighting -> try: reinstall Lighting");
+        return ExitCode::from(1);
+    };
+    if crate::spawn::detached(&ui, &[], home, &home.join("ui.log")) {
+        println!("ok (window opened)");
+        ExitCode::SUCCESS
+    } else {
+        println!("err: could not start {name}");
+        ExitCode::from(1)
+    }
 }
 
 pub fn send(home: &Path, args: &[String]) -> ExitCode {

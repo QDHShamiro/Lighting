@@ -140,7 +140,7 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     }
     let first = c.pos.first().map(String::as_str);
     match name {
-        "recall" | "remember" | "forget" | "todo" | "memory" | "wiki" | "hook" | "suggest" | "code" => {
+        "recall" | "remember" | "forget" | "todo" | "memory" | "wiki" | "hook" | "suggest" | "code" | "board" => {
             super::memory::run(d, ctx, c).map(Out::Text)
         }
         "read" if first.is_some_and(web::wants_read) => web::read(d, ctx, c).map(Out::Text),

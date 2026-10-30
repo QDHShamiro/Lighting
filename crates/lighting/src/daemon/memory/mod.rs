@@ -1,3 +1,4 @@
+mod board;
 pub mod chat;
 mod code;
 mod embed;
@@ -48,6 +49,7 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         "memory" => status::memory(d, c),
         "wiki" => wiki::wiki(d, c),
         "code" => code::code(d, ctx, c),
+        "board" => board::board(d, ctx, c),
         name => Err(super::route::later(name)),
     }
 }

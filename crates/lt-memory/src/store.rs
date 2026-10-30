@@ -17,7 +17,7 @@ const FRESH_BOOST: f64 = 0.25;
 const HALF_LIFE_S: f64 = 90.0 * 86_400.0;
 const BUSY: Duration = Duration::from_secs(15);
 const TITLE_CHARS: usize = 200;
-const TASK_CHARS: usize = 300;
+pub(crate) const TASK_CHARS: usize = 300;
 const FILE_SOURCES: &[&str] = &["vault", "claude"];
 const SCHEMA: &str = "
 create table if not exists vecs(id integer primary key, v blob);
@@ -124,15 +124,15 @@ pub fn date(t: f64) -> String {
     format!("{y:04}-{m:02}-{d:02}")
 }
 
-fn text(row: &Row, key: &str) -> String {
+pub(crate) fn text(row: &Row, key: &str) -> String {
     row.get::<_, Option<String>>(key).ok().flatten().unwrap_or_default()
 }
 
-fn real(row: &Row, key: &str) -> f64 {
+pub(crate) fn real(row: &Row, key: &str) -> f64 {
     row.get::<_, Option<f64>>(key).ok().flatten().unwrap_or(0.0)
 }
 
-fn note_of(row: &Row) -> rusqlite::Result<Note> {
+pub(crate) fn note_of(row: &Row) -> rusqlite::Result<Note> {
     Ok(Note {
         id: row.get("id")?,
         project: text(row, "project"),
@@ -149,7 +149,7 @@ fn note_of(row: &Row) -> rusqlite::Result<Note> {
     })
 }
 
-fn todo_of(row: &Row) -> rusqlite::Result<Todo> {
+pub(crate) fn todo_of(row: &Row) -> rusqlite::Result<Todo> {
     Ok(Todo {
         id: row.get("id")?,
         project: text(row, "project"),

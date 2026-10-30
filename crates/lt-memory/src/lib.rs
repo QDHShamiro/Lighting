@@ -1,3 +1,4 @@
+mod board;
 mod learner;
 mod lessons;
 mod pages;
@@ -9,6 +10,7 @@ mod transcript;
 mod vault;
 mod wiki;
 
+pub use board::{Card, Graph, Node, Run, links};
 pub use learner::{Due, Record, points, titled};
 pub use lessons::Lesson;
 pub use pages::{WIKI_KINDS, render as render_page, safe_name, template, write_draft, write_session};

@@ -48,6 +48,10 @@ const VALUED: &[&str] = &[
     "ask",
     "at",
     "fps",
+    "title",
+    "mtime",
+    "task",
+    "words",
 ];
 const MULTI: &[&str] = &["glob", "include", "exclude", "exclude-dir"];
 const ALIAS: &[(&str, &str)] = &[
@@ -180,6 +184,9 @@ mod tests {
         assert_eq!(call.pos, ["--"]);
         assert_eq!(call.flags.get(""), Some(&val("v")));
         assert_eq!(call.flags.get("f"), Some(&Flag::On));
+        let call = parse(&argv(&["board", "save", "a.md", "--mtime", "17", "--title", "x y", "--task", "z"]));
+        assert_eq!(call.pos, ["save", "a.md"]);
+        assert_eq!([call.val("mtime"), call.val("title"), call.val("task")], [Some("17"), Some("x y"), Some("z")]);
         assert_eq!(parse(&[]), Call::default());
     }
 

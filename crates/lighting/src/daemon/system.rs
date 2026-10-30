@@ -26,6 +26,7 @@ memory  recall \"words\" [--all] [--max n] | recall <id>   remember \"fact\" [--
         todo [--all] | todo add \"task\" [--list name] [--doing] | todo done|doing|drop|open <id> [note] | todo note <id> \"text\"
         memory [learn|on|off]   memory lessons | memory unlearn <n> (fixes learned from failed commands)
         wiki | wiki accept <n> [folder] | wiki drop <n> | wiki show <n> (drafts in the vault inbox)
+        ui (a window: projects, notes, to-dos, graph, what each session does)
 keys    keys [site] [-f x]   keys add <site> \"ctrl+k=what\"   keys rm <site> <key>
 cleanup done [--quiet]   keep [t]   config cleanup on|off
 system  status   channels   stop   abort   config [key value]   log [n] | log stats [n]   version
