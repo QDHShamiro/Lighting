@@ -1,0 +1,428 @@
+[12:00:00 INFO]: UUID of player Steve is 64c38c41-5a5c-101c-77c8-88e12a6f30c0
+[12:00:01 INFO]: UUID of player Herobrine is 215c58da-38c9-abd6-3d9e-ade15d3e238b
+[12:00:02 INFO]: Alex issued server command: /spawn
+[12:00:03 INFO]: UUID of player Notch is 3a481fd2-cc56-7543-2edc-adb40a6cc878
+[12:00:04 INFO]: UUID of player Herobrine is 248a141c-762c-fd9f-b6d2-6a6db5d23309
+[12:00:05 INFO]: UUID of player Alex is 05f68f2f-c3d6-d560-892a-b77577ef456c
+[12:00:06 INFO]: UUID of player Alex is fbabae12-8b65-2d1a-e602-b456b2db1a99
+[12:00:07 INFO]: Alex joined the game
+[12:00:08 INFO]: Steve joined the game
+[12:00:09 INFO]: Steve issued server command: /spawn
+[12:00:10 WARN]: Can't keep up! Is the server overloaded? Running 4103ms or 114 ticks behind
+[12:00:11 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:00:12 INFO]: UUID of player Steve is 31bfa7aa-e847-4ac3-6190-fc6051c7a821
+[12:00:13 INFO]: UUID of player Alex is 5b73e18c-9e92-7c5c-e534-de93ff92a26c
+[12:00:14 INFO]: Herobrine joined the game
+[12:00:15 INFO]: Herobrine issued server command: /spawn
+[12:00:16 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:00:17 INFO]: Steve issued server command: /spawn
+[12:00:18 INFO]: Herobrine joined the game
+[12:00:19 INFO]: UUID of player Steve is 3a5c66cc-4ac5-d13e-cb1f-e95e0670026d
+[12:00:20 INFO]: UUID of player Alex is 348d5feb-fbfa-e14d-22e2-bfbca1efdfe0
+[12:00:21 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:00:22 INFO]: Notch issued server command: /spawn
+[12:00:23 INFO]: Herobrine issued server command: /spawn
+[12:00:24 INFO]: UUID of player Herobrine is c15361bd-12df-de18-39a8-d32eeeacc3e2
+[12:00:25 INFO]: Notch joined the game
+[12:00:26 INFO]: UUID of player Herobrine is cd1a7909-52dc-019d-8fb1-9741e1426829
+[12:00:27 INFO]: UUID of player Steve is 7c776929-6871-f2f3-9dff-602477db5f34
+[12:00:28 INFO]: Steve issued server command: /spawn
+[12:00:29 INFO]: UUID of player Steve is 0b384f86-dc41-33a1-3377-57f61a78c214
+[12:00:30 INFO]: Alex joined the game
+[12:00:31 INFO]: Alex joined the game
+[12:00:32 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:00:33 INFO]: UUID of player Shamiro is 5735e196-1a31-ba02-35da-0d51a1bcc1fc
+[12:00:34 INFO]: Notch joined the game
+[12:00:35 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:00:36 INFO]: Herobrine joined the game
+[12:00:37 INFO]: Alex joined the game
+[12:00:38 INFO]: Shamiro joined the game
+[12:00:39 INFO]: Steve joined the game
+[12:00:40 INFO]: Alex joined the game
+[12:00:41 INFO]: UUID of player Shamiro is 87d3bba0-85ab-704e-3b84-2af07a57a3a3
+[12:00:42 INFO]: UUID of player Shamiro is 6800b569-b435-c631-eea4-a73a00ccf33f
+[12:00:43 INFO]: UUID of player Steve is fe228a53-fb53-753b-fec6-9b24bf67f820
+[12:00:44 INFO]: Herobrine joined the game
+[12:00:45 INFO]: Herobrine joined the game
+[12:00:46 INFO]: UUID of player Alex is 0628d987-6c0e-1af8-ddc0-cb69e1e9efe3
+[12:00:47 INFO]: Notch joined the game
+[12:00:48 INFO]: UUID of player Notch is 39000f2e-0241-3929-ef28-951cc3ba2a89
+[12:00:49 INFO]: UUID of player Shamiro is 23bb1d74-09c7-8b8e-7ff8-7932ec6f6655
+[12:00:50 INFO]: Shamiro joined the game
+[12:00:51 INFO]: Herobrine joined the game
+[12:00:52 INFO]: UUID of player Alex is 9a218554-9a4e-db14-3c68-1baf57d13470
+[12:00:53 INFO]: Herobrine joined the game
+[12:00:54 INFO]: UUID of player Herobrine is 6f03f699-9dd2-36f0-2e62-4a4d2441a2d1
+[12:00:55 INFO]: UUID of player Herobrine is 48f99229-1fe8-c3d8-42f7-211ad31acfc7
+[12:00:56 INFO]: Herobrine issued server command: /spawn
+[12:00:57 INFO]: UUID of player Herobrine is 39e20eb3-437f-d368-dbcc-881a42a07953
+[12:00:58 INFO]: Shamiro joined the game
+[12:00:59 INFO]: UUID of player Steve is c14c93f5-2c79-2529-be8e-f7507a8d3d2d
+[12:01:00 INFO]: Shamiro issued server command: /spawn
+[12:01:01 INFO]: UUID of player Shamiro is b0365fc0-272c-b4af-d492-31acf1cce2b6
+[12:01:02 INFO]: UUID of player Herobrine is 6cb301a8-0291-d55b-4ff1-b46ef76402ab
+[12:01:03 INFO]: UUID of player Steve is 67f99163-a9a8-ccc2-8412-36ce8a380c8a
+[12:01:04 INFO]: Herobrine issued server command: /spawn
+[12:01:05 INFO]: UUID of player Shamiro is 69104ebd-760d-b23e-00b9-a07dbdbcb7cf
+[12:01:06 INFO]: Notch issued server command: /spawn
+[12:01:07 INFO]: Alex issued server command: /spawn
+[12:01:08 INFO]: Steve joined the game
+[12:01:09 INFO]: UUID of player Steve is 0f45e180-dc5b-43b7-e072-211cc2a9441e
+[12:01:10 INFO]: Alex joined the game
+[12:01:11 INFO]: Shamiro issued server command: /spawn
+[12:01:12 INFO]: Herobrine joined the game
+[12:01:13 INFO]: Notch joined the game
+[12:01:14 INFO]: Herobrine joined the game
+[12:01:15 WARN]: Can't keep up! Is the server overloaded? Running 7120ms or 132 ticks behind
+[12:01:16 INFO]: Steve joined the game
+[12:01:17 INFO]: Herobrine joined the game
+[12:01:18 INFO]: Steve issued server command: /spawn
+[12:01:19 INFO]: Notch issued server command: /spawn
+[12:01:20 INFO]: Notch joined the game
+[12:01:21 INFO]: Alex joined the game
+[12:01:22 INFO]: Shamiro issued server command: /spawn
+[12:01:23 INFO]: Herobrine joined the game
+[12:01:24 INFO]: UUID of player Alex is da4fca96-5d64-a20c-e84f-67b31ded9672
+[12:01:25 INFO]: Alex issued server command: /spawn
+[12:01:26 INFO]: UUID of player Steve is 02b1b33d-71f8-558c-7cdc-07abbd16158b
+[12:01:27 INFO]: Steve issued server command: /spawn
+[12:01:28 INFO]: UUID of player Alex is aae3e565-621a-6ad6-387b-84222fb8ed11
+[12:01:29 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:01:30 INFO]: UUID of player Alex is 1e53c184-b7b3-af03-a489-f1485e5c1a8c
+[12:01:31 INFO]: Steve issued server command: /spawn
+[12:01:32 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:01:33 INFO]: Alex issued server command: /spawn
+[12:01:34 INFO]: Shamiro joined the game
+[12:01:35 INFO]: UUID of player Shamiro is bf2edb83-74a0-7646-c6b2-fc5380bd5b2f
+[12:01:36 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:01:37 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:01:38 INFO]: UUID of player Steve is 605ea17a-2285-e7f0-0cb4-213c9fe04f15
+[12:01:39 INFO]: Alex issued server command: /spawn
+[12:01:40 INFO]: UUID of player Shamiro is 5aa767d3-61bf-5bb5-36f7-b867a73f44e6
+[12:01:41 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:01:42 WARN]: Can't keep up! Is the server overloaded? Running 7182ms or 129 ticks behind
+[12:01:43 INFO]: UUID of player Herobrine is 84b067b6-0e99-569b-2e9c-38fa2ad38c03
+[12:01:44 INFO]: Alex joined the game
+[12:01:45 INFO]: Alex joined the game
+[12:01:46 INFO]: Shamiro issued server command: /spawn
+[12:01:47 INFO]: Notch joined the game
+[12:01:48 INFO]: UUID of player Notch is c7d45a88-975e-3404-9e62-ff0c605609fc
+[12:01:49 INFO]: Notch joined the game
+[12:01:50 INFO]: UUID of player Notch is 25146671-bccf-b5a2-93d2-5e3052f641e8
+[12:01:51 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:01:52 INFO]: UUID of player Alex is c2d4e63f-9f50-8694-a7f5-e1fed398b775
+[12:01:53 INFO]: Alex issued server command: /spawn
+[12:01:54 INFO]: UUID of player Shamiro is e706e99d-995c-da48-50d3-4f1a690902bc
+[12:01:55 INFO]: UUID of player Shamiro is 1b89ae79-fcfa-c041-e686-c9539c30a1dd
+[12:01:56 INFO]: UUID of player Notch is d50fc8fb-31f9-92b3-57bd-3a53c9b1a67b
+[12:01:57 INFO]: UUID of player Alex is 7be3c433-8356-93b4-5530-eb80315c952f
+[12:01:58 INFO]: UUID of player Shamiro is ccbe9315-83ea-d0ca-2e9f-31cc9fb879fc
+[12:01:59 INFO]: UUID of player Notch is c2cb8a78-c9b0-d11d-32cc-570018760c61
+[12:02:00 INFO]: Alex joined the game
+[12:02:01 INFO]: Shamiro joined the game
+[12:02:02 INFO]: Herobrine joined the game
+[12:02:03 WARN]: Can't keep up! Is the server overloaded? Running 2176ms or 49 ticks behind
+[12:02:04 INFO]: Herobrine issued server command: /spawn
+[12:02:05 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:02:06 INFO]: Alex joined the game
+[12:02:07 INFO]: Herobrine joined the game
+[12:02:08 INFO]: Herobrine joined the game
+[12:02:09 INFO]: UUID of player Steve is 776825b7-393c-6cdb-bb61-58e280a4b9f0
+[12:02:10 INFO]: Alex issued server command: /spawn
+[12:02:11 INFO]: Notch issued server command: /spawn
+[12:02:12 INFO]: Herobrine joined the game
+[12:02:13 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:02:14 INFO]: Herobrine issued server command: /spawn
+[12:02:15 INFO]: Alex joined the game
+[12:02:16 INFO]: Alex issued server command: /spawn
+[12:02:17 INFO]: Shamiro joined the game
+[12:02:18 WARN]: Can't keep up! Is the server overloaded? Running 7151ms or 63 ticks behind
+[12:02:19 INFO]: UUID of player Herobrine is f962a64f-2b12-0f3e-b260-6bc1c0866f98
+[12:02:20 INFO]: Herobrine issued server command: /spawn
+[12:02:21 INFO]: UUID of player Notch is bb803b38-2cd2-eeb9-2b47-351f91db2edf
+[12:02:22 INFO]: UUID of player Steve is 39f2c9e6-2185-67bc-8161-aeb948925bf5
+[12:02:23 INFO]: UUID of player Alex is 3ebf62fc-9082-44c9-b88e-abfd11f729ff
+[12:02:24 INFO]: Herobrine issued server command: /spawn
+[12:02:25 WARN]: Can't keep up! Is the server overloaded? Running 4668ms or 153 ticks behind
+[12:02:26 INFO]: UUID of player Notch is 6fc5cf31-7661-1c7c-c1ed-b7bff6eb77f5
+[12:02:27 INFO]: Steve issued server command: /spawn
+[12:02:28 INFO]: Steve joined the game
+[12:02:29 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:02:30 INFO]: Steve joined the game
+[12:02:31 INFO]: Alex issued server command: /spawn
+[12:02:32 INFO]: Steve joined the game
+[12:02:33 INFO]: UUID of player Shamiro is 59ac1a2f-a051-36f7-2e80-7cb7dbed74a2
+[12:02:34 INFO]: Notch issued server command: /spawn
+[12:02:35 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:02:36 INFO]: UUID of player Steve is 45c1ac03-03af-5cbb-ad7c-e9cbaad14f83
+[12:02:37 INFO]: UUID of player Herobrine is 580558c2-01e8-9376-47db-468282e7478d
+[12:02:38 INFO]: UUID of player Steve is 6cb77588-256b-4362-49dc-3e78c0159442
+[12:02:39 INFO]: UUID of player Alex is 870b4fe7-e7cb-cce4-1afa-29ea3b4f7930
+[12:02:40 INFO]: UUID of player Notch is 4baaa45e-0724-f1a7-eac9-de15dcef84de
+[12:02:41 INFO]: Herobrine joined the game
+[12:02:42 INFO]: Shamiro joined the game
+[12:02:43 INFO]: UUID of player Steve is c9711987-ff99-052e-e8d4-c8f96a581992
+[12:02:44 INFO]: Shamiro issued server command: /spawn
+[12:02:45 INFO]: Notch issued server command: /spawn
+[12:02:46 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:02:47 INFO]: Notch joined the game
+[12:02:48 INFO]: Steve joined the game
+[12:02:49 INFO]: Shamiro joined the game
+[12:02:50 INFO]: Herobrine joined the game
+[12:02:51 WARN]: Can't keep up! Is the server overloaded? Running 6622ms or 141 ticks behind
+[12:02:52 INFO]: UUID of player Herobrine is 9b1748c8-c78d-068d-05af-55241b96cd6f
+[12:02:53 INFO]: Alex joined the game
+[12:02:54 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:02:55 INFO]: UUID of player Shamiro is d423cd72-8f13-904b-da11-035b09e6a8e3
+[12:02:56 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:02:57 INFO]: UUID of player Shamiro is 940a0ac3-8ce7-d468-cad6-922239f42eae
+[12:02:58 INFO]: UUID of player Steve is 72c749c8-dfca-7b2e-f507-4e7208259bb3
+[12:02:59 INFO]: Herobrine issued server command: /spawn
+[12:03:00 INFO]: Steve joined the game
+[12:03:01 INFO]: UUID of player Alex is e1f952b2-59b7-2d4e-383e-403c13b6183e
+[12:03:02 INFO]: Notch issued server command: /spawn
+[12:03:03 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:03:04 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:03:05 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:03:06 INFO]: Steve issued server command: /spawn
+[12:03:07 INFO]: UUID of player Notch is d8625a4b-ed59-dc5f-94f2-5cbcba5d07df
+[12:03:08 INFO]: Notch issued server command: /spawn
+[12:03:09 INFO]: Herobrine issued server command: /spawn
+[12:03:10 INFO]: Herobrine issued server command: /spawn
+[12:03:11 INFO]: Notch joined the game
+[12:03:12 INFO]: Herobrine issued server command: /spawn
+[12:03:13 INFO]: Notch joined the game
+[12:03:14 WARN]: Can't keep up! Is the server overloaded? Running 6610ms or 42 ticks behind
+[12:03:15 INFO]: Notch joined the game
+[12:03:16 INFO]: Alex joined the game
+[12:03:17 INFO]: UUID of player Notch is 48b43370-8748-0a8a-5cf7-7ee4ab3ca2e4
+[12:03:18 INFO]: Alex joined the game
+[12:03:19 INFO]: UUID of player Alex is f8a86092-5668-2db9-bc34-578a9296639f
+[12:03:20 INFO]: UUID of player Shamiro is b9e1c50b-193b-d89c-726f-e81e46aed5b4
+[12:03:21 INFO]: Shamiro issued server command: /spawn
+[12:03:22 INFO]: Notch issued server command: /spawn
+[12:03:23 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:03:24 INFO]: UUID of player Notch is d1a869a2-47db-56ab-4a1a-3bd743d45756
+[12:03:25 INFO]: Shamiro issued server command: /spawn
+[12:03:26 INFO]: Shamiro joined the game
+[12:03:27 INFO]: UUID of player Notch is bd63e39b-4c9d-0872-e26c-a8fafc02eb3b
+[12:03:28 INFO]: Alex issued server command: /spawn
+[12:03:29 INFO]: UUID of player Herobrine is f51a418f-742d-89c3-a7bc-ab3529fd4341
+[12:03:30 INFO]: UUID of player Shamiro is c8e9c41e-3775-3366-40b2-0afa18183956
+[12:03:31 INFO]: UUID of player Herobrine is 7c4cce00-b1db-b95b-8049-8964fe0b6c3f
+[12:03:32 INFO]: Herobrine joined the game
+[12:03:33 WARN]: Can't keep up! Is the server overloaded? Running 5183ms or 40 ticks behind
+[12:03:34 INFO]: UUID of player Shamiro is 130e1dc4-a2d4-338d-ff39-f7513b7e179b
+[12:03:35 INFO]: Shamiro joined the game
+[12:03:36 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:03:37 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:03:38 INFO]: Shamiro joined the game
+[12:03:39 INFO]: UUID of player Herobrine is 9a7d1e76-70bc-c36f-76ed-c611f58490a0
+[12:03:40 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:03:41 INFO]: Alex issued server command: /spawn
+[12:03:42 INFO]: UUID of player Alex is 7274faf7-e634-0ffb-c725-5cb8feb626ca
+[12:03:43 INFO]: Steve joined the game
+[12:03:44 INFO]: Shamiro issued server command: /spawn
+[12:03:45 INFO]: UUID of player Herobrine is c867ab4e-1740-1ccc-e46c-87c0d0b8ea08
+[12:03:46 INFO]: UUID of player Notch is 1dd35c04-b4b6-ba4a-d73b-45e2e22d041a
+[12:03:47 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:03:48 INFO]: Shamiro joined the game
+[12:03:49 INFO]: Steve joined the game
+[12:03:50 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:03:51 INFO]: UUID of player Alex is c455a0fa-715c-dd2f-f971-84cb58536b93
+[12:03:52 INFO]: Steve joined the game
+[12:03:53 INFO]: Herobrine joined the game
+[12:03:54 INFO]: UUID of player Steve is 96400021-aba1-7a2d-d785-3e593c55559f
+[12:03:55 INFO]: Alex joined the game
+[12:03:56 INFO]: Steve joined the game
+[12:03:57 INFO]: UUID of player Shamiro is e2d5b161-797f-111e-b412-c477ad071504
+[12:03:58 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:03:59 INFO]: UUID of player Shamiro is 137dfe5e-6c3f-17e7-43f0-45be2ba13e73
+[12:04:00 INFO]: Alex issued server command: /spawn
+[12:04:01 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:04:02 INFO]: UUID of player Steve is 382dd943-9165-6eb2-7f0c-ed9e395d3cb1
+[12:04:03 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:04:04 INFO]: Notch issued server command: /spawn
+[12:04:05 INFO]: Herobrine joined the game
+[12:04:06 INFO]: UUID of player Steve is cd06e435-c44b-8e1f-a748-c8a0c7a084ec
+[12:04:07 INFO]: UUID of player Alex is af92a698-0970-4414-8001-d31fb335c447
+[12:04:08 INFO]: UUID of player Steve is e427727b-bf99-0833-cef1-048bfa124a57
+[12:04:09 INFO]: Herobrine joined the game
+[12:04:10 INFO]: UUID of player Steve is e03745a1-57d0-e7f4-e508-1f61ab50a4c4
+[12:04:10 ERROR]: Could not pass event PlayerInteractEvent to AsyncDonutDuels v1.4.2
+java.lang.NullPointerException: Cannot invoke "org.bukkit.Location.getWorld()" because "loc" is null
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:100) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:101) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:102) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:103) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:104) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:105) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:106) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:107) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:108) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:109) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:110) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:111) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:112) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:113) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:114) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:115) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:116) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:117) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:118) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:119) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:120) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:121) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:122) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:123) ~[AsyncDonutDuels-1.4.2.jar:?]
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:124) ~[AsyncDonutDuels-1.4.2.jar:?]
+	... 18 more
+[12:04:11 INFO]: UUID of player Herobrine is 66ad472e-185d-01f4-7935-25572ddae449
+[12:04:12 INFO]: Alex joined the game
+[12:04:13 INFO]: Steve joined the game
+[12:04:14 INFO]: Steve issued server command: /spawn
+[12:04:15 INFO]: UUID of player Herobrine is 11b1735a-3542-e8ab-db49-ae13aeb976a9
+[12:04:16 INFO]: Shamiro joined the game
+[12:04:17 INFO]: UUID of player Steve is e98808df-c1e4-995b-6a88-6ac64f530122
+[12:04:18 INFO]: UUID of player Alex is 09d6e8b5-5118-b426-ba90-5f5a99e4b13b
+[12:04:19 INFO]: UUID of player Alex is a2453aac-537d-5b01-e207-32e59db0e1bc
+[12:04:20 INFO]: UUID of player Steve is deea0a13-166f-cb16-fc29-ba4e9df27c6c
+[12:04:21 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:04:22 INFO]: Notch joined the game
+[12:04:23 INFO]: Steve joined the game
+[12:04:24 INFO]: UUID of player Notch is e558eeae-2fd5-ad35-5f90-62c185a7e918
+[12:04:25 INFO]: Notch joined the game
+[12:04:26 INFO]: UUID of player Herobrine is a4facc98-3ec3-df13-5c9d-8045ffbdb7b8
+[12:04:27 INFO]: UUID of player Notch is ab81815d-2888-a7e8-85da-54b940e995ca
+[12:04:28 INFO]: UUID of player Shamiro is 4f2ba5fc-61ba-4fc1-5b94-914c0e195324
+[12:04:29 INFO]: Steve joined the game
+[12:04:30 INFO]: UUID of player Herobrine is 4876dfa2-6067-fc08-2c8b-2e8072d2e64a
+[12:04:31 INFO]: UUID of player Herobrine is 92f26a81-4725-96e6-51b4-32cb522246f6
+[12:04:32 WARN]: Can't keep up! Is the server overloaded? Running 4036ms or 165 ticks behind
+[12:04:33 INFO]: Herobrine joined the game
+[12:04:34 INFO]: UUID of player Alex is 3a137c3b-8e0b-b212-0b00-775b0f3f9acf
+[12:04:35 INFO]: Alex joined the game
+[12:04:36 INFO]: Herobrine issued server command: /spawn
+[12:04:37 INFO]: UUID of player Alex is a7a5f0dd-7db2-e6da-874a-440518bf0091
+[12:04:38 INFO]: UUID of player Notch is dab29118-93c0-f70d-6df8-93a0f2f0a1a1
+[12:04:39 INFO]: Notch issued server command: /spawn
+[12:04:40 INFO]: UUID of player Herobrine is ab6b7983-e8f5-1f4c-11e6-a0f4045d426c
+[12:04:41 INFO]: Notch joined the game
+[12:04:42 INFO]: UUID of player Notch is 5b7bf3ae-644a-b674-701b-d4bd8f5972cb
+[12:04:43 INFO]: Notch joined the game
+[12:04:44 INFO]: Shamiro issued server command: /spawn
+[12:04:45 INFO]: Alex joined the game
+[12:04:46 INFO]: Steve joined the game
+[12:04:47 INFO]: Alex joined the game
+[12:04:48 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:04:49 INFO]: Steve issued server command: /spawn
+[12:04:50 INFO]: Shamiro issued server command: /spawn
+[12:04:51 INFO]: Steve joined the game
+[12:04:52 INFO]: Steve issued server command: /spawn
+[12:04:53 INFO]: UUID of player Notch is 21722410-0f46-be25-bdc9-38e0202b2e72
+[12:04:54 INFO]: UUID of player Herobrine is e57fef0d-205c-48d5-3cab-a82bbd3801bf
+[12:04:55 INFO]: Notch joined the game
+[12:04:56 INFO]: Steve issued server command: /spawn
+[12:04:57 INFO]: UUID of player Notch is fbc470a9-70cd-addf-55c7-1158ac721e36
+[12:04:58 INFO]: UUID of player Alex is 92efefe1-c31e-1c81-9861-580e1b01f211
+[12:04:59 INFO]: Notch joined the game
+[12:05:00 INFO]: UUID of player Steve is bf98f12c-3e34-f48c-d7bb-c9cba04d9553
+[12:05:01 INFO]: UUID of player Alex is debf7e80-c2e9-d6ba-5644-45bd6a61aa38
+[12:05:02 INFO]: Herobrine issued server command: /spawn
+[12:05:03 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:05:04 WARN]: Can't keep up! Is the server overloaded? Running 5526ms or 95 ticks behind
+[12:05:05 INFO]: Alex issued server command: /spawn
+[12:05:06 INFO]: UUID of player Notch is 8be93096-bd41-e931-ad3b-f3dc7262b6bb
+[12:05:07 INFO]: Shamiro issued server command: /spawn
+[12:05:08 INFO]: Shamiro joined the game
+[12:05:09 INFO]: Notch joined the game
+[12:05:10 INFO]: UUID of player Steve is 6cabf039-5054-75b6-6600-840235b10133
+[12:05:11 INFO]: UUID of player Herobrine is 7449986f-eda8-441f-63de-c7b9c1673955
+[12:05:12 INFO]: Shamiro joined the game
+[12:05:13 INFO]: UUID of player Herobrine is 34b2d6ca-159b-73e5-8d6f-2c83f76d8e89
+[12:05:14 INFO]: Notch issued server command: /spawn
+[12:05:15 INFO]: UUID of player Notch is c41a4aaa-9c6c-9a9f-89e3-6a568eb73d38
+[12:05:16 INFO]: Shamiro issued server command: /spawn
+[12:05:17 INFO]: Herobrine issued server command: /spawn
+[12:05:18 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:05:19 INFO]: Steve issued server command: /spawn
+[12:05:20 INFO]: Steve issued server command: /spawn
+[12:05:21 INFO]: UUID of player Alex is 015513bb-1257-d91c-48b6-41dfbaa67fa2
+[12:05:22 INFO]: UUID of player Shamiro is 985c1bd4-c58d-3996-50dc-31b8817b3db0
+[12:05:23 INFO]: Steve joined the game
+[12:05:24 INFO]: UUID of player Alex is 9abd987a-c751-67b3-190a-93de404c1d20
+[12:05:25 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:05:26 INFO]: UUID of player Herobrine is 97cbf6e6-b243-95e8-326b-f758c2579bdc
+[12:05:27 INFO]: UUID of player Steve is 895f937c-7952-0601-3fd3-c093964df0ed
+[12:05:28 INFO]: UUID of player Herobrine is e84cf707-1a10-0505-a7bb-b01ac2d34339
+[12:05:29 INFO]: Notch issued server command: /spawn
+[12:05:30 INFO]: Notch issued server command: /spawn
+[12:05:31 INFO]: Herobrine joined the game
+[12:05:32 INFO]: UUID of player Alex is f0adb0fd-7cc6-4457-f7b9-d906c9ef1cd1
+[12:05:33 INFO]: UUID of player Notch is 38f1c639-53bf-25b5-e7a6-4f6000ad09c2
+[12:05:34 INFO]: UUID of player Alex is c0f02518-83a0-3c90-3f8b-e502f3380f8b
+[12:05:35 INFO]: UUID of player Alex is 829a5fa6-1017-b69a-8ff5-a759b74d92e1
+[12:05:36 INFO]: Shamiro joined the game
+[12:05:37 INFO]: Steve issued server command: /spawn
+[12:05:38 INFO]: Alex joined the game
+[12:05:39 INFO]: Steve joined the game
+[12:05:40 INFO]: Notch joined the game
+[12:05:41 INFO]: UUID of player Shamiro is 8456f735-7705-a7fc-16f0-e5c3e76c0b8f
+[12:05:42 INFO]: Shamiro issued server command: /spawn
+[12:05:43 INFO]: Alex joined the game
+[12:05:44 INFO]: UUID of player Herobrine is 5967088d-c642-b046-5af9-872c6c03774f
+[12:05:45 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:05:46 INFO]: UUID of player Herobrine is ea81bf99-50cd-82d6-2800-5f2d09d7b27e
+[12:05:47 WARN]: Can't keep up! Is the server overloaded? Running 6385ms or 148 ticks behind
+[12:05:48 INFO]: UUID of player Shamiro is 7c14af61-62b0-7d60-acc5-472eb11b0a5d
+[12:05:49 INFO]: Alex joined the game
+[12:05:50 WARN]: Can't keep up! Is the server overloaded? Running 2401ms or 144 ticks behind
+[12:05:51 INFO]: UUID of player Steve is 5e2630ba-5636-404a-134e-963dd2030cea
+[12:05:52 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:05:53 INFO]: UUID of player Shamiro is 0aef2ef1-a9e7-07a8-876b-38b663ac5e03
+[12:05:54 INFO]: Herobrine joined the game
+[12:05:55 INFO]: UUID of player Herobrine is 3b15b1fa-a101-1fac-219f-eae0b02d56e6
+[12:05:56 INFO]: Steve joined the game
+[12:05:57 INFO]: Alex issued server command: /spawn
+[12:05:58 INFO]: UUID of player Alex is 7f03dfc6-ea2a-74dd-8fd8-c66b753fb5a9
+[12:05:59 WARN]: Can't keep up! Is the server overloaded? Running 5832ms or 104 ticks behind
+[12:06:00 INFO]: Shamiro issued server command: /spawn
+[12:06:01 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:06:02 INFO]: UUID of player Steve is 52c54a50-966f-a9af-1258-18389af6a2bc
+[12:06:03 WARN]: Can't keep up! Is the server overloaded? Running 4967ms or 175 ticks behind
+[12:06:04 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:06:05 INFO]: UUID of player Shamiro is 45d54b60-bc14-a8da-3b59-630908b1cda8
+[12:06:06 INFO]: Alex joined the game
+[12:06:07 INFO]: Notch joined the game
+[12:06:08 INFO]: UUID of player Alex is 3cb8ca43-7ad4-0638-fe1d-f3356dc8f4cb
+[12:06:09 INFO]: Shamiro joined the game
+[12:06:10 INFO]: UUID of player Steve is 315a84f4-82c8-cb70-cfea-11b425c1e9e7
+[12:06:11 INFO]: Shamiro issued server command: /spawn
+[12:06:12 INFO]: Shamiro joined the game
+[12:06:13 INFO]: Steve joined the game
+[12:06:14 INFO]: Herobrine joined the game
+[12:06:15 INFO]: UUID of player Shamiro is bd5cc167-ac58-3039-bc97-4e7c48570adf
+[12:06:16 INFO]: UUID of player Steve is 9cb31b93-8799-9421-8090-8484fd34221b
+[12:06:17 WARN]: Can't keep up! Is the server overloaded? Running 5209ms or 130 ticks behind
+[12:06:18 INFO]: Shamiro joined the game
+[12:06:19 INFO]: UUID of player Notch is 07f3e877-fb9c-3725-afc0-d2f79e7cefe2
+[12:06:20 INFO]: Steve issued server command: /spawn
+[12:06:21 INFO]: Herobrine joined the game
+[12:06:22 INFO]: Notch joined the game
+[12:06:23 INFO]: Steve issued server command: /spawn
+[12:06:24 INFO]: UUID of player Herobrine is fb699ad2-2faa-cdc0-bb47-1baed7235c77
+[12:06:25 INFO]: UUID of player Shamiro is e35bdc5f-6e3e-7034-81bd-860034949f5e
+[12:06:26 INFO]: Herobrine issued server command: /spawn
+[12:06:27 INFO]: Notch joined the game
+[12:06:28 WARN]: Can't keep up! Is the server overloaded? Running 8346ms or 67 ticks behind
+[12:06:29 INFO]: Alex joined the game
+[12:06:30 INFO]: Shamiro issued server command: /spawn
+[12:06:31 INFO]: UUID of player Herobrine is 12b46c58-8050-d19b-8b3c-da628ee42e7d
+[12:06:32 INFO]: Steve issued server command: /spawn
+[12:06:33 INFO]: Herobrine issued server command: /spawn
+[12:06:34 INFO]: Herobrine joined the game
+[12:06:35 WARN]: Can't keep up! Is the server overloaded? Running 7653ms or 105 ticks behind
+[12:06:36 INFO]: Herobrine issued server command: /spawn
+[12:06:37 INFO]: Herobrine joined the game
+[12:06:38 INFO]: Steve joined the game
+[12:06:39 INFO]: Notch issued server command: /spawn

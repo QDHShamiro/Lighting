@@ -1,3 +1,4 @@
+mod hook;
 mod host;
 mod mcp;
 mod v2;
@@ -11,12 +12,13 @@ fn main() -> ExitCode {
     match first {
         "mcp" => mcp::serve(),
         "host" => host::serve(args.get(1).map(String::as_str).unwrap_or("")),
+        "hook" if args.get(1).is_some_and(|a| a == "post") => hook::post(),
         origin if origin.starts_with("chrome-extension://") => host::serve(origin),
         "version" | "--version" => println!("{}", env!("CARGO_PKG_VERSION")),
         _ => {
             let version = env!("CARGO_PKG_VERSION");
             eprintln!(
-                "lighting {version}: only `mcp`, `host` and `version` are built so far, the 2.x client does the rest"
+                "lighting {version}: only `mcp`, `host`, `hook post` and `version` are built so far, the 2.x client does the rest"
             );
             return ExitCode::from(2);
         }

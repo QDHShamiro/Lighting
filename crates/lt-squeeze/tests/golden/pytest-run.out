@@ -1,0 +1,43 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-8.3.3
+collected 312 items
+
+tests/test_snap.py::test_case_0 PASSED [  0%]
+tests/test_recall.py::test_case_1 PASSED [  0%]
+tests/test_snap.py::test_case_2 PASSED [  0%]
+tests/test_daemon.py::test_case_3 PASSED [  1%]
+tests/test_recall.py::test_case_4 PASSED [  1%]
+tests/test_daemon.py::test_case_5 PASSED [  1%]
+... 135 lines (42 x tests/test_snap.py::test_case_# PASSED [, 35 x tests/test_recall.py::test_case_# PASSED [)
+tests/test_squeeze.py::test_json_lines FAILED [ 46%]
+tests/test_squeeze.py::test_case_141 PASSED [ 47%]
+tests/test_snap.py::test_case_142 PASSED [ 47%]
+... 139 lines (42 x tests/test_daemon.py::test_case_# PASSED [, 40 x tests/test_snap.py::test_case_# PASSED [)
+tests/test_squeeze.py::test_case_282 PASSED [ 94%]
+tests/test_snap.py::test_case_283 PASSED [ 94%]
+tests/test_recall.py::test_case_284 PASSED [ 94%] (x2)
+tests/test_snap.py::test_case_286 PASSED [ 95%]
+tests/test_recall.py::test_case_287 PASSED [ 95%] (x2)
+tests/test_squeeze.py::test_case_289 PASSED [ 96%]
+tests/test_snap.py::test_case_290 PASSED [ 96%]
+tests/test_daemon.py::test_case_291 PASSED [ 97%]
+tests/test_recall.py::test_case_292 PASSED [ 97%]
+tests/test_daemon.py::test_case_293 PASSED [ 97%]
+tests/test_squeeze.py::test_case_294 PASSED [ 98%]
+tests/test_snap.py::test_case_295 PASSED [ 98%]
+tests/test_recall.py::test_case_296 PASSED [ 98%]
+tests/test_daemon.py::test_case_297 PASSED [ 99%]
+tests/test_squeeze.py::test_case_298 PASSED [ 99%]
+tests/test_snap.py::test_case_299 PASSED [ 99%]
+
+=================================== FAILURES ===================================
+____________________________ test_json_lines ____________________________
+
+Traceback (most recent call last):
+  File "E:\Lighting\tests\test_squeeze.py", line 88, in test_json_lines
+    self.assertEqual(out, want)
+AssertionError: Lists differ: ['a'] != ['b']
+
+=========================== short test summary info ============================
+FAILED tests/test_squeeze.py::test_json_lines - AssertionError
+======================= 1 failed, 299 passed in 12.34s =======================

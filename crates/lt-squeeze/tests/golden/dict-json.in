@@ -1,0 +1,663 @@
+{
+ "version": "2.1.0",
+ "builds": [
+  {
+   "id": 0,
+   "os": "macos",
+   "ms": 359,
+   "status": "success"
+  },
+  {
+   "id": 1,
+   "os": "windows",
+   "ms": 524,
+   "status": "success"
+  },
+  {
+   "id": 2,
+   "os": "windows",
+   "ms": 775,
+   "status": "success"
+  },
+  {
+   "id": 3,
+   "os": "macos",
+   "ms": 508,
+   "status": "success"
+  },
+  {
+   "id": 4,
+   "os": "linux",
+   "ms": 553,
+   "status": "success"
+  },
+  {
+   "id": 5,
+   "os": "linux",
+   "ms": 364,
+   "status": "success"
+  },
+  {
+   "id": 6,
+   "os": "windows",
+   "ms": 221,
+   "status": "success"
+  },
+  {
+   "id": 7,
+   "os": "macos",
+   "ms": 779,
+   "status": "success"
+  },
+  {
+   "id": 8,
+   "os": "macos",
+   "ms": 861,
+   "status": "success"
+  },
+  {
+   "id": 9,
+   "os": "macos",
+   "ms": 732,
+   "status": "success"
+  },
+  {
+   "id": 10,
+   "os": "windows",
+   "ms": 459,
+   "status": "success"
+  },
+  {
+   "id": 11,
+   "os": "windows",
+   "ms": 182,
+   "status": "success"
+  },
+  {
+   "id": 12,
+   "os": "macos",
+   "ms": 682,
+   "status": "success"
+  },
+  {
+   "id": 13,
+   "os": "macos",
+   "ms": 588,
+   "status": "success"
+  },
+  {
+   "id": 14,
+   "os": "windows",
+   "ms": 587,
+   "status": "success"
+  },
+  {
+   "id": 15,
+   "os": "windows",
+   "ms": 648,
+   "status": "success"
+  },
+  {
+   "id": 16,
+   "os": "windows",
+   "ms": 800,
+   "status": "success"
+  },
+  {
+   "id": 17,
+   "os": "macos",
+   "ms": 642,
+   "status": "success"
+  },
+  {
+   "id": 18,
+   "os": "linux",
+   "ms": 269,
+   "status": "success"
+  },
+  {
+   "id": 19,
+   "os": "linux",
+   "ms": 855,
+   "status": "success"
+  },
+  {
+   "id": 20,
+   "os": "windows",
+   "ms": 369,
+   "status": "success"
+  },
+  {
+   "id": 21,
+   "os": "macos",
+   "ms": 339,
+   "status": "success"
+  },
+  {
+   "id": 22,
+   "os": "macos",
+   "ms": 585,
+   "status": "success"
+  },
+  {
+   "id": 23,
+   "os": "windows",
+   "ms": 608,
+   "status": "success"
+  },
+  {
+   "id": 24,
+   "os": "linux",
+   "ms": 838,
+   "status": "success"
+  },
+  {
+   "id": 25,
+   "os": "windows",
+   "ms": 252,
+   "status": "success"
+  },
+  {
+   "id": 26,
+   "os": "macos",
+   "ms": 304,
+   "status": "success"
+  },
+  {
+   "id": 27,
+   "os": "macos",
+   "ms": 418,
+   "status": "success"
+  },
+  {
+   "id": 28,
+   "os": "windows",
+   "ms": 200,
+   "status": "success"
+  },
+  {
+   "id": 29,
+   "os": "linux",
+   "ms": 882,
+   "status": "success"
+  },
+  {
+   "id": 30,
+   "os": "linux",
+   "ms": 581,
+   "status": "success"
+  },
+  {
+   "id": 31,
+   "os": "macos",
+   "ms": 156,
+   "status": "success"
+  },
+  {
+   "id": 32,
+   "os": "windows",
+   "ms": 269,
+   "status": "success"
+  },
+  {
+   "id": 33,
+   "os": "macos",
+   "ms": 236,
+   "status": "failure"
+  },
+  {
+   "id": 34,
+   "os": "windows",
+   "ms": 248,
+   "status": "success"
+  },
+  {
+   "id": 35,
+   "os": "macos",
+   "ms": 255,
+   "status": "success"
+  },
+  {
+   "id": 36,
+   "os": "windows",
+   "ms": 294,
+   "status": "success"
+  },
+  {
+   "id": 37,
+   "os": "macos",
+   "ms": 642,
+   "status": "success"
+  },
+  {
+   "id": 38,
+   "os": "macos",
+   "ms": 679,
+   "status": "success"
+  },
+  {
+   "id": 39,
+   "os": "windows",
+   "ms": 371,
+   "status": "success"
+  },
+  {
+   "id": 40,
+   "os": "linux",
+   "ms": 138,
+   "status": "success"
+  },
+  {
+   "id": 41,
+   "os": "macos",
+   "ms": 561,
+   "status": "success"
+  },
+  {
+   "id": 42,
+   "os": "windows",
+   "ms": 336,
+   "status": "success"
+  },
+  {
+   "id": 43,
+   "os": "windows",
+   "ms": 872,
+   "status": "success"
+  },
+  {
+   "id": 44,
+   "os": "macos",
+   "ms": 274,
+   "status": "success"
+  },
+  {
+   "id": 45,
+   "os": "windows",
+   "ms": 281,
+   "status": "success"
+  },
+  {
+   "id": 46,
+   "os": "macos",
+   "ms": 553,
+   "status": "success"
+  },
+  {
+   "id": 47,
+   "os": "linux",
+   "ms": 409,
+   "status": "success"
+  },
+  {
+   "id": 48,
+   "os": "macos",
+   "ms": 449,
+   "status": "success"
+  },
+  {
+   "id": 49,
+   "os": "windows",
+   "ms": 443,
+   "status": "success"
+  },
+  {
+   "id": 50,
+   "os": "macos",
+   "ms": 130,
+   "status": "success"
+  },
+  {
+   "id": 51,
+   "os": "macos",
+   "ms": 204,
+   "status": "success"
+  },
+  {
+   "id": 52,
+   "os": "linux",
+   "ms": 194,
+   "status": "success"
+  },
+  {
+   "id": 53,
+   "os": "linux",
+   "ms": 744,
+   "status": "success"
+  },
+  {
+   "id": 54,
+   "os": "windows",
+   "ms": 736,
+   "status": "success"
+  },
+  {
+   "id": 55,
+   "os": "windows",
+   "ms": 379,
+   "status": "success"
+  },
+  {
+   "id": 56,
+   "os": "windows",
+   "ms": 845,
+   "status": "success"
+  },
+  {
+   "id": 57,
+   "os": "windows",
+   "ms": 627,
+   "status": "success"
+  },
+  {
+   "id": 58,
+   "os": "linux",
+   "ms": 684,
+   "status": "success"
+  },
+  {
+   "id": 59,
+   "os": "linux",
+   "ms": 520,
+   "status": "success"
+  },
+  {
+   "id": 60,
+   "os": "macos",
+   "ms": 639,
+   "status": "success"
+  },
+  {
+   "id": 61,
+   "os": "linux",
+   "ms": 321,
+   "status": "success"
+  },
+  {
+   "id": 62,
+   "os": "windows",
+   "ms": 273,
+   "status": "success"
+  },
+  {
+   "id": 63,
+   "os": "macos",
+   "ms": 851,
+   "status": "success"
+  },
+  {
+   "id": 64,
+   "os": "macos",
+   "ms": 556,
+   "status": "success"
+  },
+  {
+   "id": 65,
+   "os": "linux",
+   "ms": 243,
+   "status": "success"
+  },
+  {
+   "id": 66,
+   "os": "macos",
+   "ms": 632,
+   "status": "success"
+  },
+  {
+   "id": 67,
+   "os": "windows",
+   "ms": 881,
+   "status": "success"
+  },
+  {
+   "id": 68,
+   "os": "macos",
+   "ms": 593,
+   "status": "success"
+  },
+  {
+   "id": 69,
+   "os": "windows",
+   "ms": 141,
+   "status": "success"
+  },
+  {
+   "id": 70,
+   "os": "windows",
+   "ms": 778,
+   "status": "success"
+  },
+  {
+   "id": 71,
+   "os": "macos",
+   "ms": 274,
+   "status": "success"
+  },
+  {
+   "id": 72,
+   "os": "macos",
+   "ms": 350,
+   "status": "success"
+  },
+  {
+   "id": 73,
+   "os": "windows",
+   "ms": 468,
+   "status": "success"
+  },
+  {
+   "id": 74,
+   "os": "linux",
+   "ms": 389,
+   "status": "success"
+  },
+  {
+   "id": 75,
+   "os": "macos",
+   "ms": 212,
+   "status": "success"
+  },
+  {
+   "id": 76,
+   "os": "windows",
+   "ms": 735,
+   "status": "success"
+  },
+  {
+   "id": 77,
+   "os": "linux",
+   "ms": 503,
+   "status": "success"
+  },
+  {
+   "id": 78,
+   "os": "linux",
+   "ms": 695,
+   "status": "success"
+  },
+  {
+   "id": 79,
+   "os": "linux",
+   "ms": 426,
+   "status": "success"
+  }
+ ],
+ "summary": {
+  "total": 80,
+  "failed": 1,
+  "long": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+  "nested": {
+   "deep": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ]
+  }
+ },
+ "empty": [],
+ "single": [
+  1
+ ],
+ "matrix": [
+  [
+   0,
+   0,
+   0
+  ],
+  [
+   1,
+   2,
+   3
+  ],
+  [
+   2,
+   4,
+   6
+  ],
+  [
+   3,
+   6,
+   9
+  ],
+  [
+   4,
+   8,
+   12
+  ],
+  [
+   5,
+   10,
+   15
+  ],
+  [
+   6,
+   12,
+   18
+  ],
+  [
+   7,
+   14,
+   21
+  ],
+  [
+   8,
+   16,
+   24
+  ],
+  [
+   9,
+   18,
+   27
+  ],
+  [
+   10,
+   20,
+   30
+  ],
+  [
+   11,
+   22,
+   33
+  ],
+  [
+   12,
+   24,
+   36
+  ],
+  [
+   13,
+   26,
+   39
+  ],
+  [
+   14,
+   28,
+   42
+  ],
+  [
+   15,
+   30,
+   45
+  ],
+  [
+   16,
+   32,
+   48
+  ],
+  [
+   17,
+   34,
+   51
+  ],
+  [
+   18,
+   36,
+   54
+  ],
+  [
+   19,
+   38,
+   57
+  ],
+  [
+   20,
+   40,
+   60
+  ],
+  [
+   21,
+   42,
+   63
+  ],
+  [
+   22,
+   44,
+   66
+  ],
+  [
+   23,
+   46,
+   69
+  ],
+  [
+   24,
+   48,
+   72
+  ],
+  [
+   25,
+   50,
+   75
+  ],
+  [
+   26,
+   52,
+   78
+  ],
+  [
+   27,
+   54,
+   81
+  ],
+  [
+   28,
+   56,
+   84
+  ],
+  [
+   29,
+   58,
+   87
+  ]
+ ],
+ "квота": "ünicode ключ"
+}

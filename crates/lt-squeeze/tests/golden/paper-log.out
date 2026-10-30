@@ -1,0 +1,52 @@
+[12:00:00 INFO]: UUID of player Steve is 64c38c41-5a5c-101c-77c8-88e12a6f30c0
+[12:00:01 INFO]: UUID of player Herobrine is 215c58da-38c9-abd6-3d9e-ade15d3e238b
+[12:00:02 INFO]: Alex issued server command: /spawn
+[12:00:03 INFO]: UUID of player Notch is 3a481fd2-cc56-7543-2edc-adb40a6cc878
+[12:00:04 INFO]: UUID of player Herobrine is 248a141c-762c-fd9f-b6d2-6a6db5d23309
+[12:00:05 INFO]: UUID of player Alex is 05f68f2f-c3d6-d560-892a-b77577ef456c
+[12:00:06 INFO]: UUID of player Alex is fbabae12-8b65-2d1a-e602-b456b2db1a99
+[12:00:07 INFO]: Alex joined the game
+[12:00:08 INFO]: Steve joined the game
+[12:00:09 INFO]: Steve issued server command: /spawn
+[12:00:10 WARN]: Can't keep up! Is the server overloaded? Running 4103ms or 114 ticks behind
+[12:00:11 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:00:12 INFO]: UUID of player Steve is 31bfa7aa-e847-4ac3-6190-fc6051c7a821
+... 62 lines (24 x UUID of player, 9 x Herobrine joined the)
+[12:01:15 WARN]: Can't keep up! Is the server overloaded? Running 7120ms or 132 ticks behind
+[12:01:16 INFO]: Steve joined the game
+[12:01:17 INFO]: Herobrine joined the game
+... 173 lines (58 x UUID of player, 25 x Saving chunks for)
+[12:04:10 ERROR]: Could not pass event PlayerInteractEvent to AsyncDonutDuels v1.4.2
+java.lang.NullPointerException: Cannot invoke "org.bukkit.Location.getWorld()" because "loc" is null
+	at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:100) ~[AsyncDonutDuels-1.4.2.jar:?] (x14)
+... 131 lines (49 x UUID of player, 11 x at dev.qdhshamiro.duels.arena.Arena.join(Arena.java:#) ~[Asy)
+[12:06:10 INFO]: UUID of player Steve is 315a84f4-82c8-cb70-cfea-11b425c1e9e7
+[12:06:11 INFO]: Shamiro issued server command: /spawn
+[12:06:12 INFO]: Shamiro joined the game
+[12:06:13 INFO]: Steve joined the game
+[12:06:14 INFO]: Herobrine joined the game
+[12:06:15 INFO]: UUID of player Shamiro is bd5cc167-ac58-3039-bc97-4e7c48570adf
+[12:06:16 INFO]: UUID of player Steve is 9cb31b93-8799-9421-8090-8484fd34221b
+[12:06:17 WARN]: Can't keep up! Is the server overloaded? Running 5209ms or 130 ticks behind
+[12:06:18 INFO]: Shamiro joined the game
+[12:06:19 INFO]: UUID of player Notch is 07f3e877-fb9c-3725-afc0-d2f79e7cefe2
+[12:06:20 INFO]: Steve issued server command: /spawn
+[12:06:21 INFO]: Herobrine joined the game
+[12:06:22 INFO]: Notch joined the game
+[12:06:23 INFO]: Steve issued server command: /spawn
+[12:06:24 INFO]: UUID of player Herobrine is fb699ad2-2faa-cdc0-bb47-1baed7235c77
+[12:06:25 INFO]: UUID of player Shamiro is e35bdc5f-6e3e-7034-81bd-860034949f5e
+[12:06:26 INFO]: Herobrine issued server command: /spawn
+[12:06:27 INFO]: Notch joined the game
+[12:06:28 WARN]: Can't keep up! Is the server overloaded? Running 8346ms or 67 ticks behind
+[12:06:29 INFO]: Alex joined the game
+[12:06:30 INFO]: Shamiro issued server command: /spawn
+[12:06:31 INFO]: UUID of player Herobrine is 12b46c58-8050-d19b-8b3c-da628ee42e7d
+[12:06:32 INFO]: Steve issued server command: /spawn
+[12:06:33 INFO]: Herobrine issued server command: /spawn
+[12:06:34 INFO]: Herobrine joined the game
+[12:06:35 WARN]: Can't keep up! Is the server overloaded? Running 7653ms or 105 ticks behind
+[12:06:36 INFO]: Herobrine issued server command: /spawn
+[12:06:37 INFO]: Herobrine joined the game
+[12:06:38 INFO]: Steve joined the game
+[12:06:39 INFO]: Notch issued server command: /spawn

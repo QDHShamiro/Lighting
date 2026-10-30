@@ -1,0 +1,10 @@
+[
+<400 items, 1 with error words>
+2.5
+{"a":1}
+3
+<... 197 more items>
+{"code":500,"error":"Traceback: boom"}
+<... 198 more items>
+"text"
+]

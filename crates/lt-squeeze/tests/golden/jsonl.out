@@ -1,0 +1,6 @@
+<150 items, 5 with error words>
+{"ms":36,"level":"error","path":"/api/x/0","ts":"2026-10-30T04:00:00.000Z","msg":"upstream timed out after 30s"}
+{"ms":73,"level":"info","path":"/api/x/1","msg":"request done","ts":"2026-10-30T04:00:01.001Z"}
+{"ms":15,"level":"info","path":"/api/x/2","msg":"request done","ts":"2026-10-30T04:00:02.002Z"}
+<... 146 more items>
+{"ms":46,"level":"info","path":"/api/x/5","msg":"request done","ts":"2026-10-30T04:02:29.149Z"}

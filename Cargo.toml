@@ -12,7 +12,10 @@ publish = false
 
 [workspace.dependencies]
 lt-proto = { path = "crates/lt-proto" }
-serde_json = "1"
+lt-squeeze = { path = "crates/lt-squeeze" }
+proptest = { version = "1", default-features = false, features = ["std"] }
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-perl", "unicode-case"] }
+serde_json = { version = "1", features = ["preserve_order"] }
 
 [profile.dev]
 debug = "line-tables-only"

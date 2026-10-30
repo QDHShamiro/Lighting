@@ -12,4 +12,6 @@ path = "src/main.rs"
 
 [dependencies]
 lt-proto.workspace = true
+lt-squeeze.workspace = true
+regex.workspace = true
 serde_json.workspace = true
