@@ -165,7 +165,7 @@ pub fn halves(v: &[f32]) -> Vec<u8> {
 }
 
 fn floats(raw: &[u8]) -> impl Iterator<Item = f32> + '_ {
-    raw.chunks_exact(2).map(|b| f16::from_le_bytes([b[0], b[1]]).to_f32())
+    raw.as_chunks::<2>().0.iter().map(|b| f16::from_le_bytes(*b).to_f32())
 }
 
 impl Store {
@@ -288,7 +288,9 @@ impl Store {
         if let Some(q) = vec.filter(|q| q.len() == VEC_DIM) {
             let (ids, mat) = self.matrix()?;
             let mut all: Vec<(f32, i64)> = mat
-                .chunks_exact(VEC_DIM)
+                .as_chunks::<VEC_DIM>()
+                .0
+                .iter()
                 .zip(ids)
                 .map(|(row, id)| (row.iter().zip(q).map(|(a, b)| a * b).sum(), *id))
                 .collect();
