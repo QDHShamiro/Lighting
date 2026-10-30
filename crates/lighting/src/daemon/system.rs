@@ -133,7 +133,8 @@ fn posix(path: &Path) -> String {
 
 fn status(d: &Daemon, ctx: &Ctx) -> String {
     let up = ago(d.started.elapsed().as_secs());
-    let mut lines = vec![format!("lighting {VERSION} | daemon pid {} up {up} | hotkey unavailable", d.pid)];
+    let mut lines =
+        vec![format!("lighting {VERSION} | daemon pid {} up {up} | hotkey {}", d.pid, super::hotkey::label())];
     web::any_browser(d);
     let mut hosts = d.hosts.alive();
     hosts.sort_by(|a, b| b.focused().max(b.connected).total_cmp(&a.focused().max(a.connected)));

@@ -1860,6 +1860,7 @@ dependencies = [
  "sha2 0.10.9",
  "ureq",
  "windows",
+ "x11rb",
  "xa11y",
 ]
 

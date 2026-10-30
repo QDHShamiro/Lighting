@@ -33,6 +33,7 @@ tree-sitter = "0.27"
 tao = { version = "0.37", default-features = false, features = ["rwh_06", "x11"] }
 wry = { version = "0.57", default-features = false, features = ["os-webview", "x11"] }
 xa11y = { version = "0.15", default-features = false }
+x11rb = { version = "0.14", default-features = false }
 tree-sitter-language-pack = { version = "1.22", default-features = false, features = ["download"] }
 windows = { version = "0.62", features = [
     "Foundation_Collections",

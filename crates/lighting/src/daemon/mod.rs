@@ -11,6 +11,7 @@ mod flow;
 mod game;
 mod grep;
 mod hosts;
+mod hotkey;
 mod lane;
 mod media;
 mod memory;
@@ -229,6 +230,10 @@ pub fn serve() -> ExitCode {
         senders.push(tx);
     }
     let lanes: Arc<[Sender<Work>]> = senders.into();
+    {
+        let (d, lanes) = (Arc::clone(&d), Arc::clone(&lanes));
+        hotkey::start(move || d.abort_all(&lanes));
+    }
     loop {
         match listener.accept() {
             Ok(link) => {

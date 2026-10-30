@@ -37,3 +37,6 @@ windows.workspace = true
 
 [target.'cfg(not(windows))'.dependencies]
 xa11y.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+x11rb.workspace = true
