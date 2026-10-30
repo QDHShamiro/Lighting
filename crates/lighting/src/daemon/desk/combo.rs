@@ -1,3 +1,5 @@
+#![cfg_attr(not(windows), allow(dead_code))]
+
 pub const SHIFT: u16 = 0x10;
 pub const CTRL: u16 = 0x11;
 pub const ALT: u16 = 0x12;

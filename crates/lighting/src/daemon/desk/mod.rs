@@ -26,9 +26,14 @@ mod uia;
 #[cfg(windows)]
 mod win;
 
+#[cfg(windows)]
+use lt_core::Fail;
+#[cfg(not(windows))]
 use lt_core::{Call, Fail};
 
+#[cfg(not(windows))]
 use super::ctx::Ctx;
+#[cfg(not(windows))]
 use super::{Daemon, Out};
 
 #[cfg(not(windows))]
@@ -206,7 +211,7 @@ mod imp {
                 st.launched.clear();
                 return Ok(n);
             };
-            let hwnd = Desk { d, st, ctx }.find_window(spec)?;
+            let hwnd = Desk { d, st: &mut *st, ctx: &mut *ctx }.find_window(spec)?;
             Ok(usize::from(st.launched.remove(&hwnd).is_some()))
         });
         kept.map_err(|h| match h {

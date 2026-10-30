@@ -94,6 +94,9 @@ pub fn cleanup_now(d: &Daemon, ctx: &mut Ctx, quiet: bool) -> Result<String, Fai
         };
         lines.push(format!("left {} open that the user is looking at{place}", plural(viewed, "tab")));
     }
+    if !left.is_empty() {
+        lines.push(format!("still open, it may ask to save: {}", left.join(", ")));
+    }
     Ok(lines.join("\n"))
 }
 

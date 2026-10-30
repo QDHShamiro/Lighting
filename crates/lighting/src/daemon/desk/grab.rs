@@ -3,7 +3,8 @@ use windows::Win32::Graphics::Gdi::{
     BITMAPINFO, BITMAPINFOHEADER, BitBlt, CAPTUREBLT, CreateCompatibleBitmap, CreateCompatibleDC, DIB_RGB_COLORS,
     DeleteDC, DeleteObject, GetDC, GetDIBits, HDC, ReleaseDC, SRCCOPY, SelectObject,
 };
-use windows::Win32::Storage::Xps::{PRINT_WINDOW_FLAGS, PW_RENDERFULLCONTENT, PrintWindow};
+use windows::Win32::Storage::Xps::{PRINT_WINDOW_FLAGS, PrintWindow};
+use windows::Win32::UI::WindowsAndMessaging::PW_RENDERFULLCONTENT;
 
 use super::win::{Rect, h, minimized, outer_rect, rect};
 
