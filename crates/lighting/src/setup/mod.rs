@@ -1,4 +1,5 @@
 mod agents;
+mod claude_env;
 mod place;
 #[cfg(windows)]
 mod reg;
@@ -88,6 +89,15 @@ fn setup(home: &Path, manual: bool, global: bool, browser: Option<&str>) -> Resu
             Ok(None) => {}
             Err(e) => println!("could not add {} to PATH: {e}", exe.display()),
         }
+        let file = claude_env::settings_file();
+        match claude_env::point(&file, &exe) {
+            Ok(true) => println!(
+                "set LIGHTING_BIN in {}: new Claude sessions start the MCP server from this drive",
+                file.display()
+            ),
+            Ok(false) => {}
+            Err(e) => println!("{e}"),
+        }
     } else {
         println!("browser link and PATH left alone (LIGHTING_HOME is set; --register writes them for this folder)");
     }
@@ -142,6 +152,12 @@ fn uninstall(home: &Path, purge: bool, global: bool) -> Result<(), String> {
     }
     if global {
         place::unregister();
+        let file = claude_env::settings_file();
+        match claude_env::unpoint(&file) {
+            Ok(true) => println!("removed LIGHTING_BIN from {}", file.display()),
+            Ok(false) => {}
+            Err(e) => println!("{e}"),
+        }
     }
     if !purge {
         println!(
