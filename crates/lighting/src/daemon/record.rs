@@ -10,7 +10,7 @@ use super::{Daemon, Out, routines, web};
 const MINUTES: u64 = 15;
 const NOTES: usize = 5;
 const WEB_CMDS: &[&str] = &["click", "fill", "press", "scroll", "reload", "type"];
-const USAGE: &str = "lighting record start <name> | stop [name=value ...] | cancel | status";
+const USAGE: &str = "wisply record start <name> | stop [name=value ...] | cancel | status";
 
 struct Rec {
     name: String,
@@ -69,7 +69,7 @@ fn desk_start(c: &Call) -> Result<Option<super::desk::Recorder>, Fail> {
 
 fn start(d: &Daemon, ctx: &mut Ctx, c: &Call, rest: &[String]) -> Result<String, Fail> {
     if let Some(r) = REC.lock().unwrap_or_else(PoisonError::into_inner).as_ref() {
-        return Err(Fail::hint(format!("already recording \"{}\"", r.name), "lighting record stop"));
+        return Err(Fail::hint(format!("already recording \"{}\"", r.name), "wisply record stop"));
     }
     let name = rest.first().cloned().unwrap_or_else(|| default_name(now()));
     let web_line = if !c.on("desktop") && web::any_browser(d) {
@@ -86,7 +86,7 @@ fn start(d: &Daemon, ctx: &mut Ctx, c: &Call, rest: &[String]) -> Result<String,
     #[cfg(not(windows))]
     let has_desk = false;
     if web_line.is_none() && !has_desk {
-        return Err(Fail::hint("nothing to record", "open a page first (lighting open <url>) or leave out --web"));
+        return Err(Fail::hint("nothing to record", "open a page first (wisply open <url>) or leave out --web"));
     }
     let mut parts = Vec::new();
     if let Some(w) = &web_line {
@@ -103,13 +103,13 @@ fn start(d: &Daemon, ctx: &mut Ctx, c: &Call, rest: &[String]) -> Result<String,
         desk,
     });
     Ok(format!(
-        "recording \"{name}\" ({}) -> do the steps now, then: lighting record stop [name=value ...]",
+        "recording \"{name}\" ({}) -> do the steps now, then: wisply record stop [name=value ...]",
         parts.join(" + ")
     ))
 }
 
 fn stop(d: &Daemon, ctx: &mut Ctx, rest: &[String], keep: bool) -> Result<String, Fail> {
-    let Some(rec) = take() else { return Err(Fail::hint("not recording", "lighting record start <name>")) };
+    let Some(rec) = take() else { return Err(Fail::hint("not recording", "wisply record start <name>")) };
     let mut steps: Vec<Value> = Vec::new();
     if rec.web
         && let Ok(m) = web::call(d, ctx, "record-stop", Map::new(), web::CALL_TIMEOUT)

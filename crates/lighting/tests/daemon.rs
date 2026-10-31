@@ -10,7 +10,7 @@ use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 use serde_json::{Value, json};
 
-const EXE: &str = env!("CARGO_BIN_EXE_lighting");
+const EXE: &str = env!("CARGO_BIN_EXE_wisply");
 
 struct Home(PathBuf);
 
@@ -33,7 +33,7 @@ impl Home {
     fn run_as(&self, sid: &str, args: &[&str]) -> (i32, String) {
         let out = Command::new(EXE)
             .args(args)
-            .env("LIGHTING_HOME", &self.0)
+            .env("WISPLY_HOME", &self.0)
             .env(if cfg!(windows) { "USERPROFILE" } else { "HOME" }, &self.0)
             .env("CLAUDE_CODE_SESSION_ID", sid)
             .env_remove("MSYSTEM")
@@ -70,9 +70,9 @@ fn a_v3_home_starts_its_daemon_and_answers_like_2x() {
     assert!(home.0.join("daemon.pid").exists() && home.0.join("key").exists());
     let (code, status) = home.run(&["status"]);
     assert_eq!(code, 0);
-    assert!(status.starts_with(&format!("lighting {} | daemon pid ", env!("CARGO_PKG_VERSION"))), "{status}");
-    assert_eq!(home.run(&["zzz"]), (1, "err: unknown command 'zzz' -> try: lighting help".into()));
-    assert_eq!(home.run(&["bench"]), (1, "err: bench needs the browser -> try: lighting setup".into()));
+    assert!(status.starts_with(&format!("wisply {} | daemon pid ", env!("CARGO_PKG_VERSION"))), "{status}");
+    assert_eq!(home.run(&["zzz"]), (1, "err: unknown command 'zzz' -> try: wisply help".into()));
+    assert_eq!(home.run(&["bench"]), (1, "err: bench needs the browser -> try: wisply setup".into()));
     home.run(&["zzz"]);
     let (_, third) = home.run(&["zzz"]);
     assert!(third.ends_with("failed 3 times in a row with this error: repeating it will not help"), "{third}");
@@ -85,24 +85,24 @@ fn a_v3_home_starts_its_daemon_and_answers_like_2x() {
     assert_eq!((last["sid"].as_str(), last["ok"].as_bool()), (Some("it-1"), Some(false)));
     assert_eq!(last["e"].as_str(), Some("unknown command 'zzz'"));
     assert!(last["id"].as_str().is_some_and(|id| id.ends_with(".6")), "{last}");
-    let by_ref = "err: fill wants Label=value pairs -> try: lighting type e36 \"<value>\" (one field by its ref)";
+    let by_ref = "err: fill wants Label=value pairs -> try: wisply type e36 \"<value>\" (one field by its ref)";
     assert_eq!(home.run(&["fill", "e36", "x"]), (1, by_ref.into()));
     let (_, nothing) = home.run(&["upload"]);
     assert!(nothing.starts_with("err: upload needs the ref of the upload button or file field first, got nothing"));
     let (_, no_files) = home.run(&["upload", "e5"]);
-    assert_eq!(no_files, "err: upload needs the files after the ref -> try: lighting upload e5 C:/path/file.png");
+    assert_eq!(no_files, "err: upload needs the files after the ref -> try: wisply upload e5 C:/path/file.png");
     if cfg!(windows) {
         let screen =
-            "err: o74 is screen text, not a field -> try: lighting click o74, then lighting type focused \"<text>\"";
+            "err: o74 is screen text, not a field -> try: wisply click o74, then wisply type focused \"<text>\"";
         assert_eq!(home.run(&["type", "o74", "hi"]), (1, screen.into()));
     }
     let (code, help) = home.run(&[]);
-    assert!(code == 0 && help.starts_with("lighting 3.0 <command>"), "{help}");
+    assert!(code == 0 && help.starts_with("wisply 3.0 <command>"), "{help}");
     assert_eq!(home.run(&["abort"]), (0, "stopped the running and queued commands".into()));
-    assert_eq!(home.run(&["stop"]), (0, "lighting daemon stopped".into()));
+    assert_eq!(home.run(&["stop"]), (0, "wisply daemon stopped".into()));
     assert!(!home.0.join("daemon.pid").exists());
     thread::sleep(Duration::from_millis(300));
-    assert_eq!(home.run(&["stop"]), (0, "lighting daemon not running".into()));
+    assert_eq!(home.run(&["stop"]), (0, "wisply daemon not running".into()));
 }
 
 #[test]
@@ -147,7 +147,7 @@ fn fake_browser(link: lt_proto::Link, got: Arc<Mutex<Vec<Value>>>) {
 t3 a Mine - mine.com"}),
             "tabs" => json!({"ok": true, "out": "t1 L* One - one.com
 t3 a Mine - mine.com
-+1 other tabs of yours (lighting tabs --all lists them)"}),
++1 other tabs of yours (wisply tabs --all lists them)"}),
             "tab" => json!({"ok": true, "where": {"tab": "t2", "url": "https://example.com/2"},
                             "out": "target t2 Two - example.com/2"}),
             "close" => json!({"ok": true, "out": "closed t2, target now t1"}),
@@ -201,16 +201,16 @@ fn a_browser_host_gets_the_session_tab_and_done_closes_it() {
     assert_eq!(home.run(&["click", "e9"]), (1, "err: the fake browser has no click".into()));
     assert_eq!(home.run(&["snap"]).0, 0);
     let (code, again) = home.run(&["click", "e7"]);
-    let learned = "err: the fake browser has no click\n! learned: after this error `lighting snap` worked here before";
+    let learned = "err: the fake browser has no click\n! learned: after this error `wisply snap` worked here before";
     assert_eq!((code, again.as_str()), (1, learned));
     assert_eq!(home.run(&["done"]), (0, "closed 1 tab".into()));
     let (code, again) = home.run(&["snap"]);
-    assert!(code == 0 && again.contains("\n! reopened https://example.com/: Lighting had closed"), "{again}");
+    assert!(code == 0 && again.contains("\n! reopened https://example.com/: Wisply had closed"), "{again}");
     assert_eq!(home.run(&["config", "pointer", "off"]), (0, "pointer = false".into()));
     let saved: Value = serde_json::from_str(&fs::read_to_string(home.0.join("sessions.json")).unwrap()).unwrap();
     assert_eq!(
         (saved["sessions"]["it-1"]["group"].as_str(), saved["epochs"]["brave"].as_i64()),
-        (Some("Lighting #1"), Some(1))
+        (Some("Wisply #1"), Some(1))
     );
     let pushed = |msgs: &[Value]| msgs.iter().any(|m| m["cmd"] == "config" && m["args"]["pointer"] == false);
     for _ in 0..50 {
@@ -227,14 +227,14 @@ fn a_browser_host_gets_the_session_tab_and_done_closes_it() {
         (open["args"]["url"].as_str(), open["args"]["new"].as_bool()),
         (Some("https://example.com"), Some(true))
     );
-    assert_eq!((open["group"].as_str(), open["tab"].is_null()), (Some("Lighting #1"), true));
+    assert_eq!((open["group"].as_str(), open["tab"].is_null()), (Some("Wisply #1"), true));
     assert_eq!(sent("snap")["tab"], "t1");
     assert_eq!(sent("cleanup")["args"]["only"], json!(["t1"]));
-    let moved = "target t2 Two - example.com/2 (ctrl+tab: Lighting's target tab moved, the visible tab stays)";
+    let moved = "target t2 Two - example.com/2 (ctrl+tab: Wisply's target tab moved, the visible tab stays)";
     assert_eq!(home.run(&["press", "ctrl+tab"]), (0, moved.into()));
     let (code, new_tab) = home.run(&["press", "Ctrl+T"]);
-    assert!(code == 1 && new_tab.contains("Ctrl+T is a browser shortcut that Lighting cannot press"), "{new_tab}");
-    assert!(new_tab.ends_with("-> try: lighting open <url> --new (a new tab in the background)"), "{new_tab}");
+    assert!(code == 1 && new_tab.contains("Ctrl+T is a browser shortcut that Wisply cannot press"), "{new_tab}");
+    assert!(new_tab.ends_with("-> try: wisply open <url> --new (a new tab in the background)"), "{new_tab}");
     assert_eq!(home.run(&["press", "ctrl+w"]), (0, "ctrl+w: closed t2, target now t1".into()));
     assert_eq!(home.run(&["press", "ctrl+l"]), (1, "err: the fake browser has no press".into()));
     let keys: Vec<Value> = got.lock().unwrap()[msgs.len()..]
@@ -251,12 +251,12 @@ fn a_browser_host_gets_the_session_tab_and_done_closes_it() {
     assert!(home.run(&["tabs", "--all"]).1.contains("t3 a Mine"));
     let (code, none) = home.run_as("it-2", &["snap"]);
     assert!(code == 1 && none.starts_with("err: this session has no tab yet"), "{none}");
-    assert!(none.contains("-> try: lighting tab t3 uses the tab in front (Mine), lighting open <url>"), "{none}");
+    assert!(none.contains("-> try: wisply tab t3 uses the tab in front (Mine), wisply open <url>"), "{none}");
     assert!(home.run(&["tabs", "-f", "mine"]).1.starts_with("t3 a Mine"));
     assert_eq!(home.run(&["done"]), (0, "closed 1 tab".into()));
     let (code, lost) = home.run(&["press", "Enter"]);
     assert!(code == 1 && lost.starts_with("err: this session has no tab: its tabs were closed"), "{lost}");
-    assert_eq!(home.run(&["stop"]).1, "lighting daemon stopped");
+    assert_eq!(home.run(&["stop"]).1, "wisply daemon stopped");
     browser.join().unwrap();
 }
 
@@ -283,7 +283,7 @@ fn read_turns_local_pages_and_pictures_into_text() {
 fn memory_keeps_notes_and_todos_in_memory_db() {
     let home = Home::new("mem", true);
     let said = home.run(&["remember", "Brave is the only browser.", "Never Chrome."]).1;
-    assert_eq!(said, "remembered #1 (lighting forget 1 undoes it)");
+    assert_eq!(said, "remembered #1 (wisply forget 1 undoes it)");
     let (code, found) = home.run(&["recall", "which", "browser"]);
     assert!(code == 0 && found.starts_with("#1 ") && found.contains(" fact: Brave is the only browser. | "), "{found}");
     assert!(found.ends_with("~Nt = its size; words only, the model is not running)"), "{found}");
@@ -296,15 +296,15 @@ fn memory_keeps_notes_and_todos_in_memory_db() {
     assert_eq!(home.run(&["todo"]).1, "release:\n  #1 ship it");
     assert_eq!(home.run(&["todo", "list"]).1, "release:\n  #1 ship it");
     assert_eq!(home.run(&["todo", "list", "release"]).1, "release:\n  #1 ship it");
-    assert_eq!(home.run(&["todo", "ls", "other"]).1, "no open to-dos (lighting todo add \"task\")");
+    assert_eq!(home.run(&["todo", "ls", "other"]).1, "no open to-dos (wisply todo add \"task\")");
     let (code, bare) = home.run(&["todo", "1"]);
     assert!(code == 0 && bare.starts_with("#1 2") && bare.contains(" todo [release, ") && bare.ends_with("]\nship it"));
-    assert_eq!(home.run(&["todo", "9"]), (1, "err: no to-do #9 -> try: lighting todo".into()));
+    assert_eq!(home.run(&["todo", "9"]), (1, "err: no to-do #9 -> try: wisply todo".into()));
     assert_eq!(home.run(&["todo", "note", "1", "first step"]).1, "#1 noted");
     assert_eq!(home.run(&["todo", "note", "1", "second step"]).1, "#1 noted");
     let (_, listed) = home.run(&["todo"]);
     assert!(
-        listed.starts_with("release:\n  #1 ship it (") && listed.ends_with("\n(lighting todo <id> shows one in full)")
+        listed.starts_with("release:\n  #1 ship it (") && listed.ends_with("\n(wisply todo <id> shows one in full)")
     );
     let (_, full) = home.run(&["todo", "show", "#1"]);
     let notes: Vec<&str> = full.split("\nnotes:\n").nth(1).unwrap_or("").split('\n').collect();
@@ -312,10 +312,10 @@ fn memory_keeps_notes_and_todos_in_memory_db() {
     assert_eq!(home.run(&["todo", "close", "1"]).1, "#1 is done: ship it");
     assert_eq!(home.run(&["todo", "reopen", "1"]).1, "#1 is todo: ship it");
     assert_eq!(home.run(&["todo", "done", "1", "all", "good"]).1, "#1 is done: ship it");
-    assert_eq!(home.run(&["todo"]).1, "no open to-dos (lighting todo add \"task\")");
+    assert_eq!(home.run(&["todo"]).1, "no open to-dos (wisply todo add \"task\")");
     assert_eq!(home.run(&["forget", "1"]).1, "forgot #1");
     assert_eq!(home.run(&["forget", "1"]).1, "no note #1");
-    assert_eq!(home.run(&["recall", "1"]), (1, "err: no note #1 -> try: lighting recall \"<words>\"".into()));
+    assert_eq!(home.run(&["recall", "1"]), (1, "err: no note #1 -> try: wisply recall \"<words>\"".into()));
     assert!(home.0.join("memory").join("memory.db").is_file());
     let state = home.run(&["memory"]).1;
     assert!(
@@ -364,7 +364,7 @@ fn vault_and_claude_memory_files_are_found_by_recall() {
     assert_eq!(home.run(&["wiki", "accept", "1"]), (0, accepted.into()));
     assert!(!fs::read_to_string(rules.join("Use pnpm.md")).unwrap().contains("draft: true"));
     let (code, none) = home.run(&["wiki", "drop", "1"]);
-    assert!(code == 1 && none.starts_with("err: no drafts wait -> try: lighting wiki"), "{none}");
+    assert!(code == 1 && none.starts_with("err: no drafts wait -> try: wisply wiki"), "{none}");
 }
 
 #[test]
@@ -376,21 +376,22 @@ fn hooks_show_the_start_info_and_keep_what_the_user_says() {
     let (code, info) = home.run(&["hook", "start", &start]);
     assert!(
         code == 0
-            && info.starts_with("Lighting memory (")
-            && info.contains("): lighting recall \"<words>\" searches 0 notes"),
+            && info.starts_with("Wisply memory (")
+            && info.contains("): wisply recall \"<words>\" searches 0 notes"),
         "{info}"
     );
     assert!(info.contains("\nOpen to-dos:\n  to-dos:\n    #1 ship it"), "{info}");
     let loose = json!({"cwd": std::env::temp_dir().display().to_string(), "session_id": "it-2", "source": "startup"});
     let (_, none) = home.run(&["hook", "start", &loose.to_string()]);
-    assert!(none.starts_with("Lighting memory (no project)"), "{none}");
-    assert!(none.contains("\nOpen to-dos: 1 (lighting todo --all lists them)") && !none.contains("ship it"), "{none}");
+    assert!(none.starts_with("Wisply memory (no project)"), "{none}");
+    assert!(none.contains("\nOpen to-dos: 1 (wisply todo --all lists them)") && !none.contains("ship it"), "{none}");
     let compact = json!({"cwd": cwd, "session_id": "it-1", "source": "compact"}).to_string();
     let (_, after) = home.run(&["hook", "start", &compact]);
-    assert!(after.starts_with("Lighting after the summary ("), "{after}");
+    assert!(after.starts_with("Wisply after the summary ("), "{after}");
     let say = json!({"prompt": "merk dir dass Brave der einzige Browser ist"}).to_string();
     let (code, saved) = home.run(&["suggest", &say]);
-    let want = "Lighting memory saved #1: \"Brave der einzige Browser ist\" (lighting forget 1 if that was not meant to be kept)";
+    let want =
+        "Wisply memory saved #1: \"Brave der einzige Browser ist\" (wisply forget 1 if that was not meant to be kept)";
     assert_eq!((code, saved.as_str()), (0, want));
     let noise = json!({"prompt": "<system-reminder>merk dir dass nichts</system-reminder>"}).to_string();
     assert_eq!(home.run(&["suggest", &noise]), (0, String::new()));
@@ -413,7 +414,7 @@ fn more_reads_kept_outputs_without_a_daemon() {
 #[test]
 fn do_runs_steps_in_order_waits_and_stops_at_the_first_error() {
     let home = Home::new("do", true);
-    assert_eq!(home.run(&["do", "version; ping"]), (0, "1 3.0.0-dev.0\n2 pong".into()));
+    assert_eq!(home.run(&["do", "version; ping"]), (0, format!("1 {}\n2 pong", env!("CARGO_PKG_VERSION"))));
     let (_, out) = home.run(&["do", "ping; nonsense; ping"]);
     assert!(
         out.starts_with("1 pong\n2 err: unknown command 'nonsense'") && out.ends_with("(stopped, 1 skipped)"),
@@ -444,7 +445,7 @@ fn routines_from_2x_run_with_params_and_count_their_runs() {
     let (code, out) = home.run(&["run", "local-check", "word=alpha"]);
     assert!(code == 0 && out.starts_with("ok local-check: 3 steps in "), "{out}");
     let (code, out) = home.run(&["run", "local"]);
-    assert!(code == 1 && out == "err: local-check needs word -> try: lighting run local-check word=x", "{out}");
+    assert!(code == 1 && out == "err: local-check needs word -> try: wisply run local-check word=x", "{out}");
     let (_, out) = home.run(&["routines"]);
     assert!(out.starts_with("local-check word= | 1x ok | "), "{out}");
     let (_, out) = home.run(&["routine", "show", "local-check"]);
@@ -467,7 +468,7 @@ fn tasks_become_episodes_that_can_be_saved_offered_and_forgotten() {
     assert_eq!(ep["steps"].as_array().unwrap().len(), 2, "{kept}");
     assert_eq!((ep["steps"][0]["cmd"].as_str(), ep["steps"][1]["args"].clone()), (Some("wait"), json!(["60"])));
     let (code, out) = home.run(&["routine", "save", "two waits", "ms=60"]);
-    assert_eq!((code, out.as_str()), (0, "saved routine two-waits (2 steps) -> lighting run two-waits ms=60"));
+    assert_eq!((code, out.as_str()), (0, "saved routine two-waits (2 steps) -> wisply run two-waits ms=60"));
     let (_, shown) = home.run(&["routine", "show", "two-waits"]);
     assert!(shown.contains("\n1 wait 50\n2 wait {ms}\n"), "{shown}");
     let (code, out) = home.run(&["run", "two-waits", "ms=70"]);
@@ -479,7 +480,7 @@ fn tasks_become_episodes_that_can_be_saved_offered_and_forgotten() {
     fs::write(home.0.join("routines").join("github-issues.json"), routine.to_string()).unwrap();
     let ask = json!({"prompt": "zeig mir die github issues bitte"}).to_string();
     let (_, offered) = home.run(&["suggest", &ask]);
-    let line = "Lighting routine fits this request (one call, swap the values): lighting run github-issues page=x";
+    let line = "Wisply routine fits this request (one call, swap the values): wisply run github-issues page=x";
     assert!(offered.starts_with(line), "{offered}");
     assert!(!home.run(&["suggest", &ask]).1.contains("github-issues"));
     assert_eq!(home.run(&["routine", "forget"]), (0, "task history cleared (routines stay)".into()));

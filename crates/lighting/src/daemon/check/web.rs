@@ -50,7 +50,7 @@ pub fn browser(r: &mut Run, srv: &Server) -> String {
     let base = srv.base.as_str();
     let at = |p: &str| format!("{base}{p}");
     let decoy = r.step("decoy tab", &["open", &at("second"), "--new"], |o, e| !e && o.contains("Second"));
-    r.step("open fixture", &["open", base, "--new"], |o, e| !e && o.contains("Lighting Fixture"));
+    r.step("open fixture", &["open", base, "--new"], |o, e| !e && o.contains("Wisply Fixture"));
     r.step("open with a filter", &["open", base, "--new", "-f", "Sign in"], |o, e| {
         !e && o.contains("Sign in") && !o.contains("Dark mode") && !o.contains("nav ")
     });
@@ -70,8 +70,7 @@ pub fn browser(r: &mut Run, srv: &Server) -> String {
     });
     r.step("close count tab", &["close"], ok);
     r.step("finder page", &["open", &at("finder"), "--new"], |o, e| !e && o.contains("Finder"));
-    let got =
-        r.step("search learns the URL", &["search", "lighting"], |o, e| !e && o.contains("learned the search URL"));
+    let got = r.step("search learns the URL", &["search", "wisply"], |o, e| !e && o.contains("learned the search URL"));
     if !got.contains("learned the search URL") {
         r.diag(&["tabs"]);
         r.diag(&["js", SEARCH_PROBE]);
@@ -89,7 +88,7 @@ pub fn browser(r: &mut Run, srv: &Server) -> String {
     r.step("close finder tab", &["close"], ok);
     forget_host(&r.d.home, "sites.json");
     r.step("page loads JSON", &["open", &at("data"), "--new"], |o, e| {
-        !e && (o.contains("data: 1 JSON call (lighting net)") || o.contains("loading"))
+        !e && (o.contains("data: 1 JSON call (wisply net)") || o.contains("loading"))
     });
     r.step("JSON arrives", &["wait", "Items 40"], ok);
     r.step("net lists it", &["net"], |o, e| !e && has(r"n1 GET 127\.0\.0\.1:\d+/api/items \(json \d+ KB\)", o));
@@ -106,10 +105,10 @@ pub fn browser(r: &mut Run, srv: &Server) -> String {
         !e && !o.contains("IGNORE ALL") && !o.contains("HIDDEN INJECTION")
     });
     r.step("nav collapsed", &["snap", "--force"], |o, e| {
-        !e && o.contains("nav ") && o.contains("items (lighting snap -s")
+        !e && o.contains("nav ") && o.contains("items (wisply snap -s")
     });
     r.step("header collapsed, names kept", &["snap", "--force"], |o, e| {
-        !e && has(r"header: 13 items \(lighting snap -s e\d+\): Top 1 \| Top 2", o) && !o.contains("link \"Top 5\"")
+        !e && has(r"header: 13 items \(wisply snap -s e\d+\): Top 1 \| Top 2", o) && !o.contains("link \"Top 5\"")
     });
     r.step("footnotes, key hints, hashes", &["snap", "--all"], |o, e| {
         !e && !o.contains("\"[1]\"") && o.contains("link \"Keyboard help\" ->") && o.contains("commit/0123456…")
@@ -134,8 +133,8 @@ pub fn browser(r: &mut Run, srv: &Server) -> String {
         !e && o.contains("ctrl+k") && o.contains("Command menu") && o.contains("g k")
     });
     forget_host(&r.d.home, "keys.json");
-    r.step("search box", &["search", "lighting docs"], ok);
-    r.step("search submitted", &["expect", "Searched: lighting docs"], ok);
+    r.step("search box", &["search", "wisply docs"], ok);
+    r.step("search submitted", &["expect", "Searched: wisply docs"], ok);
     r.step("filter a|b", &["snap", "-f", "Sign in|Open modal"], |o, e| {
         !e && o.contains("Sign in") && o.contains("Open modal")
     });

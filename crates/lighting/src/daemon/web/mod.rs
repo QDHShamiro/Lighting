@@ -94,7 +94,7 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "tabs" => cmds::tabs(d, ctx, c)?,
         "tab" => match c.pos.first() {
             Some(id) => out(d, ctx, "tab", obj(json!({"id": id})), 15.0, SNAP_LINES)?,
-            None => return Err(Fail::hint("tab needs an id", "lighting tabs")),
+            None => return Err(Fail::hint("tab needs an id", "wisply tabs")),
         },
         "close" => cmds::close(d, ctx, c)?,
         "back" | "forward" | "reload" => cmds::history(d, ctx, c)?,
@@ -268,10 +268,9 @@ fn session_tab(d: &Daemon, ctx: &mut Ctx, cmd: &str, args: &mut Map<String, Valu
         let front = call(d, ctx, "tabs", obj(json!({"all": false})), FRONT_WAIT).ok().and_then(|m| {
             FRONT
                 .captures(text_of(&m, "out"))
-                .map(|c| format!("lighting tab {} uses the tab in front ({})", &c[1], head(&c[2], 40)))
+                .map(|c| format!("wisply tab {} uses the tab in front ({})", &c[1], head(&c[2], 40)))
         });
-        let ways =
-            "lighting open <url>, lighting tabs + lighting tab t3 to use one, or lighting windows -f <app> for an app";
+        let ways = "wisply open <url>, wisply tabs + wisply tab t3 to use one, or wisply windows -f <app> for an app";
         return Err(Fail::hint(
             "this session has no tab yet",
             front.map_or_else(|| ways.to_string(), |f| format!("{f}, {ways}")),
@@ -281,7 +280,7 @@ fn session_tab(d: &Daemon, ctx: &mut Ctx, cmd: &str, args: &mut Map<String, Valu
         call(d, ctx, "open", obj(json!({"url": last, "new": true, "quiet": true})), LOAD_TIMEOUT + 10.0)?;
         if let Some(first) = ctx.tabs.first().cloned() {
             ctx.note(&format!(
-                "reopened {}: Lighting had closed this session's tab after an earlier reply",
+                "reopened {}: Wisply had closed this session's tab after an earlier reply",
                 head(&last, 80)
             ));
             return Ok(Some(first));
@@ -289,7 +288,7 @@ fn session_tab(d: &Daemon, ctx: &mut Ctx, cmd: &str, args: &mut Map<String, Valu
     }
     Err(Fail::hint(
         format!("this session has no tab: its tabs were closed after an earlier reply (last page {})", head(&last, 80)),
-        format!("lighting open {last}"),
+        format!("wisply open {last}"),
     ))
 }
 

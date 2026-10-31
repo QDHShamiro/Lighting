@@ -187,7 +187,7 @@ impl Desk<'_> {
         let mut chars = 0;
         for r in &rows[1..] {
             if out.len() > NAV_LINES || chars + r.len() > NAV_CHARS {
-                out.push(format!("... +{} more (lighting snap {})", rows.len() - out.len(), self.wref(hwnd)));
+                out.push(format!("... +{} more (wisply snap {})", rows.len() - out.len(), self.wref(hwnd)));
                 break;
             }
             out.push((*r).to_string());
@@ -202,7 +202,7 @@ pub fn launch(x: &mut Desk, c: &Call) -> Res<String> {
     if c.pos.is_empty() {
         return Err(Fail::hint(
             "launch needs an app name, URI or path",
-            "lighting launch spotify | launch \"spotify:search:SOS\"",
+            "wisply launch spotify | launch \"spotify:search:SOS\"",
         )
         .into());
     }
@@ -218,7 +218,7 @@ pub fn launch(x: &mut Desk, c: &Call) -> Res<String> {
             let base = Path::new(&path).file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_default();
             return Err(Fail::hint(
                 format!("{base} runs a program"),
-                format!("lighting launch \"{path}\" --yes (only if the user asked for it)"),
+                format!("wisply launch \"{path}\" --yes (only if the user asked for it)"),
             )
             .into());
         }
@@ -231,7 +231,7 @@ pub fn launch(x: &mut Desk, c: &Call) -> Res<String> {
             let short: String = spec.chars().take(60).collect();
             return Err(Fail::hint(
                 format!("{scheme}: links can run programs or open remote files"),
-                format!("only if the user asked for it: lighting launch \"{short}\" --yes"),
+                format!("only if the user asked for it: wisply launch \"{short}\" --yes"),
             )
             .into());
         }
@@ -252,7 +252,7 @@ pub fn launch(x: &mut Desk, c: &Call) -> Res<String> {
             (None, None) => {
                 return Err(Fail::hint(
                     format!("no app named \"{spec}\" in the start menu"),
-                    "lighting launch <name as in the start menu>, a URI or a path",
+                    "wisply launch <name as in the start menu>, a URI or a path",
                 )
                 .into());
             }
@@ -261,7 +261,7 @@ pub fn launch(x: &mut Desk, c: &Call) -> Res<String> {
     let ms = c.val("timeout").and_then(|t| t.parse().ok()).unwrap_or(10_000);
     let running = owner_of(&wins0, &hint).is_some();
     let Some(hwnd) = wait_window(&before, fg0, ms, &hint, running) else {
-        return Ok(format!("ok (started {what}, no window yet) -> try: lighting windows"));
+        return Ok(format!("ok (started {what}, no window yet) -> try: wisply windows"));
     };
     if x.bg(hwnd) && fg0 != 0 && win::alive(fg0) && win::foreground() != fg0 {
         win::put_behind(hwnd, fg0);

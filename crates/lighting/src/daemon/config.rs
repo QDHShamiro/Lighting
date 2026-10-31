@@ -133,14 +133,14 @@ pub fn command(home: &Path, pos: &[String]) -> Result<(String, bool), Fail> {
             Err(_) => {
                 return Err(Fail::hint(
                     format!("{key} takes a whole number"),
-                    format!("lighting config {key} {default}"),
+                    format!("wisply config {key} {default}"),
                 ));
             }
         },
         _ => json!(raw),
     };
     if key == "focus" && !FOCUS_MODES.contains(&raw.as_str()) {
-        return Err(Fail::hint(format!("focus is one of {}", FOCUS_MODES.join(", ")), "lighting config focus never"));
+        return Err(Fail::hint(format!("focus is one of {}", FOCUS_MODES.join(", ")), "wisply config focus never"));
     }
     let line = format!("{key} = {}", dumps(&val));
     cfg.insert(key.clone(), val);
@@ -181,7 +181,7 @@ mod tests {
         assert!(fail(&["nope"]).starts_with("err: unknown config key 'nope' -> try: one of: audio, brain"));
         assert_eq!(
             fail(&["focus", "sometimes"]),
-            "err: focus is one of never, away, idle -> try: lighting config focus never"
+            "err: focus is one of never, away, idle -> try: wisply config focus never"
         );
         assert!(fail(&["shot_width", "big"]).starts_with("err: shot_width takes a whole number"));
         fs::write(h.join("blocklist.txt"), "# no\n.Bank.example\n\nshop.test \n").unwrap();

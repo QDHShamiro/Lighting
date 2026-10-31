@@ -172,12 +172,12 @@ fn row(name: &str, runs: &str, used: &str, alt: &str, saved: &str) -> String {
 
 fn report(home: &Path, s: &Sum, title: &str, daily: bool) -> String {
     if s.runs == 0 {
-        return format!("{title}: no Lighting commands logged");
+        return format!("{title}: no Wisply commands logged");
     }
     let mut out = vec![
         format!("{title}: {} commands", commas(s.runs)),
         String::new(),
-        row("", "runs", "used", "without Lighting", "saved"),
+        row("", "runs", "used", "without Wisply", "saved"),
     ];
     let mut total = [0i64; 3];
     for (name, [runs, used, alt]) in &s.groups {
@@ -222,15 +222,15 @@ fn report(home: &Path, s: &Sum, title: &str, daily: bool) -> String {
     out.extend(extras(home));
     if s.trim > 0 {
         out.push(format!(
-            "exact: Lighting cut ~{} tokens from its own answers since {} (long answers to a file, app deltas, brain filter, code outlines, squeeze, grep)",
+            "exact: Wisply cut ~{} tokens from its own answers since {} (long answers to a file, app deltas, brain filter, code outlines, squeeze, grep)",
             short(s.trim as f64),
             s.trim_from.as_deref().and_then(|d| d.get(5..)).unwrap_or("")
         ));
     }
     out.push(String::new());
-    out.push("used = what your agent read from Lighting (characters / 4, images as measured).".into());
+    out.push("used = what your agent read from Wisply (characters / 4, images as measured).".into());
     out.push(format!(
-        "without Lighting = the same steps by a screenshot agent, measured (README, The numbers): ~{} tokens",
+        "without Wisply = the same steps by a screenshot agent, measured (README, The numbers): ~{} tokens",
         commas(PAGE)
     ));
     out.push(format!(
@@ -248,18 +248,18 @@ pub fn run(d: &Daemon, c: &Call) -> Result<String, Fail> {
     let today = day_no(&today_s).unwrap_or(0);
     let (since, title, daily) = match word.as_str() {
         "claude" => return claude::run(&d.home, &c.pos[1..]),
-        "all" => (String::new(), "Lighting tokens, all logged days".to_string(), false),
-        "today" => (today_s, "Lighting tokens, today".to_string(), true),
+        "all" => (String::new(), "Wisply tokens, all logged days".to_string(), false),
+        "today" => (today_s, "Wisply tokens, today".to_string(), true),
         w if w.bytes().all(|b| b.is_ascii_digit()) && w.parse::<i64>().is_ok_and(|n| n > 0) => {
             let n: i64 = w.parse().unwrap_or(1);
             let first = date_of(today - n + 1);
-            let title = format!("Lighting tokens, last {w} days ({} to {})", &first[5..], &date_of(today)[5..]);
+            let title = format!("Wisply tokens, last {w} days ({} to {})", &first[5..], &date_of(today)[5..]);
             (first, title, n <= DAILY_MAX as i64)
         }
         _ => {
             return Err(Fail::hint(
                 "which days?",
-                "lighting tokens | lighting tokens 7 | lighting tokens today | lighting tokens all | lighting tokens claude",
+                "wisply tokens | wisply tokens 7 | wisply tokens today | wisply tokens all | wisply tokens claude",
             ));
         }
     };

@@ -186,7 +186,7 @@ impl Hosts {
                 let names: Vec<&str> = hosts.iter().map(|h| h.brand.as_str()).collect();
                 return Err(Fail::hint(
                     format!("{pref} is not connected (connected: {})", names.join(", ")),
-                    "lighting config browser auto",
+                    "wisply config browser auto",
                 ));
             }
         }

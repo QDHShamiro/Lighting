@@ -85,7 +85,7 @@ pub fn merge_json(path: &Path, key: &str, value: Map<String, Value>) -> io::Resu
     if !data[key].is_object() {
         data[key] = json!({});
     }
-    data[key]["lighting"] = Value::Object(value);
+    data[key]["wisply"] = Value::Object(value);
     let eol = eol_of(path);
     let text = serde_json::to_string_pretty(&data).map_err(io::Error::other)?.replace('\n', eol);
     if let Some(dir) = path.parent() {
@@ -105,7 +105,7 @@ pub fn merge_toml(path: &Path, exe: &Path) -> io::Result<()> {
     let mut kept = Vec::new();
     let mut skipping = false;
     for line in text.lines() {
-        if line.trim_end() == "[mcp_servers.lighting]" {
+        if line.trim_end() == "[mcp_servers.wisply]" {
             skipping = true;
             continue;
         }
@@ -117,7 +117,7 @@ pub fn merge_toml(path: &Path, exe: &Path) -> io::Result<()> {
         }
     }
     let rest = kept.join("\n").trim_end().to_string();
-    let block = format!("[mcp_servers.lighting]\ncommand = \"{exe}\"\nargs = [\"mcp\"]\n");
+    let block = format!("[mcp_servers.wisply]\ncommand = \"{exe}\"\nargs = [\"mcp\"]\n");
     let out = if rest.is_empty() { block } else { format!("{rest}\n\n{block}") };
     if let Some(dir) = path.parent() {
         fs::create_dir_all(dir)?;
@@ -128,16 +128,16 @@ pub fn merge_toml(path: &Path, exe: &Path) -> io::Result<()> {
 fn gemini_skills(home: &Path) -> [PathBuf; 4] {
     let g = home.join(".gemini");
     [
-        g.join("skills").join("lighting"),
-        g.join("antigravity").join("global_skills").join("lighting"),
-        g.join("antigravity").join("skills").join("lighting"),
-        g.join("antigravity-cli").join("skills").join("lighting"),
+        g.join("skills").join("wisply"),
+        g.join("antigravity").join("global_skills").join("wisply"),
+        g.join("antigravity").join("skills").join("wisply"),
+        g.join("antigravity-cli").join("skills").join("wisply"),
     ]
 }
 
 pub fn refresh_skills(root: Option<&Path>) {
     let home = user_home();
-    let bionic = home.join(".lmstudio").join("skills").join("lighting");
+    let bionic = home.join(".lmstudio").join("skills").join("wisply");
     for dst in std::iter::once(bionic).chain(gemini_skills(&home)) {
         if dst.exists() {
             let _ = copy_skill(root, &dst);
@@ -148,7 +148,7 @@ pub fn refresh_skills(root: Option<&Path>) {
 pub fn install(name: &str, exe: &Path, root: Option<&Path>) -> io::Result<()> {
     let home = user_home();
     let path =
-        config_file(name).ok_or_else(|| io::Error::other(format!("usage: lighting install <{}>", NAMES.join("|"))))?;
+        config_file(name).ok_or_else(|| io::Error::other(format!("usage: wisply install <{}>", NAMES.join("|"))))?;
     let base = entry(exe);
     match name {
         "codex" => merge_toml(&path, exe),
@@ -169,7 +169,7 @@ pub fn install(name: &str, exe: &Path, root: Option<&Path>) -> io::Result<()> {
         }
         "lmstudio" | "bionic" => {
             merge_json(&path, "mcpServers", base)?;
-            copy_skill(root, &home.join(".lmstudio").join("skills").join("lighting"))
+            copy_skill(root, &home.join(".lmstudio").join("skills").join("wisply"))
         }
         "antigravity" => {
             merge_json(&path, "mcpServers", base.clone())?;
@@ -197,7 +197,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("lt-agents-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
-        let exe = Path::new(r"C:\x\lighting.exe");
+        let exe = Path::new(r"C:\x\wisply.exe");
         let json_file = dir.join("mcp.json");
         fs::write(&json_file, "{\r\n  \"theme\": \"dark\",\r\n  \"mcpServers\": {\"other\": {}}\r\n}").unwrap();
         merge_json(&json_file, "mcpServers", entry(exe)).unwrap();
@@ -206,20 +206,20 @@ mod tests {
         let v: Value = serde_json::from_str(&text).unwrap();
         assert_eq!(v["theme"], "dark");
         assert_eq!(v["mcpServers"]["other"], json!({}));
-        assert_eq!(v["mcpServers"]["lighting"]["args"], json!(["mcp"]));
+        assert_eq!(v["mcpServers"]["wisply"]["args"], json!(["mcp"]));
         fs::write(&json_file, "{oops").unwrap();
         assert!(merge_json(&json_file, "mcpServers", entry(exe)).unwrap_err().to_string().contains("not valid JSON"));
         let toml = dir.join("config.toml");
-        fs::write(&toml, "model = \"x\"\n\n[mcp_servers.lighting]\ncommand = \"old\"\nargs = []\n\n[other]\na = 1\n")
+        fs::write(&toml, "model = \"x\"\n\n[mcp_servers.wisply]\ncommand = \"old\"\nargs = []\n\n[other]\na = 1\n")
             .unwrap();
         merge_toml(&toml, exe).unwrap();
         merge_toml(&toml, exe).unwrap();
         let text = fs::read_to_string(&toml).unwrap();
-        assert_eq!(text.matches("[mcp_servers.lighting]").count(), 1);
+        assert_eq!(text.matches("[mcp_servers.wisply]").count(), 1);
         assert!(
             text.contains("[other]\na = 1")
                 && !text.contains("\"old\"")
-                && text.contains(r#"command = "C:\\x\\lighting.exe""#)
+                && text.contains(r#"command = "C:\\x\\wisply.exe""#)
         );
         assert!(config_file("nope").is_none() && NAMES.iter().all(|n| config_file(n).is_some()));
         let _ = fs::remove_dir_all(&dir);

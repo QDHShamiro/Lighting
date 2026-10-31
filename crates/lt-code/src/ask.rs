@@ -166,7 +166,7 @@ impl Index {
                 .map(|(p, l, c)| format!("  {p}:{l}{}", if c.is_empty() { String::new() } else { format!(" in {c}") })),
         );
         if total > limit {
-            out.push("  ... lighting code callers <name> lists all".into());
+            out.push("  ... wisply code callers <name> lists all".into());
         }
         Ok(out)
     }
@@ -190,7 +190,7 @@ impl Index {
         }
         if defs.is_empty() {
             return Ok(format!(
-                "nothing named \"{name}\" in {} (lighting code \"<what it does>\" searches by meaning)",
+                "nothing named \"{name}\" in {} (wisply code \"<what it does>\" searches by meaning)",
                 self.name()
             ));
         }
@@ -266,10 +266,7 @@ impl Index {
         }
         .map_err(|e| e.to_string())?;
         let Some(s) = found.first() else {
-            return Ok(format!(
-                "nothing named \"{name}\" in {} (lighting code {short} finds close names)",
-                self.name()
-            ));
+            return Ok(format!("nothing named \"{name}\" in {} (wisply code {short} finds close names)", self.name()));
         };
         if found.len() > 1 {
             let list: Vec<String> = found.iter().map(place).collect();

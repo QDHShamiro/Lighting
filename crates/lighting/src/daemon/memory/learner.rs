@@ -18,7 +18,7 @@ session: decisions with their reason, the user's preferences and rules, bugs fix
 non-obvious facts (paths, ports, commands, versions, accounts; never passwords, keys or tokens). Skip routine \
 steps, file listings, what anyone sees in the code, progress and status (counts, timings, test or CI runs, \
 what is running right now) and plans; what is still open goes into next, never into a note. Each note stands \
-alone: its title starts with the project or tool, like 'Lighting: hints need words and meaning'. Write \
+alone: its title starts with the project or tool, like 'Wisply: hints need words and meaning'. Write \
 English, short and concrete. At most 6 notes; fewer is fine, none is fine. For the session record write only \
 what THIS part of the log adds, one short line per point, what and why, never how: summary = what changed \
 and where, why = the reasons behind the decisions, rejected = what was tried and dropped and why, next = what \
@@ -243,7 +243,7 @@ pub fn tick(home: &Path, store: &mut Store, soon: bool) {
     }
     let Some(p) = chat::provider(home) else {
         set(|s| {
-            s.error = "no model to learn with (GEMINI_API_KEY, or lighting config memory_api + memory_api_model)".into()
+            s.error = "no model to learn with (GEMINI_API_KEY, or wisply config memory_api + memory_api_model)".into()
         });
         return;
     };

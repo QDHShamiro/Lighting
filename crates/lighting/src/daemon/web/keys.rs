@@ -265,7 +265,7 @@ pub fn hint(home: &Path, app: &str) -> String {
         return String::new();
     }
     shown.insert(app, t);
-    format!("\nkeys: {} (lighting keys)", top.join(" | "))
+    format!("\nkeys: {} (wisply keys)", top.join(" | "))
 }
 
 pub fn app_of(ctx: &Ctx) -> String {
@@ -283,7 +283,7 @@ pub fn command(home: &Path, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
         if c.pos.len() < 3 {
             return Err(Fail::hint(
                 format!("keys {} needs an app and a key", c.pos[0]),
-                "lighting keys add discord.exe \"ctrl+k=quick switcher\"",
+                "wisply keys add discord.exe \"ctrl+k=quick switcher\"",
             ));
         }
         let app = app_name(&c.pos[1]);
@@ -293,7 +293,7 @@ pub fn command(home: &Path, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
             if what.is_empty() {
                 return Err(Fail::hint(
                     "write it as key=what it does",
-                    format!("lighting keys add {app} \"ctrl+k=quick switcher\""),
+                    format!("wisply keys add {app} \"ctrl+k=quick switcher\""),
                 ));
             }
             put(home, &app, combo, what.trim(), "user");
@@ -303,7 +303,7 @@ pub fn command(home: &Path, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
         let k = norm(&rest);
         let removed = data.get_mut(&app).and_then(Value::as_object_mut).and_then(|keys| keys.remove(&k)).is_some();
         if !removed {
-            return Err(Fail::hint(format!("no saved key {k} for {app}"), format!("lighting keys {app}")));
+            return Err(Fail::hint(format!("no saved key {k} for {app}"), format!("wisply keys {app}")));
         }
         save(home, data);
         return Ok(format!("removed {k} for {app}"));
@@ -317,7 +317,7 @@ pub fn command(home: &Path, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
         apps.extend(SEED.iter().map(|(name, _)| (*name).to_string()).filter(|n| n != "*"));
         apps.sort();
         apps.dedup();
-        return Ok(format!("known apps and sites: {}, windows -> lighting keys <app>", apps.join(", ")));
+        return Ok(format!("known apps and sites: {}, windows -> wisply keys <app>", apps.join(", ")));
     }
     let app = if ["windows", "windows.exe", "desktop"].contains(&app.as_str()) { "*".to_string() } else { app };
     let mut rows = ranked(home, &app);
@@ -329,7 +329,7 @@ pub fn command(home: &Path, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
     }
     if rows.is_empty() {
         return Ok(format!(
-            "no keys known for {app} -> use it once (lighting press ...), or lighting keys add {app} \"ctrl+k=...\""
+            "no keys known for {app} -> use it once (wisply press ...), or wisply keys add {app} \"ctrl+k=...\""
         ));
     }
     let title = if app == "*" { "windows (any app)" } else { app.as_str() };
@@ -371,7 +371,7 @@ mod tests {
         assert_eq!(list, want.join("\n"));
         assert_eq!(
             hint(&home, "github.com"),
-            "\nkeys: g i link \"Issues\" opens | ctrl+k command palette (lighting keys)"
+            "\nkeys: g i link \"Issues\" opens | ctrl+k command palette (wisply keys)"
         );
         assert_eq!(hint(&home, "github.com"), "");
         let saved = command(

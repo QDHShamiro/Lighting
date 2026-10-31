@@ -2,7 +2,7 @@ import * as C from "./cdp.js";
 import * as T from "./tabs.js";
 import * as A from "./actions.js";
 
-const HOST = "dev.qdhshamiro.lighting";
+const HOST = "dev.qdhshamiro.wisply";
 const VERSION = chrome.runtime.getManifest().version;
 const FRAME_WAIT_MS = 3000;
 const SETTLE_MAX_MS = 1500;
@@ -149,7 +149,7 @@ async function net(a, tab) {
   const list = C.netList(tabId);
   if (a.op !== "body") return { calls: list.map((x) => ({ id: x.id, url: x.url, status: x.status, size: x.size })) };
   const hit = list.find((x) => x.id === a.id);
-  if (!hit) throw new Error("that call is gone -> try: lighting net");
+  if (!hit) throw new Error("that call is gone -> try: wisply net");
   const b = await C.netBody(tabId, hit.id).catch((e) => {
     throw new Error("the browser no longer has that answer (" + String(e.message || e).slice(0, 60) + ") -> reload and try again");
   });
@@ -181,7 +181,7 @@ async function mediaAudio(a, tab) {
   let ref = a.ref;
   if (!ref) {
     const found = await page(tabId, "firstMedia", []);
-    if (found.none) throw new Error("no video or audio on this page -> try: lighting listen <url>");
+    if (found.none) throw new Error("no video or audio on this page -> try: wisply listen <url>");
     ref = found.ref;
   }
   if (a.op === "cues") return Object.assign({ ref }, await page(tabId, "media", [ref, "cues"], 0, 8000));
@@ -227,7 +227,7 @@ function hostOf(url) {
 
 async function frameId(tabId, host) {
   const want = String(host || "").replace(/^[a-z]+:\/\//i, "").replace(/[….]+$/, "").toLowerCase();
-  if (!want) throw new Error("--frame needs a host -> try: lighting snap (iframe lines name it)");
+  if (!want) throw new Error("--frame needs a host -> try: wisply snap (iframe lines name it)");
   const end = Date.now() + FRAME_WAIT_MS;
   let frames = [];
   for (;;) {
@@ -241,7 +241,7 @@ async function frameId(tabId, host) {
     await new Promise((r) => setTimeout(r, 200));
   }
   const hosts = [...new Set(frames.map((f) => hostOf(f.url)).filter(Boolean))].slice(0, 6);
-  throw new Error("no frame matching " + host + (hosts.length ? " (frames now: " + hosts.join(", ") + ")" : " (no frames yet: the page may still be loading)") + " -> try: lighting snap");
+  throw new Error("no frame matching " + host + (hosts.length ? " (frames now: " + hosts.join(", ") + ")" : " (no frames yet: the page may still be loading)") + " -> try: wisply snap");
 }
 
 async function snap(a, tab) {
@@ -275,7 +275,7 @@ async function text(a, tab) {
 async function table(a, tab) {
   const tabId = await tabOf(tab);
   const res = await page(tabId, "act.table", [a.target || null]);
-  if (res.none) throw new Error("no table found -> try: lighting snap");
+  if (res.none) throw new Error("no table found -> try: wisply snap");
   return res.ref + " table " + res.rows.length + " rows\n" + res.rows.join("\n");
 }
 
@@ -367,14 +367,14 @@ async function shot(a, tab) {
   const tabId = await tabOf(tab);
   const t = await chrome.tabs.get(tabId);
   const win = await chrome.windows.get(t.windowId);
-  if (win.state === "minimized") throw new Error("browser window is minimized -> restore it, or use: lighting shot screen");
+  if (win.state === "minimized") throw new Error("browser window is minimized -> restore it, or use: wisply shot screen");
   return T.showBriefly(tabId, async () => {
     await C.attach(tabId);
     if (a.ref && !a.marks) return { image: await clipShot(tabId, a.ref, a.quality || 70) };
     let crop = null;
     if (a.ref) {
       const r = await page(tabId, "rect", [a.ref]);
-      if (r.gone) throw new Error(a.ref + " is gone -> try: lighting snap");
+      if (r.gone) throw new Error(a.ref + " is gone -> try: wisply snap");
       crop = { x: r.x - r.w / 2, y: r.y - r.h / 2, w: r.w, h: r.h };
     }
     let marks = 0;
@@ -403,8 +403,8 @@ async function frames(a, tab) {
   return T.showBriefly(tabId, async () => {
     await C.attach(tabId);
     const info = await page(tabId, "media", [a.ref, "info"]);
-    if (info.gone) throw new Error(a.ref + " is gone -> try: lighting snap");
-    if (info.notMedia) throw new Error(a.ref + " is not a video -> try: lighting snap -f video");
+    if (info.gone) throw new Error(a.ref + " is gone -> try: wisply snap");
+    if (info.notMedia) throw new Error(a.ref + " is not a video -> try: wisply snap -f video");
     if (!info.seekable && !a.live) Object.assign(info, await page(tabId, "media", [a.ref, "wait"], 0, 8000));
     const live = a.live || !info.seekable;
     const out = [];
@@ -435,7 +435,7 @@ async function frames(a, tab) {
 
 async function clipShot(tabId, ref, quality) {
   const r = await page(tabId, "rect", [ref]);
-  if (r.gone) throw new Error(ref + " is gone -> try: lighting snap");
+  if (r.gone) throw new Error(ref + " is gone -> try: wisply snap");
   const m = await C.send(tabId, "Page.getLayoutMetrics");
   const vp = m.cssVisualViewport || m.visualViewport || {};
   const clip = { x: r.x - r.w / 2 + (vp.pageX || 0), y: r.y - r.h / 2 + (vp.pageY || 0), width: Math.max(1, r.w), height: Math.max(1, r.h), scale: 1 };
@@ -464,7 +464,7 @@ async function upload(a, tab) {
   await C.attach(tabId);
   const id = "u" + Date.now();
   const m = await page(tabId, "act.mark", [a.ref, id, true]);
-  if (m.gone) throw new Error(a.ref + " is gone -> try: lighting snap");
+  if (m.gone) throw new Error(a.ref + " is gone -> try: wisply snap");
   if (m.nofile) throw new Error("no file input at or near " + a.ref + " -> try: the upload button or its label");
   const fr = /^f(\d+)\.e\d+$/.exec(a.ref);
   if (fr) {
@@ -540,7 +540,7 @@ async function viewport(a, tab) {
   }
   if (!(await changed(250))) await T.showBriefly(tabId, () => changed(500));
   if (!a.width) return "ok (viewport reset)";
-  return "ok (viewport " + a.width + "x" + a.height + (mobile ? ", mobile" : "") + ", until lighting viewport reset or 5 min idle)";
+  return "ok (viewport " + a.width + "x" + a.height + (mobile ? ", mobile" : "") + ", until wisply viewport reset or 5 min idle)";
 }
 
 async function consoleCmd(a, tab) {
@@ -564,15 +564,15 @@ async function dismiss(a, tab) {
 async function tabCmd(a) {
   const id = T.rid(a.id);
   const t = id === null ? null : await chrome.tabs.get(id).catch(() => null);
-  if (!t) throw new Error("no tab " + a.id + " -> try: lighting tabs");
+  if (!t) throw new Error("no tab " + a.id + " -> try: wisply tabs");
   T.setTarget(id);
   return "target t" + T.sid(id) + " " + trunc(t.title, 50) + " - " + T.short(t.url, 60);
 }
 
 async function close(a, tab) {
   const id = a.id ? T.rid(a.id) : await tabOf(tab);
-  if (id === null) throw new Error("no tab " + a.id + " -> try: lighting tabs");
-  if (!a.force && !(await T.inGroup(id))) throw new Error("t" + T.sid(id) + " is not a Lighting tab -> add --force to close it anyway");
+  if (id === null) throw new Error("no tab " + a.id + " -> try: wisply tabs");
+  if (!a.force && !(await T.inGroup(id))) throw new Error("t" + T.sid(id) + " is not a Wisply tab -> add --force to close it anyway");
   await chrome.tabs.remove(id);
   if (id === T.getTarget()) T.setTarget(await T.previous(id));
   const next = T.getTarget();
@@ -599,7 +599,7 @@ async function stale(cmd, a, tab) {
   const t = await chrome.tabs.get(id).catch(() => null);
   if (!t || pageKey(t.url) === seen.get(id)) return;
   seen.set(id, pageKey(t.url));
-  throw new Error("the page changed since the last command (now " + T.short(t.url, 70) + "), nothing done -> try: lighting snap, then repeat");
+  throw new Error("the page changed since the last command (now " + T.short(t.url, 70) + "), nothing done -> try: wisply snap, then repeat");
 }
 
 const BY_REF = new Set(["click", "type", "select", "check", "hover"]);
@@ -814,7 +814,7 @@ async function route(cmd, a, tab) {
 }
 
 C.onEvent((kind, tabId, params) => {
-  if (kind === "dialog") event("dialog on t" + T.sid(tabId) + ": " + params.type + ' "' + trunc(params.message, 80) + '" -> lighting dialog accept|dismiss');
+  if (kind === "dialog") event("dialog on t" + T.sid(tabId) + ": " + params.type + ' "' + trunc(params.message, 80) + '" -> wisply dialog accept|dismiss');
 });
 
 chrome.webNavigation.onCreatedNavigationTarget.addListener(async (d) => {
@@ -824,7 +824,7 @@ chrome.webNavigation.onCreatedNavigationTarget.addListener(async (d) => {
   await T.addToGroup(d.tabId, (await T.groupOf(src)) || undefined);
   chrome.tabs.update(d.tabId, { autoDiscardable: false }).catch(() => {});
   T.setTarget(d.tabId);
-  event("new tab t" + T.sid(d.tabId) + " opened from t" + T.sid(src) + " (now the target; lighting tab t" + T.sid(src) + " to go back)");
+  event("new tab t" + T.sid(d.tabId) + " opened from t" + T.sid(src) + " (now the target; wisply tab t" + T.sid(src) + " to go back)");
 });
 
 chrome.downloads.onChanged.addListener(async (d) => {
@@ -851,11 +851,11 @@ chrome.runtime.onStartup.addListener(async () => {
   else connect();
 });
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.alarms.create("lighting", { periodInMinutes: 0.5 });
+  chrome.alarms.create("wisply", { periodInMinutes: 0.5 });
   connect();
 });
 
-chrome.alarms.get("lighting").then((a) => {
-  if (!a) chrome.alarms.create("lighting", { periodInMinutes: 0.5 });
+chrome.alarms.get("wisply").then((a) => {
+  if (!a) chrome.alarms.create("wisply", { periodInMinutes: 0.5 });
 });
 ready.then(connect);

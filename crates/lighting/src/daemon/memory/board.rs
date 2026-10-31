@@ -14,7 +14,7 @@ use super::super::ctx::Ctx;
 use super::super::{Daemon, config};
 use super::{QUERY_BUDGET, embed, index, with_store};
 
-const USAGE: &str = "lighting board home | pulse | project <name> | note <id> | save <path> --mtime <ms> | todo <id> <status> | \
+const USAGE: &str = "wisply board home | pulse | project <name> | note <id> | save <path> --mtime <ms> | todo <id> <status> | \
                      todo-add <project> <task> | search <words> | graph [project] | live | lessons | unlearn <sig> | settings";
 const NOTES_SHOWN: usize = 400;
 const RUNS_SHOWN: usize = 60;
@@ -135,7 +135,7 @@ fn save(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<Value, Fail> {
     if now != want {
         return Ok(json!({"conflict": true, "mtime": now}));
     }
-    let tmp = path.with_extension("md.lighting-tmp");
+    let tmp = path.with_extension("md.wisply-tmp");
     fs::write(&tmp, body.as_bytes())
         .and_then(|()| fs::rename(&tmp, &path))
         .map_err(|e| Fail::new(format!("cannot save {} ({e})", path.display())))?;

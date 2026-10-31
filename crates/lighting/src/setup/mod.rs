@@ -1,5 +1,6 @@
 mod agents;
 mod claude_env;
+mod migrate;
 mod place;
 #[cfg(windows)]
 mod reg;
@@ -19,7 +20,7 @@ const PURGE_FILES: &[&str] =
 pub fn run(home: &Path, args: &[String]) -> ExitCode {
     let first = args.first().map(String::as_str).unwrap_or("");
     let flag = |f: &str| args.iter().any(|a| a == f);
-    let global = flag("--register") || std::env::var_os("LIGHTING_HOME").is_none_or(|h| h.is_empty());
+    let global = flag("--register") || lt_proto::home_var().is_none();
     let done = match first {
         "uninstall" => uninstall(home, flag("--purge"), global),
         "install" => install(home, args.get(1).map(String::as_str).unwrap_or(""), global),
@@ -33,7 +34,7 @@ pub fn run(home: &Path, args: &[String]) -> ExitCode {
     match done {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("lighting {first}: {e}");
+            eprintln!("wisply {first}: {e}");
             ExitCode::from(1)
         }
     }
@@ -57,7 +58,7 @@ fn refresh(home: &Path, global: bool) -> Result<(Option<String>, std::path::Path
 fn installed(home: &Path, exe: &Path, argv: &[&str]) -> Result<String, String> {
     let out = Command::new(exe)
         .args(argv)
-        .env("LIGHTING_HOME", home)
+        .env("WISPLY_HOME", home)
         .stdin(Stdio::null())
         .output()
         .map_err(|e| format!("cannot start {} ({e})", exe.display()))?;
@@ -74,9 +75,17 @@ fn connected(home: &Path, exe: &Path) -> Vec<String> {
 }
 
 fn setup(home: &Path, manual: bool, global: bool, browser: Option<&str>) -> Result<(), String> {
+    let old = lt_proto::old_home();
+    let moved = migrate::from_old(home, &old).map_err(|e| format!("could not copy {}: {e}", old.display()))?;
     let (ext_id, exe, daemon_new) = refresh(home, global)?;
     let browsers = crate::daemon::installed_browsers();
-    println!("lighting {VERSION} set up in {}", home.display());
+    println!("wisply {VERSION} set up in {}", home.display());
+    if let Some(line) = moved {
+        println!("{line}");
+    }
+    if migrate::forward_old(home, &old, &exe).unwrap_or(false) {
+        println!("{} now runs Wisply, so older hooks and sessions keep working", old.join("bin").display());
+    }
     if daemon_new && installed(home, &exe, &["stop"]).is_ok_and(|out| out.ends_with("stopped")) {
         println!("stopped the daemon that ran the old build, the next command starts the new one");
     }
@@ -84,7 +93,7 @@ fn setup(home: &Path, manual: bool, global: bool, browser: Option<&str>) -> Resu
         println!("native host registered for: {}", place::register(home, &browsers).join(", "));
         match place::add_to_path(&exe) {
             Ok(Some(at)) => {
-                println!("added {} to your PATH (new terminals and other AIs find `lighting`)", at.display())
+                println!("added {} to your PATH (new terminals and other AIs find `wisply`)", at.display())
             }
             Ok(None) => {}
             Err(e) => println!("could not add {} to PATH: {e}", exe.display()),
@@ -99,7 +108,7 @@ fn setup(home: &Path, manual: bool, global: bool, browser: Option<&str>) -> Resu
             Err(e) => println!("{e}"),
         }
     } else {
-        println!("browser link and PATH left alone (LIGHTING_HOME is set; --register writes them for this folder)");
+        println!("browser link and PATH left alone (WISPLY_HOME is set; --register writes them for this folder)");
     }
     println!("browsers found: {}", if browsers.is_empty() { "none".into() } else { browsers.join(", ") });
     if !cfg!(windows)
@@ -120,29 +129,29 @@ fn setup(home: &Path, manual: bool, global: bool, browser: Option<&str>) -> Resu
     }
     if !lines.is_empty() {
         println!("{}", lines.join("\n"));
-        println!("ready: try `lighting open https://example.com`");
+        println!("ready: try `wisply open https://example.com`");
         return Ok(());
     }
     println!("one manual step left, once per browser:");
     println!("  1. open brave://extensions (or chrome://extensions, edge://extensions)");
     println!("  2. switch on Developer mode");
     println!("  3. Load unpacked -> {}", home.join("extension").display());
-    println!("extension id {} | then run: lighting status", ext_id.as_deref().unwrap_or("?"));
+    println!("extension id {} | then run: wisply status", ext_id.as_deref().unwrap_or("?"));
     Ok(())
 }
 
 fn install(home: &Path, name: &str, global: bool) -> Result<(), String> {
     if !agents::NAMES.contains(&name) {
-        return Err(format!("usage: lighting install <{}>", agents::NAMES.join("|")));
+        return Err(format!("usage: wisply install <{}>", agents::NAMES.join("|")));
     }
     if !global {
         return Err(format!(
-            "{name} keeps one Lighting for every folder; LIGHTING_HOME is set, add --register to point it here"
+            "{name} keeps one Wisply for every folder; WISPLY_HOME is set, add --register to point it here"
         ));
     }
     let (_, exe, _) = refresh(home, global)?;
     agents::install(name, &exe, place::source_root().as_deref()).map_err(|e| e.to_string())?;
-    println!("lighting MCP server added to {name}, restart it to load the tool");
+    println!("wisply MCP server added to {name}, restart it to load the tool");
     Ok(())
 }
 
@@ -173,6 +182,6 @@ fn uninstall(home: &Path, purge: bool, global: bool) -> Result<(), String> {
     for file in PURGE_FILES.iter().map(|f| home.join(f)).chain([host]) {
         let _ = fs::remove_file(file);
     }
-    println!("removed the browser link and the Lighting files in {} (memory and notes stay)", home.display());
+    println!("removed the browser link and the Wisply files in {} (memory and notes stay)", home.display());
     Ok(())
 }

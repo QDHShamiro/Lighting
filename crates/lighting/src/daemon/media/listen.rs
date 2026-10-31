@@ -27,8 +27,8 @@ const LIVE_SPARE_S: f64 = 45.0;
 const LIVE_DEFAULT_S: f64 = 60.0;
 const LIVE_MIN_S: f64 = 5.0;
 const EMPTY_BYTES: usize = 1000;
-const NO_SPEECH: &str = "(no speech: only music or silence; on-screen text: lighting frames)";
-const NO_ASR: &str = "set GROQ_API_KEY (free key: console.groq.com/keys) or lighting config whisper_api <LocalAI url>";
+const NO_SPEECH: &str = "(no speech: only music or silence; on-screen text: wisply frames)";
+const NO_ASR: &str = "set GROQ_API_KEY (free key: console.groq.com/keys) or wisply config whisper_api <LocalAI url>";
 const ASK_AUDIO: &str = "Answer the question about this audio. Quote what is said with m:ss times where it helps. Plain text, short.\nQuestion: ";
 const ASK_TEXT: &str =
     "Answer the question about this transcript (lines start with m:ss). Plain text, short, cite times.\nQuestion: ";
@@ -176,7 +176,7 @@ pub fn shrink(home: &Path, path: &Path, dir: &Path) -> PathBuf {
 }
 
 pub fn multipart(fields: &[(&str, &str)], filename: &str, data: &[u8]) -> (Vec<u8>, String) {
-    let boundary = format!("lighting{:x}{:x}", std::process::id(), lt_memory::now().to_bits());
+    let boundary = format!("wisply{:x}{:x}", std::process::id(), lt_memory::now().to_bits());
     let mut body = Vec::with_capacity(data.len() + 1024);
     for (k, v) in fields {
         body.extend(format!("--{boundary}\r\nContent-Disposition: form-data; name=\"{k}\"\r\n\r\n{v}\r\n").as_bytes());

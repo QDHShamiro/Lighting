@@ -307,7 +307,7 @@ fn compose(
         lines.extend(["text on screen:".to_string(), shown]);
     } else if how == "storyboard" {
         lines.push(
-            "text on screen: not read from preview images (lighting watch ... --text reads the real frames)".into(),
+            "text on screen: not read from preview images (wisply watch ... --text reads the real frames)".into(),
         );
     }
     if let Some(h) = heard {
@@ -330,7 +330,7 @@ fn compose(
             Kind::Url(url) => url.clone(),
             Kind::File(_) => source(job),
         };
-        lines.push(format!("closer: lighting watch \"{src}\" --from 1:00 --to 2:00 | exact frames: --at 1:23,2:45"));
+        lines.push(format!("closer: wisply watch \"{src}\" --from 1:00 --to 2:00 | exact frames: --at 1:23,2:45"));
     }
     Done { lines, sheet: picture }
 }

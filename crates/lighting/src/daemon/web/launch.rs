@@ -74,17 +74,17 @@ pub fn ensure_host(d: &Daemon) -> Result<Arc<Host>, Fail> {
         if running(&exe) {
             return wait_host(d, &pref, RUNNING_WAIT).ok_or_else(|| {
                 Fail::hint(
-                    format!("{name} is open but the Lighting extension is not connected"),
-                    "lighting setup (loads the extension), then lighting status",
+                    format!("{name} is open but the Wisply extension is not connected"),
+                    "wisply setup (loads the extension), then wisply status",
                 )
             });
         }
         start_browser(d, &exe);
         return wait_host(d, &pref, BROWSER_START_WAIT).ok_or_else(|| {
-            Fail::hint(format!("started {name} but the Lighting extension did not connect"), "lighting setup")
+            Fail::hint(format!("started {name} but the Wisply extension did not connect"), "wisply setup")
         });
     }
-    Err(Fail::hint("no browser with the Lighting extension is connected", "lighting setup"))
+    Err(Fail::hint("no browser with the Wisply extension is connected", "wisply setup"))
 }
 
 fn wait_host(d: &Daemon, pref: &str, wait: f64) -> Option<Arc<Host>> {

@@ -81,7 +81,7 @@ fn wait_reload(d: &Daemon, ctx: &mut Ctx, c: &Call, s: Map<String, Value>) -> Re
     if s.contains_key("ms") {
         return Err(Fail::hint(
             "--reload waits for \"text\", url:, css: or a ref",
-            "lighting wait \"All checks have passed\" --reload 15s",
+            "wisply wait \"All checks have passed\" --reload 15s",
         ));
     }
     let every = (parse_ms(c.flags.get("reload"), 15_000)? as f64 / 1000.0).max(3.0);
@@ -102,7 +102,7 @@ fn wait_reload(d: &Daemon, ctx: &mut Ctx, c: &Call, s: Map<String, Value>) -> Re
         if last {
             return Err(Fail::hint(
                 format!("not there after {} s ({reloads} reloads)", total as u64),
-                format!("lighting wait ... --reload {}s --timeout {}m", every as u64, ((total / 30.0) as u64).max(1)),
+                format!("wisply wait ... --reload {}s --timeout {}m", every as u64, ((total / 30.0) as u64).max(1)),
             ));
         }
         if Instant::now() >= next {

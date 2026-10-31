@@ -52,11 +52,9 @@ impl Desk<'_> {
         let hwnd = self.target(first)?;
         if win::minimized(hwnd) {
             let wref = self.wref(hwnd);
-            return Err(Fail::hint(
-                format!("{wref} is minimized, nothing to capture"),
-                format!("lighting focus {wref}"),
-            )
-            .into());
+            return Err(
+                Fail::hint(format!("{wref} is minimized, nothing to capture"), format!("wisply focus {wref}")).into()
+            );
         }
         Ok((hwnd, win::rect(hwnd)))
     }
@@ -101,13 +99,13 @@ pub fn shot(x: &mut Desk, c: &Call) -> Res<String> {
     let (hwnd, area) = x.region(c.pos.first().map(String::as_str))?;
     let img = DynamicImage::ImageRgb8(grab_area(area, hwnd)?);
     let key = if hwnd == 0 { "app-screen".to_string() } else { format!("app-{hwnd}") };
-    Ok(save_picture(x.d, x.ctx, c, &img, &key, "lighting shot w3 --out C:/shots/app.png")?)
+    Ok(save_picture(x.d, x.ctx, c, &img, &key, "wisply shot w3 --out C:/shots/app.png")?)
 }
 
 pub fn wait(x: &mut Desk, c: &Call, aim: Option<&str>) -> Result<Out, Fail> {
     let words: Vec<&String> = c.pos.iter().filter(|p| !windowish(p)).collect();
     if words.is_empty() {
-        return Err(Fail::hint("waiting in an app needs \"text\"", "lighting wait \"Done\" w3 --timeout 60s"));
+        return Err(Fail::hint("waiting in an app needs \"text\"", "wisply wait \"Done\" w3 --timeout 60s"));
     }
     let shown = words.iter().map(|w| w.as_str()).collect::<Vec<_>>().join(" ");
     let want = shown.to_lowercase();
@@ -124,7 +122,7 @@ pub fn wait(x: &mut Desk, c: &Call, aim: Option<&str>) -> Result<Out, Fail> {
     let mut seen = move |d: &super::super::Daemon, ctx: &mut super::super::ctx::Ctx| -> Result<Option<bool>, Fail> {
         if !win::alive(hwnd) {
             let wref = state::with(ctx, |st, ctx| Desk { d, st, ctx }.wref(hwnd));
-            return Err(Fail::hint(format!("window {wref} is gone"), "lighting windows"));
+            return Err(Fail::hint(format!("window {wref} is gone"), "wisply windows"));
         }
         if app_text(hwnd).to_lowercase().contains(&want) {
             return Ok(Some(true));
@@ -149,7 +147,7 @@ pub fn wait(x: &mut Desk, c: &Call, aim: Option<&str>) -> Result<Out, Fail> {
             let how = if gone { "still there" } else { "not there" };
             return Err(Fail::hint(
                 format!("\"{shown}\" {how} after {} s in {wref}", limit as i64),
-                format!("lighting read {wref}"),
+                format!("wisply read {wref}"),
             ));
         }
         Ok(None)

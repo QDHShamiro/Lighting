@@ -12,22 +12,31 @@ pub fn user() -> String {
         .to_lowercase()
 }
 
+fn user_dir() -> PathBuf {
+    PathBuf::from(env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).unwrap_or_default())
+}
+
 pub fn default_home() -> PathBuf {
-    PathBuf::from(env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).unwrap_or_default()).join(".lighting")
+    user_dir().join(".wisply")
+}
+
+pub fn old_home() -> PathBuf {
+    user_dir().join(".lighting")
+}
+
+pub fn home_var() -> Option<PathBuf> {
+    ["WISPLY_HOME", "LIGHTING_HOME"].iter().filter_map(env::var_os).find(|h| !h.is_empty()).map(PathBuf::from)
 }
 
 pub fn home() -> PathBuf {
-    match env::var_os("LIGHTING_HOME") {
-        Some(h) if !h.is_empty() => PathBuf::from(h),
-        _ => default_home(),
-    }
+    home_var().unwrap_or_else(default_home)
 }
 
 pub fn address(home: &Path) -> PathBuf {
     if cfg!(windows) {
         PathBuf::from(format!(r"\\.\pipe\{}", pipe_name(home)))
     } else {
-        home.join(format!("lighting-{}.sock", user()))
+        home.join(format!("wisply-{}.sock", user()))
     }
 }
 
@@ -42,7 +51,7 @@ pub fn is_default_home(home: &Path) -> bool {
 }
 
 fn pipe_name(home: &Path) -> String {
-    let base = format!("lighting-{}", user());
+    let base = format!("wisply-{}", user());
     if is_default_home(home) {
         return base;
     }
@@ -126,7 +135,7 @@ mod tests {
         let spelled = default_home().to_string_lossy().to_uppercase().replace('\\', "/") + "/";
         assert_eq!(is_default_home(Path::new(&spelled)), cfg!(windows));
         if cfg!(windows) {
-            let name = format!(r"\\.\pipe\lighting-{}", user());
+            let name = format!(r"\\.\pipe\wisply-{}", user());
             assert_eq!(address(&default_home()), PathBuf::from(name));
         }
         assert!(same_token(&token, &token) && !same_token(&token, "ab") && !same_token("ab", "ac"));

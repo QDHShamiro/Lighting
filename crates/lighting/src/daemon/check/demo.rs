@@ -33,7 +33,7 @@ fn shown(words: &[String], base: &str) -> String {
 
 pub fn demo(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     if !super::super::web::any_browser(d) {
-        return Err(Fail::hint("the demo needs the browser", "lighting setup"));
+        return Err(Fail::hint("the demo needs the browser", "wisply setup"));
     }
     let pause =
         if c.on("fast") { 0.0 } else { c.val("pause").and_then(|p| p.parse::<f64>().ok()).unwrap_or(PAUSE_S).max(0.0) };
@@ -53,13 +53,13 @@ pub fn demo(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         let out = out.replace(base, PLACE).trim().to_string();
         let n = out.chars().count();
         chars += n;
-        blocks.push(format!("$ lighting {}   ({ms} ms, ~{} tokens)\n{out}", shown(words, base), n / 4 + 1));
+        blocks.push(format!("$ wisply {}   ({ms} ms, ~{} tokens)\n{out}", shown(words, base), n / 4 + 1));
     }
     let (raw_out, raw_err) = once(d, ctx, &argv(&["js", RAW_JS]));
     let raw = if raw_err { 0 } else { raw_out.trim().parse::<usize>().map_or(0, |n| n / 4 + 1) };
     let with_pauses = if pause > 0.0 { " with pauses (--fast skips them)" } else { "" };
     let head = format!(
-        "Lighting demo: {} commands on a made-up shop page, {:.1} s{with_pauses}",
+        "Wisply demo: {} commands on a made-up shop page, {:.1} s{with_pauses}",
         blocks.len(),
         start.elapsed().as_secs_f64()
     );
@@ -73,7 +73,7 @@ pub fn demo(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         tail.push_str(&format!("; the page itself is ~{raw} tokens of text"));
     }
     if failed > 0 {
-        tail.push_str(&format!("; {failed} failed (lighting doctor)"));
+        tail.push_str(&format!("; {failed} failed (wisply doctor)"));
     }
     let mut all = vec![head];
     all.extend(blocks);

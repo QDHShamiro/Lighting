@@ -55,21 +55,21 @@ fn report(root: &Path, history: bool, check_deps: bool) -> String {
 pub fn run(_: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     let playing = game::running();
     if !playing.is_empty() {
-        return Err(Fail::hint(format!("{playing} is running"), "lighting secure runs when the game is closed"));
+        return Err(Fail::hint(format!("{playing} is running"), "wisply secure runs when the game is closed"));
     }
     let start = match c.pos.first() {
         Some(p) => web::local_file(ctx, p),
         None => PathBuf::from(if ctx.cwd.is_empty() { "." } else { ctx.cwd.as_str() }),
     };
     if !start.is_dir() {
-        return Err(Fail::hint(format!("no folder {}", start.display()), "lighting secure <project folder>"));
+        return Err(Fail::hint(format!("no folder {}", start.display()), "wisply secure <project folder>"));
     }
     let root = lt_memory::root_of(&start).unwrap_or(start);
     let (history, check_deps) = (c.on("history"), !c.on("no-deps"));
     let pending = media::background(
         "secure",
         WAIT,
-        "lighting secure --no-deps (skips the online check)",
+        "wisply secure --no-deps (skips the online check)",
         move || Ok(report(&root, history, check_deps)),
         |d, ctx, text: String| Ok(web::capped(d, ctx, &text, "secure", None, CHARS)),
     );

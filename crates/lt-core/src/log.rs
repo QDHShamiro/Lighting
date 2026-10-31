@@ -261,7 +261,7 @@ mod tests {
             row("click", &a, 0, "clicked ü").json("2026-10-30 12:00:01"),
             r#"{"t": "2026-10-30 12:00:01", "cmd": "click", "ref": "f1.e12", "ok": true, "ms": 12, "n": 9, "f": 1, "id": "7.1"}"#
         );
-        let long = format!("err: {} -> try: lighting help\n! note", "x".repeat(80));
+        let long = format!("err: {} -> try: wisply help\n! note", "x".repeat(80));
         let mut r = row("open", &a[..1], 1, &long);
         r.sid = "s-1";
         r.queued_ms = 3;

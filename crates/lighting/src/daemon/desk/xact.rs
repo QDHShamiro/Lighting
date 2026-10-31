@@ -21,7 +21,7 @@ const CLOSE_NAMES: &[&str] = &["close", "close window"];
 const CLOSE_SUBROLE: &str = "AXCloseButton";
 
 pub fn click(st: &mut State, c: &Call) -> Result<String, Fail> {
-    let spec = c.pos.first().ok_or_else(|| Fail::hint("click needs a control", "lighting click d5"))?;
+    let spec = c.pos.first().ok_or_else(|| Fail::hint("click needs a control", "wisply click d5"))?;
     let (dref, el) = st.el_ref(spec)?;
     let role = xview::role(&el.role.to_string()).unwrap_or("");
     let tries: [fn(&Element) -> xa11y::Result<()>; 4] = match role {
@@ -45,7 +45,7 @@ pub fn click(st: &mut State, c: &Call) -> Result<String, Fail> {
 }
 
 pub fn type_in(st: &mut State, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
-    let usage = "lighting type d5 \"text\"";
+    let usage = "wisply type d5 \"text\"";
     let spec = c
         .pos
         .first()
@@ -107,7 +107,7 @@ fn front_pid(st: &mut State) -> Result<u32, Fail> {
 
 fn press_keys(st: &mut State, combo: &str) -> Result<(), Fail> {
     front_pid(st)?;
-    let (held, key) = xview::combo(combo).map_err(|e| Fail::hint(e, "lighting press ctrl+s"))?;
+    let (held, key) = xview::combo(combo).map_err(|e| Fail::hint(e, "wisply press ctrl+s"))?;
     let sim = xa11y::input_sim().map_err(|e| fail(&e))?;
     let (held, key) = (held.into_iter().map(held_key).collect::<Vec<_>>(), key_of(key));
     sim.keyboard().chord(key, &held).map_err(|e| fail(&e))
@@ -116,7 +116,7 @@ fn press_keys(st: &mut State, combo: &str) -> Result<(), Fail> {
 pub fn press(st: &mut State, c: &Call) -> Result<String, Fail> {
     let combo = c.pos.join(" ");
     if combo.trim().is_empty() {
-        return Err(Fail::hint("press needs a key", "lighting press ctrl+s"));
+        return Err(Fail::hint("press needs a key", "wisply press ctrl+s"));
     }
     press_keys(st, &combo)?;
     Ok(format!("ok (pressed {combo})"))
@@ -126,7 +126,7 @@ pub fn scroll(st: &mut State, c: &Call) -> Result<String, Fail> {
     let spec = c.pos.first().filter(|p| ref_kind(p) == Some("d")).ok_or_else(|| {
         Fail::hint(
             "on this system scroll brings a control into view",
-            "lighting scroll d40 (a ref from lighting snap --full)",
+            "wisply scroll d40 (a ref from wisply snap --full)",
         )
     })?;
     let (dref, el) = st.el_ref(spec)?;
@@ -158,14 +158,7 @@ pub fn shot(d: &Daemon, st: &mut State, ctx: &mut Ctx, c: &Call) -> Result<Strin
     let pic = xa11y::screenshot_element(&el).map_err(|e| fail(&e))?;
     let img = RgbaImage::from_raw(pic.width, pic.height, pic.pixels)
         .ok_or_else(|| Fail::new("the screenshot came back broken"))?;
-    save_picture(
-        d,
-        ctx,
-        c,
-        &DynamicImage::ImageRgba8(img),
-        &format!("app-{r}"),
-        "lighting shot w3 --out ~/shots/app.png",
-    )
+    save_picture(d, ctx, c, &DynamicImage::ImageRgba8(img), &format!("app-{r}"), "wisply shot w3 --out ~/shots/app.png")
 }
 
 fn clip_tools(set: bool) -> (&'static str, &'static [&'static str]) {
@@ -201,7 +194,7 @@ pub fn clip(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
 pub fn launch(st: &mut State, _: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let name = c.pos.join(" ");
     if name.trim().is_empty() {
-        return Err(Fail::hint("launch needs an app", "lighting launch \"Text Editor\""));
+        return Err(Fail::hint("launch needs an app", "wisply launch \"Text Editor\""));
     }
     let before: Vec<String> = st.list()?;
     let mut cmd = if cfg!(target_os = "macos") {
@@ -212,7 +205,7 @@ pub fn launch(st: &mut State, _: &mut Ctx, c: &Call) -> Result<String, Fail> {
         Command::new(&name)
     };
     cmd.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
-    cmd.spawn().map_err(|e| Fail::hint(format!("cannot start {name} ({e})"), "lighting windows"))?;
+    cmd.spawn().map_err(|e| Fail::hint(format!("cannot start {name} ({e})"), "wisply windows"))?;
     let deadline = Instant::now() + LAUNCH_WAIT;
     while Instant::now() < deadline {
         thread::sleep(POLL);
@@ -228,7 +221,7 @@ pub fn launch(st: &mut State, _: &mut Ctx, c: &Call) -> Result<String, Fail> {
             return Ok(format!("ok (started) {}", line.trim_end_matches(" *")));
         }
     }
-    Ok(format!("started {name}, no window yet -> try: lighting windows -f {name}"))
+    Ok(format!("started {name}, no window yet -> try: wisply windows -f {name}"))
 }
 
 pub fn close(st: &mut State, r: &str) -> Result<bool, Fail> {
@@ -262,6 +255,6 @@ pub fn close_cmd(st: &mut State, c: &Call) -> Result<String, Fail> {
         return Ok(format!("closed {head}"));
     }
     Ok(format!(
-        "asked to close {head} (still open: no close button answered, it may show a save dialog) -> try: lighting snap {r}"
+        "asked to close {head} (still open: no close button answered, it may show a save dialog) -> try: wisply snap {r}"
     ))
 }

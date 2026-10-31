@@ -75,7 +75,7 @@ pub fn changes(old: Option<&(f64, Vec<String>)>, lines: &[String], wref: &str, n
     let tokens = lines.iter().map(|x| x.chars().count() + 1).sum::<usize>() / 4;
     let gone = if gone > 0 { format!(", -{gone} gone") } else { String::new() };
     let mut out = vec![format!(
-        "changed since your last snap: +{}{gone} (all {} lines, ~{} tokens: lighting snap {wref} --full)",
+        "changed since your last snap: +{}{gone} (all {} lines, ~{} tokens: wisply snap {wref} --full)",
         added.len(),
         lines.len(),
         thousands(tokens)
@@ -132,10 +132,7 @@ mod tests {
         let old = (100.0, lines(&["a", "b", "c", "d"]));
         let now = lines(&["a", "b", "c", "e"]);
         let out = changes(Some(&old), &now, "w2", 110.0).unwrap();
-        assert_eq!(
-            out,
-            "changed since your last snap: +1, -1 gone (all 4 lines, ~2 tokens: lighting snap w2 --full)\ne"
-        );
+        assert_eq!(out, "changed since your last snap: +1, -1 gone (all 4 lines, ~2 tokens: wisply snap w2 --full)\ne");
         assert!(changes(Some(&old), &now, "w2", 500.0).is_none());
         assert!(changes(Some(&old), &lines(&["x", "y", "z", "e"]), "w2", 110.0).is_none());
         assert!(changes(None, &now, "w2", 110.0).is_none());

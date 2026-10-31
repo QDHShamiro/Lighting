@@ -36,7 +36,7 @@ const FRAMES_MIN: i64 = 4;
 const FRAMES_MAX: i64 = 24;
 const FPS_MAX: f64 = 24.0;
 const SHORTER: &str = "try a shorter part with --from/--to";
-const TIMES_HINT: &str = "lighting watch <link> --from 1:30 --to 2:00";
+const TIMES_HINT: &str = "wisply watch <link> --from 1:30 --to 2:00";
 const ASK_PROMPT: &str =
     "Answer the question about this screenshot. Name visible labels exactly as written. Plain text, short.\nQuestion: ";
 
@@ -136,7 +136,7 @@ fn file_of(ctx: &Ctx, target: &str) -> Result<Option<PathBuf>, Fail> {
     if VIDEO_FILE.is_match(target) && (LOCAL.is_match(target) || !target.contains(['/', '\\'])) {
         return Err(Fail::hint(
             format!("no file {target}"),
-            "check the path (a relative path starts in the folder lighting runs from)",
+            "check the path (a relative path starts in the folder wisply runs from)",
         ));
     }
     Ok(None)
@@ -182,7 +182,7 @@ fn with_sound(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
 
 fn listen(d: &Daemon, ctx: &mut Ctx, c: &Call, before: String) -> Result<Out, Fail> {
     let (lo, hi, _) = times(c)
-        .map_err(|_| Fail::hint("--from and --to take seconds or m:ss", "lighting listen --from 1:30 --to 2:00"))?;
+        .map_err(|_| Fail::hint("--from and --to take seconds or m:ss", "wisply listen --from 1:30 --to 2:00"))?;
     let target = c.pos.first().map(String::as_str).filter(|t| !t.is_empty());
     let mut job = ListenJob {
         src: Src::Url(String::new()),
@@ -287,7 +287,7 @@ fn page_captions(
     let url = target;
     let live = Fail::hint(
         failed.msg.clone(),
-        format!("lighting open {url}, then lighting listen --live (records the sound in the browser)"),
+        format!("wisply open {url}, then wisply listen --live (records the sound in the browser)"),
     );
     web::call(d, ctx, "open", web::obj(json!({"url": url, "new": true, "quiet": true})), CUES_TIMEOUT * 2.0)
         .map_err(|_| live.clone())?;
@@ -319,10 +319,8 @@ fn number(c: &Call, key: &str) -> Result<Option<f64>, Fail> {
         Some(Flag::Val(v)) => v
             .parse::<f64>()
             .map(Some)
-            .map_err(|_| Fail::hint(format!("--{key} takes a number"), format!("lighting watch <link> --{key} 1"))),
-        Some(Flag::On) => {
-            Err(Fail::hint(format!("--{key} takes a number"), format!("lighting watch <link> --{key} 1")))
-        }
+            .map_err(|_| Fail::hint(format!("--{key} takes a number"), format!("wisply watch <link> --{key} 1"))),
+        Some(Flag::On) => Err(Fail::hint(format!("--{key} takes a number"), format!("wisply watch <link> --{key} 1"))),
         None => Ok(None),
     }
 }
@@ -349,7 +347,7 @@ fn watch(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
             None => {
                 return Err(Fail::hint(
                     format!("no video file or link {t}"),
-                    "lighting watch https://youtu.be/x | watch clip.mp4",
+                    "wisply watch https://youtu.be/x | watch clip.mp4",
                 ));
             }
         },
@@ -358,7 +356,7 @@ fn watch(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
             if !SINGLE.is_match(&url) {
                 return Err(Fail::hint(
                     "watch needs a link, a video file or a video on the page",
-                    "lighting watch https://youtu.be/x | watch clip.mp4 | snap --media, then watch e40",
+                    "wisply watch https://youtu.be/x | watch clip.mp4 | snap --media, then watch e40",
                 ));
             }
             Kind::Url(url)
@@ -410,7 +408,7 @@ fn watch(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
 
 pub fn ask_shot(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     let Some(q) = c.val("ask").filter(|q| !q.trim().is_empty()).map(String::from) else {
-        return Err(Fail::hint("--ask needs a question", "lighting shot --ask \"what does the error say?\""));
+        return Err(Fail::hint("--ask needs a question", "wisply shot --ask \"what does the error say?\""));
     };
     let g = gemini::gemini(&d.home)?;
     let mut plain = c.clone();

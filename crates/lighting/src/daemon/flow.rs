@@ -214,7 +214,7 @@ impl Job {
 pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     let steps = split_steps(&c.pos.join(" "));
     if steps.is_empty() {
-        return Err(Fail::hint("do needs steps", "lighting do \"click e3; type e4 hi; press Enter\""));
+        return Err(Fail::hint("do needs steps", "wisply do \"click e3; type e4 hi; press Enter\""));
     }
     let mut job = Job {
         steps,

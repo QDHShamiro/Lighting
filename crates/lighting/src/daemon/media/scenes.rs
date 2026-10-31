@@ -26,7 +26,7 @@ const READ_WIDTH: u32 = 960;
 const MAX_HEIGHT: i64 = 720;
 const GRABBERS: usize = 4;
 const VIDEO_FORMAT: &str = "bv*[height<=720][ext=mp4]/bv*[height<=720]/b[height<=720]/b";
-const TRY_PAGE: &str = "lighting open <url>, then lighting watch e40 (plays it in the browser)";
+const TRY_PAGE: &str = "wisply open <url>, then wisply watch e40 (plays it in the browser)";
 
 static DURATION: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"Duration: (\d+):(\d\d):(\d\d(?:\.\d+)?)").expect("duration"));
@@ -319,7 +319,7 @@ pub fn download(home: &Path, job: &Job, meta: &Value, dir: &Path) -> Result<Path
     if !path.is_file() {
         return Err(Fail::hint(
             "the video is too long to download",
-            "lighting watch <url> --from 1:00 --to 5:00 --frames",
+            "wisply watch <url> --from 1:00 --to 5:00 --frames",
         ));
     }
     Ok(path)
@@ -390,10 +390,7 @@ pub fn pictures(
     }
     let end = hi.or(meta["duration"].as_f64()).filter(|e| *e > 0.0);
     let Some(end) = end else {
-        return Err(Fail::hint(
-            "the video has no known length (a live stream?)",
-            "lighting watch <url> --at 0:10,0:20",
-        ));
+        return Err(Fail::hint("the video has no known length (a live stream?)", "wisply watch <url> --at 0:10,0:20"));
     };
     let zoomed = job.lo.is_some() || job.hi.is_some();
     if meta["board"].is_object() && !zoomed && !job.text {

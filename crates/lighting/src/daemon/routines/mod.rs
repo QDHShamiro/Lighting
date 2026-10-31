@@ -25,7 +25,7 @@ pub use store::{load_all, step_line, words};
 
 const LIST_LINES: usize = 60;
 const NAME_WORDS: usize = 6;
-const SUBS: &str = "lighting routine list|show|save|rm|rename|forget|schedule|schedules";
+const SUBS: &str = "wisply routine list|show|save|rm|rename|forget|schedule|schedules";
 const PROMPTS: usize = 5;
 const OFFER_EVERY_S: f64 = 600.0;
 const OFFER_IGNORED: u64 = 5;
@@ -80,7 +80,7 @@ pub fn offer(d: &Daemon, ctx: &mut Ctx, typed: Vec<String>) -> Vec<String> {
         r["stats"]["offered"] = json!(r["stats"]["offered"].as_u64().unwrap_or(0) + 1);
         let _ = save(&d.home, &r);
         lines.push(format!(
-            "Lighting routine fits this request (one call, swap the values): {}",
+            "Wisply routine fits this request (one call, swap the values): {}",
             usage(&r, &BTreeMap::new())
         ));
     }
@@ -105,7 +105,7 @@ fn listing(d: &Daemon, ctx: &mut Ctx, c: &Call) -> String {
         });
     }
     if rs.is_empty() {
-        return "no routines yet (Lighting learns one when a task repeats; lighting routine save <name> saves the last task)"
+        return "no routines yet (Wisply learns one when a task repeats; wisply routine save <name> saves the last task)"
             .into();
     }
     let n = |r: &Value, k: &str| r["stats"][k].as_u64().unwrap_or(0);
@@ -126,7 +126,7 @@ fn listing(d: &Daemon, ctx: &mut Ctx, c: &Call) -> String {
             format!("{}{args} | {rate}{extra}{flaky}", text(&r["name"]))
         })
         .collect();
-    let body = format!("{}\n(steps: lighting routine show <name>)", lines.join("\n"));
+    let body = format!("{}\n(steps: wisply routine show <name>)", lines.join("\n"));
     web::capped(d, ctx, &body, "routines", Some(LIST_LINES), OUT_CHARS)
 }
 
@@ -191,7 +191,7 @@ pub fn command(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         }
         "rename" => {
             let [old, new, ..] = rest else {
-                return Err(Fail::hint("rename needs old and new name", "lighting routine rename old new"));
+                return Err(Fail::hint("rename needs old and new name", "wisply routine rename old new"));
             };
             let mut r = load(&d.home, old)?;
             let wanted = slug(new, NAME_WORDS);

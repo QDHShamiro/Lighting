@@ -21,16 +21,16 @@ jobs:
         include:
           - os: windows-latest
             pack: windows-x64
-            client: lighting.exe
+            client: wisply.exe
           - os: macos-latest
             pack: macos-universal
-            client: lighting-macos
+            client: wisply-macos
           - os: ubuntu-24.04
             pack: linux-x64
-            client: lighting-linux-x64
+            client: wisply-linux-x64
           - os: ubuntu-24.04-arm
             pack: linux-arm64
-            client: lighting-linux-arm64
+            client: wisply-linux-arm64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     steps:
@@ -54,15 +54,15 @@ jobs:
             for t in aarch64-apple-darwin x86_64-apple-darwin; do
               cargo build --release --locked --target "$t" -p lighting -p lighting-ui
             done
-            for b in lighting lighting-ui; do
+            for b in wisply wisply-ui; do
               lipo -create -output "out/$b" "target/aarch64-apple-darwin/release/$b" "target/x86_64-apple-darwin/release/$b"
             done
           else
             cargo build --release --locked -p lighting -p lighting-ui
             if [ "$RUNNER_OS" = Windows ]; then
-              cp target/release/lighting.exe target/release/lighting-ui.exe target/release/lighting-task.exe out/
+              cp target/release/wisply.exe target/release/wisply-ui.exe target/release/wisply-task.exe out/
             else
-              cp target/release/lighting target/release/lighting-ui out/
+              cp target/release/wisply target/release/wisply-ui out/
             fi
           fi
       - name: Pack
@@ -70,13 +70,13 @@ jobs:
         run: |
           v="${GITHUB_REF_NAME#v}"
           [ "$GITHUB_REF_TYPE" = tag ] || v="$(git rev-parse --short HEAD)"
-          L=out/lighting; [ "$RUNNER_OS" = Windows ] && L=out/lighting.exe
+          L=out/wisply; [ "$RUNNER_OS" = Windows ] && L=out/wisply.exe
           "$L" --version
-          d="lighting-$v-${{ matrix.pack }}"
+          d="wisply-$v-${{ matrix.pack }}"
           mkdir -p "pack/$d/skills" dist
           cp -R out/. "pack/$d/"
           cp -R extension "pack/$d/extension"
-          cp -R skills/lighting "pack/$d/skills/lighting"
+          cp -R skills/wisply "pack/$d/skills/wisply"
           cp LICENSE NOTICE README.md "pack/$d/"
           cp "$L" "dist/${{ matrix.client }}"
           if [ "$RUNNER_OS" = Windows ]; then
@@ -116,18 +116,18 @@ jobs:
           node-version: "22"
       - name: Desktop extension (mcpb) and source
         run: |
-          chmod +x dist/lighting-macos dist/lighting-linux-*
+          chmod +x dist/wisply-macos dist/wisply-linux-*
           s=mcpb/stage
           mkdir -p "$s/bin" "$s/skills"
-          cp dist/lighting.exe dist/lighting-macos dist/lighting-linux-x64 dist/lighting-linux-arm64 "$s/bin/"
+          cp dist/wisply.exe dist/wisply-macos dist/wisply-linux-x64 dist/wisply-linux-arm64 "$s/bin/"
           cp -R extension "$s/extension"
-          cp -R skills/lighting "$s/skills/lighting"
+          cp -R skills/wisply "$s/skills/wisply"
           cp LICENSE NOTICE README.md "$s/"
           if [ -f docs/icon.png ]; then cp docs/icon.png "$s/icon.png"; fi
           jq --arg v "$(jq -r .version .claude-plugin/plugin.json)" '.version = $v' mcpb/manifest.json > "$s/manifest.json"
-          npx -y @anthropic-ai/mcpb@2.1.2 pack "$s" "$PWD/dist/lighting.mcpb"
+          npx -y @anthropic-ai/mcpb@2.1.2 pack "$s" "$PWD/dist/wisply.mcpb"
           rm -rf "$s"
-          git archive --format=zip -o "dist/lighting-${GITHUB_REF_NAME//\//-}-source.zip" HEAD
+          git archive --format=zip -o "dist/wisply-${GITHUB_REF_NAME//\//-}-source.zip" HEAD
       - uses: actions/attest-build-provenance@v3
         if: github.ref_type == 'tag'
         with:
@@ -159,4 +159,4 @@ jobs:
         if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --title "Lighting $GITHUB_REF_NAME" --notes-file notes.md
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "Wisply $GITHUB_REF_NAME" --notes-file notes.md

@@ -12,26 +12,26 @@ use tao::window::WindowBuilder;
 use wry::WebViewBuilder;
 use wry::http::Response;
 
-const TITLE: &str = "Lighting";
+const TITLE: &str = "Wisply";
 const SIZE: (f64, f64) = (1280.0, 820.0);
 const MIN_SIZE: (f64, f64) = (720.0, 480.0);
-const START: &str = "lighting://localhost/";
+const START: &str = "wisply://localhost/";
 const BACKGROUND: (u8, u8, u8, u8) = (14, 14, 16, 255);
 const QUIET_ENV: &str = "LIGHTING_UI_QUIET";
-const HELP: &str = "the Lighting window, open it with lighting ui";
+const HELP: &str = "the Wisply window, open it with wisply ui";
 
 pub enum Ev {
     Reply(u64, i32, String),
 }
 
 fn ours(url: &str) -> bool {
-    let rest = url.strip_prefix("lighting://localhost").or_else(|| url.strip_prefix("http://lighting.localhost"));
+    let rest = url.strip_prefix("wisply://localhost").or_else(|| url.strip_prefix("http://wisply.localhost"));
     rest.is_some_and(|r| r.is_empty() || r.starts_with('/')) || url == "about:blank"
 }
 
 fn main() -> wry::Result<()> {
     if let Some(arg) = std::env::args().nth(1).filter(|a| ["--version", "-V", "--help", "-h"].contains(&a.as_str())) {
-        let version = format!("lighting-ui {}", env!("CARGO_PKG_VERSION"));
+        let version = format!("wisply-ui {}", env!("CARGO_PKG_VERSION"));
         println!("{}", if arg.contains('V') || arg == "--version" { version } else { format!("{version}: {HELP}") });
         return Ok(());
     }
@@ -47,7 +47,7 @@ fn main() -> wry::Result<()> {
         .map_err(|e| wry::Error::Io(std::io::Error::other(e.to_string())))?;
     let builder = WebViewBuilder::new()
         .with_background_color(BACKGROUND)
-        .with_custom_protocol("lighting".into(), |_, req| {
+        .with_custom_protocol("wisply".into(), |_, req| {
             let (status, kind, body) = assets::serve(req.uri().path());
             Response::builder()
                 .status(status)
@@ -91,7 +91,7 @@ fn main() -> wry::Result<()> {
 mod tests {
     #[test]
     fn only_own_pages_load_inside_the_window() {
-        assert!(super::ours("lighting://localhost/") && super::ours("http://lighting.localhost/app.js"));
-        assert!(!super::ours("https://example.com") && !super::ours("http://lighting.localhost.evil.com/"));
+        assert!(super::ours("wisply://localhost/") && super::ours("http://wisply.localhost/app.js"));
+        assert!(!super::ours("https://example.com") && !super::ours("http://wisply.localhost.evil.com/"));
     }
 }

@@ -34,13 +34,13 @@ fn listen() {
     let mut told = false;
     while let Err(e) = unsafe { RegisterHotKey(None, 1, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, u32::from(VK_END.0)) } {
         if !told {
-            eprintln!("lighting daemon: {NAME} not free yet ({e}), trying again every {RETRY:?}");
+            eprintln!("wisply daemon: {NAME} not free yet ({e}), trying again every {RETRY:?}");
             told = true;
         }
         thread::sleep(RETRY);
     }
     if told {
-        eprintln!("lighting daemon: {NAME} registered");
+        eprintln!("wisply daemon: {NAME} registered");
     }
     READY.store(true, Ordering::SeqCst);
     let mut msg = MSG::default();

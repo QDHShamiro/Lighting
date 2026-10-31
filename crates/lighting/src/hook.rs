@@ -37,7 +37,7 @@ static LISTING: LazyLock<Regex> = LazyLock::new(|| {
         r"{SEGMENT}(?:ls|dir|tree|find|fd|{GIT}(?:log|ls-files|status|blame|rev-list|show-ref|branch|tag)|rg\s+(?:--files|-l)|grep\s+-[A-Za-z]*l)\b"
     ))
 });
-static OWN: LazyLock<Regex> = LazyLock::new(|| re(&format!(r"{SEGMENT}(?:\S*[/\\])?lighting(?:\.exe)?\b")));
+static OWN: LazyLock<Regex> = LazyLock::new(|| re(&format!(r"{SEGMENT}(?:\S*[/\\])?(?:wisply|lighting)(?:\.exe)?\b")));
 static LOGISH: LazyLock<Regex> =
     LazyLock::new(|| re(r"(?i)\.(?:log|jsonl|out|output|txt|csv)\b|/logs?/|results\.md|tasks/"));
 static KEPT: LazyLock<Regex> = LazyLock::new(|| re(r"(?:headroom[/\\]+out[/\\]+|\bmore\s+)(hr-[0-9a-f]{10})"));
@@ -153,7 +153,7 @@ fn bash(
     let name = format!("hr-{:010x}", fnv(&[event["tool_use_id"].as_str().unwrap_or_default(), s.plain.as_str()]) >> 24);
     let file = paths.out.join(format!("{name}.txt"));
     let new = format!(
-        "lighting squeezed {} lines (~{} tokens) to {} lines (~{} tokens), all of it: {}\n{}",
+        "wisply squeezed {} lines (~{} tokens) to {} lines (~{} tokens), all of it: {}\n{}",
         commas(s.lines_in),
         commas(s.chars_in / 4),
         s.lines_out,
@@ -216,7 +216,7 @@ fn failed(paths: &Paths, why: &str) -> Option<String> {
     let off = paths.state.join("off");
     let _ = fs::write(&off, format!("{why}\n"));
     let message = format!(
-        "Lighting stopped squeezing tool outputs after {ERRORS_MAX} errors in {} minutes (last: {why}). Outputs come through in full now; delete {} to turn it back on.",
+        "Wisply stopped squeezing tool outputs after {ERRORS_MAX} errors in {} minutes (last: {why}). Outputs come through in full now; delete {} to turn it back on.",
         ERRORS_WINDOW_S / 60,
         slashed(&off)
     );
@@ -310,7 +310,7 @@ mod tests {
     fn scratch(name: &str) -> Scratch {
         let root = env::temp_dir().join(format!("lt-hook-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
-        Scratch(Paths::new(&root.join(".lighting")), root)
+        Scratch(Paths::new(&root.join(".wisply")), root)
     }
 
     fn session(holdout: bool) -> String {
@@ -353,7 +353,7 @@ mod tests {
         assert_eq!(out["hookEventName"], "PostToolUse");
         let updated = &out["updatedToolOutput"];
         let stdout = updated["stdout"].as_str().expect("stdout");
-        assert!(stdout.starts_with("lighting squeezed 401 lines"), "{stdout}");
+        assert!(stdout.starts_with("wisply squeezed 401 lines"), "{stdout}");
         assert!(stdout.contains("ERROR upload failed: connection refused"));
         assert!(stdout.chars().count() < log.chars().count());
         assert_eq!((updated["stderr"].as_str(), updated["interrupted"].as_bool()), (Some("warn: x"), Some(false)));
@@ -395,7 +395,8 @@ mod tests {
         ] {
             assert_eq!(untouchable(cmd), Some("exact"), "{cmd}");
         }
-        for cmd in ["lighting snap", "rtk lighting text -f x", "\"E:/Lighting/bin/lighting.exe\" recall x"] {
+        for cmd in ["wisply snap", "rtk wisply text -f x", "\"E:/Lighting/bin/lighting.exe\" recall x", "lighting snap"]
+        {
             assert_eq!(untouchable(cmd), Some("own"), "{cmd}");
         }
         for cmd in [
@@ -427,12 +428,12 @@ mod tests {
     #[test]
     fn reading_a_kept_output_counts_as_a_reload() {
         let paths = scratch("reload");
-        let kept = "C:\\Users\\x\\.lighting\\headroom\\out\\hr-0123456789.txt";
+        let kept = "C:\\Users\\x\\.wisply\\headroom\\out\\hr-0123456789.txt";
         let read = json!({"tool_name": "Read", "session_id": "s", "tool_input": {"file_path": kept}});
         assert!(run(read.to_string().as_bytes(), &paths, Instant::now(), SLOW_CI).0.is_none());
-        let grep = bash_event("s", "grep -n ERROR ~/.lighting/headroom/out/hr-abcdefabcd.txt", &big_log());
+        let grep = bash_event("s", "grep -n ERROR ~/.wisply/headroom/out/hr-abcdefabcd.txt", &big_log());
         assert!(run(&grep, &paths, Instant::now(), SLOW_CI).0.is_none());
-        let more = bash_event("s", "lighting more hr-1234512345 --grep ERROR", &big_log());
+        let more = bash_event("s", "wisply more hr-1234512345 --grep ERROR", &big_log());
         assert!(run(&more, &paths, Instant::now(), SLOW_CI).0.is_none());
         let refs: Vec<(Value, Value)> = logged(&paths).iter().map(|e| (e["act"].clone(), e["ref"].clone())).collect();
         let want = ["hr-0123456789", "hr-abcdefabcd", "hr-1234512345"].map(|r| (json!("reload"), json!(r)));

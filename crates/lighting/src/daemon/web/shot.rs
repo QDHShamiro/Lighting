@@ -45,7 +45,7 @@ const GLYPHS: &[(char, [u8; 7])] = &[
 ];
 
 pub fn shot(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
-    let out = out_path(ctx, c, SHOT_KINDS, "lighting shot --out C:/shots/page.png")?;
+    let out = out_path(ctx, c, SHOT_KINDS, "wisply shot --out C:/shots/page.png")?;
     let reference = c.pos.first().filter(|p| REF_RE.is_match(p)).cloned();
     let msg = call(d, ctx, "shot", obj(json!({"ref": reference, "marks": c.on("marks")})), 30.0)?;
     let img = crop(decode(text_of(&msg, "image"))?, &msg);
@@ -53,7 +53,7 @@ pub fn shot(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let key = format!("web-{}", reference.as_deref().unwrap_or("view"));
     let mut res = save_image(d, ctx, &img, &key, c.on("if-changed"), width, threshold(c)?, out)?;
     if c.on("marks") {
-        res.push_str(&format!("\n{} orange labels = e-refs (label 12 -> lighting click e12)", num(msg.get("marks"))));
+        res.push_str(&format!("\n{} orange labels = e-refs (label 12 -> wisply click e12)", num(msg.get("marks"))));
     }
     Ok(res)
 }
@@ -148,7 +148,7 @@ fn threshold(c: &Call) -> Result<f64, Fail> {
         .trim()
         .parse::<f64>()
         .map(|v| v.clamp(0.0, 100.0))
-        .map_err(|_| Fail::hint("--threshold needs a percent of the picture", "lighting shot --threshold 2"))
+        .map_err(|_| Fail::hint("--threshold needs a percent of the picture", "wisply shot --threshold 2"))
 }
 
 fn luma(img: &DynamicImage, size: (u32, u32), step: Option<u8>) -> Vec<u8> {
@@ -283,15 +283,14 @@ pub fn sheet(tiles: &[DynamicImage], stamps: &[String]) -> RgbImage {
 
 pub fn frames(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let Some(reference) = c.pos.first().filter(|p| REF_RE.is_match(p)).cloned() else {
-        return Err(Fail::hint("frames needs the ref of a video", "lighting snap -f video, then lighting frames e40"));
+        return Err(Fail::hint("frames needs the ref of a video", "wisply snap -f video, then wisply frames e40"));
     };
     let count = number(c, "count")?.unwrap_or(6).clamp(2, 12);
     let every = number(c, "every")?.unwrap_or(1500).clamp(200, 10_000);
     let (scenes, live) = (c.on("scenes"), c.on("live"));
     let range = seconds(c.val("from")).and_then(|lo| seconds(c.val("to")).map(|hi| (lo, hi)));
-    let (lo, hi) = range.map_err(|()| {
-        Fail::hint("--from and --to take seconds or m:ss", "lighting frames e40 --from 1:30 --to 2:00")
-    })?;
+    let (lo, hi) = range
+        .map_err(|()| Fail::hint("--from and --to take seconds or m:ss", "wisply frames e40 --from 1:30 --to 2:00"))?;
     let samples = if scenes { count * 4 } else { count };
     let timeout = 30 + if live { count * every / 1000 } else { samples * 8 };
     let args = obj(json!({"ref": reference, "count": count, "every": every, "live": live, "from": lo, "to": hi,
@@ -302,7 +301,7 @@ pub fn frames(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         _ => Vec::new(),
     };
     if frames.is_empty() {
-        return Err(Fail::hint("no frames captured", format!("lighting shot {reference}")));
+        return Err(Fail::hint("no frames captured", format!("wisply shot {reference}")));
     }
     let mut tiles = frames.iter().map(|f| decode(text_of(f, "image"))).collect::<Result<Vec<_>, _>>()?;
     let moving = msg.get("live").and_then(Value::as_bool).unwrap_or(false);
@@ -335,7 +334,7 @@ pub fn frames(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
             " | the video did not move (paused or not playing) -> try: click {reference} or press k, then frames again"
         ),
         (true, false) => {
-            format!(" | all frames look the same (black or not decoding) -> try: lighting frames {reference} --live")
+            format!(" | all frames look the same (black or not decoding) -> try: wisply frames {reference} --live")
         }
     };
     let mode = if moving {

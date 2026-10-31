@@ -76,17 +76,17 @@ fn plan_rows(d: &Daemon, ctx: &mut Ctx) -> Result<Vec<String>, Fail> {
 fn mcp_probe(home: &std::path::Path) -> Probe {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
     let mut cmd = Command::new(exe);
-    cmd.arg("mcp").env("LIGHTING_HOME", home).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
+    cmd.arg("mcp").env("WISPLY_HOME", home).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
     crate::v2::hide(&mut cmd);
     let mut child = cmd.spawn().map_err(|e| e.to_string())?;
     let (Some(mut input), Some(output)) = (child.stdin.take(), child.stdout.take()) else {
-        return Err("no pipes to lighting mcp".into());
+        return Err("no pipes to wisply mcp".into());
     };
     let mut lines = BufReader::new(output).lines();
     let mut ask = |id: usize, method: &str, params: Value| -> Result<String, String> {
         let msg = json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params});
         writeln!(input, "{msg}").and_then(|()| input.flush()).map_err(|e| e.to_string())?;
-        lines.next().ok_or("lighting mcp closed")?.map_err(|e| e.to_string())
+        lines.next().ok_or("wisply mcp closed")?.map_err(|e| e.to_string())
     };
     let t0 = Instant::now();
     let info = json!({"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "bench", "version": super::super::VERSION}});
@@ -95,7 +95,7 @@ fn mcp_probe(home: &std::path::Path) -> Probe {
     let mut times = Vec::with_capacity(MCP_CALLS);
     for i in 0..MCP_CALLS {
         let t = Instant::now();
-        let answer = ask(10 + i, "tools/call", json!({"name": "lighting", "arguments": {"cmd": "ping"}}))?;
+        let answer = ask(10 + i, "tools/call", json!({"name": "wisply", "arguments": {"cmd": "ping"}}))?;
         times.push(t.elapsed().as_secs_f64() * 1000.0);
         if !answer.contains("pong") {
             return Err(format!("unexpected answer {}", answer.chars().take(80).collect::<String>()));
@@ -118,7 +118,7 @@ fn with_mcp(d: &Daemon, rows: Vec<String>) -> Pending {
         let got = box_.lock().unwrap_or_else(std::sync::PoisonError::into_inner).take();
         let line = match got {
             Some(Ok((start, med, max))) => format!(
-                "mcp ping through lighting mcp: start {start} ms, then median {med:.1} ms, max {max:.1} ms ({MCP_CALLS} calls)"
+                "mcp ping through wisply mcp: start {start} ms, then median {med:.1} ms, max {max:.1} ms ({MCP_CALLS} calls)"
             ),
             Some(Err(e)) => format!("mcp: {e}"),
             None if last => "mcp: no answer within 60 s".into(),
@@ -196,7 +196,7 @@ pub fn bench(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         return Ok(Out::Text(real(d, ctx, c)));
     }
     if !super::super::web::any_browser(d) {
-        return Err(Fail::hint("bench needs the browser", "lighting setup"));
+        return Err(Fail::hint("bench needs the browser", "wisply setup"));
     }
     let rows = plan_rows(d, ctx)?;
     if !ctx.run_stack.is_empty() || c.on("no-mcp") {

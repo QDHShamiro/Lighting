@@ -109,7 +109,7 @@ fn claude_out(args: &[&str]) -> Result<String, Fail> {
         let tail: String = err.chars().rev().take(ERR_TAIL).collect::<Vec<_>>().into_iter().rev().collect();
         return Err(Fail::hint(
             format!("claude {} failed: {tail}", args[0]),
-            "lighting claude list shows the session ids",
+            "wisply claude list shows the session ids",
         ));
     }
     Ok(text)
@@ -128,7 +128,7 @@ pub fn list_text(rows: &[Value], all: bool, at: f64) -> String {
         bg.iter().copied().filter(|r| all || (r["state"] != "stopped" && started(r) >= since)).collect();
     let hidden = bg.len() - shown.len();
     let more = if hidden > 0 {
-        format!("\n({hidden} stopped or older than {LIST_DAYS} days: lighting claude list --all)")
+        format!("\n({hidden} stopped or older than {LIST_DAYS} days: wisply claude list --all)")
     } else {
         String::new()
     };
@@ -314,10 +314,7 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     }
     if !yes && first.as_deref() == Some("logs") {
         let [_, sid] = c.pos.as_slice() else {
-            return Err(Fail::hint(
-                "which session?",
-                "lighting claude list shows the ids, then lighting claude logs <id>",
-            ));
+            return Err(Fail::hint("which session?", "wisply claude list shows the ids, then wisply claude logs <id>"));
         };
         return Ok(Out::Text(log_tail(&claude_out(&["logs", sid])?, sid)));
     }
@@ -325,7 +322,7 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     if !prompt.is_empty() && !yes {
         return Err(Fail::hint(
             "a Claude session with a prompt starts working on its own: only when the user asked for it",
-            "lighting claude \"the task\" --yes",
+            "wisply claude \"the task\" --yes",
         ));
     }
     let folder = c
@@ -364,7 +361,7 @@ mod tests {
         let lines: Vec<&str> = text.lines().collect();
         assert!(lines[0].starts_with("bbb222 idle (input) \"new\" E:/b, started "), "{text}");
         assert!(lines[1].starts_with("aaa111 running \"old\" E:/a, started "), "{text}");
-        assert_eq!(lines[2], "(1 stopped or older than 7 days: lighting claude list --all)");
+        assert_eq!(lines[2], "(1 stopped or older than 7 days: wisply claude list --all)");
         assert_eq!(list_text(&rows, true, at).lines().count(), 3);
         assert_eq!(list_text(&[], false, at), "no background Claude sessions running");
     }

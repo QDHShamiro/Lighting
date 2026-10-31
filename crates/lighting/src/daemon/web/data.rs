@@ -18,7 +18,7 @@ pub fn net(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let calls = got.get("calls").and_then(Value::as_array).cloned().unwrap_or_default();
     if calls.is_empty() {
         return Ok(
-            "no JSON answers seen in this tab yet (only GET calls after Lighting attached; reload to capture)".into()
+            "no JSON answers seen in this tab yet (only GET calls after Wisply attached; reload to capture)".into()
         );
     }
     let rows: Vec<&Value> = calls.iter().rev().collect();
@@ -26,14 +26,14 @@ pub fn net(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     if !digits.is_empty() && digits.bytes().all(|b| b.is_ascii_digit()) {
         let n: usize = digits.parse().unwrap_or(0);
         if n == 0 || n > rows.len() {
-            return Err(Fail::hint(format!("no call n{n}"), "lighting net"));
+            return Err(Fail::hint(format!("no call n{n}"), "wisply net"));
         }
         let got = call(d, ctx, "net", obj(json!({"op": "body", "id": rows[n - 1].get("id")})), CALL_TIMEOUT)?;
         let url = pystr(got.get("url").unwrap_or(&Value::Null));
         let body = got.get("body").and_then(Value::as_str).unwrap_or("");
         let Ok(data) = serde_json::from_str::<Value>(body) else { return Ok(format!("n{n} {url}: not JSON")) };
         return Ok(format!(
-            "n{n} GET {} ({})\n{}\n-> lighting fetch \"{url}\" --pick <path>",
+            "n{n} GET {} ({})\n{}\n-> wisply fetch \"{url}\" --pick <path>",
             short_url(&url),
             kb(num(got.get("size"))),
             shape(&data, 0)
@@ -50,7 +50,7 @@ pub fn net(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         })
         .collect();
     let body = if lines.is_empty() { "no call matches".to_string() } else { lines.join("\n") };
-    Ok(format!("{body}\n-> lighting net <n> shows the data"))
+    Ok(format!("{body}\n-> wisply net <n> shows the data"))
 }
 
 pub fn tools(d: &Daemon, ctx: &mut Ctx) -> Result<String, Fail> {
@@ -76,23 +76,23 @@ pub fn tools(d: &Daemon, ctx: &mut Ctx) -> Result<String, Fail> {
             format!("{name}({}){read_only} - {what}", args.join(", "))
         })
         .collect();
-    Ok(format!("{}\n-> lighting call <tool> '{{\"arg\": 1}}'", lines.join("\n")))
+    Ok(format!("{}\n-> wisply call <tool> '{{\"arg\": 1}}'", lines.join("\n")))
 }
 
 pub fn call_tool(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
-    let Some(name) = c.pos.first() else { return Err(Fail::hint("call needs a tool name", "lighting tools")) };
+    let Some(name) = c.pos.first() else { return Err(Fail::hint("call needs a tool name", "wisply tools")) };
     let raw = c.pos[1..].join(" ");
     let args: Value = serde_json::from_str(if raw.is_empty() { "{}" } else { raw.as_str() })
-        .map_err(|_| Fail::hint("the arguments must be JSON", format!("lighting call {name} '{{\"q\": \"x\"}}'")))?;
+        .map_err(|_| Fail::hint("the arguments must be JSON", format!("wisply call {name} '{{\"q\": \"x\"}}'")))?;
     let got = call(d, ctx, "webmcp", obj(json!({"op": "list"})), CALL_TIMEOUT)?;
     let tools = got.get("tools").and_then(Value::as_array).cloned().unwrap_or_default();
     let Some(tool) = tools.iter().rev().find(|t| t.get("name").and_then(Value::as_str) == Some(name)) else {
-        return Err(Fail::hint(format!("no tool {name} on this page"), "lighting tools"));
+        return Err(Fail::hint(format!("no tool {name} on this page"), "wisply tools"));
     };
     if !truthy(tool.get("readOnly")) && !c.on("yes") {
         return Err(Fail::hint(
             format!("{name} can change things on the site"),
-            format!("only if the user agreed: lighting call {name} ... --yes"),
+            format!("only if the user agreed: wisply call {name} ... --yes"),
         ));
     }
     let got = call(d, ctx, "webmcp", obj(json!({"op": "call", "name": name, "args": args})), 60.0)?;
@@ -102,7 +102,7 @@ pub fn call_tool(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
 
 pub fn fetch(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let Some(url) = c.pos.first() else {
-        return Err(Fail::hint("fetch needs a url", "lighting fetch /api/user --pick login"));
+        return Err(Fail::hint("fetch needs a url", "wisply fetch /api/user --pick login"));
     };
     leak_check(d, url, c)?;
     let method = c.val("method").filter(|m| !m.is_empty()).unwrap_or("GET").to_uppercase();

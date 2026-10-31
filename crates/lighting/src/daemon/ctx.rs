@@ -50,7 +50,7 @@ impl Fails {
         if brake && n >= REPEAT_BRAKE_AT {
             let wait = 1u64.checked_shl(n - REPEAT_BRAKE_AT).unwrap_or(u64::MAX).min(REPEAT_BRAKE_MAX_S);
             let text = format!(
-                "{out}\n! STOP: the same command failed {n} times in a row with this error, so Lighting waited {wait} s before answering. Change the command or end the loop"
+                "{out}\n! STOP: the same command failed {n} times in a row with this error, so Wisply waited {wait} s before answering. Change the command or end the loop"
             );
             return Err((Duration::from_secs(wait), text));
         }
@@ -200,11 +200,11 @@ impl Contexts {
 
     fn free_group(&self, sid: &str) -> String {
         if sid.is_empty() {
-            return "Lighting".into();
+            return "Wisply".into();
         }
         let taken: HashSet<&str> = self.map.values().map(|c| c.group.as_str()).collect();
-        let n = (1..).find(|n| !taken.contains(format!("Lighting #{n}").as_str())).unwrap_or(1);
-        format!("Lighting #{n}")
+        let n = (1..).find(|n| !taken.contains(format!("Wisply #{n}").as_str())).unwrap_or(1);
+        format!("Wisply #{n}")
     }
 
     pub fn note_resets(&mut self, resets: u64) {
@@ -259,7 +259,7 @@ impl Contexts {
             if sid.is_empty() || t - used > SESSION_IDLE_S {
                 continue;
             }
-            let group = s.get("group").and_then(Value::as_str).filter(|g| !g.is_empty()).unwrap_or("Lighting");
+            let group = s.get("group").and_then(Value::as_str).filter(|g| !g.is_empty()).unwrap_or("Wisply");
             let mut c = Ctx::new(sid, group.to_string(), self.side);
             c.tabs = strings(s.get("tabs"));
             c.owned = strings(s.get("owned")).into_iter().collect();
@@ -321,9 +321,9 @@ mod tests {
         let _ = fs::remove_dir_all(&home);
         fs::create_dir_all(&home).unwrap();
         let mut ctxs = Contexts::default();
-        assert_eq!(ctxs.get("").group, "Lighting");
-        assert_eq!(ctxs.get("a").group, "Lighting #1");
-        assert_eq!(ctxs.get("b").group, "Lighting #2");
+        assert_eq!(ctxs.get("").group, "Wisply");
+        assert_eq!(ctxs.get("a").group, "Wisply #1");
+        assert_eq!(ctxs.get("b").group, "Wisply #2");
         let a = ctxs.get("a");
         a.tabs = vec!["t4".into(), "t2".into()];
         a.owned.insert("t4".into());
@@ -333,9 +333,9 @@ mod tests {
         let mut back = Contexts::default();
         assert_eq!(back.load(&home), epochs);
         let a = back.get("a");
-        assert_eq!((a.group.as_str(), a.tabs.len(), a.owned.contains("t4")), ("Lighting #1", 2, true));
+        assert_eq!((a.group.as_str(), a.tabs.len(), a.owned.contains("t4")), ("Wisply #1", 2, true));
         assert_eq!(a.target, Some(("web".into(), "brave".into())));
-        assert_eq!(back.get("c").group, "Lighting #3");
+        assert_eq!(back.get("c").group, "Wisply #3");
         back.note_resets(1);
         assert!(back.get("a").tabs.is_empty());
         let saved: Value = serde_json::from_str(&fs::read_to_string(home.join("sessions.json")).unwrap()).unwrap();

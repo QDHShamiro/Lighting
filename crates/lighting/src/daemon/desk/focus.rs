@@ -33,9 +33,9 @@ pub fn put_back(prev: isize, app: isize) -> Option<&'static str> {
         return None;
     }
     Some(if win::set_foreground(prev) {
-        "! the app jumped to the front, Lighting put the previous window back"
+        "! the app jumped to the front, Wisply put the previous window back"
     } else {
-        "! the app jumped to the front and Lighting could not put the previous window back"
+        "! the app jumped to the front and Wisply could not put the previous window back"
     })
 }
 

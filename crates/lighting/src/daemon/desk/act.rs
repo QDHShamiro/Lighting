@@ -17,7 +17,7 @@ use super::{Desk, Halt, Res, TERMINALS, windowish};
 const TYPE_SETTLE_S: f64 = 0.3;
 const KEY_QUIET_S: f64 = 0.25;
 const FIELD_ROLES: &[&str] = &["edit", "combobox", "document", "spinner"];
-const BROWSER_TABS: &str = "lighting tabs, then lighting tab t3 (Lighting moves its own tab, the visible tab stays)";
+const BROWSER_TABS: &str = "wisply tabs, then wisply tab t3 (Wisply moves its own tab, the visible tab stays)";
 
 fn press_keys(keys: &Keys, raw: &str, scancode: bool) -> Result<(), Fail> {
     let parsed = combo::parse(raw, input::scan).map_err(Fail::new)?;
@@ -74,9 +74,7 @@ fn point_of(arg: &str) -> Option<(i32, i32)> {
 
 fn point_click(x: &mut Desk, hwnd: isize, (px, py): (i32, i32), c: &Call) -> Res<String> {
     if hwnd == 0 {
-        return Err(
-            Fail::hint(format!("@{px},{py}: which window?"), "lighting read w3, then lighting click @x,y").into()
-        );
+        return Err(Fail::hint(format!("@{px},{py}: which window?"), "wisply read w3, then wisply click @x,y").into());
     }
     let (b, n) = button(c);
     focus::click(x.bg(hwnd), px, py, b, n, hwnd)?;
@@ -108,7 +106,7 @@ impl Desk<'_> {
     fn ocr_click(&mut self, spec: &str, c: &Call) -> Res<Option<String>> {
         let hit = if ref_kind(spec) == Some("o") {
             let Some(hit) = self.st.ocr.iter().find(|o| o.0 == spec) else {
-                return Err(Fail::hint(format!("{spec} is unknown"), "lighting read").into());
+                return Err(Fail::hint(format!("{spec} is unknown"), "wisply read").into());
             };
             hit.clone()
         } else {
@@ -154,8 +152,7 @@ impl Desk<'_> {
             }
         }
         let title: String = win::text_of(hwnd).chars().take(40).collect();
-        Err(Fail::hint(format!("nothing focused in {title}"), "lighting click the field first, or type d<N> text")
-            .into())
+        Err(Fail::hint(format!("nothing focused in {title}"), "wisply click the field first, or type d<N> text").into())
     }
 
     pub(super) fn put_text(&mut self, hwnd: isize, el: &El, label: &str, text: &str, c: &Call) -> Res<String> {
@@ -242,7 +239,7 @@ pub fn click(x: &mut Desk, c: &Call) -> Res<String> {
                 let wref = x.wref(hwnd);
                 return Err(Fail::hint(
                     format!("nothing called \"{arg}\" in {wref}"),
-                    "lighting snap, or lighting read for screen text",
+                    "wisply snap, or wisply read for screen text",
                 )
                 .into());
             }
@@ -278,12 +275,12 @@ pub fn type_in(x: &mut Desk, c: &Call) -> Res<String> {
     let Some(first) = c.pos.first() else {
         return Err(Fail::hint(
             "type needs a d-ref, a field name or focused",
-            "lighting type d5 \"hello\" | type \"Search\" hello",
+            "wisply type d5 \"hello\" | type \"Search\" hello",
         )
         .into());
     };
     if ref_kind(first) == Some("o") {
-        let how = format!("lighting click {first}, then lighting type focused \"<text>\"");
+        let how = format!("wisply click {first}, then wisply type focused \"<text>\"");
         return Err(Fail::hint(format!("{first} is screen text, not a field"), how).into());
     }
     let (label, el) = if ref_kind(first) == Some("d") {
@@ -299,7 +296,7 @@ pub fn type_in(x: &mut Desk, c: &Call) -> Res<String> {
         };
         let Some(found) = found else {
             let wref = x.wref(hwnd);
-            return Err(Fail::hint(format!("no field called \"{first}\" in {wref}"), "lighting snap").into());
+            return Err(Fail::hint(format!("no field called \"{first}\" in {wref}"), "wisply snap").into());
         };
         found
     };
@@ -316,7 +313,7 @@ pub fn press(x: &mut Desk, c: &Call) -> Res<String> {
     let window = c.pos.iter().find(|p| windowish(p)).map(String::as_str);
     let combos: Vec<&String> = c.pos.iter().filter(|p| !windowish(p)).collect();
     if combos.is_empty() {
-        return Err(Fail::hint("press needs keys", "lighting press ctrl+s | press w3 ctrl+s").into());
+        return Err(Fail::hint("press needs keys", "wisply press ctrl+s | press w3 ctrl+s").into());
     }
     let all = combos.iter().map(|k| k.as_str()).collect::<Vec<_>>().join(" ");
     if combos.iter().all(|p| combo::media(p)) {
@@ -407,7 +404,7 @@ pub fn scroll(x: &mut Desk, c: &Call) -> Res<String> {
 
 pub fn drag(x: &mut Desk, c: &Call) -> Res<String> {
     let [a, b, ..] = c.pos.as_slice() else {
-        return Err(Fail::hint("drag needs two d-refs", "lighting drag d3 d9").into());
+        return Err(Fail::hint("drag needs two d-refs", "wisply drag d3 d9").into());
     };
     let from = Desk::center(&x.element(a)?)?;
     let to = Desk::center(&x.element(b)?)?;

@@ -6,7 +6,7 @@ use lt_core::{Call, Fail, Flag, OUT_CHARS, ago, built_later, listing, parse, sta
 use super::ctx::Ctx;
 use super::{Daemon, Out, VERSION, config, media, route, web};
 
-const HELP: &str = "lighting 3.0 <command> [args]   browser, desktop apps, video and memory for AI agents
+const HELP: &str = "wisply 3.0 <command> [args]   browser, desktop apps, video and memory for AI agents
 refs: e12 web element | t77 tab | w3 window | d5 app element
 
 web     open <url> [-n] [-f \"a|b\"] [--text]   snap [-f \"a|b\"] [-s css|ref] [--all] [--full] [--diff] [--links]   text [-f txt] [--links]
@@ -35,8 +35,8 @@ system  status   channels   stop   abort   config [key value]   log [n] | log st
 
 Any action takes -f \"a|b\" to show the matching lines of the result in the same call.
 Output is plain text, one line per action. Big results go to a file (path printed).
-Tabs Lighting opened close on done (Claude Code runs it after every reply); keep hands one to the user.
-Safety: risky clicks and long URL data to new sites need --yes, lighting abort stops everything.";
+Tabs Wisply opened close on done (Claude Code runs it after every reply); keep hands one to the user.
+Safety: risky clicks and long URL data to new sites need --yes, wisply abort stops everything.";
 const STATS_LINES: usize = 40;
 const KEYS_LINES: usize = 60;
 
@@ -52,7 +52,7 @@ pub fn used(ctx: &mut Ctx, argv: &[String]) -> Vec<String> {
 pub fn run_one(d: &Daemon, ctx: &mut Ctx, argv: &[String]) -> Result<(Out, String), Fail> {
     let call = parse(argv);
     if call.name.is_empty() {
-        return Err(Fail::hint("no command", "lighting help"));
+        return Err(Fail::hint("no command", "wisply help"));
     }
     let asks_help = matches!(call.name.as_str(), "help" | "-h" | "--help");
     if !asks_help && wants_help(argv).is_some() {
@@ -61,7 +61,7 @@ pub fn run_one(d: &Daemon, ctx: &mut Ctx, argv: &[String]) -> Result<(Out, Strin
     if call.flags.get("f") == Some(&Flag::On) {
         return Err(Fail::hint(
             "-f needs the words to look for, like -f \"save|draft\"; nothing was done",
-            format!("lighting {} ... -f \"<words>\"", call.name),
+            format!("wisply {} ... -f \"<words>\"", call.name),
         ));
     }
     ctx.last_target = None;
@@ -72,7 +72,7 @@ pub fn run_one(d: &Daemon, ctx: &mut Ctx, argv: &[String]) -> Result<(Out, Strin
         "stop" => {
             super::routines::close(d, ctx);
             super::brain::save(&d.home);
-            return Ok((Out::Stop("lighting daemon stopped".into()), call.name));
+            return Ok((Out::Stop("wisply daemon stopped".into()), call.name));
         }
         "status" => status(d, ctx),
         "log" => log(d, ctx, &call),
@@ -134,7 +134,7 @@ fn posix(path: &Path) -> String {
 fn status(d: &Daemon, ctx: &Ctx) -> String {
     let up = ago(d.started.elapsed().as_secs());
     let mut lines =
-        vec![format!("lighting {VERSION} | daemon pid {} up {up} | hotkey {}", d.pid, super::hotkey::label())];
+        vec![format!("wisply {VERSION} | daemon pid {} up {up} | hotkey {}", d.pid, super::hotkey::label())];
     web::any_browser(d);
     let mut hosts = d.hosts.alive();
     hosts.sort_by(|a, b| b.focused().max(b.connected).total_cmp(&a.focused().max(a.connected)));
@@ -146,14 +146,14 @@ fn status(d: &Daemon, ctx: &Ctx) -> String {
         let update = match (!ext.is_empty() && ext != want, d.hosts.reloaded(&h.brand)) {
             (false, _) => String::new(),
             (true, true) => format!(" | updating extension to {want}"),
-            (true, false) => " | OUTDATED, run: lighting setup".into(),
+            (true, false) => " | OUTDATED, run: wisply setup".into(),
         };
         let browser = h.info("browserVersion").unwrap_or_else(|| "?".into());
         let ext = if ext.is_empty() { "?".into() } else { ext };
         lines.push(format!("browser {} {browser} | ext {ext}{in_use}{update}", h.brand));
     }
     if hosts.is_empty() {
-        lines.push("browser none connected (extension not loaded or browser closed) -> lighting setup".into());
+        lines.push("browser none connected (extension not loaded or browser closed) -> wisply setup".into());
     }
     if let Some((kind, name)) = &ctx.target {
         lines.push(format!("target {kind} {name}"));

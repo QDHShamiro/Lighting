@@ -214,7 +214,7 @@ fn tips(s: &Sum, sessions: &[Vec<Req>], weighted: f64) -> Vec<String> {
     let share = |k: usize| 100.0 * s.parts[k] / ctx;
     if share(BASH) + share(READ) >= TIP_PCT {
         out.push((share(BASH) + share(READ), format!(
-            "tool output: Bash ~{}% and file reads ~{}% of all context, kept until the next compact. Outline a file first and read one function or a line range (lighting code outline <file>, lighting code body <Name>, sed -n 40,90p), search with lighting grep, run long commands through lighting squeeze -- <cmd>",
+            "tool output: Bash ~{}% and file reads ~{}% of all context, kept until the next compact. Outline a file first and read one function or a line range (wisply code outline <file>, wisply code body <Name>, sed -n 40,90p), search with wisply grep, run long commands through wisply squeeze -- <cmd>",
             pyround(share(BASH)), pyround(share(READ))
         )));
     }
@@ -300,7 +300,7 @@ pub fn run(home: &Path, pos: &[String]) -> Result<String, Fail> {
         .filter(|w| !w.is_empty() && w.bytes().all(|b| b.is_ascii_digit()))
         .and_then(|w| w.parse::<i64>().ok())
         .filter(|d| *d >= 1)
-        .ok_or_else(|| Fail::hint("which days?", "lighting tokens claude | lighting tokens claude 7"))?;
+        .ok_or_else(|| Fail::hint("which days?", "wisply tokens claude | wisply tokens claude 7"))?;
     let today = day_no(&local_now()).unwrap_or(0);
     Ok(report(&load(home, today - days + 1), days))
 }

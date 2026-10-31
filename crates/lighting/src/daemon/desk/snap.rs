@@ -80,7 +80,7 @@ impl Desk<'_> {
         if win::blocked(win::pid_of(hwnd)) {
             return Err(Fail::hint(
                 "this window runs as administrator; Windows blocks control from normal apps",
-                "start the terminal as administrator, or use lighting read / shot",
+                "start the terminal as administrator, or use wisply read / shot",
             )
             .into());
         }
@@ -171,14 +171,14 @@ impl Desk<'_> {
                 (lines, folded) = fold(&lines);
             }
         }
-        let hidden = if skip.is_some() { ", browser page hidden: use lighting snap for the page" } else { "" };
+        let hidden = if skip.is_some() { ", browser page hidden: use wisply snap for the page" } else { "" };
         let head = self.header(hwnd, &format!(" ({count} controls{hidden})"));
         let wref = self.wref(hwnd);
         if lines.is_empty() {
-            lines.push(format!("(no controls found: try lighting read {wref} for screen text)"));
+            lines.push(format!("(no controls found: try wisply read {wref} for screen text)"));
         }
         if folded > 0 {
-            lines.push(format!("({folded} repeated lines folded: lighting snap {wref} --all)"));
+            lines.push(format!("({folded} repeated lines folded: wisply snap {wref} --all)"));
         }
         Ok(format!("{head}\n{}", lines.join("\n")))
     }
@@ -249,7 +249,7 @@ impl Desk<'_> {
         let shown: Vec<&str> = added.iter().take(DIFF_LINES).map(|s| s.as_str()).collect();
         let mut s = format!(" (+{} new{gone_text})\n{}", added.len(), shown.join("\n"));
         if added.len() > shown.len() {
-            s += &format!("\n... +{} more (lighting snap {})", added.len() - shown.len(), self.wref(hwnd));
+            s += &format!("\n... +{} more (wisply snap {})", added.len() - shown.len(), self.wref(hwnd));
         }
         s
     }
@@ -260,13 +260,13 @@ impl Desk<'_> {
             .iter()
             .find(|(k, _)| k == r)
             .map(|(_, el)| el.clone())
-            .ok_or_else(|| Fail::hint(format!("{r} is unknown or from an older snapshot"), "lighting snap").into())
+            .ok_or_else(|| Fail::hint(format!("{r} is unknown or from an older snapshot"), "wisply snap").into())
     }
 
     pub fn center(el: &El) -> Res<(i32, i32)> {
         let (l, t, r, b) = el.live_rect();
         if r - l < 1 {
-            return Err(Fail::hint("element has no position on screen", "lighting snap").into());
+            return Err(Fail::hint("element has no position on screen", "wisply snap").into());
         }
         Ok(((l + r) / 2, (t + b) / 2))
     }

@@ -1,13 +1,13 @@
 <p align="center">
-  <img src="docs/icon.png" width="112" height="112" alt="Lighting icon">
+  <img src="docs/icon.png" width="112" height="112" alt="Wisply icon">
 </p>
 
-<h1 align="center">Lighting</h1>
+<h1 align="center">Wisply</h1>
 
 <p align="center">
   <em>Your real browser and every app on your computer, as a few lines of text.</em>
   <br>
-  <sub>by <a href="https://github.com/QDHShamiro">QDHShamiro</a></sub>
+  <sub>by <a href="https://github.com/QDHShamiro">QDHShamiro</a> · formerly Lighting</sub>
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/codex-plugin-1B3A66?style=flat-square&labelColor=0A1A30" alt="Codex plugin">
   <img src="https://img.shields.io/badge/mcp-any%20client-1B3A66?style=flat-square&labelColor=0A1A30" alt="MCP for any client">
   <img src="https://img.shields.io/badge/routines-self--learning-1B3A66?style=flat-square&labelColor=0A1A30" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-145%2F145-1B3A66?style=flat-square&labelColor=0A1A30" alt="145/145 selftest">
+  <img src="https://img.shields.io/badge/selftest-161%2F161-1B3A66?style=flat-square&labelColor=0A1A30" alt="161/161 selftest">
   <img src="https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-1B3A66?style=flat-square&labelColor=0A1A30" alt="Windows, macOS, Linux">
   <img src="https://img.shields.io/badge/license-Apache--2.0-1B3A66?style=flat-square&labelColor=0A1A30" alt="Apache 2.0 license">
   <br>
@@ -26,12 +26,12 @@
 
 https://github.com/user-attachments/assets/ff2f8cf2-f22a-4cb5-8c94-75e3bebd9a6d
 
-<h3 align="center">An AI that looks at a page with screenshots pays ~15,850 tokens. Lighting pays ~440.</h3>
+<h3 align="center">An AI that looks at a page with screenshots pays ~15,850 tokens. Wisply pays ~440.</h3>
 
 <table>
 <tr>
 <th width="50%">📸 Screenshot agent · ~15,850 tokens</th>
-<th width="50%">🔦 Lighting · ~440 tokens</th>
+<th width="50%">🔦 Wisply · ~440 tokens</th>
 </tr>
 <tr>
 <td valign="top">
@@ -54,10 +54,10 @@ One call. Everything clickable has a ref. A click answers in one line (**13-53**
 </tr>
 </table>
 
-<p align="center"><b>A 10-step task: ~37,000 tokens with screenshots, ~890 with Lighting. That is ~36,000 tokens saved, every time.</b><br><sub>Computed from the measured rows below: 1 page look + 9 clicks with a screenshot each, against 1 <code>open</code> + 9 one-line clicks.</sub></p>
+<p align="center"><b>A 10-step task: ~37,000 tokens with screenshots, ~890 with Wisply. That is ~36,000 tokens saved, every time.</b><br><sub>Computed from the measured rows below: 1 page look + 9 clicks with a screenshot each, against 1 <code>open</code> + 9 one-line clicks.</sub></p>
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Lighting demo: a filtered GitHub page, a click, a video as one image, the Windows calculator, then everything closes again" width="820">
+  <img src="docs/demo.gif" alt="Wisply demo: a filtered GitHub page, a click, a video as one image, the Windows calculator, then everything closes again" width="820">
   <br><sub>A real run rendered from the terminal output (only the home folder is shortened to ~): 8 commands, 6.7 s, ~713 tokens of output, everything closed again.</sub>
 </p>
 
@@ -79,12 +79,12 @@ Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. In Claude Code:
 
 ```
 /plugin marketplace add QDHShamiro/Lighting
-/plugin install lighting@lighting
-/lighting:setup
+/plugin install wisply@wisply
+/wisply:setup
 ```
 
-`/lighting:setup` loads the extension into your browser by itself, runs the self-test and tells Claude Code to use
-Lighting for browser and desktop work. Then just ask, for example *"open my GitHub notifications and summarize them"*.
+`/wisply:setup` loads the extension into your browser by itself, runs the self-test and tells Claude Code to use
+Wisply for browser and desktop work. Then just ask, for example *"open my GitHub notifications and summarize them"*.
 Codex, Cursor, Gemini CLI, VS Code, Claude Desktop, LM Studio / Bionic, Cline, Roo Code, Zed: see [Install](#install).
 
 ## The problem
@@ -101,9 +101,9 @@ None of that is what the AI needs. It needs to know what it can click, and wheth
 
 | | |
 |---|---|
-| 🌐 **Your real browser** | Brave, Chrome or Edge with all your logins, through a small extension. Lighting's tabs live in their own orange "Lighting" group, in the background. |
+| 🌐 **Your real browser** | Brave, Chrome or Edge with all your logins, through a small extension. Wisply's tabs live in their own orange "Wisply" group, in the background. |
 | 🖥️ **Every app** | The accessibility tree for normal apps (UI Automation on Windows, AX on macOS, AT-SPI on Linux), OCR for games and canvas UIs. On Windows clicks and typing go through in the background; your mouse stays where it is. |
-| 📱 **Your Android phone** | `lighting phone snap` lists what is on the screen, `phone tap p3` taps it, over USB debugging. |
+| 📱 **Your Android phone** | `wisply phone snap` lists what is on the screen, `phone tap p3` taps it, over USB debugging. |
 | 🧠 **Learns your tasks** | Do something twice and it becomes a routine that runs in one call ([how](#the-second-time-is-one-call)). |
 | 🎞️ **Watches videos** | `watch <link\|file>` gives chapters, the speech, the text on screen and 12 scenes in one image, then zooms in on request. `snap --media` lists images, `shot e57` shows one. |
 | 🧹 **Cleans up after itself** | When the AI finishes its reply, what it opened closes again. The tab group's color is a status light: orange working, red stopped, green done. |
@@ -112,21 +112,21 @@ None of that is what the AI needs. It needs to know what it can click, and wheth
 Every answer is short text with refs:
 
 ```
-$ lighting open github.com/QDHShamiro/Lighting -f "Issues|Pull requests"
+$ wisply open github.com/QDHShamiro/Lighting -f "Issues|Pull requests"
 [t1] QDHShamiro/Lighting: Claude Code plugin: control your real browser ... - github.com/QDHShamiro/Lighting
 e1 link "All issues" ->/issues
 e2 link "All pull requests" ->/pulls
 e3 link "Issues" ->./issues
 e4 link "Pull requests" ->./pulls
 more: 74 below (scroll or snap --all)
-! routine github-issues can finish this in one call: lighting run github-issues page=Lighting
-$ lighting click "Issues"
+! routine github-issues can finish this in one call: wisply run github-issues page=Wisply
+$ wisply click "Issues"
 ok e3 -> github.com/QDHShamiro/Lighting/issues
 ```
 
 ```
-  your AI ──Bash──→ lighting.exe (Rust) ──┐
-  your AI ──MCP───→ lighting mcp ─────────┴─→ daemon ──┬─→ extension ──→ your open browser
+  your AI ──Bash──→ wisply.exe (Rust) ──┐
+  your AI ──MCP───→ wisply mcp ─────────┴─→ daemon ──┬─→ extension ──→ your open browser
                                                        ├─→ UI Automation / AX / AT-SPI ──→ desktop apps
                                                        ├─→ OCR ──→ games, canvas UIs
                                                        └─→ adb ──→ Android phone
@@ -140,7 +140,7 @@ footer or a header that repeats from the last page collapse to one line. You pay
 
 <p align="center">
   <img src="docs/frames-example.jpg" alt="frames: a flower opening, 6 moments with timestamps in one image" width="760">
-  <br><sub><code>lighting frames e1</code> on a 5-second CC0 clip: 6 moments in one image, ~518 tokens, 0.9 s.</sub>
+  <br><sub><code>wisply frames e1</code> on a 5-second CC0 clip: 6 moments in one image, ~518 tokens, 0.9 s.</sub>
 </p>
 
 `frames e40` jumps to 6 moments spread over the full length of a video (a 14-minute talk in 2.1 s instead of
@@ -152,20 +152,20 @@ watches in real time (streams). `snap --media` gives every image a ref with its 
 ### It cleans up after itself
 
 Each Claude session works in its own browser window (your logged-in profile) with its own tab group,
-`Lighting #1`, `Lighting #2`, ..., so your tabs stay yours and parallel sessions never mix
-(`lighting config window off` puts the tabs into your window instead).
+`Wisply #1`, `Wisply #2`, ..., so your tabs stay yours and parallel sessions never mix
+(`wisply config window off` puts the tabs into your window instead).
 
 It never pulls you out of what you are doing: on Windows no window comes to the front and your cursor stays
 where it is, even in a full-screen game. Clicks and typing reach the app in the background.
 
 When the AI finishes its reply, the tabs and apps it opened close again and the window you were in
-comes back to the front (`lighting done`, run by a Claude Code hook). A tab you are looking at stays,
-an app that was open before stays, an app with unsaved work is only asked to close. `lighting keep`
-hands a tab or app over to you; `lighting config cleanup off` keeps everything open.
+comes back to the front (`wisply done`, run by a Claude Code hook). A tab you are looking at stays,
+an app that was open before stays, an app with unsaved work is only asked to close. `wisply keep`
+hands a tab or app over to you; `wisply config cleanup off` keeps everything open.
 
 ## The second time is one call
 
-An AI that does a task twice pays twice: every snapshot, every click, every thought. Lighting keeps a
+An AI that does a task twice pays twice: every snapshot, every click, every thought. Wisply keeps a
 trace of each task with stable targets (`click "Sign in"`, not `e12`). When a task ends, it aligns it
 with earlier ones like DNA sequences; the parts that differ become parameters.
 
@@ -173,19 +173,19 @@ with earlier ones like DNA sequences; the parts that differ become parameters.
   run 1   launch spotify:search:SOS    → snap → click "SOS wiedergeben"
   run 2   launch spotify:search:Numb   → snap → click "Numb wiedergeben"
           ! learned routine spotify-wiedergeben from 2 runs
-  run 3   lighting run spotify-wiedergeben search=SOS
+  run 3   wisply run spotify-wiedergeben search=SOS
           ok spotify-wiedergeben: 2 steps in 1.4 s, verified -> yukan archive - SOS - Spotify.exe
 ```
 
 - **Learns by itself.** Seen twice, a routine exists. No prompt, no naming, no setup.
 - **Speaks up.** Start a known task and the first output says `! routine X can finish this in one call`.
 - **Checks its work.** A run passes only when the result shows up (the song in the window title, the repo in the URL).
-- **Repairs itself.** A step breaks, the AI finishes by hand, Lighting rebuilds the routine from what worked (`v2`).
+- **Repairs itself.** A step breaks, the AI finishes by hand, Wisply rebuilds the routine from what worked (`v2`).
 - **Keeps score.** Runs, success rate, time and tokens saved per routine; three failures in five runs mark it `FLAKY`.
-- **Or just show it.** `lighting record start`, do it yourself in the browser or any app, `lighting record stop song=SOS`.
+- **Or just show it.** `wisply record start`, do it yourself in the browser or any app, `wisply record stop song=SOS`.
 
 ```
-$ lighting routines
+$ wisply routines
 github-issues page= | 2/3 ok, 3.4 s, saved ~1.7k tokens | open github.com/QDHShamiro/{page} > click Issues
 spotify-wiedergeben search= | 2/2 ok, 1.4 s, saved ~181 tokens | launch spotify:search:{search} > click "{search} wiedergeben"
 ```
@@ -195,38 +195,38 @@ check caught it.)
 
 ## It remembers
 
-Every new session starts from zero, so the AI asks again, searches again, decides again. Lighting keeps
+Every new session starts from zero, so the AI asks again, searches again, decides again. Wisply keeps
 a memory on your computer and starts each session with about 500 tokens of it: the open to-dos, the
 last sessions in one line each, and what you asked it to keep.
 
 ```
 you      merk dir, dass Brave der einzige Browser ist
-         Lighting memory saved #14905: "Brave der einzige Browser ist"
-claude   lighting recall "game pause localai"
+         Wisply memory saved #14905: "Brave der einzige Browser ist"
+claude   wisply recall "game pause localai"
          #13529 10-18 feature: Pause Mode Detection: Query Game State for Paused Execution | Added paused() …
          #13555 10-18 change: SPEC.md Updated: Gaming Behavior Changed to Pause Mode | …
-claude   lighting todo add "Release 2.0" --list lighting
+claude   wisply todo add "Release 2.0" --list wisply
 ```
 
 - **Learns by itself.** When a session ends, a local model reads it and keeps the decisions, fixes,
-  facts and what is still open. Lighting downloads the model itself (Qwen3.5 with llama.cpp) and never
+  facts and what is still open. Wisply downloads the model itself (Qwen3.5 with llama.cpp) and never
   runs it while you play a game.
 - **Finds by meaning.** Search mixes words and meaning, in any language: "welcher port für geyser" finds the
   English note "Geyser Bedrock 20165, Simple Voice Chat 20166".
 - **Speaks up.** A prompt that clearly fits old notes of the same project shows their numbers, never more than two.
-- **Stays yours.** One SQLite file in `~/.lighting/memory`. Nothing is uploaded, keys and passwords
-  are cut out before anything is stored. Coming from claude-mem: `lighting memory import claude-mem`.
+- **Stays yours.** One SQLite file in `~/.wisply/memory`. Nothing is uploaded, keys and passwords
+  are cut out before anything is stored. Coming from claude-mem: `wisply memory import claude-mem`.
 
 ## Built for Claude
 
 Every step of an AI agent costs a model round of 1-5 seconds, and everything a tool prints stays in the
-context. So Lighting saves steps first and tokens second:
+context. So Wisply saves steps first and tokens second:
 
 - **One call instead of two.** `open <url> -f "Issues|Pull"` returns only the matching lines,
   `do "fill Email=a@b.c; click Continue; expect Welcome"` runs a whole sequence, a known task is `run <name> k=v`.
 - **Answers you can act on.** Everything clickable has a ref (`e12` web, `d5` app, `t4` tab, `w2` window).
   An action answers with one line and what changed; the header says where you are (`[t4]` tab, `[w2]` window).
-- **Errors name the next step.** `err: nothing matches "Log in" -> try: lighting snap -f "log in"`.
+- **Errors name the next step.** `err: nothing matches "Log in" -> try: wisply snap -f "log in"`.
 - **Small by construction.** Headers, navs and repeated lists collapse to one line, the first look at a page
   stops at 1,600 characters, big results go to a file and only the path is printed.
 - **Knows the cheapest way.** The skill teaches the ladder: an API or `read <url>` (no browser) → `open -f` →
@@ -238,8 +238,8 @@ context. So Lighting saves steps first and tokens second:
 Want every agent on your PC to prefer it? Put this in `CLAUDE.md` or `AGENTS.md`:
 
 ```markdown
-- Browser and desktop: use the `lighting` command (skill "lighting") for all web and Windows UI work.
-  Cheapest first: `lighting read <url>` for public pages, `open <url> -f "words"` when you know what you
+- Browser and desktop: use the `wisply` command (skill "wisply") for all web and Windows UI work.
+  Cheapest first: `wisply read <url>` for public pages, `open <url> -f "words"` when you know what you
   need, `do "a; b; c"` for sequences, `run <routine>` for known tasks. Screenshots only when looks matter.
 ```
 
@@ -247,12 +247,12 @@ Want every agent on your PC to prefer it? Put this in `CLAUDE.md` or `AGENTS.md`
 
 ## 📊 The numbers
 
-Every number here comes from a run you can repeat: `lighting bench`, `lighting bench --real`, `lighting selftest`.
-Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
+Every number here comes from a run you can repeat: `wisply bench`, `wisply bench --real`, `wisply selftest`.
+Brave 154, Windows 11, Wisply 0.7.2. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
 
 ### Per action
 
-| Action | Without Lighting | With Lighting | Saved |
+| Action | Without Wisply | With Wisply | Saved |
 |---|---:|---:|---:|
 | Look at a page (GitHub repo) | ~15,850 (screenshot + page text) | **~440** (`open`) | **−97%** |
 | See a 14-minute video (6 moments) | ~14,100 (6 screenshots, waiting while it plays) | **~518** (`frames`, one image, 2.1 s) | **−96%** |
@@ -263,9 +263,9 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 
 ### Whole page text, 6 real sites
 
-`lighting text` against the page's own rendered text (`document.body.innerText`), which is already much smaller than what screenshot agents read. `text` keeps the first 6,000 characters in the answer and writes the rest to a file, so long pages save the most.
+`wisply text` against the page's own rendered text (`document.body.innerText`), which is already much smaller than what screenshot agents read. `text` keeps the first 6,000 characters in the answer and writes the rest to a file, so long pages save the most.
 
-| Site | Page text | `lighting text` | Saved |
+| Site | Page text | `wisply text` | Saved |
 |---|---:|---:|---:|
 | Wikipedia, Minecraft | 38,789 | 1,509 | **−96%** |
 | GitHub repo | 2,713 | 1,503 | −45% |
@@ -287,15 +287,15 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **159/159** on Windows (browser, desktop, chat and sessions, cold start included); CI runs it on Windows, macOS and Linux on every push. Tests: `cargo test --workspace`.
-- `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
-- `lighting demo` shows Lighting in about 30 s on a made-up shop page served from your own computer (open, find, fill, pick, tick, click, read a table), with the time and size of every answer. `--fast` skips the pauses that are there for screen recordings.
+- `wisply selftest`: **161/161** on Windows (browser, desktop, chat and sessions, cold start included); CI runs it on Windows, macOS and Linux on every push. Tests: `cargo test --workspace`.
+- `wisply bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
+- `wisply demo` shows Wisply in about 30 s on a made-up shop page served from your own computer (open, find, fill, pick, tick, click, read a table), with the time and size of every answer. `--fast` skips the pauses that are there for screen recordings.
 - Filling and submitting a form: ~160 ms.
 - GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
 
 ## How it compares
 
-| | Lighting | Claude in Chrome | Playwright MCP | agent-browser |
+| | Wisply | Claude in Chrome | Playwright MCP | agent-browser |
 |---|---|---|---|---|
 | Your real browser profile and logins | ✅ | ✅ | with its extension, Chrome and Edge ([3]) | a copy of a profile, or attached over CDP ([2]) |
 | Desktop apps (accessibility tree + OCR) | ✅ Windows, macOS, Linux | – | – | – |
@@ -305,7 +305,7 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | A whole video as one image | ✅ `frames` | – | – | – |
 | Headless, CI | ❌ real browser only | desktop Chrome, no headless | ✅ | ✅ |
 
-`–` means not built in as far as the public docs say. Lighting is the wrong tool for headless tests or CI: take
+`–` means not built in as far as the public docs say. Wisply is the wrong tool for headless tests or CI: take
 Playwright there. It is built for the other case: an agent on your computer (Windows, macOS or Linux) that has to use
 your logged-in browser and your apps, cheaply.
 
@@ -315,23 +315,24 @@ your logged-in browser and your apps, cheaply.
 
 ## What's new
 
-- **3.0.0** (not released yet) Lighting is one Rust program: no Python, no venv, the MCP server takes ~12 MB per
-  session instead of ~45 MB and answers its first call in ~30 ms. A window (`lighting ui`) with your projects,
+- **3.0.0** (not released yet) Lighting is now **Wisply** (people kept hearing "Lightning"). `lighting` still works as
+  a second name until 3.1, and setup copies your data from `~/.lighting` to `~/.wisply` (the old folder stays). Wisply is one Rust program: no Python, no venv, the MCP server takes ~12 MB per
+  session instead of ~45 MB and answers its first call in ~30 ms. A window (`wisply ui`) with your projects,
   notes, to-dos and a graph of notes and code. Headroom: long Bash logs and JSON reach the model as their
-  important lines, the full text stays on disk. Hooks and the MCP server start from `~/.lighting/bin`, so a
-  sleeping data drive no longer slows Claude down. `tabs` shows Lighting's tabs and the tab in front (`--all` for
+  important lines, the full text stays on disk. Hooks and the MCP server start from `~/.wisply/bin`, so a
+  sleeping data drive no longer slows Claude down. `tabs` shows Wisply's tabs and the tab in front (`--all` for
   every tab), `type focused` works on pages, `click @x,y` clicks a point that `read` printed, `ctrl+w`/`ctrl+tab`
-  act on Lighting's own tab. A git worktree counts as its main project in the memory.
+  act on Wisply's own tab. A git worktree counts as its main project in the memory.
 - **2.0.0** A memory across sessions (`recall`, `remember`, `todo`, a start summary of ~500 tokens, learned by a
-  local model that Lighting downloads itself), `lighting watch` (any video in one call: chapters, speech, screen
-  text and scenes in one image), macOS and Linux, Android phones (`lighting phone`), and a brain: on pages it
-  knows, `snap` shows the controls you actually use (this repo's page ~450 → ~117 tokens). `lighting improve` checks the last days for
-  errors and loops, `lighting doctor --fix` repairs the setup, routines run on a schedule, `lighting demo` shows it
+  local model that Wisply downloads itself), `wisply watch` (any video in one call: chapters, speech, screen
+  text and scenes in one image), macOS and Linux, Android phones (`wisply phone`), and a brain: on pages it
+  knows, `snap` shows the controls you actually use (this repo's page ~450 → ~117 tokens). `wisply improve` checks the last days for
+  errors and loops, `wisply doctor --fix` repairs the setup, routines run on a schedule, `wisply demo` shows it
   all in 30 s. A one-click bundle for Claude Desktop, an entry in the MCP registry, Apache-2.0.
 - **1.1.0** Sessions keep their tabs and windows through updates and restarts; `wait "text" w3` waits in any
   app; a repeated `snap` shows only what changed (`--full` for all); `frames --small`; routines learn whole values
   with clean names and skip one-off tasks.
-- **1.0.0** Every session gets its own browser window (`Lighting #1`, `Lighting #2`); `lighting claude "task" --yes`
+- **1.0.0** Every session gets its own browser window (`Wisply #1`, `Wisply #2`); `wisply claude "task" --yes`
   opens a new terminal tab with Claude and Remote Control and hands it the task; `shot screen --seconds 10` films
   the screen for your phone. Fixed from real sessions: clicks in payment and login frames, tabs lost after `done`,
   `keep`, `wait` on button names, `snap -f` that missed text.
@@ -342,7 +343,7 @@ your logged-in browser and your apps, cheaply.
 - **0.8.0** Chats and fewer rounds: `reply "@Name" "hi" --wait` sends in Discord and waits for the answer in one
   call, `inbox` reads new messages in full; `-f` after any action shows its result; `wait --reload` instead of
   sleep loops; `search`, `open --text`, app links (`obsidian://`); desktop actions report what changed;
-  shortcuts learned per app (`lighting keys`); routines found from the request itself. The skill got smaller.
+  shortcuts learned per app (`wisply keys`); routines found from the request itself. The skill got smaller.
 - **0.7.1** Claude uses it better: `js` with `const` no longer clashes between calls, `type focused` right after
   `launch` works, merge buttons need `--yes`, the skill has the rules agents tripped over and is 9% shorter.
 - **0.7.0** Speed pass: a browser command through MCP 17.5 → 2.9 ms, screenshots 37-54% faster, `open -f`.
@@ -355,14 +356,14 @@ All changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Install
 
-Requirements: Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. Nothing else: Lighting is one program.
+Requirements: Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. Nothing else: Wisply is one program.
 
 **Claude Code**
 
 ```
 /plugin marketplace add QDHShamiro/Lighting
-/plugin install lighting@lighting
-/lighting:setup
+/plugin install wisply@wisply
+/wisply:setup
 ```
 
 **Codex**
@@ -371,35 +372,35 @@ Requirements: Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. Nothing 
 codex plugin marketplace add QDHShamiro/Lighting
 ```
 
-Then install `lighting` from `/plugins`, download the release archive for your system (below), and run once in a
+Then install `wisply` from `/plugins`, download the release archive for your system (below), and run once in a
 terminal, in the unpacked folder:
 
 ```
-./lighting setup
-lighting install codex
+./wisply setup
+wisply install codex
 ```
 
 **Antigravity, Cursor, Gemini CLI, VS Code (Copilot), Windsurf, Claude Desktop, LM Studio / Bionic, Cline, Roo Code, Zed, any MCP client**
 
-Download `lighting-<version>-<system>` from [Releases](https://github.com/QDHShamiro/Lighting/releases/latest),
+Download `wisply-<version>-<system>` from [Releases](https://github.com/QDHShamiro/Lighting/releases/latest),
 unpack it, then:
 
 ```bash
-./lighting setup               # in the unpacked folder
-lighting install cursor        # or: antigravity | gemini | vscode | windsurf | claude-desktop | codex
+./wisply setup               # in the unpacked folder
+wisply install cursor        # or: antigravity | gemini | vscode | windsurf | claude-desktop | codex
                                #     bionic | lmstudio | cline | roo | zed
 ```
 
-`install bionic` (same as `lmstudio`) also copies the Lighting skill into `~/.lmstudio/skills/lighting`,
+`install bionic` (same as `lmstudio`) also copies the Wisply skill into `~/.lmstudio/skills/wisply`,
 where Bionic picks up global skills; later updates refresh that copy. `install antigravity` writes
 `~/.gemini/config/mcp_config.json` (and the older `~/.gemini/antigravity/mcp_config.json` if it exists) and copies
-the skill into `~/.gemini/skills/lighting` and Antigravity's own skill folders that exist; click Refresh under
+the skill into `~/.gemini/skills/wisply` and Antigravity's own skill folders that exist; click Refresh under
 Manage MCP Servers afterwards.
 
-`setup` copies Lighting to `~/.lighting/bin`, registers the native messaging host,
+`setup` copies Wisply to `~/.wisply/bin`, registers the native messaging host,
 **loads the extension into your browser by itself** (it opens the extensions page, switches on
-Developer mode and picks the folder through UI Automation) and puts `lighting` on your PATH. For Claude Code it also sets `LIGHTING_BIN` in `~/.claude/settings.json`, so the
-hooks and the MCP server start from `~/.lighting/bin`.
+Developer mode and picks the folder through UI Automation) and puts `wisply` on your PATH. For Claude Code it also sets `WISPLY_BIN` in `~/.claude/settings.json`, so the
+hooks and the MCP server start from `~/.wisply/bin`.
 `install <ai>` adds the MCP server to that AI's config and leaves everything else in it alone.
 
 <details>
@@ -408,19 +409,19 @@ hooks and the MCP server start from `~/.lighting/bin`.
 ```json
 {
   "mcpServers": {
-    "lighting": {
-      "command": "C:\\Users\\<you>\\.lighting\\bin\\lighting.exe",
+    "wisply": {
+      "command": "C:\\Users\\<you>\\.wisply\\bin\\wisply.exe",
       "args": ["mcp"]
     }
   }
 }
 ```
 
-One tool, `lighting`, that takes one command line (`snap -f price`). Codex uses TOML:
+One tool, `wisply`, that takes one command line (`snap -f price`). Codex uses TOML:
 
 ```toml
-[mcp_servers.lighting]
-command = "C:\\Users\\<you>\\.lighting\\bin\\lighting.exe"
+[mcp_servers.wisply]
+command = "C:\\Users\\<you>\\.wisply\\bin\\wisply.exe"
 args = ["mcp"]
 ```
 
@@ -439,7 +440,7 @@ args = ["mcp"]
 | Wait | `wait "text" \| url:/x \| 1500 [--gone]` · `expect "text"` · `wait "Done" w3` (in an app) |
 | Data | `table e8` · `fetch /api/me --pick login` (with your cookies) · `js` |
 | Tabs | `tabs` · `tab t3` · `close` · `back` · `reload` · `dialog accept\|dismiss` · `dismiss` (cookie banners) · `viewport 390x844` |
-| Clean up | `done` (close what Lighting opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) · `config window off` (tabs in your window, not an own one) · `config focus away` (may take the front when you are away; default never) |
+| Clean up | `done` (close what Wisply opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) · `config window off` (tabs in your window, not an own one) · `config focus away` (may take the front when you are away; default never) |
 | Video | `watch <link\|file\|e40>` (overview: chapters, speech, screen text, scenes in one image) · `watch ... --from 4:05 --to 6:00` (closer) · `--at 1:23,2:45` (exact frames, readable code) · `--text` · `--full` · `listen` (speech only) · `frames e40 [--scenes] [--live]` (a video on the page as one contact sheet) |
 | Images | `snap --media` (images get refs, captions as names) · `shot e57` (look at one image) · `read <image url>` |
 
@@ -452,7 +453,7 @@ args = ["mcp"]
 | Act | `click d5` · `click "Save"` · `click o3` (OCR text, real click, cursor goes back) · `type "Search" text` · `type focused text` · `press ctrl+s` · `clip get\|set` |
 | Claude | `claude "task" --yes` (new terminal tab: Claude with Remote Control, the task sent once it is ready) · `--dir E:/proj` · `--no-remote` |
 
-**Android phone** (USB debugging on, then `lighting phone setup` downloads Google's platform-tools)
+**Android phone** (USB debugging on, then `wisply phone setup` downloads Google's platform-tools)
 
 | | |
 |---|---|
@@ -467,7 +468,7 @@ args = ["mcp"]
 | Teach | learned by itself on repeat · `routine save <name> [param=value]` · `record start <name>` … `record stop [param=value]` |
 | Tidy | `routine rm\|rename <name>` · `routine forget` (task history) · `config learn off` |
 
-**Memory** (one file on your computer, `~/.lighting/memory`)
+**Memory** (one file on your computer, `~/.wisply/memory`)
 
 | | |
 |---|---|
@@ -478,35 +479,35 @@ args = ["mcp"]
 
 On Windows clicks and typing go through UI Automation in the background, your mouse stays where it is.
 `do "fill Email=a@b.c; click Continue; expect Welcome"` runs several steps in one call.
-`lighting help` lists everything.
+`wisply help` lists everything.
 
 ---
 
 ## Safety
 
-- Banking and payment sites are read-only (`~/.lighting/blocklist.txt`).
+- Banking and payment sites are read-only (`~/.wisply/blocklist.txt`).
 - Buttons that look irreversible (buy, pay, delete, merge a pull request, ...) need `--yes`.
 - Hidden text is never shown to the model, which blocks a common prompt-injection trick.
 - A URL with a long query to a site not opened yet needs `--yes`, so injected instructions cannot quietly send data out.
 - Secrets come from environment variables (`--env VAR`) and are never logged.
 - **Ctrl+Alt+End** stops everything immediately.
-- Every push runs CI on Windows, macOS and Linux (format, clippy, tests, cargo-deny licenses and advisories, the extension and plugin files, the self-test in a real Chrome). Every release carries the archives and clients built by CI from the tag (`lighting.exe`, `lighting-macos`, `lighting-linux-x64`, `lighting-linux-arm64`), each with a GitHub build attestation (`gh attestation verify <file> -R QDHShamiro/Lighting`), and `SHA256SUMS.txt`: check yours with `certutil -hashfile lighting.exe SHA256` (Windows) or `shasum -a 256 lighting-macos`, or build it yourself with `cargo build --release -p lighting`.
+- Every push runs CI on Windows, macOS and Linux (format, clippy, tests, cargo-deny licenses and advisories, the extension and plugin files, the self-test in a real Chrome). Every release carries the archives and clients built by CI from the tag (`wisply.exe`, `wisply-macos`, `wisply-linux-x64`, `wisply-linux-arm64`), each with a GitHub build attestation (`gh attestation verify <file> -R QDHShamiro/Lighting`), and `SHA256SUMS.txt`: check yours with `certutil -hashfile wisply.exe SHA256` (Windows) or `shasum -a 256 wisply-macos`, or build it yourself with `cargo build --release -p lighting`.
 
 <details>
 <summary><b>Files it creates, and how to remove it</b></summary>
 
-Everything lives in `~/.lighting/` (`%USERPROFILE%\.lighting\` on Windows): the extension copy, the native host,
-`bin\` (lighting, lighting-ui, lighting-task), the memory database, the pipe key, the blocklist, a 24 h output cache and the action log (typed text
+Everything lives in `~/.wisply/` (`%USERPROFILE%\.wisply\` on Windows): the extension copy, the native host,
+`bin\` (wisply, wisply-ui, wisply-task), the memory database, the pipe key, the blocklist, a 24 h output cache and the action log (typed text
 and secrets are never logged). Routines live in `routines\`, the last 300 tasks they are learned from
 in `episodes.jsonl` (typed text included so routines can replay it; `--env` secrets are stored as
-`@secret`; `lighting routine forget` clears it, `lighting config learn off` stops it). On Windows the registry gets the
-native messaging host keys for Brave, Chrome, Edge and Chromium, and `.lighting\bin` goes into your user `Path`. On
-macOS and Linux the host manifests go into each browser's `NativeMessagingHosts` folder and `lighting` into
+`@secret`; `wisply routine forget` clears it, `wisply config learn off` stops it). On Windows the registry gets the
+native messaging host keys for Brave, Chrome, Edge and Chromium, and `.wisply\bin` goes into your user `Path`. On
+macOS and Linux the host manifests go into each browser's `NativeMessagingHosts` folder and `wisply` into
 `~/.local/bin`.
 
 ```
-lighting uninstall          # browser link and LIGHTING_BIN off, daemon stopped
-lighting uninstall --purge  # also removes the Lighting files in ~/.lighting (memory and notes stay)
+wisply uninstall          # browser link and WISPLY_BIN off, daemon stopped
+wisply uninstall --purge  # also removes the Wisply files in ~/.wisply (memory and notes stay)
 ```
 
 </details>
@@ -514,7 +515,7 @@ lighting uninstall --purge  # also removes the Lighting files in ~/.lighting (me
 <details>
 <summary><b>How it works</b></summary>
 
-- The daemon starts on the first call and stays. The pipe is protected by a random token in `~/.lighting/key`.
+- The daemon starts on the first call and stays. The pipe is protected by a random token in `~/.wisply/key`.
 - The extension only talks to the local native host, never to web pages.
 - Snapshots are built in the page by a small script (no full accessibility tree), refs stay stable in the extension's isolated world.
 - JavaScript dialogs do not freeze it: it reports them and waits for `dialog accept|dismiss`.
@@ -528,17 +529,17 @@ lighting uninstall --purge  # also removes the Lighting files in ~/.lighting (me
 
 | Symptom | Fix |
 |---|---|
-| `no browser ... connected` | `lighting setup` |
-| `lighting: command not found` | open a new terminal after `setup`, or run `setup` again from the unpacked release |
-| `cannot script this page` (brave://, Web Store) | `lighting snap w1 --web` controls the browser window instead |
-| Something hangs | `lighting stop`, the next call starts a fresh daemon |
+| `no browser ... connected` | `wisply setup` |
+| `wisply: command not found` | open a new terminal after `setup`, or run `setup` again from the unpacked release |
+| `cannot script this page` (brave://, Web Store) | `wisply snap w1 --web` controls the browser window instead |
+| Something hangs | `wisply stop`, the next call starts a fresh daemon |
 
 ## Limits
 
 - Firefox is not supported (no `debugger` extension API). No iPhone.
 - macOS: the terminal (and the browser, for the extension link) needs Accessibility and Screen Recording in System
   Settings > Privacy & Security. `setup` says when one is missing.
-- macOS: keys and pasted text go to the app in front. If macOS will not bring an app to the front, Lighting sends the
+- macOS: keys and pasted text go to the app in front. If macOS will not bring an app to the front, Wisply sends the
   keys to the app directly, which some apps ignore.
 - Linux: everything works on X11 and is tested there on every push. Under Wayland (Ubuntu's default) the basics work:
   windows and controls through AT-SPI, keys and clicks through ydotool (`sudo apt install ydotool`, then start
@@ -552,8 +553,8 @@ lighting uninstall --purge  # also removes the Lighting files in ~/.lighting (me
 
 ```
 cargo build --release -p lighting -p lighting-ui
-target/release/lighting setup --manual    # copies to ~/.lighting/bin, restarts an old daemon
-lighting ext-reload && lighting selftest && lighting bench
+target/release/wisply setup --manual    # copies to ~/.wisply/bin, restarts an old daemon
+wisply ext-reload && wisply selftest && wisply bench
 cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace
 claude plugin validate .
 ```
@@ -563,5 +564,5 @@ claude plugin validate .
 ## License
 
 Apache License 2.0 from version 2.0.0 (see `LICENSE` and `NOTICE`; up to 1.1.0 it was MIT). The name and the logo are
-not covered by the license, see `TRADEMARKS.md`. Security reports and what Lighting may do: `SECURITY.md`.
+not covered by the license, see `TRADEMARKS.md`. Security reports and what Wisply may do: `SECURITY.md`.
 Bundles [Defuddle](https://github.com/kepano/defuddle) (MIT, see `extension/defuddle.LICENSE.txt`).

@@ -238,9 +238,9 @@ fn grab(src: &Source) -> Result<Got, Fail> {
         Source::Web(url) => url,
     };
     let failed = |e: String| {
-        Fail::hint(format!("read failed: {}", head(&e, 200)), format!("lighting open {url} (uses the real browser)"))
+        Fail::hint(format!("read failed: {}", head(&e, 200)), format!("wisply open {url} (uses the real browser)"))
     };
-    let agent = format!("Mozilla/5.0 (Windows NT 10.0; Win64; x64) lighting/{}", env!("CARGO_PKG_VERSION"));
+    let agent = format!("Mozilla/5.0 (Windows NT 10.0; Win64; x64) wisply/{}", env!("CARGO_PKG_VERSION"));
     let mut res = AGENT
         .get(url.as_str())
         .header("Accept", ACCEPT)
@@ -283,7 +283,7 @@ fn render(d: &Daemon, ctx: &mut Ctx, got: Got, url: &str) -> Result<Page, Fail> 
         return Ok(page(String::new(), body.trim().to_string(), "markdown from server".into()));
     }
     let kind = got.ctype.split(';').next().unwrap_or("");
-    Err(Fail::hint(format!("not a text page ({kind})"), format!("lighting open {url}")))
+    Err(Fail::hint(format!("not a text page ({kind})"), format!("wisply open {url}")))
 }
 
 fn decode(raw: &[u8], ctype: &str) -> String {

@@ -52,7 +52,7 @@ pub fn post(
         .config()
         .timeout_global(Some(wait))
         .build()
-        .header("User-Agent", "lighting")
+        .header("User-Agent", "wisply")
         .header(auth.0, auth.1)
         .header("Content-Type", "application/json")
         .send(body.to_string().as_bytes())

@@ -51,7 +51,7 @@ pub fn defaults() -> Map<String, Value> {
         "bye": "Okay, bin raus.",
         "stop": r"\b(ki|kai|bot)\W+(?:\w+\W+){0,2}?(raus|stopp?|verschwinde|leave)\b",
         "names": "Discord, KI",
-        "wake": r"\b(ki|kai|k\.i\.|bot|lighting)\b",
+        "wake": r"\b(ki|kai|k\.i\.|bot|wisply|lighting)\b",
         "silence_s": 20,
         "level": 0.012,
         "end_pause_s": 0.5,
@@ -248,7 +248,7 @@ pub fn command(home: &Path, pos: &[String]) -> Result<String, Fail> {
     match sub {
         "join" | "here" => {
             if running {
-                return Err(Fail::hint(format!("already in a call ({})", target_of()), "lighting voice leave"));
+                return Err(Fail::hint(format!("already in a call ({})", target_of()), "wisply voice leave"));
             }
             let have = keys();
             let missing: Vec<&str> = KEYS.iter().copied().filter(|k| !have.contains_key(*k)).collect();
@@ -260,18 +260,18 @@ pub fn command(home: &Path, pos: &[String]) -> Result<String, Fail> {
             if !unset.is_empty() {
                 return Err(Fail::hint(
                     format!("voice needs your audio devices first: {}", unset.join(", ")),
-                    "lighting voice set listen_device=<what Discord plays to> discord_out=<the same device>",
+                    "wisply voice set listen_device=<what Discord plays to> discord_out=<the same device>",
                 ));
             }
             mouth::tts_exe(home)?;
             let target = if sub == "join" { pos[1..].join(" ") } else { String::new() };
             if sub == "join" && target.is_empty() {
-                return Err(Fail::hint("join needs a chat name", "lighting voice join \"Friends\""));
+                return Err(Fail::hint("join needs a chat name", "wisply voice join \"Friends\""));
             }
             p.state(json!({"status": "starting", "target": target}));
             let pid = spawn(&p, &["voice-session", &target])?;
             let shown = if target.is_empty() { "the open chat".to_string() } else { target };
-            Ok(format!("voice: joining {shown} (pid {pid}), check with: lighting voice status"))
+            Ok(format!("voice: joining {shown} (pid {pid}), check with: wisply voice status"))
         }
         "leave" => {
             if !running {
@@ -284,7 +284,7 @@ pub fn command(home: &Path, pos: &[String]) -> Result<String, Fail> {
         }
         "say" => {
             if !running {
-                return Err(Fail::hint("not in a call", "lighting voice join \"Name\""));
+                return Err(Fail::hint("not in a call", "wisply voice join \"Name\""));
             }
             p.drop_line(&pos[1..].join(" "));
             Ok("voice: queued".into())

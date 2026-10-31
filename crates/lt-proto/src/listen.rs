@@ -16,7 +16,7 @@ impl Listener {
 }
 
 fn taken() -> io::Error {
-    io::Error::new(io::ErrorKind::AddrInUse, "another lighting daemon already serves this home")
+    io::Error::new(io::ErrorKind::AddrInUse, "another wisply daemon already serves this home")
 }
 
 #[cfg(not(windows))]

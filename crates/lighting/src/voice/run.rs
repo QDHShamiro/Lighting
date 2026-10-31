@@ -121,7 +121,7 @@ impl Asr {
         if base.is_empty() {
             if !self.warned {
                 self.warned = true;
-                self.p.log("asr: no local speech-to-text (lighting config whisper_api <LocalAI url>)");
+                self.p.log("asr: no local speech-to-text (wisply config whisper_api <LocalAI url>)");
             }
             return Ok(String::new());
         }

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::thread;
 
-const EXE: &str = env!("CARGO_BIN_EXE_lighting");
+const EXE: &str = env!("CARGO_BIN_EXE_wisply");
 
 struct Home(PathBuf);
 
@@ -13,7 +13,7 @@ impl Home {
     fn run(&self, args: &[&str]) -> (i32, String) {
         let out = Command::new(EXE)
             .args(args)
-            .env("LIGHTING_HOME", &self.0)
+            .env("WISPLY_HOME", &self.0)
             .env(if cfg!(windows) { "USERPROFILE" } else { "HOME" }, &self.0)
             .env("CLAUDE_CODE_SESSION_ID", "it-channels")
             .env_remove("MSYSTEM")
@@ -68,7 +68,7 @@ fn channels_list_the_ways_and_remember_what_failed_where() {
     fs::write(path.join("v3"), "").unwrap();
     let home = Home(path);
     let (code, out) = home.run(&["channels"]);
-    assert!(code == 0 && out.starts_with("channels (ways in the order Lighting tries them"), "{out}");
+    assert!(code == 0 && out.starts_with("channels (ways in the order Wisply tries them"), "{out}");
     for row in ["\ngithub   ", "\nweb      direct > ", "\nvideo    ", "\naudio    "] {
         assert!(out.contains(row), "{row:?} missing:\n{out}");
     }
@@ -94,7 +94,7 @@ fn doctor_checks_the_parts_and_takes_only_fix() {
     fs::write(path.join("config.json"), "{broken").unwrap();
     let home = Home(path);
     let (code, out) = home.run(&["doctor"]);
-    assert!(out.starts_with("lighting doctor "), "{out}");
+    assert!(out.starts_with("wisply doctor "), "{out}");
     for part in ["\nok   daemon  pid ", "\nok   gh      ", "\nFAIL data    ", "config.json"] {
         assert!(out.contains(part) || (part.contains("gh") && out.contains(" gh ")), "{part:?} missing:\n{out}");
     }

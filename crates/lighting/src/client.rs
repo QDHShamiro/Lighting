@@ -48,10 +48,10 @@ pub fn run(raw: &[String]) -> ExitCode {
 }
 
 fn open_ui(home: &Path) -> ExitCode {
-    let name = if cfg!(windows) { "lighting-ui.exe" } else { "lighting-ui" };
+    let name = if cfg!(windows) { "wisply-ui.exe" } else { "wisply-ui" };
     let ui = env::current_exe().ok().and_then(|p| p.parent().map(|d| d.join(name))).filter(|p| p.is_file());
     let Some(ui) = ui else {
-        println!("err: {name} is missing next to lighting -> try: reinstall Lighting");
+        println!("err: {name} is missing next to wisply -> try: reinstall Wisply");
         return ExitCode::from(1);
     };
     if crate::spawn::detached(&ui, &[], home, &home.join("ui.log")) {
@@ -69,7 +69,7 @@ pub fn send(home: &Path, args: &[String]) -> ExitCode {
     let event = args.get(1).map(String::as_str).unwrap_or("");
     let silent = matches!(first, "done" | "suggest" | "hook");
     let idle = match first {
-        "stop" => Some("lighting daemon not running"),
+        "stop" => Some("wisply daemon not running"),
         "done" if quiet => Some(""),
         "done" => Some("nothing to close"),
         "suggest" => Some(""),
@@ -113,7 +113,7 @@ pub fn send(home: &Path, args: &[String]) -> ExitCode {
         None => match first_key(home) {
             Some(token) => token,
             None => {
-                eprintln!("lighting: the daemon made no key, see {}", home.join("daemon.log").display());
+                eprintln!("wisply: the daemon made no key, see {}", home.join("daemon.log").display());
                 return ExitCode::from(1);
             }
         },
@@ -123,7 +123,7 @@ pub fn send(home: &Path, args: &[String]) -> ExitCode {
     let reply = match exchange(home, &req, idle) {
         Ok(reply) => Reply::decode(&reply),
         Err(why) => {
-            eprintln!("lighting: {why}, see {}", home.join("daemon.log").display());
+            eprintln!("wisply: {why}, see {}", home.join("daemon.log").display());
             return ExitCode::from(1);
         }
     };
@@ -151,13 +151,13 @@ pub fn ask(home: &Path, argv: &[&str]) -> Result<(i32, String), String> {
 
 fn v2(home: &Path, raw: &[String]) -> ExitCode {
     let Some(exe) = crate::v2::client_exe() else {
-        eprintln!("lighting: {} belongs to Lighting 2.x and its client was not found", home.display());
+        eprintln!("wisply: {} belongs to Lighting 2.x and its client was not found", home.display());
         return ExitCode::from(127);
     };
     match Command::new(&exe).args(raw).status() {
         Ok(status) => ExitCode::from(status.code().and_then(|c| u8::try_from(c).ok()).unwrap_or(1)),
         Err(e) => {
-            eprintln!("lighting: cannot start the 2.x client {} ({e})", exe.display());
+            eprintln!("wisply: cannot start the 2.x client {} ({e})", exe.display());
             ExitCode::from(127)
         }
     }

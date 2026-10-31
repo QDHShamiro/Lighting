@@ -342,7 +342,7 @@ pub fn save_current(
     if steps.is_empty() {
         let past: Vec<Value> = episodes(&d.home, RECENT_PAST).into_iter().filter(|e| e["via"].is_null()).collect();
         let Some(e) = past.last() else {
-            return Err(Fail::hint("no finished task to save", "do the task with lighting first"));
+            return Err(Fail::hint("no finished task to save", "do the task with wisply first"));
         };
         steps = e["steps"].as_array().cloned().unwrap_or_default();
         cost = e["cost"].as_u64().unwrap_or(0) as usize;
@@ -350,7 +350,7 @@ pub fn save_current(
     }
     if let Some(n) = last {
         let n: usize =
-            n.parse().map_err(|_| Fail::hint("--last needs a number", "lighting routine save NAME --last 3"))?;
+            n.parse().map_err(|_| Fail::hint("--last needs a number", "wisply routine save NAME --last 3"))?;
         if n > 0 {
             steps = steps[steps.len().saturating_sub(n)..].to_vec();
         }

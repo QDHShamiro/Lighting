@@ -68,7 +68,7 @@ pub fn fix_text(argv: &[String]) -> String {
 
 fn told(l: &Lesson) -> String {
     let times = if l.ups > 1 { format!(", {}x", l.ups) } else { String::new() };
-    format!("\n! learned: after this error `lighting {}` worked here before{times}", oneline(&l.fix, 160))
+    format!("\n! learned: after this error `wisply {}` worked here before{times}", oneline(&l.fix, 160))
 }
 
 pub fn after(d: &Daemon, ctx: &mut Ctx, name: &str, argv: &[String], code: i32, out: &mut String) {
@@ -114,7 +114,7 @@ mod tests {
     #[test]
     fn errors_get_stable_signatures() {
         assert_eq!(
-            kind("err: element e12 not found (\"Log in\") -> try: lighting snap\n! STOP: again"),
+            kind("err: element e12 not found (\"Log in\") -> try: wisply snap\n! STOP: again"),
             "element e# not found (…)"
         );
         assert_eq!(kind("err: browser did not answer 'click' within 20s"), "browser did not answer … within #s");

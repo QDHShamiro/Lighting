@@ -148,7 +148,7 @@ fn learn_check() -> (bool, String) {
 pub fn selftest(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let only = c.pos.first().map_or("all", String::as_str);
     if !["all", "web", "app", "chat"].contains(&only) {
-        return Err(Fail::hint(format!("no selftest part '{only}'"), "lighting selftest [web|app|chat]"));
+        return Err(Fail::hint(format!("no selftest part '{only}'"), "wisply selftest [web|app|chat]"));
     }
     let mut r = Run::new(d, ctx);
     r.check("filter tiers", |_, _| tiers_check());
@@ -159,7 +159,7 @@ pub fn selftest(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
             let decoy = web::browser(&mut r, &srv);
             web2::browser(&mut r, &srv, &decoy);
         } else {
-            r.skip("browser tests (no browser connected: lighting setup)");
+            r.skip("browser tests (no browser connected: wisply setup)");
         }
     }
     #[cfg(windows)]

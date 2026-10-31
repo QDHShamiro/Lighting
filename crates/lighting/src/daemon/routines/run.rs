@@ -94,7 +94,7 @@ impl Job {
         let line = step_line(&s, Some(&self.params));
         let stop = Fail::hint(
             format!("{} stopped at step {i}/{n} ({line}): {msg}", self.name),
-            "the steps before are done; finish by hand (lighting snap), Lighting learns the fix",
+            "the steps before are done; finish by hand (wisply snap), Wisply learns the fix",
         );
         self.fail(d, format!("step {i}: {short}"), stop)
     }
@@ -203,7 +203,7 @@ impl Job {
                     self.name,
                     place(w.as_ref())
                 ),
-                "check with lighting snap; wrong parameter or the site changed",
+                "check with wisply snap; wrong parameter or the site changed",
             ));
         }
         let status = if status.is_empty() { String::new() } else { format!(", {status}") };
@@ -273,7 +273,7 @@ fn leave(ctx: &mut Ctx, job: &Job, failed: bool) {
 
 pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     if c.pos.is_empty() {
-        return Err(Fail::hint("run needs a routine name", "lighting routines"));
+        return Err(Fail::hint("run needs a routine name", "wisply routines"));
     }
     let query: Vec<&str> = c.pos.iter().map(String::as_str).filter(|p| !p.contains('=')).collect();
     let wanted = if query.is_empty() { c.pos[0].clone() } else { query.join("-") };
@@ -305,7 +305,7 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         .flat_map(|s| s["args"].as_array().cloned().unwrap_or_default())
         .any(|a| text(&a).contains("@secret"));
     if secret && ctx.secret.is_none() {
-        return Err(Fail::hint(format!("{name} types a secret"), format!("lighting run {name} ... --env VAR")));
+        return Err(Fail::hint(format!("{name} types a secret"), format!("wisply run {name} ... --env VAR")));
     }
     if ctx.run_stack.contains(&name) {
         let chain = [ctx.run_stack.clone(), vec![name.clone()]].concat().join(" > ");

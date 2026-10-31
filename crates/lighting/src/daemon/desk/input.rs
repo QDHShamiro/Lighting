@@ -30,7 +30,7 @@ const CHUNK: usize = 200;
 pub const DRAG_STEPS: i32 = 12;
 const CHROMIUM_HOSTS: &[&str] = &["Chrome_RenderWidgetHostHWND", "Chrome_WidgetWin_1", "Chrome_WidgetWin_0"];
 pub const FRONT_HINT: &str =
-    "Lighting does not take the screen from the user; lighting config focus away allows it while they are away";
+    "Wisply does not take the screen from the user; wisply config focus away allows it while they are away";
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Button {

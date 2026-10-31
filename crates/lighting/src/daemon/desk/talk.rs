@@ -229,7 +229,7 @@ pub fn unread_text(head: &str, names: &[String]) -> String {
 pub fn show(head: &str, wref: &str, msgs: &[Msg]) -> String {
     let mut lines = Vec::new();
     if msgs.len() > LINES {
-        lines.push(format!("... +{} older (lighting inbox {wref} --since {})", msgs.len() - LINES, msgs[0].id));
+        lines.push(format!("... +{} older (wisply inbox {wref} --since {})", msgs.len() - LINES, msgs[0].id));
     }
     for m in &msgs[msgs.len().saturating_sub(LINES)..] {
         let text = if m.text.chars().count() <= TEXT_MAX {
@@ -352,7 +352,7 @@ mod tests {
             .collect();
         let out = show("new [w2] chat #7", "w2", &msgs);
         let lines: Vec<&str> = out.lines().collect();
-        assert_eq!(lines[1], "... +2 older (lighting inbox w2 --since 1)");
+        assert_eq!(lines[1], "... +2 older (wisply inbox w2 --since 1)");
         assert_eq!(lines[2], "Anna: m3");
         assert_eq!(lines[5], "Anna 9:01: m6");
         assert_eq!(lines[6], format!("{}...", "x".repeat(297)));

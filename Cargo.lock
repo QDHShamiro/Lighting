@@ -1841,7 +1841,7 @@ dependencies = [
 
 [[package]]
 name = "lighting"
-version = "3.0.0-dev.0"
+version = "3.0.0"
 dependencies = [
  "base64 0.22.1",
  "encoding_rs",
@@ -1866,7 +1866,7 @@ dependencies = [
 
 [[package]]
 name = "lighting-ui"
-version = "3.0.0-dev.0"
+version = "3.0.0"
 dependencies = [
  "lt-proto",
  "serde_json",
@@ -1930,7 +1930,7 @@ dependencies = [
 
 [[package]]
 name = "lt-code"
-version = "3.0.0-dev.0"
+version = "3.0.0"
 dependencies = [
  "half",
  "lt-memory",
@@ -1942,14 +1942,14 @@ dependencies = [
 
 [[package]]
 name = "lt-core"
-version = "3.0.0-dev.0"
+version = "3.0.0"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "lt-memory"
-version = "3.0.0-dev.0"
+version = "3.0.0"
 dependencies = [
  "half",
  "lt-core",
@@ -1960,11 +1960,11 @@ dependencies = [
 
 [[package]]
 name = "lt-proto"
-version = "3.0.0-dev.0"
+version = "3.0.0"
 
 [[package]]
 name = "lt-squeeze"
-version = "3.0.0-dev.0"
+version = "3.0.0"
 dependencies = [
  "proptest",
  "regex",

@@ -20,7 +20,7 @@ const VERSION_WAIT: Duration = Duration::from_secs(10);
 const BIG_LOG: u64 = 50_000_000;
 const BIG_OUT: u64 = 500_000_000;
 const LOG_TAIL: u64 = 262_144;
-const STARTED: &str = "lighting daemon started";
+const STARTED: &str = "wisply daemon started";
 const PANIC: &str = " panic in ";
 const FAIL_PCT: f64 = 10.0;
 const MIN_FAILS: usize = 10;
@@ -62,14 +62,14 @@ fn daemon_rows(home: &Path, ask: Ask) -> Vec<Row> {
             let browser = out.lines().find(|l| l.starts_with("browser ")).unwrap_or("browser unknown");
             let text = browser.trim_start_matches("browser ").split(" -> ").next().unwrap_or("").to_string();
             rows.push(if text.starts_with("none") {
-                row(Level::Warn, "browser", text, "lighting setup, then open Brave")
+                row(Level::Warn, "browser", text, "wisply setup, then open Brave")
             } else {
                 row(Level::Ok, "browser", text, "")
             });
             rows
         }
         Ok((_, out)) => vec![row(Level::Fail, "daemon", out, format!("see {}", home.join("daemon.log").display()))],
-        Err(why) => vec![row(Level::Fail, "daemon", why, "lighting stop, then run any command to start it again")],
+        Err(why) => vec![row(Level::Fail, "daemon", why, "wisply stop, then run any command to start it again")],
     }
 }
 
@@ -87,20 +87,20 @@ fn tool_rows(home: &Path) -> Vec<Row> {
                 Level::Warn,
                 tool.name,
                 format!("not installed ({what} fall back to slower ways)"),
-                "lighting doctor --fix",
+                "wisply doctor --fix",
             )),
             (Some(_), true) => match install::verify(home, tool) {
                 Check::Verified(v) => {
-                    rows.push(row(Level::Ok, tool.name, format!("{v} in ~/.lighting/bin, SHA-256 ok"), ""))
+                    rows.push(row(Level::Ok, tool.name, format!("{v} in ~/.wisply/bin, SHA-256 ok"), ""))
                 }
                 Check::Changed(why) => {
-                    rows.push(row(Level::Fail, tool.name, why, "lighting doctor --fix (downloads it again)"))
+                    rows.push(row(Level::Fail, tool.name, why, "wisply doctor --fix (downloads it again)"))
                 }
                 Check::Missing => rows.push(row(
                     Level::Warn,
                     tool.name,
-                    "in ~/.lighting/bin but not installed by doctor (unknown version)",
-                    "lighting doctor --fix",
+                    "in ~/.wisply/bin but not installed by doctor (unknown version)",
+                    "wisply doctor --fix",
                 )),
             },
             (Some(path), false) => {
@@ -256,7 +256,7 @@ fn error_rows(home: &Path) -> Vec<Row> {
                 Level::Warn,
                 "errors",
                 format!("{rate:.0}% of {} commands failed in 7 days, most often: {most}", s.runs),
-                "lighting improve",
+                "wisply improve",
             ));
         }
         _ => rows.push(row(Level::Ok, "errors", format!("{} commands in 7 days, {rate:.1}% failed", s.runs), "")),
@@ -289,11 +289,11 @@ fn print(rows: &[Row]) -> ExitCode {
 
 pub fn run(home: &Path, args: &[String], ask: Ask) -> ExitCode {
     if let Some(bad) = args.iter().find(|a| *a != "--fix") {
-        eprintln!("err: doctor takes only --fix ({bad}) -> try: lighting doctor --fix");
+        eprintln!("err: doctor takes only --fix ({bad}) -> try: wisply doctor --fix");
         return ExitCode::from(2);
     }
     println!(
-        "lighting doctor {} | {}",
+        "wisply doctor {} | {}",
         env!("CARGO_PKG_VERSION"),
         std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_default()
     );

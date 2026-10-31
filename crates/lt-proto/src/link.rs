@@ -210,7 +210,7 @@ pub(crate) mod sys {
                     return Err(io::Error::last_os_error());
                 }
             }
-            if done == len { Ok(()) } else { Err(io::Error::other("short write to the lighting daemon")) }
+            if done == len { Ok(()) } else { Err(io::Error::other("short write to the wisply daemon")) }
         }
 
         pub fn recv(&self, limit: Option<Duration>) -> io::Result<Vec<u8>> {
@@ -349,7 +349,7 @@ mod tests {
     fn whole_messages_cross_the_socket_both_ways() {
         let home = std::env::temp_dir().join(format!("lt-proto-link-{}", std::process::id()));
         std::fs::create_dir_all(&home).unwrap();
-        let path = home.join(format!("lighting-{}.sock", crate::user()));
+        let path = home.join(format!("wisply-{}.sock", crate::user()));
         let _ = std::fs::remove_file(&path);
         let listener = UnixListener::bind(&path).unwrap();
         let server = thread::spawn(move || {

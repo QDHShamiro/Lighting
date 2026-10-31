@@ -50,7 +50,7 @@ use hosts::Hosts;
 pub const MARKER: &str = "v3";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const FIRST_MESSAGE: Duration = Duration::from_secs(10);
-const STOPPED: &str = "stopped (Ctrl+Alt+End or lighting abort)";
+const STOPPED: &str = "stopped (Ctrl+Alt+End or wisply abort)";
 const ABORTED: &str = "stopped the running and queued commands";
 const LANES: [Lane; 3] = [Lane::Main, Lane::Memory, Lane::Hook];
 
@@ -171,28 +171,28 @@ pub fn may_serve() -> bool {
 pub fn serve() -> ExitCode {
     let home = lt_proto::home();
     if let Err(e) = fs::create_dir_all(&home) {
-        eprintln!("lighting daemon: cannot use {} ({e})", home.display());
+        eprintln!("wisply daemon: cannot use {} ({e})", home.display());
         return ExitCode::FAILURE;
     }
     let mut listener = match Listener::bind(&home) {
         Ok(listener) => listener,
         Err(e) if e.kind() == io::ErrorKind::AddrInUse => return ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("lighting daemon: cannot listen ({e})");
+            eprintln!("wisply daemon: cannot listen ({e})");
             return ExitCode::FAILURE;
         }
     };
     let token = match lt_proto::make_key(&home) {
         Ok(token) => token,
         Err(e) => {
-            eprintln!("lighting daemon: cannot make the key in {} ({e})", home.display());
+            eprintln!("wisply daemon: cannot make the key in {} ({e})", home.display());
             return ExitCode::FAILURE;
         }
     };
     let _ = fs::write(home.join(MARKER), VERSION);
     let pid = process::id();
     let _ = fs::write(home.join("daemon.pid"), pid.to_string());
-    eprintln!("lighting daemon started {VERSION} {} pid {pid}", local_now());
+    eprintln!("wisply daemon started {VERSION} {} pid {pid}", local_now());
     panic::set_hook(Box::new(|info| {
         let thread = thread::current();
         let name = thread.name().unwrap_or("?");
@@ -224,7 +224,7 @@ pub fn serve() -> ExitCode {
         let ctxs = if main { sessions.take().unwrap_or_default() } else { Contexts::side() };
         let name = format!("{lane:?}").to_lowercase();
         if thread::Builder::new().name(name).spawn(move || lane::work(&d, &rx, ctxs, main)).is_err() {
-            eprintln!("lighting daemon: cannot start the {lane:?} lane");
+            eprintln!("wisply daemon: cannot start the {lane:?} lane");
             return ExitCode::FAILURE;
         }
         senders.push(tx);
@@ -286,7 +286,7 @@ fn handle(d: &Daemon, link: Link, lanes: &[Sender<Work>]) {
         if lanes[lane].send(Work::Job(Box::new(req))).is_ok() {
             answer.recv().unwrap_or_else(|_| Res::new(1, "err: the command ended without an answer, see daemon.log"))
         } else {
-            Res::new(1, "err: the lighting daemon is stopping")
+            Res::new(1, "err: the wisply daemon is stopping")
         }
     };
     let bytes = if fast {

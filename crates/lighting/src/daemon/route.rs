@@ -52,7 +52,7 @@ static AI_TALK: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 pub fn later(name: &str) -> Fail {
-    Fail::hint(format!("{name} is not built into Lighting 3.0 yet"), "run it with Lighting 2.x (without LIGHTING_HOME)")
+    Fail::hint(format!("{name} is not built into Wisply 3.0 yet"), "run it with Lighting 2.x (without WISPLY_HOME)")
 }
 
 pub fn foreign(name: &str) -> bool {
@@ -78,7 +78,7 @@ fn aim(c: &Call) -> Result<Option<(String, Call)>, Fail> {
         Some(Flag::Val(on)) if windowish(on) => Ok(Some((on.clone(), c.clone()))),
         Some(_) => Err(Fail::hint(
             "--on takes web, app or a window like w3 or app:Name",
-            format!("lighting {} ... --on app", c.name),
+            format!("wisply {} ... --on app", c.name),
         )),
         None => {
             let need = if c.name == "type" { 3 } else { 2 };
@@ -198,7 +198,7 @@ fn autoload(d: &Daemon, c: &Call) -> Result<Out, Fail> {
 
 #[cfg(not(windows))]
 fn autoload(_: &Daemon, _: &Call) -> Result<Out, Fail> {
-    Err(Fail::new("loading the extension by itself works on Windows; follow the manual steps lighting setup prints"))
+    Err(Fail::new("loading the extension by itself works on Windows; follow the manual steps wisply setup prints"))
 }
 
 fn desktop(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {

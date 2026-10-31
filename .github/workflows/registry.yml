@@ -22,9 +22,9 @@ jobs:
         env:
           TAG: ${{ inputs.tag }}
         run: |
-          url="https://github.com/QDHShamiro/Lighting/releases/download/$TAG/lighting.mcpb"
-          curl -fsSL -o lighting.mcpb "$url"
-          sha=$(sha256sum lighting.mcpb | cut -d' ' -f1)
+          url="https://github.com/QDHShamiro/Lighting/releases/download/$TAG/wisply.mcpb"
+          curl -fsSL -o wisply.mcpb "$url"
+          sha=$(sha256sum wisply.mcpb | cut -d' ' -f1)
           python3 - "$TAG" "$url" "$sha" <<'EOF'
           import json, sys
           tag, url, sha = sys.argv[1:]

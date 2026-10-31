@@ -13,7 +13,7 @@ const START_WAIT: Duration = Duration::from_secs(15);
 const RETRY: Duration = Duration::from_millis(100);
 const ALLOWED: &[&str] =
     &["board", "status", "abort", "tokens", "brain", "memory", "todo", "wiki", "config", "version"];
-const CLI: &str = if cfg!(windows) { "lighting.exe" } else { "lighting" };
+const CLI: &str = if cfg!(windows) { "wisply.exe" } else { "wisply" };
 
 fn argv_of(msg: &Value) -> Vec<String> {
     msg["argv"].as_array().map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect()).unwrap_or_default()
@@ -63,7 +63,7 @@ fn call(home: &Path, argv: &[String], secret: Option<&str>) -> (i32, String) {
                 let r = Reply::decode(&raw);
                 return (r.code, r.out);
             }
-            Ok(_) => return (1, "err: the Lighting daemon closed the connection".into()),
+            Ok(_) => return (1, "err: the Wisply daemon closed the connection".into()),
             Err(Conn::Missing) if !started => {
                 started = true;
                 start_daemon();
@@ -71,7 +71,7 @@ fn call(home: &Path, argv: &[String], secret: Option<&str>) -> (i32, String) {
             Err(_) => {}
         }
         if Instant::now() > deadline {
-            return (1, "err: the Lighting daemon did not start".into());
+            return (1, "err: the Wisply daemon did not start".into());
         }
         thread::sleep(RETRY);
     }

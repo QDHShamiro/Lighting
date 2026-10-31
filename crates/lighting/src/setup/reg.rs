@@ -130,9 +130,9 @@ mod tests {
 
     #[test]
     fn path_entries_match_without_case_or_trailing_slash() {
-        let dir = Path::new(r"C:\Users\x\.lighting\bin");
-        assert!(path_has(r"C:\Windows;c:\users\X\.lighting\bin\;D:\y", dir));
-        assert!(!path_has(r"C:\Windows;C:\Users\x\.lighting\bin2", dir));
+        let dir = Path::new(r"C:\Users\x\.wisply\bin");
+        assert!(path_has(r"C:\Windows;c:\users\X\.wisply\bin\;D:\y", dir));
+        assert!(!path_has(r"C:\Windows;C:\Users\x\.wisply\bin2", dir));
         assert_eq!(wide("A"), vec![65, 0, 0, 0]);
     }
 }

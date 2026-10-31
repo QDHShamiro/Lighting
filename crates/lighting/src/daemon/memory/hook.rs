@@ -89,7 +89,7 @@ fn listed(head: &str, rows: Vec<(i64, String)>) -> Vec<String> {
 
 fn compact_text(s: &mut Store, here: &str) -> DbResult<String> {
     let mut lines = vec![format!(
-        "Lighting after the summary ({}): lighting recall \"<words>\" searches your notes, lighting todo tracks work.",
+        "Wisply after the summary ({}): wisply recall \"<words>\" searches your notes, wisply todo tracks work.",
         if here.is_empty() { "no project" } else { here }
     )];
     lines.extend(listed("Project rules:", s.titles(here, true, START_RULES)?));
@@ -99,8 +99,8 @@ fn compact_text(s: &mut Store, here: &str) -> DbResult<String> {
 
 fn start_text(s: &mut Store, here: &str, commits: Vec<String>) -> DbResult<String> {
     let mut lines = vec![format!(
-        "Lighting memory ({}): lighting recall \"<words>\" searches {} notes (vault, session notes and Claude memory \
-         included), lighting remember \"<fact>\" keeps one, lighting todo tracks work.",
+        "Wisply memory ({}): wisply recall \"<words>\" searches {} notes (vault, session notes and Claude memory \
+         included), wisply remember \"<fact>\" keeps one, wisply todo tracks work.",
         if here.is_empty() { "no project" } else { here },
         s.note_count()?
     )];
@@ -117,7 +117,7 @@ fn start_text(s: &mut Store, here: &str, commits: Vec<String>) -> DbResult<Strin
     if here.is_empty() {
         let open = s.todos(None, true)?.len();
         if open > 0 {
-            lines.push(format!("Open to-dos: {open} (lighting todo --all lists them)"));
+            lines.push(format!("Open to-dos: {open} (wisply todo --all lists them)"));
         }
     } else {
         let todos: Vec<_> = s.todos(Some(here), true)?.into_iter().take(START_TODOS).collect();
@@ -144,7 +144,7 @@ fn start_text(s: &mut Store, here: &str, commits: Vec<String>) -> DbResult<Strin
         s.set_meta(DRAFTS_SHOWN, &today)?;
         let paused =
             if drafts >= DRAFTS_MAX { &format!(", no new ones until fewer than {DRAFTS_MAX} are open") } else { "" };
-        lines.push(format!("{drafts} wiki drafts wait for a yes or no: lighting wiki{paused}"));
+        lines.push(format!("{drafts} wiki drafts wait for a yes or no: wisply wiki{paused}"));
     }
     Ok(lines.join("\n"))
 }
@@ -256,7 +256,7 @@ fn memory_tip(d: &Daemon, ctx: &mut Ctx, prompt: String) -> Result<String, Fail>
         let said = m[1].trim().trim_end_matches('.').to_string();
         let id = keep(d, ctx, said, "preference", &project_of(&ctx.cwd))?;
         return Ok(format!(
-            "Lighting memory saved #{id}: \"{}\" (lighting forget {id} if that was not meant to be kept)",
+            "Wisply memory saved #{id}: \"{}\" (wisply forget {id} if that was not meant to be kept)",
             oneline(&m[1], 90)
         ));
     }
@@ -296,7 +296,7 @@ fn memory_tip(d: &Daemon, ctx: &mut Ctx, prompt: String) -> Result<String, Fail>
     Ok(if out.is_empty() {
         String::new()
     } else {
-        format!("Lighting memory may help (lighting recall <id>): {}", out.join(" | "))
+        format!("Wisply memory may help (wisply recall <id>): {}", out.join(" | "))
     })
 }
 
@@ -329,7 +329,7 @@ mod tests {
             session: "",
         };
         s.add_note(&draft).unwrap();
-        let line = "1 wiki drafts wait for a yes or no: lighting wiki";
+        let line = "1 wiki drafts wait for a yes or no: wisply wiki";
         assert!(start_text(&mut s, "", Vec::new()).unwrap().ends_with(line));
         assert!(!start_text(&mut s, "", Vec::new()).unwrap().contains("wiki drafts"));
         s.set_meta(DRAFTS_SHOWN, "2000-01-01").unwrap();
@@ -340,7 +340,7 @@ mod tests {
         s.set_meta(DRAFTS_SHOWN, "2000-01-01").unwrap();
         assert!(s.drafts_full().unwrap());
         let full = format!(
-            "{DRAFTS_MAX} wiki drafts wait for a yes or no: lighting wiki, no new ones until fewer than {DRAFTS_MAX} are open"
+            "{DRAFTS_MAX} wiki drafts wait for a yes or no: wisply wiki, no new ones until fewer than {DRAFTS_MAX} are open"
         );
         assert!(start_text(&mut s, "", Vec::new()).unwrap().ends_with(&full));
         drop(s);

@@ -14,11 +14,11 @@ const DAYS: [&str; 7] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 const DAYS_DE: &[(&str, &str)] =
     &[("mo", "mon"), ("di", "tue"), ("mi", "wed"), ("do", "thu"), ("fr", "fri"), ("sa", "sat"), ("so", "sun")];
 const HELP: &str =
-    "lighting routine schedule <name> daily 08:00 | weekly mon 09:30 | hourly | every 30m [param=value ...]";
+    "wisply routine schedule <name> daily 08:00 | weekly mon 09:30 | hourly | every 30m [param=value ...]";
 const MIN_EVERY: u64 = 5;
 const HOUR: u64 = 60;
 const ERR_CHARS: usize = 200;
-const LABEL: &str = "dev.qdhshamiro.lighting";
+const LABEL: &str = "dev.qdhshamiro.wisply";
 const SESSION_ENV: &[&str] =
     &["DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "XDG_SESSION_TYPE", "DBUS_SESSION_BUS_ADDRESS"];
 
@@ -108,7 +108,7 @@ fn quiet(cmd: &mut Command) -> &mut Command {
 }
 
 fn client() -> Result<PathBuf, Fail> {
-    env::current_exe().map_err(|e| Fail::new(format!("cannot find lighting itself ({e})")))
+    env::current_exe().map_err(|e| Fail::new(format!("cannot find wisply itself ({e})")))
 }
 
 pub fn windows_line(task: &Path, home: &Path, name: &str, args: &[String]) -> String {
@@ -120,12 +120,12 @@ pub fn windows_line(task: &Path, home: &Path, name: &str, args: &[String]) -> St
 }
 
 fn add_windows(home: &Path, name: &str, when: &Value, args: &[String]) -> Result<(), Fail> {
-    let task = client()?.with_file_name("lighting-task.exe");
+    let task = client()?.with_file_name("wisply-task.exe");
     if !task.is_file() {
-        return Err(Fail::hint(format!("{} is missing", task.display()), "install Lighting again (lighting setup)"));
+        return Err(Fail::hint(format!("{} is missing", task.display()), "install Wisply again (wisply setup)"));
     }
     let mut cmd = Command::new("schtasks");
-    cmd.args(["/Create", "/F", "/TN", &format!("Lighting {name}"), "/TR", &windows_line(&task, home, name, args)]);
+    cmd.args(["/Create", "/F", "/TN", &format!("Wisply {name}"), "/TR", &windows_line(&task, home, name, args)]);
     match when["kind"].as_str() {
         Some("every") => cmd.args(["/SC", "MINUTE", "/MO", &when["minutes"].to_string()]),
         Some("daily") => cmd.args(["/SC", "DAILY", "/ST", &text(&when["at"])]),
@@ -166,7 +166,7 @@ pub fn plist(exe: &Path, home: &Path, name: &str, when: &Value, args: &[String])
     };
     let home = xml(&home.display().to_string());
     format!(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>Label</key>\n\t<string>{LABEL}.{name}</string>\n\t<key>ProgramArguments</key>\n\t<array>\n{argv}\t</array>\n\t<key>EnvironmentVariables</key>\n\t<dict>\n\t\t<key>LIGHTING_HOME</key>\n\t\t<string>{home}</string>\n\t</dict>\n\t<key>StandardOutPath</key>\n\t<string>{log}</string>\n\t<key>StandardErrorPath</key>\n\t<string>{log}</string>\n{timing}</dict>\n</plist>\n"
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>Label</key>\n\t<string>{LABEL}.{name}</string>\n\t<key>ProgramArguments</key>\n\t<array>\n{argv}\t</array>\n\t<key>EnvironmentVariables</key>\n\t<dict>\n\t\t<key>WISPLY_HOME</key>\n\t\t<string>{home}</string>\n\t</dict>\n\t<key>StandardOutPath</key>\n\t<string>{log}</string>\n\t<key>StandardErrorPath</key>\n\t<string>{log}</string>\n{timing}</dict>\n</plist>\n"
     )
 }
 
@@ -210,7 +210,7 @@ fn unit_dir() -> PathBuf {
 }
 
 pub fn units(exe: &Path, home: &Path, name: &str, when: &Value, args: &[String]) -> (String, String) {
-    let mut env_lines = format!("Environment=LIGHTING_HOME={}\n", home.display());
+    let mut env_lines = format!("Environment=WISPLY_HOME={}\n", home.display());
     for k in SESSION_ENV {
         if let Some(v) = env::var(k).ok().filter(|v| !v.is_empty()) {
             env_lines.push_str(&format!("Environment={k}={v}\n"));
@@ -222,9 +222,8 @@ pub fn units(exe: &Path, home: &Path, name: &str, when: &Value, args: &[String])
         .chain(quoted)
         .collect::<Vec<_>>()
         .join(" ");
-    let service = format!(
-        "[Unit]\nDescription=Lighting routine {name}\n\n[Service]\nType=oneshot\n{env_lines}ExecStart={exec}\n"
-    );
+    let service =
+        format!("[Unit]\nDescription=Wisply routine {name}\n\n[Service]\nType=oneshot\n{env_lines}ExecStart={exec}\n");
     let at = text(&when["at"]);
     let timing = match when["kind"].as_str() {
         Some("every") => {
@@ -238,14 +237,13 @@ pub fn units(exe: &Path, home: &Path, name: &str, when: &Value, args: &[String])
             format!("OnCalendar={day} *-*-* {at}:00\nPersistent=true\n")
         }
     };
-    let timer = format!(
-        "[Unit]\nDescription=Lighting routine {name}\n\n[Timer]\n{timing}\n[Install]\nWantedBy=timers.target\n"
-    );
+    let timer =
+        format!("[Unit]\nDescription=Wisply routine {name}\n\n[Timer]\n{timing}\n[Install]\nWantedBy=timers.target\n");
     (service, timer)
 }
 
 fn add_linux(home: &Path, name: &str, when: &Value, args: &[String]) -> Result<(), Fail> {
-    let unit = format!("lighting-{name}");
+    let unit = format!("wisply-{name}");
     let (service, timer) = units(&client()?, home, name, when, args);
     let dir = unit_dir();
     let _ = fs::create_dir_all(&dir);
@@ -258,14 +256,14 @@ fn add_linux(home: &Path, name: &str, when: &Value, args: &[String]) -> Result<(
 
 fn remove_os(name: &str) {
     if cfg!(windows) {
-        let _ = quiet(Command::new("schtasks").args(["/Delete", "/F", "/TN", &format!("Lighting {name}")])).output();
+        let _ = quiet(Command::new("schtasks").args(["/Delete", "/F", "/TN", &format!("Wisply {name}")])).output();
     } else if cfg!(target_os = "macos") {
         let p = plist_path(name);
         let _ =
             Command::new("launchctl").args(["bootout", &format!("gui/{}", uid()), &p.display().to_string()]).output();
         let _ = fs::remove_file(p);
     } else {
-        let unit = format!("lighting-{name}");
+        let unit = format!("wisply-{name}");
         let _ = Command::new("systemctl").args(["--user", "disable", "--now", &format!("{unit}.timer")]).output();
         for ext in ["service", "timer"] {
             let _ = fs::remove_file(unit_dir().join(format!("{unit}.{ext}")));
@@ -308,7 +306,7 @@ pub fn add(home: &Path, name: &str, words: &[String]) -> Result<String, Fail> {
 pub fn remove(home: &Path, name: &str) -> Result<String, Fail> {
     let mut data = load(home);
     let Some(key) = data.keys().find(|k| k.to_lowercase() == name.to_lowercase()).cloned() else {
-        return Err(Fail::hint(format!("{name} has no schedule"), "lighting routine schedules"));
+        return Err(Fail::hint(format!("{name} has no schedule"), "wisply routine schedules"));
     };
     remove_os(&key);
     data.shift_remove(&key);
@@ -352,15 +350,15 @@ mod tests {
         assert!(parse(&w("every 4m")).unwrap_err().msg.contains("at most every 5 minutes"));
         assert!(parse(&w("daily 24:00")).unwrap_err().msg.contains("needs a time"));
         assert!(parse(&w("weekly xyz 08:00")).unwrap_err().msg.contains("unknown day"));
-        let line = windows_line(Path::new(r"C:\L\lighting-task.exe"), Path::new(r"C:\H"), "mail", &w("q=a\"b"));
-        assert_eq!(line, r#""C:\L\lighting-task.exe" "C:\H" "run" "mail" "q=ab""#);
-        let p = plist(Path::new("/bin/lighting"), Path::new("/h"), "mail", &when, &w("q=a&b"));
+        let line = windows_line(Path::new(r"C:\L\wisply-task.exe"), Path::new(r"C:\H"), "mail", &w("q=a\"b"));
+        assert_eq!(line, r#""C:\L\wisply-task.exe" "C:\H" "run" "mail" "q=ab""#);
+        let p = plist(Path::new("/bin/wisply"), Path::new("/h"), "mail", &when, &w("q=a&b"));
         assert!(p.contains("<string>q=a&amp;b</string>") && p.contains("<key>Weekday</key>\n\t\t<integer>1</integer>"));
-        assert!(p.contains("<key>LIGHTING_HOME</key>\n\t\t<string>/h</string>"));
-        let (service, timer) = units(Path::new("/bin/lighting"), Path::new("/h"), "mail", &when, &w("q=it's"));
+        assert!(p.contains("<key>WISPLY_HOME</key>\n\t\t<string>/h</string>"));
+        let (service, timer) = units(Path::new("/bin/wisply"), Path::new("/h"), "mail", &when, &w("q=it's"));
         assert!(
-            service.contains("Environment=LIGHTING_HOME=/h\n")
-                && service.contains("ExecStart=/bin/lighting run mail 'q=its'\n")
+            service.contains("Environment=WISPLY_HOME=/h\n")
+                && service.contains("ExecStart=/bin/wisply run mail 'q=its'\n")
         );
         assert!(timer.contains("OnCalendar=Mon *-*-* 09:05:00\nPersistent=true\n"));
     }

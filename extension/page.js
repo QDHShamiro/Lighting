@@ -493,7 +493,7 @@
     const cap = document.querySelector('iframe[src*="recaptcha"],iframe[src*="hcaptcha"],iframe[src*="challenges.cloudflare.com"],iframe[src*="arkoselabs"],#challenge-form,.cf-turnstile,#px-captcha');
     if (cap && cap.checkVisibility()) out.push("! captcha on page: ask the user to solve it");
     const ck = document.querySelector('#onetrust-banner-sdk,#didomi-host,#usercentrics-root,#CybotCookiebotDialog,.cc-window,[id*="cookie" i][role="dialog"],[class*="cookie-banner" i],[id*="cookie-banner" i],[class*="consent-banner" i],[id*="consent" i][role="dialog"]');
-    if (ck && ck.checkVisibility({ opacityProperty: true, visibilityProperty: true })) out.push("! cookie banner: lighting dismiss");
+    if (ck && ck.checkVisibility({ opacityProperty: true, visibilityProperty: true })) out.push("! cookie banner: wisply dismiss");
     for (const f of frames.slice(0, 5)) {
       if (!f.checkVisibility()) continue;
       const r = f.getBoundingClientRect();
@@ -502,7 +502,7 @@
       try {
         host = new URL(f.src, location.href).host;
       } catch (e) {}
-      if (host) out.push("iframe " + host + " (cross-origin, lighting snap --frame " + host + ")");
+      if (host) out.push("iframe " + host + " (cross-origin, wisply snap --frame " + host + ")");
     }
     return out;
   }
@@ -657,7 +657,7 @@
               names += (names ? " | " : ": ") + n;
             }
           }
-          out.push(ref(lm) + " " + kind + (nm ? ' "' + q(nm) + '"' : "") + ": " + land.get(lm).count + " items (lighting snap -s " + ref(lm) + ")" + names);
+          out.push(ref(lm) + " " + kind + (nm ? ' "' + q(nm) + '"' : "") + ": " + land.get(lm).count + " items (wisply snap -s " + ref(lm) + ")" + names);
         }
         continue;
       }
@@ -668,7 +668,7 @@
             listDone.add(e.list);
             const total = groups.get(e.list).items.size;
             ids.add(ref(e.list));
-            out.push("... +" + (total - keep.length) + " similar items (lighting snap -s " + ref(e.list) + " --all)");
+            out.push("... +" + (total - keep.length) + " similar items (wisply snap -s " + ref(e.list) + " --all)");
           }
           continue;
         }
@@ -710,11 +710,11 @@
       const fresh = found.slice(0, WIDE_LINES);
       for (const l of fresh) res.ids.add(l.split(" ")[0]);
       res.lines = res.lines.concat(fresh);
-      const rest = found.length > fresh.length ? ", " + (found.length - fresh.length) + ' more: lighting snap --all -f "' + miss.join("|") + '"' : "";
+      const rest = found.length > fresh.length ? ", " + (found.length - fresh.length) + ' more: wisply snap --all -f "' + miss.join("|") + '"' : "";
       if (fresh.length > 1) res.notes = res.notes.concat("(the last " + fresh.length + " are outside the view; click scrolls to them" + rest + ")");
       else if (fresh.length) res.notes = res.notes.concat("(the last one is outside the view; click scrolls to it)");
       if (wide.late) {
-        res.notes = res.notes.concat('(large page: stopped looking for "' + miss.join("|") + '" outside the view -> lighting snap --all -f "' + miss.join("|") + '")');
+        res.notes = res.notes.concat('(large page: stopped looking for "' + miss.join("|") + '" outside the view -> wisply snap --all -f "' + miss.join("|") + '")');
         miss = [];
       } else miss = miss.filter((_, i) => !wide.hit[i]);
     }

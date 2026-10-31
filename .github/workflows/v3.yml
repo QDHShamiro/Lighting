@@ -93,16 +93,16 @@ jobs:
       - name: Size
         if: steps.build.outcome == 'success'
         shell: bash
-        run: ls -l target/release/ | grep -E "lighting(-ui)?(\.exe)?$"
+        run: ls -l target/release/ | grep -E "wisply(-ui)?(\.exe)?$"
       - name: Keep the Windows exe
         if: runner.os == 'Windows' && steps.build.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
-          name: lighting-v3-windows
+          name: wisply-v3-windows
           path: |
-            target/release/lighting.exe
-            target/release/lighting-ui.exe
-            target/release/lighting-task.exe
+            target/release/wisply.exe
+            target/release/wisply-ui.exe
+            target/release/wisply-task.exe
           retention-days: 7
       - name: Setup loads the extension into Edge
         id: setup
@@ -110,8 +110,8 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          target/release/lighting.exe setup edge
-          L="$USERPROFILE/.lighting/bin/lighting.exe"
+          target/release/wisply.exe setup edge
+          L="$USERPROFILE/.wisply/bin/wisply.exe"
           "$L" status
           "$L" status | grep -E "^browser .*edge"
       - name: Setup evidence
@@ -119,16 +119,16 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          L="$USERPROFILE/.lighting/bin/lighting.exe"
+          L="$USERPROFILE/.wisply/bin/wisply.exe"
           "$L" windows
           "$L" shot screen
-          tail -40 "$USERPROFILE/.lighting/daemon.log"
+          tail -40 "$USERPROFILE/.wisply/daemon.log"
       - name: Keep the setup evidence
         if: steps.setup.outcome == 'failure'
         uses: actions/upload-artifact@v7
         with:
           name: setup-evidence
-          path: ~/.lighting/out/
+          path: ~/.wisply/out/
           retention-days: 7
       - name: Selftest in Chrome for Testing (plus test app and chat on Windows)
         id: selftest

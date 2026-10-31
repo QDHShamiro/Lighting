@@ -1,5 +1,5 @@
-const GROUP = "Lighting";
-const OURS = /^Lighting( #\d+)?$/;
+const GROUP = "Wisply";
+const OURS = /^(Wisply|Lighting)( #\d+)?$/;
 const colors = {};
 let target = null;
 const alias = { seq: 0, fwd: {}, back: {} };
@@ -291,12 +291,12 @@ export async function list(all) {
   const lines = [];
   for (const t of tabs.slice(0, 60)) {
     const g = groups[t.id];
-    const flags = (g ? "L" + g.replace(/^Lighting( #)?/, "") : "") + (t.id === target ? "*" : "") + (t.active ? "a" : "");
+    const flags = (g ? "L" + g.replace(/^Wisply( #)?/, "") : "") + (t.id === target ? "*" : "") + (t.active ? "a" : "");
     const title = (t.title || "").replace(/\s+/g, " ").slice(0, 50);
     lines.push("t" + sid(t.id) + (flags ? " " + flags : "") + " " + title + " - " + short(t.url || t.pendingUrl || "", 60));
   }
   if (tabs.length > 60) lines.push("... +" + (tabs.length - 60) + " more tabs");
-  if (every.length > tabs.length) lines.push("+" + (every.length - tabs.length) + " other tabs of yours (lighting tabs --all lists them)");
+  if (every.length > tabs.length) lines.push("+" + (every.length - tabs.length) + " other tabs of yours (wisply tabs --all lists them)");
   return lines.join("\n");
 }
 

@@ -1,5 +1,5 @@
 export const T = {
-  app: "Lighting",
+  app: "Wisply",
   nav: { projects: "Projects", graph: "Graph", live: "Live", tokens: "Tokens", learned: "Learned", settings: "Settings", search: "Search" },
   find: "Search notes…",
   status: {
@@ -14,7 +14,7 @@ export const T = {
     title: "Projects",
     sub: (n: number) => `${n} projects, newest first`,
     filter: "Filter projects…",
-    none: "No projects yet. Lighting fills this as Claude works.",
+    none: "No projects yet. Wisply fills this as Claude works.",
     counts: (notes: number, todos: number, sessions: number) =>
       [`${notes} notes`, todos ? `${todos} open to-dos` : "", `${sessions} sessions`].filter(Boolean),
   },
@@ -62,8 +62,8 @@ export const T = {
   },
   live: {
     title: "Live",
-    sub: "What Lighting is doing for each Claude session",
-    none: "No session used Lighting in the last 15 minutes.",
+    sub: "What Wisply is doing for each Claude session",
+    none: "No session used Wisply in the last 15 minutes.",
     stop: "Stop everything",
     stopped: "Stopped",
     working: "working",
@@ -73,7 +73,7 @@ export const T = {
   },
   tokens: {
     title: "Tokens",
-    sub: "What Lighting used and saved",
+    sub: "What Wisply used and saved",
     today: "Today",
     week: "7 days",
     month: "30 days",
@@ -83,7 +83,7 @@ export const T = {
   },
   learned: {
     title: "Learned",
-    sub: "Fixes Lighting learned after a command failed and another worked. One that misses twice is dropped by itself.",
+    sub: "Fixes Wisply learned after a command failed and another worked. One that misses twice is dropped by itself.",
     none: "Nothing learned yet.",
     forget: "Forget",
     score: (ups: number, downs: number) => `${ups} hits${downs ? ` · ${downs} misses` : ""}`,
@@ -98,7 +98,7 @@ export const T = {
       memory_learn: "Learn from finished sessions",
       learn: "Learn routines from repeated steps",
       brain: "Remember pages and fixes",
-      cleanup: "Close tabs and apps Lighting opened",
+      cleanup: "Close tabs and apps Wisply opened",
       pointer: "Show the pointer overlay",
       window: "Own browser window",
       focus: "May take the screen",

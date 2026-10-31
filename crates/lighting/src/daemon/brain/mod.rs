@@ -265,7 +265,7 @@ fn only_used(lines: &[&str], names: &[String]) -> Option<String> {
     }
     keep.insert(
         1,
-        format!("brain: {hits} controls you use here, {hidden} others hidden (lighting snap --full shows all)"),
+        format!("brain: {hits} controls you use here, {hidden} others hidden (wisply snap --full shows all)"),
     );
     Some(keep.join("\n"))
 }
@@ -351,8 +351,8 @@ pub fn command(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "reset" => {
             if !c.on("yes") {
                 return Err(Fail::hint(
-                    "this forgets everything Lighting learned about pages and apps",
-                    "lighting brain reset --yes (only when the user asked for it)",
+                    "this forgets everything Wisply learned about pages and apps",
+                    "wisply brain reset --yes (only when the user asked for it)",
                 ));
             }
             with(home, |s| {
@@ -367,7 +367,7 @@ pub fn command(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
             if what.is_empty() {
                 return Err(Fail::hint(
                     "forget needs a page, site or app",
-                    "lighting brain forget github.com | app:spotify.exe",
+                    "wisply brain forget github.com | app:spotify.exe",
                 ));
             }
             let gone = with(home, |s| {
@@ -463,7 +463,7 @@ mod tests {
             ["e5 link \"A\"", "e6 link \"B\"", "e7 link \"C\"", "e8 link \"D\"", "e9 link \"E\"", "plain text"];
         snap.extend(others);
         let out = only_used(&snap, &names).unwrap();
-        let want = "[t1] Mail\nbrain: 3 controls you use here, 5 others hidden (lighting snap --full shows all)\ne1 button \"Save\"\ne2 button \"Send now\"\ne3 link \"Inbox (3)\"\ne4 dialog \"Oops\"\nplain text";
+        let want = "[t1] Mail\nbrain: 3 controls you use here, 5 others hidden (wisply snap --full shows all)\ne1 button \"Save\"\ne2 button \"Send now\"\ne3 link \"Inbox (3)\"\ne4 dialog \"Oops\"\nplain text";
         assert_eq!(out, want);
         assert!(only_used(&snap[..6], &names).is_none());
     }

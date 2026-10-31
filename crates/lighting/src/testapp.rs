@@ -13,8 +13,8 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{HSTRING, PCWSTR};
 
-pub const APP_TITLE: &str = "Lighting Test App";
-pub const CHAT_TITLE: &str = "Lighting Test Chat";
+pub const APP_TITLE: &str = "Wisply Test App";
+pub const CHAT_TITLE: &str = "Wisply Test Chat";
 const EX_APP: u32 = 0x0804_0000;
 const STYLE_APP: u32 = 0x00CF_0000;
 const CHILD: u32 = 0x5000_0000;

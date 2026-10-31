@@ -6,8 +6,8 @@ use std::time::{Duration, Instant};
 
 use serde_json::json;
 
-const EXE: &str = env!("CARGO_BIN_EXE_lighting");
-const TASK: &str = env!("CARGO_BIN_EXE_lighting-task");
+const EXE: &str = env!("CARGO_BIN_EXE_wisply");
+const TASK: &str = env!("CARGO_BIN_EXE_wisply-task");
 
 struct Home(PathBuf);
 
@@ -24,7 +24,7 @@ impl Home {
     fn run(&self, args: &[&str]) -> (i32, String) {
         let out = Command::new(EXE)
             .args(args)
-            .env("LIGHTING_HOME", &self.0)
+            .env("WISPLY_HOME", &self.0)
             .env(if cfg!(windows) { "USERPROFILE" } else { "HOME" }, &self.0)
             .env("CLAUDE_CODE_SESSION_ID", "it-schedule")
             .env_remove("MSYSTEM")
@@ -74,7 +74,7 @@ fn a_routine_runs_from_the_task_scheduler() {
     let (code, out) = home.run(&["routine", "schedule", "sched-check", "every", "30m", "word=tea"]);
     assert_eq!((code, out.as_str()), (0, "scheduled sched-check every 30 min word=tea (Task Scheduler)"));
     assert_eq!(home.run(&["routine", "schedules"]).1, "sched-check  every 30 min word=tea");
-    let ran = Command::new("schtasks").args(["/Run", "/TN", "Lighting sched-check"]).output().unwrap();
+    let ran = Command::new("schtasks").args(["/Run", "/TN", "Wisply sched-check"]).output().unwrap();
     assert!(ran.status.success(), "{}", String::from_utf8_lossy(&ran.stderr));
     let t0 = Instant::now();
     let log = home.0.join("schedule.log");
@@ -87,6 +87,6 @@ fn a_routine_runs_from_the_task_scheduler() {
     let (code, out) = home.run(&["routine", "rm", "sched-check"]);
     assert_eq!((code, out.as_str()), (0, "removed routine sched-check and its schedule"));
     assert!(said.contains("ok sched-check: 1 steps in "), "{said}");
-    let gone = Command::new("schtasks").args(["/Query", "/TN", "Lighting sched-check"]).output().unwrap();
+    let gone = Command::new("schtasks").args(["/Query", "/TN", "Wisply sched-check"]).output().unwrap();
     assert!(!gone.status.success());
 }

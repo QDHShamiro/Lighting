@@ -22,16 +22,16 @@ const CMDS_SHOWN: usize = 4;
 const EVERY_S: f64 = 7.0 * DAY_S;
 const MIN_FAILS: usize = 10;
 const ADVICE: &[(&str, &str)] = &[
-    (r"no tab yet|has no tab", "open a page first (lighting open <url>); a script must stop when its tab is gone"),
+    (r"no tab yet|has no tab", "open a page first (wisply open <url>); a script must stop when its tab is gone"),
     (r"is gone|older snapshot", "the page changed under the ref: snap again (the brain now retries by name)"),
     (
         r"nothing matches|nothing called|no field called|no field for",
         "the name was guessed: look first with snap -f <word> (the brain learns real names)",
     ),
-    (r"mouse or keyboard", "the user was busy; Lighting waits up to 10 s for a pause now"),
-    (r"no window chosen", "name the app: lighting snap app:<name> (no windows call needed)"),
-    (r"unknown command", "check the name in lighting help"),
-    (r"did not answer|disconnected|not connected", "the browser was busy or restarted: lighting status"),
+    (r"mouse or keyboard", "the user was busy; Wisply waits up to 10 s for a pause now"),
+    (r"no window chosen", "name the app: wisply snap app:<name> (no windows call needed)"),
+    (r"unknown command", "check the name in wisply help"),
+    (r"did not answer|disconnected|not connected", "the browser was busy or restarted: wisply status"),
     (
         r"not there after|still there after|timed out|timeout after",
         "the page was slower than the wait: raise --timeout or wait for other text",
@@ -39,14 +39,14 @@ const ADVICE: &[(&str, &str)] = &[
     (r"matches several", "use a longer name or --first"),
     (
         r"runs as administrator",
-        "an elevated window takes no clicks or keys from normal apps: lighting read / shot, or an admin terminal",
+        "an elevated window takes no clicks or keys from normal apps: wisply read / shot, or an admin terminal",
     ),
     (r"needs --yes|irreversible", "a risky step: only after the user agreed, then --yes"),
     (
         r"no frame matching",
-        "the frame was not loaded yet or its name was cut: Lighting waits 3 s and lists the frames now",
+        "the frame was not loaded yet or its name was cut: Wisply waits 3 s and lists the frames now",
     ),
-    (r"needs |need a ", "the command was called without what it needs: see its line in lighting help"),
+    (r"needs |need a ", "the command was called without what it needs: see its line in wisply help"),
 ];
 
 static QUOTED: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#""[^"]*""#).expect("quoted"));
@@ -134,7 +134,7 @@ pub fn summary(home: &Path, days: u64, at: f64) -> Summary {
             let burst =
                 (0..ts.len()).map(|i| ts[i..].iter().filter(|t| **t - ts[i] <= BURST_S).count()).max().unwrap_or(0);
             let advice =
-                RULES.iter().find(|(p, _)| p.is_match(&k)).map_or("look at lighting log for the details", |(_, a)| a);
+                RULES.iter().find(|(p, _)| p.is_match(&k)).map_or("look at wisply log for the details", |(_, a)| a);
             let cmds: BTreeSet<String> = rs.iter().map(|r| r.cmd.clone()).collect();
             Pattern { n: rs.len(), error: k, cmds: cmds.into_iter().collect(), burst, advice }
         })
@@ -154,7 +154,7 @@ fn cut(s: &str, n: usize) -> String {
 pub fn improve(d: &Daemon, c: &Call) -> Result<Out, Fail> {
     let from_pos = c.pos.first().filter(|p| !p.is_empty() && p.chars().all(|ch| ch.is_ascii_digit()));
     let days = c.val("days").or(from_pos.map(String::as_str)).map_or(Ok(DAYS), |v| {
-        v.parse::<u64>().map_err(|_| Fail::hint("--days needs a number", "lighting improve --days 7"))
+        v.parse::<u64>().map_err(|_| Fail::hint("--days needs a number", "wisply improve --days 7"))
     })?;
     let s = summary(&d.home, days, now());
     if s.runs == 0 {
@@ -166,7 +166,7 @@ pub fn improve(d: &Daemon, c: &Call) -> Result<Out, Fail> {
         String::new()
     };
     let mut lines = vec![format!(
-        "Lighting self-check, last {days} days: {} commands, {:.1}% failed{before}",
+        "Wisply self-check, last {days} days: {} commands, {:.1}% failed{before}",
         s.runs,
         pct(s.failed, s.runs)
     )];
@@ -208,7 +208,7 @@ pub fn weekly_tip(home: &Path) -> String {
     let s = summary(home, DAYS, at);
     let Some(p) = s.patterns.first().filter(|_| s.failed >= MIN_FAILS) else { return String::new() };
     format!(
-        "Lighting self-check (weekly): {} commands in 7 days, {:.0}% failed.\nMost common: {}x {} -> {}\nDetails: lighting improve",
+        "Wisply self-check (weekly): {} commands in 7 days, {:.0}% failed.\nMost common: {}x {} -> {}\nDetails: wisply improve",
         s.runs,
         pct(s.failed, s.runs),
         p.n,

@@ -7,7 +7,7 @@ repository.workspace = true
 publish.workspace = true
 
 [[bin]]
-name = "lighting-ui"
+name = "wisply-ui"
 path = "src/main.rs"
 
 [dependencies]

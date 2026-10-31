@@ -12,7 +12,7 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
 use windows::Win32::UI::WindowsAndMessaging::{FindWindowW, GetForegroundWindow, SetForegroundWindow};
 use windows::core::w;
 
-const EXE: &str = env!("CARGO_BIN_EXE_lighting");
+const EXE: &str = env!("CARGO_BIN_EXE_wisply");
 
 struct Home(PathBuf);
 
@@ -28,7 +28,7 @@ impl Home {
     fn run(&self, args: &[&str]) -> (i32, String) {
         let out = Command::new(EXE)
             .args(args)
-            .env("LIGHTING_HOME", &self.0)
+            .env("WISPLY_HOME", &self.0)
             .env("USERPROFILE", &self.0)
             .env("CLAUDE_CODE_SESSION_ID", "it-record")
             .env_remove("MSYSTEM")

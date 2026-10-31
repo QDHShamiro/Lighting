@@ -20,7 +20,7 @@ const BUILD_FILES: &[&str] = &[
 ];
 const MONOREPO_MIN: usize = 3;
 const CACHE_MAX: usize = 8192;
-const SCRATCH: &[&str] = &["AppData", ".claude", ".cache", ".local", "Downloads", ".lighting"];
+const SCRATCH: &[&str] = &["AppData", ".claude", ".cache", ".local", "Downloads", ".wisply", ".lighting"];
 
 static NAMES: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 static MONO: LazyLock<Mutex<HashMap<PathBuf, bool>>> = LazyLock::new(|| Mutex::new(HashMap::new()));

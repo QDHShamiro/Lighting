@@ -6,8 +6,10 @@ use base64::Engine;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-pub const HOST_NAME: &str = "dev.qdhshamiro.lighting";
-pub const EXES: &[&str] = &["lighting", "lighting-ui", "lighting-task"];
+pub const HOST_NAME: &str = "dev.qdhshamiro.wisply";
+pub const MAIN: &str = "wisply";
+pub const ALIAS: &str = "lighting";
+pub const EXES: &[&str] = &[MAIN, "wisply-ui", "wisply-task"];
 const SOURCE_DEPTH: usize = 4;
 const BLOCKLIST: &str = "paypal.com\npaypal.me\nstripe.com\ncheckout.stripe.com\nklarna.com\nsofort.com\ngiropay.de\n\
 paysafecard.com\nwise.com\nrevolut.com\nn26.com\nbunq.com\nsparkasse.de\ndkb.de\ning.de\ncomdirect.de\ncommerzbank.de\n\
@@ -77,9 +79,9 @@ pub fn copy_extension(home: &Path, root: Option<&Path>) -> io::Result<Option<Str
 }
 
 pub fn copy_skill(root: Option<&Path>, dst: &Path) -> io::Result<()> {
-    match root.map(|r| r.join("skills").join("lighting")).filter(|s| s.is_dir()) {
+    match root.map(|r| r.join("skills").join("wisply")).filter(|s| s.is_dir()) {
         Some(src) => copy_tree(&src, dst),
-        None => Err(io::Error::other("the skill files are missing next to lighting")),
+        None => Err(io::Error::other("the skill files are missing next to wisply")),
     }
 }
 
@@ -91,7 +93,7 @@ pub fn blocklist(home: &Path) -> io::Result<()> {
 pub fn copy_exes(home: &Path) -> io::Result<(PathBuf, bool)> {
     let bin = home.join("bin");
     let me = std::env::current_exe()?;
-    let dst = bin.join(exe_name("lighting"));
+    let dst = bin.join(exe_name(MAIN));
     let from = me.parent().map(Path::to_path_buf).unwrap_or_default();
     if same_file(&from, &bin) {
         return Ok((dst, false));
@@ -99,11 +101,12 @@ pub fn copy_exes(home: &Path) -> io::Result<(PathBuf, bool)> {
     fs::create_dir_all(&bin)?;
     let mut daemon_new = false;
     for stem in EXES {
-        let src = from.join(exe_name(stem));
+        let src = if *stem == MAIN { me.clone() } else { from.join(exe_name(stem)) };
         if src.is_file() && replace(&src, &bin.join(exe_name(stem)))? {
-            daemon_new |= *stem == "lighting";
+            daemon_new |= *stem == MAIN;
         }
     }
+    replace(&me, &bin.join(exe_name(ALIAS)))?;
     Ok((dst, daemon_new))
 }
 
@@ -114,7 +117,7 @@ fn same_file(a: &Path, b: &Path) -> bool {
     }
 }
 
-fn replace(src: &Path, dst: &Path) -> io::Result<bool> {
+pub fn replace(src: &Path, dst: &Path) -> io::Result<bool> {
     let data = fs::read(src)?;
     if fs::read(dst).is_ok_and(|old| old == data) {
         return Ok(false);
@@ -139,7 +142,7 @@ pub fn write_host(home: &Path, exe: &Path, ext_id: Option<&str>) -> io::Result<(
     let origins: Vec<String> = ext_id.map(|id| format!("chrome-extension://{id}/")).into_iter().collect();
     let manifest = json!({
         "name": HOST_NAME,
-        "description": "Lighting native host",
+        "description": "Wisply native host",
         "path": exe.display().to_string(),
         "type": "stdio",
         "allowed_origins": origins,
@@ -196,18 +199,21 @@ pub use super::reg::{add_to_path, register, unregister};
 #[cfg(not(windows))]
 pub fn add_to_path(exe: &Path) -> io::Result<Option<PathBuf>> {
     let home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
-    let link = home.join(".local").join("bin").join("lighting");
-    if fs::read_link(&link).is_ok_and(|to| to == exe) || (link.exists() && !link.is_symlink()) {
-        return Ok(None);
+    let dir = home.join(".local").join("bin");
+    let mut added = None;
+    for name in [MAIN, ALIAS] {
+        let link = dir.join(name);
+        if fs::read_link(&link).is_ok_and(|to| to == exe) || (link.exists() && !link.is_symlink()) {
+            continue;
+        }
+        fs::create_dir_all(&dir)?;
+        if link.is_symlink() {
+            fs::remove_file(&link)?;
+        }
+        std::os::unix::fs::symlink(exe, &link)?;
+        added = added.or(Some(link));
     }
-    if let Some(dir) = link.parent() {
-        fs::create_dir_all(dir)?;
-    }
-    if link.is_symlink() {
-        fs::remove_file(&link)?;
-    }
-    std::os::unix::fs::symlink(exe, &link)?;
-    Ok(Some(link))
+    Ok(added)
 }
 
 #[cfg(test)]
@@ -228,10 +234,10 @@ mod tests {
         let _ = fs::remove_dir_all(&dir);
         assert!(write_if_changed(&dir.join("a/b.txt"), b"x").unwrap());
         assert!(!write_if_changed(&dir.join("a/b.txt"), b"x").unwrap());
-        write_host(&dir, &dir.join("bin").join(exe_name("lighting")), Some("abc")).unwrap();
+        write_host(&dir, &dir.join("bin").join(exe_name(MAIN)), Some("abc")).unwrap();
         let host = read_json(&host_json(&dir)).unwrap();
         assert_eq!(host["allowed_origins"], json!(["chrome-extension://abc/"]));
-        assert!(host["path"].as_str().unwrap().ends_with(&exe_name("lighting")));
+        assert!(host["path"].as_str().unwrap().ends_with(&exe_name(MAIN)));
         blocklist(&dir).unwrap();
         assert!(fs::read_to_string(dir.join("blocklist.txt")).unwrap().contains("paypal.com"));
         let _ = fs::remove_dir_all(&dir);

@@ -105,7 +105,7 @@ pub fn code(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let Some(root) = lt_memory::root_of(Path::new(&place)) else {
         return Err(Fail::hint(
             format!("no project here ({place})"),
-            "run it inside a project folder, or lighting code ... --project <path>",
+            "run it inside a project folder, or wisply code ... --project <path>",
         ));
     };
     used(&d.home, &root);
@@ -114,7 +114,7 @@ pub fn code(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         Ok((answer(&d.home, index, c)?, index.left))
     })?;
     let note = if left > 0 {
-        format!("\n({left} changed files are not read yet, the next lighting code reads on)")
+        format!("\n({left} changed files are not read yet, the next wisply code reads on)")
     } else {
         String::new()
     };

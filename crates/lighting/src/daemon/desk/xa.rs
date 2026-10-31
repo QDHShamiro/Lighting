@@ -15,7 +15,7 @@ use super::xview::{self, Node};
 
 const MAX_NODES: usize = 4000;
 const SECRET_ROLES: &[&str] = &["AXSecureTextField", "password text"];
-pub const FRONT_HINT: &str = "Lighting does not take the screen from the user; bring the window to the front yourself";
+pub const FRONT_HINT: &str = "Wisply does not take the screen from the user; bring the window to the front yourself";
 const PERMISSION_HINT: &str = if cfg!(target_os = "macos") {
     "allow the terminal in System Settings > Privacy & Security > Accessibility (and Screen Recording for shot)"
 } else {
@@ -74,7 +74,7 @@ pub fn access() -> String {
 pub fn fail(e: &Error) -> Fail {
     match e {
         Error::PermissionDenied { .. } | Error::AccessibilityNotEnabled { .. } => {
-            Fail::hint("this system does not let Lighting read apps yet", PERMISSION_HINT)
+            Fail::hint("this system does not let Wisply read apps yet", PERMISSION_HINT)
         }
         other => Fail::new(format!("{other}")),
     }
@@ -165,7 +165,7 @@ impl State {
                 .windows
                 .contains_key(spec)
                 .then(|| spec.to_string())
-                .ok_or_else(|| Fail::hint(format!("window {spec} is gone (closed)"), "lighting windows"));
+                .ok_or_else(|| Fail::hint(format!("window {spec} is gone (closed)"), "wisply windows"));
         }
         let text = if spec.to_lowercase().starts_with("app:") { &spec[4..] } else { spec };
         self.list()?;
@@ -176,11 +176,11 @@ impl State {
             .filter(|(s, _)| *s > 0)
             .max_by_key(|(s, _)| *s);
         best.map(|(_, r)| r.clone())
-            .ok_or_else(|| Fail::hint(format!("no window matches \"{text}\""), "lighting windows"))
+            .ok_or_else(|| Fail::hint(format!("no window matches \"{text}\""), "wisply windows"))
     }
 
     pub fn element(&mut self, r: &str) -> Result<Element, Fail> {
-        let gone = || Fail::hint(format!("window {r} is gone (closed)"), "lighting windows");
+        let gone = || Fail::hint(format!("window {r} is gone (closed)"), "wisply windows");
         let w = self.windows.get_mut(r).ok_or_else(gone)?;
         let app = App::by_pid(w.pid, Duration::ZERO).map_err(|_| gone())?;
         let wins = windows_of(&app);
@@ -197,7 +197,7 @@ impl State {
             None => self.target.clone().filter(|r| self.windows.contains_key(r)).ok_or_else(|| {
                 Fail::hint(
                     "no window chosen",
-                    "lighting snap app:<name> picks that app's window (several: lighting windows -f <app>)",
+                    "wisply snap app:<name> picks that app's window (several: wisply windows -f <app>)",
                 )
             })?,
         };
@@ -249,11 +249,8 @@ impl State {
 
     pub fn el_ref(&mut self, spec: &str) -> Result<(String, Element), Fail> {
         if ref_kind(spec) == Some("d") {
-            let el = self
-                .refs
-                .get(spec)
-                .cloned()
-                .ok_or_else(|| Fail::hint(format!("{spec} is unknown"), "lighting snap"))?;
+            let el =
+                self.refs.get(spec).cloned().ok_or_else(|| Fail::hint(format!("{spec} is unknown"), "wisply snap"))?;
             return Ok((spec.to_string(), el));
         }
         let r = self.target(None)?;
@@ -268,7 +265,7 @@ impl State {
         let hit = at.map(|i| &controls[i]);
         let dref = hit
             .and_then(|l| l.split(' ').next())
-            .ok_or_else(|| Fail::hint(format!("no control matches \"{spec}\""), "lighting snap"))?;
+            .ok_or_else(|| Fail::hint(format!("no control matches \"{spec}\""), "wisply snap"))?;
         let el = self.refs[dref].clone();
         Ok((dref.to_string(), el))
     }
@@ -294,7 +291,7 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call, aim: Option<String>) -> Result<O
             "clip" => xact::clip(d, ctx, c),
             "hover" | "drag" => Err(Fail::hint(
                 format!("{} on desktop apps would steal your mouse", c.name),
-                "use lighting click or scroll",
+                "use wisply click or scroll",
             )),
             other => Err(super::super::route::later(&format!("{other} on apps on this system"))),
         }?;
@@ -325,7 +322,7 @@ fn windows(d: &Daemon, st: &mut State, ctx: &mut Ctx, c: &Call) -> Result<String
 }
 
 fn focus(st: &mut State, _: &mut Ctx, c: &Call) -> Result<String, Fail> {
-    let first = c.pos.first().ok_or_else(|| Fail::hint("focus needs a window", "lighting focus w2"))?;
+    let first = c.pos.first().ok_or_else(|| Fail::hint("focus needs a window", "wisply focus w2"))?;
     let r = st.target(Some(first))?;
     Ok(format!("ok (target set, the window stays where it is: {FRONT_HINT}) {}", st.header(&r, "")))
 }

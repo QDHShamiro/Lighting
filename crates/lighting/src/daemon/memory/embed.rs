@@ -83,7 +83,7 @@ fn shown(base: &str) -> &str {
 
 pub fn status(home: &Path) -> String {
     let Some((base, model)) = api(home) else {
-        return "none set, recall finds words only (lighting config memory_api <url>, memory_api_embed <model>)".into();
+        return "none set, recall finds words only (wisply config memory_api <url>, memory_api_embed <model>)".into();
     };
     let at = format!("{model} at {}", shown(&base));
     if let Some((until, why)) = STATE.lock().ok().and_then(|s| s.down.clone())

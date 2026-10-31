@@ -54,7 +54,7 @@ pub fn report(d: &Daemon) -> String {
         Some(false) => "gh (not logged in: gh auth login)".to_string(),
         None => "gh (not installed)".to_string(),
     };
-    let mut out = vec!["channels (ways in the order Lighting tries them; read only, nothing is posted)".to_string()];
+    let mut out = vec!["channels (ways in the order Wisply tries them; read only, nothing is posted)".to_string()];
     out.push(line(
         home,
         "github",
@@ -92,7 +92,7 @@ pub fn report(d: &Daemon) -> String {
 
 pub fn run(d: &Daemon, _: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     if let Some(extra) = c.pos.first() {
-        return Err(Fail::hint(format!("channels takes no argument ({extra})"), "lighting channels"));
+        return Err(Fail::hint(format!("channels takes no argument ({extra})"), "wisply channels"));
     }
     Ok(Out::Text(report(d)))
 }

@@ -35,7 +35,7 @@ fn with(c: &Call, name: &str, pos: Vec<String>, keep: &[&str]) -> Call {
 }
 
 pub fn open(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
-    let Some(first) = c.pos.first() else { return Err(Fail::hint("open needs a url", "lighting open github.com")) };
+    let Some(first) = c.pos.first() else { return Err(Fail::hint("open needs a url", "wisply open github.com")) };
     let mut url = normalize_url(first);
     if !web_scheme(&url) {
         return Err(super::super::route::later("open for apps"));
@@ -58,11 +58,11 @@ pub fn open(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let mut extra = keys::hint(&d.home, &keys::app_of(ctx));
     let net = num(msg.get("net"));
     if net != 0 {
-        extra.push_str(&format!("\ndata: {} (lighting net)", plural(net, "JSON call")));
+        extra.push_str(&format!("\ndata: {} (wisply net)", plural(net, "JSON call")));
     }
     let tools = num(msg.get("webmcp"));
     if tools != 0 {
-        extra.push_str(&format!("\nwebmcp: {} (lighting tools)", plural(tools, "tool")));
+        extra.push_str(&format!("\nwebmcp: {} (wisply tools)", plural(tools, "tool")));
     }
     Ok(match res.split_once('\n') {
         Some((head, rest)) => format!("{head}{extra}\n{rest}"),
@@ -125,7 +125,7 @@ pub fn type_in(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
             args.insert("secret".into(), json!(true));
             secret
         }
-        None if rest.is_empty() => return Err(Fail::hint("type needs text", "lighting type e3 \"hello\"")),
+        None if rest.is_empty() => return Err(Fail::hint("type needs text", "wisply type e3 \"hello\"")),
         None => rest.join(" "),
     };
     args.insert("value".into(), json!(value));
@@ -144,7 +144,7 @@ pub fn type_in(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
 
 pub fn search(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     if c.pos.is_empty() {
-        return Err(Fail::hint("search needs words", "lighting search \"paper plugin\" | search youtube \"lofi\""));
+        return Err(Fail::hint("search needs words", "wisply search \"paper plugin\" | search youtube \"lofi\""));
     }
     let site = if c.pos.len() > 1 { sites::named(&d.home, &c.pos[0]) } else { None };
     let words = if site.is_some() { c.pos[1..].join(" ") } else { c.pos.join(" ") };
@@ -161,10 +161,7 @@ pub fn search(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         found = call(d, ctx, "search-field", Map::new(), CALL_TIMEOUT)?;
     }
     let Some(field) = found.get("ref").and_then(Value::as_str).filter(|r| !r.is_empty()).map(String::from) else {
-        return Err(Fail::hint(
-            "no search field on this page",
-            "lighting snap -f search, then type e<N> words --enter",
-        ));
+        return Err(Fail::hint("no search field on this page", "wisply snap -f search, then type e<N> words --enter"));
     };
     let before = ctx.url();
     let mut typing = with(c, "type", vec![field, words.clone()], &[]);
@@ -197,9 +194,9 @@ pub fn fill(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         let Some((label, value)) = p.split_once('=') else {
             let hint = match c.pos.as_slice() {
                 [r, _, ..] if super::ref_kind(r) == Some("e") => {
-                    format!("lighting type {r} \"<value>\" (one field by its ref)")
+                    format!("wisply type {r} \"<value>\" (one field by its ref)")
                 }
-                _ => "lighting fill \"Email=me@x.de\" \"Password=@secret\" --env PASS".into(),
+                _ => "wisply fill \"Email=me@x.de\" \"Password=@secret\" --env PASS".into(),
             };
             return Err(Fail::hint("fill wants Label=value pairs", hint));
         };
@@ -219,7 +216,7 @@ pub fn fill(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
 
 pub fn press(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     if c.pos.is_empty() {
-        return Err(Fail::hint("press needs keys", "lighting press Enter | ctrl+a | Escape"));
+        return Err(Fail::hint("press needs keys", "wisply press Enter | ctrl+a | Escape"));
     }
     if let Some(done) = tabkeys::press(d, ctx, c)? {
         return Ok(done);
@@ -239,7 +236,7 @@ pub fn press(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
 pub fn select(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let (mut args, rest) = target_args(&c.pos, c)?;
     if rest.is_empty() {
-        return Err(Fail::hint("select needs an option", "lighting select e7 \"Germany\""));
+        return Err(Fail::hint("select needs an option", "wisply select e7 \"Germany\""));
     }
     args.insert("option".into(), json!(rest.join(" ")));
     out(d, ctx, "select", args, LOAD_TIMEOUT, SNAP_LINES)
@@ -258,7 +255,7 @@ pub fn hover(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
 }
 
 pub fn drag(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
-    let [from, to, ..] = c.pos.as_slice() else { return Err(Fail::hint("drag needs two refs", "lighting drag e3 e9")) };
+    let [from, to, ..] = c.pos.as_slice() else { return Err(Fail::hint("drag needs two refs", "wisply drag e3 e9")) };
     out(d, ctx, "drag", obj(json!({"from": from, "to": to})), LOAD_TIMEOUT, SNAP_LINES)
 }
 
@@ -292,7 +289,7 @@ pub fn js(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
             .map_err(|e| Fail::new(format!("cannot read {}: {}", path.display(), reason(&e))))?;
     }
     if code.trim().is_empty() {
-        return Err(Fail::hint("js needs code", "lighting js \"document.title\" or lighting js --file script.js"));
+        return Err(Fail::hint("js needs code", "wisply js \"document.title\" or wisply js --file script.js"));
     }
     out(d, ctx, "js", obj(json!({"code": code})), 25.0, 200)
 }
@@ -336,13 +333,13 @@ pub fn upload(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         };
         return Err(Fail::hint(
             format!("upload needs the ref of the upload button or file field first, got {got}"),
-            "lighting snap -f \"upload|file\", then lighting upload e5 C:/path/file.png",
+            "wisply snap -f \"upload|file\", then wisply upload e5 C:/path/file.png",
         ));
     };
     if c.pos.len() < 2 {
         return Err(Fail::hint(
             "upload needs the files after the ref",
-            format!("lighting upload {field} C:/path/file.png"),
+            format!("wisply upload {field} C:/path/file.png"),
         ));
     }
     let mut files = Vec::new();
@@ -421,13 +418,13 @@ pub fn dialog(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
 
 pub fn viewport(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let Some(size) = c.pos.first() else {
-        return Err(Fail::hint("viewport needs WxH or reset", "lighting viewport 390x844"));
+        return Err(Fail::hint("viewport needs WxH or reset", "wisply viewport 390x844"));
     };
     if size == "reset" || size == "off" {
         return out(d, ctx, "viewport", Map::new(), CALL_TIMEOUT, SNAP_LINES);
     }
     let Some(m) = VIEWPORT.captures(size) else {
-        return Err(Fail::hint("viewport wants WxH like 390x844", "lighting viewport 390x844"));
+        return Err(Fail::hint("viewport wants WxH like 390x844", "wisply viewport 390x844"));
     };
     let args = obj(json!({"width": m[1].parse::<u32>().unwrap_or(0), "height": m[2].parse::<u32>().unwrap_or(0)}));
     out(d, ctx, "viewport", args, CALL_TIMEOUT, SNAP_LINES)

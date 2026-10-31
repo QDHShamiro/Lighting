@@ -91,7 +91,7 @@ fn api(path: &str) -> Result<Value, String> {
     let mut resp = AGENT
         .get(format!("{API}{path}"))
         .header("Accept", "application/vnd.github+json")
-        .header("User-Agent", concat!("lighting/", env!("CARGO_PKG_VERSION")))
+        .header("User-Agent", concat!("wisply/", env!("CARGO_PKG_VERSION")))
         .call()
         .map_err(|e| format!("GitHub not reachable ({e})"))?;
     let status = resp.status().as_u16();

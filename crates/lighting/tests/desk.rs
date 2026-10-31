@@ -4,7 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
-const EXE: &str = env!("CARGO_BIN_EXE_lighting");
+const EXE: &str = env!("CARGO_BIN_EXE_wisply");
 
 struct Home(PathBuf);
 
@@ -12,7 +12,7 @@ impl Home {
     fn run(&self, args: &[&str]) -> (i32, String) {
         let out = Command::new(EXE)
             .args(args)
-            .env("LIGHTING_HOME", &self.0)
+            .env("WISPLY_HOME", &self.0)
             .env("USERPROFILE", &self.0)
             .env("CLAUDE_CODE_SESSION_ID", "it-desk")
             .env_remove("MSYSTEM")
@@ -40,12 +40,12 @@ fn apps_list_windows_share_the_clipboard_and_name_missing_windows() {
     let (code, list) = home.run(&["windows"]);
     assert!(code == 0 && (list == "no windows" || list.starts_with("w1 ")), "{list}");
     let (_, saved) = home.run(&["clip"]);
-    assert_eq!(home.run(&["clip", "set", "lighting desk test"]), (0, "ok (clipboard set)".into()));
+    assert_eq!(home.run(&["clip", "set", "wisply desk test"]), (0, "ok (clipboard set)".into()));
     let (_, got) = home.run(&["clip"]);
     if saved != "(clipboard is empty)" && saved != "err: clipboard is busy" {
         home.run(&["clip", "set", &saved]);
     }
-    assert_eq!(got, "lighting desk test");
+    assert_eq!(got, "wisply desk test");
     let (code, out) = home.run(&["snap", "app:no-such-window-xyz"]);
     assert!(code == 1 && out.starts_with("err: no window matches \"no-such-window-xyz\""), "{out}");
     let (code, out) = home.run(&["hover", "w1"]);

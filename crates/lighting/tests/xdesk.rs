@@ -6,7 +6,7 @@ use std::process::{Child, Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
-const EXE: &str = env!("CARGO_BIN_EXE_lighting");
+const EXE: &str = env!("CARGO_BIN_EXE_wisply");
 const TITLE: &str = "LtProbe";
 
 struct Home(PathBuf);
@@ -15,7 +15,7 @@ impl Home {
     fn run(&self, args: &[&str]) -> (i32, String) {
         let out = Command::new(EXE)
             .args(args)
-            .env("LIGHTING_HOME", &self.0)
+            .env("WISPLY_HOME", &self.0)
             .env("HOME", &self.0)
             .env("CLAUDE_CODE_SESSION_ID", "it-xdesk")
             .stdin(Stdio::null())

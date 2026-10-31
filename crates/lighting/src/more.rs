@@ -34,7 +34,7 @@ fn read(home: &Path, args: &[String]) -> Result<String, Fail> {
         }
     }
     let usage = || {
-        Fail::hint("more needs the ref from a squeezed output, like hr-0123456789", "lighting more <ref> --lines 1-80")
+        Fail::hint("more needs the ref from a squeezed output, like hr-0123456789", "wisply more <ref> --lines 1-80")
     };
     let id = name.as_deref().and_then(find_ref).ok_or_else(usage)?;
     let file = home.join("headroom").join("out").join(format!("{id}.txt"));
@@ -77,7 +77,7 @@ fn read(home: &Path, args: &[String]) -> Result<String, Fail> {
         let rest = picked.len() - shown;
         let next = if terms.is_empty() {
             let at = from + shown + 1;
-            format!("lighting more {id} --lines {at}-{}", (at + MAX_LINES - 1).min(all.len()))
+            format!("wisply more {id} --lines {at}-{}", (at + MAX_LINES - 1).min(all.len()))
         } else {
             "a narrower --grep or --lines a-b".to_string()
         };
@@ -143,7 +143,7 @@ mod tests {
         let h = home("parts", 30);
         assert_eq!(read(&h, &args(&["hr-0123456789", "--lines", "3-4"])).unwrap(), "line 3\nline 4");
         assert_eq!(read(&h, &args(&["0123456789", "--lines=29-"])).unwrap(), "line 29\nline 30");
-        assert_eq!(read(&h, &args(&["~/.lighting/headroom/out/hr-0123456789.txt", "--lines", "7"])).unwrap(), "line 7");
+        assert_eq!(read(&h, &args(&["~/.wisply/headroom/out/hr-0123456789.txt", "--lines", "7"])).unwrap(), "line 7");
         assert_eq!(read(&h, &args(&["hr-0123456789", "--grep", "LINE 3|nothing"])).unwrap(), "3: line 3\n30: line 30");
         assert_eq!(
             read(&h, &args(&["hr-0123456789", "--grep", "line 1", "--lines", "9-11"])).unwrap(),
@@ -167,7 +167,7 @@ mod tests {
         let out = read(&h, &args(&["hr-0123456789"])).unwrap();
         let last = out.lines().last().unwrap();
         assert_eq!(out.lines().count(), 2001);
-        assert_eq!(last, "... +500 more lines, next: lighting more hr-0123456789 --lines 2001-2500");
+        assert_eq!(last, "... +500 more lines, next: wisply more hr-0123456789 --lines 2001-2500");
         fs::remove_dir_all(&h).unwrap();
     }
 }

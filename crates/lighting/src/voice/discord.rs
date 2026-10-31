@@ -28,18 +28,18 @@ fn ms(n: u64) -> Duration {
     Duration::from_millis(n)
 }
 
-fn lighting(args: &[&str], limit: Duration) -> String {
+fn wisply(args: &[&str], limit: Duration) -> String {
     let Ok(exe) = std::env::current_exe() else { return String::new() };
     let args: Vec<String> = args.iter().map(|a| (*a).to_string()).collect();
     crate::daemon::run_tool(&exe, &args, limit).map(|r| r.out + &r.err).unwrap_or_default()
 }
 
 fn act(args: &[&str]) {
-    lighting(args, QUICK);
+    wisply(args, QUICK);
 }
 
 fn discord() -> Result<String, String> {
-    lighting(&["windows"], QUICK)
+    wisply(&["windows"], QUICK)
         .lines()
         .filter_map(|l| WINDOW.captures(l.trim()))
         .find(|m| !m[2].contains("Updater"))
@@ -48,7 +48,7 @@ fn discord() -> Result<String, String> {
 }
 
 fn controls(win: &str) -> String {
-    lighting(&["snap", win, "--full"], SNAP_WAIT)
+    wisply(&["snap", win, "--full"], SNAP_WAIT)
 }
 
 fn rows(snap: &str) -> Vec<Row> {

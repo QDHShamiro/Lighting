@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use serde_json::json;
 
-const EXE: &str = env!("CARGO_BIN_EXE_lighting");
+const EXE: &str = env!("CARGO_BIN_EXE_wisply");
 
 struct Home(PathBuf);
 
@@ -23,7 +23,7 @@ impl Home {
     fn run(&self, args: &[&str]) -> (i32, String) {
         let out = Command::new(EXE)
             .args(args)
-            .env("LIGHTING_HOME", &self.0)
+            .env("WISPLY_HOME", &self.0)
             .env(if cfg!(windows) { "USERPROFILE" } else { "HOME" }, &self.0)
             .env("CLAUDE_CODE_SESSION_ID", "it-brain")
             .env_remove("MSYSTEM")
@@ -63,7 +63,7 @@ fn the_brain_learns_from_2x_episodes_and_improve_groups_errors() {
     assert!(out.contains("\nshop.example/cart/# (3 uses): Checkout, Apply coupon 10\n"), "{out}");
     assert!(out.ends_with("brain.json) | brain forget <site> | brain reset --yes | config brain off"), "{out}");
     let (code, out) = home.run(&["brain", "reset"]);
-    assert!(code == 1 && out.contains("-> try: lighting brain reset --yes"), "{out}");
+    assert!(code == 1 && out.contains("-> try: wisply brain reset --yes"), "{out}");
     assert_eq!(home.run(&["brain", "forget", "https://shop.example/"]), (0, "forgot 2 pages".into()));
     assert_eq!(home.run(&["brain", "reset", "--yes"]), (0, "brain reset: nothing learned any more".into()));
     let saved: serde_json::Value =
@@ -73,11 +73,8 @@ fn the_brain_learns_from_2x_episodes_and_improve_groups_errors() {
         assert_eq!(home.run(&["nonsense"]).0, 1);
     }
     let (_, out) = home.run(&["improve"]);
-    assert!(out.starts_with("Lighting self-check, last 7 days: "), "{out}");
-    assert!(
-        out.contains("\n1. 2x unknown command 'nonsense' (nonsense) -> check the name in lighting help\n"),
-        "{out}"
-    );
+    assert!(out.starts_with("Wisply self-check, last 7 days: "), "{out}");
+    assert!(out.contains("\n1. 2x unknown command 'nonsense' (nonsense) -> check the name in wisply help\n"), "{out}");
     assert!(out.ends_with(
         "brain: 0 pages known, 0 fixes learned, 0 snapshots trimmed (-0 tokens), 0 refs regained, 0 fixes used"
     ));

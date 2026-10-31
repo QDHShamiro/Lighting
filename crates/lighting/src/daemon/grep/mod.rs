@@ -25,7 +25,7 @@ const INLINE: Duration = Duration::from_secs(1);
 const POLL: Duration = Duration::from_millis(250);
 const MORE_FILES: usize = 30;
 const ALL: usize = 1_000_000_000;
-const USAGE: &str = "lighting grep <pattern> [folder|file ...] [-i] [-w] [-x] [-F|-E|-P] [-l] [-o] [-v] [-m 1] [-C 2] [--glob '*.py'] [--include '*.py'] [--exclude-dir build] [--all]";
+const USAGE: &str = "wisply grep <pattern> [folder|file ...] [-i] [-w] [-x] [-F|-E|-P] [-l] [-o] [-v] [-m 1] [-C 2] [--glob '*.py'] [--include '*.py'] [--exclude-dir build] [--all]";
 const LETTERS: &str = "iwxFEPGlcaovrRnHIhs";
 
 static NUMBERED: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^-([ABCm])(\d*)$").expect("numbered"));
@@ -33,9 +33,10 @@ static BARE_BAR: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(^|[^\\])\|").e
 static SHORTS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^-[A-Za-z]+$").expect("shorts"));
 
 fn number(val: &str, flag: &str) -> Result<usize, Fail> {
-    val.parse::<usize>().ok().filter(|_| !val.is_empty() && val.bytes().all(|b| b.is_ascii_digit())).ok_or_else(|| {
-        Fail::hint(format!("{flag} needs a number ({val})"), format!("lighting grep {flag} 2 <pattern>"))
-    })
+    val.parse::<usize>()
+        .ok()
+        .filter(|_| !val.is_empty() && val.bytes().all(|b| b.is_ascii_digit()))
+        .ok_or_else(|| Fail::hint(format!("{flag} needs a number ({val})"), format!("wisply grep {flag} 2 <pattern>")))
 }
 
 fn options(c: &Call) -> Result<(Opts, Vec<String>), Fail> {

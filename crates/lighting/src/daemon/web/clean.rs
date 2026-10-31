@@ -37,7 +37,7 @@ pub fn done(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
         return Ok(if quiet {
             String::new()
         } else {
-            "left everything open (cleanup is off: lighting config cleanup on)".into()
+            "left everything open (cleanup is off: wisply config cleanup on)".into()
         });
     }
     if !ctx.sid.is_empty() && ctx.owned.is_empty() && !ctx.launched_apps() {

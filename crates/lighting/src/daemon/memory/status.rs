@@ -5,7 +5,7 @@ use super::super::route::later;
 use super::super::{Daemon, config, game};
 use super::{chat, embed, index, learner, with_store};
 
-const MEMORY_HELP: &str = "lighting memory [learn | on | off | lessons | unlearn <n>]";
+const MEMORY_HELP: &str = "wisply memory [learn | on | off | lessons | unlearn <n>]";
 const FIX_CHARS: usize = 80;
 
 pub fn memory(d: &Daemon, c: &Call) -> Result<String, Fail> {
@@ -59,7 +59,7 @@ fn status(d: &Daemon) -> Result<String, Fail> {
         lines.push(format!("problem: {problem}"));
     }
     if learned > 0 {
-        lines.push(format!("{learned} learned fixes (lighting memory lessons)"));
+        lines.push(format!("{learned} learned fixes (wisply memory lessons)"));
     }
     let db = d.home.join("memory").join("memory.db");
     lines.push(format!("kept on this PC only ({}) | {MEMORY_HELP}", db.display().to_string().replace('\\', "/")));
@@ -70,7 +70,7 @@ fn learn(d: &Daemon) -> Result<String, Fail> {
     with_store(d, |s| s.sessions_retry_all())?;
     let queued = with_store(d, |s| s.counts())?.queued;
     index::learn_now();
-    Ok(format!("learning {queued} sessions in the background (lighting memory shows the state)"))
+    Ok(format!("learning {queued} sessions in the background (wisply memory shows the state)"))
 }
 
 fn lessons(d: &Daemon) -> Result<String, Fail> {
@@ -78,12 +78,12 @@ fn lessons(d: &Daemon) -> Result<String, Fail> {
     if all.is_empty() {
         return Ok("no learned fixes yet (one is kept when a command fails and another works right after)".into());
     }
-    let mut lines = vec![format!("{} learned fixes (lighting memory unlearn <n> drops one):", all.len())];
+    let mut lines = vec![format!("{} learned fixes (wisply memory unlearn <n> drops one):", all.len())];
     for (i, l) in all.iter().enumerate() {
         let place = if l.target.is_empty() { String::new() } else { format!(" on {}", l.target) };
         let times = if l.ups > 1 { format!(", {}x", l.ups) } else { String::new() };
         let fix = oneline(&l.fix, FIX_CHARS);
-        lines.push(format!("  {} {}{place}: {} -> `lighting {fix}`{times}", i + 1, l.cmd, l.kind));
+        lines.push(format!("  {} {}{place}: {} -> `wisply {fix}`{times}", i + 1, l.cmd, l.kind));
     }
     Ok(lines.join("\n"))
 }
@@ -94,9 +94,9 @@ fn unlearn(d: &Daemon, c: &Call) -> Result<String, Fail> {
     let Some(n) = pick else {
         let which: String =
             if all.is_empty() { "no learned fixes to drop".into() } else { format!("which fix? 1 to {}", all.len()) };
-        return Err(Fail::hint(which, "lighting memory lessons"));
+        return Err(Fail::hint(which, "wisply memory lessons"));
     };
     let l = &all[n - 1];
     with_store(d, |s| s.unlearn(&l.sig))?;
-    Ok(format!("dropped fix {n}: {} {} -> `lighting {}`", l.cmd, l.kind, oneline(&l.fix, FIX_CHARS)))
+    Ok(format!("dropped fix {n}: {} {} -> `wisply {}`", l.cmd, l.kind, oneline(&l.fix, FIX_CHARS)))
 }

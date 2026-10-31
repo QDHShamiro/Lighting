@@ -6,7 +6,7 @@ use lt_memory::{accept_draft, drafts, drop_draft, rel_path};
 use super::super::{Daemon, config};
 use super::index;
 
-const WIKI_HELP: &str = "lighting wiki | wiki accept <n> [folder] | wiki drop <n> | wiki show <n>";
+const WIKI_HELP: &str = "wisply wiki | wiki accept <n> [folder] | wiki drop <n> | wiki show <n>";
 const INBOX: &str = "Inbox";
 
 pub fn wiki(d: &Daemon, c: &Call) -> Result<String, Fail> {
@@ -21,7 +21,7 @@ pub fn wiki(d: &Daemon, c: &Call) -> Result<String, Fail> {
             return Ok(format!("no drafts wait in {shown}"));
         }
         let mut lines =
-            vec![format!("{} drafts wait in {shown} (lighting wiki accept <n> | drop <n> | show <n>):", found.len())];
+            vec![format!("{} drafts wait in {shown} (wisply wiki accept <n> | drop <n> | show <n>):", found.len())];
         for (i, draft) in found.iter().enumerate() {
             let stem = draft.path.file_stem().map_or(String::new(), |s| s.to_string_lossy().into_owned());
             lines.push(format!("  {} {} [{}]: {stem}", i + 1, draft.kind, draft.project));

@@ -10,7 +10,7 @@ use lt_squeeze::{clean, commas, decode, read_limited, squeeze};
 use super::ctx::Ctx;
 use super::{Daemon, Out, Pending, web};
 
-pub const USAGE: &str = "lighting squeeze <file> | <command> 2>&1 | lighting squeeze | lighting squeeze -- <command>";
+pub const USAGE: &str = "wisply squeeze <file> | <command> 2>&1 | wisply squeeze | wisply squeeze -- <command>";
 pub const MAX_BYTES: usize = 64_000_000;
 const INLINE: Duration = Duration::from_secs(1);
 const POLL: Duration = Duration::from_millis(250);
@@ -52,8 +52,8 @@ fn read_files(ctx: &Ctx, pos: &[String]) -> Result<String, Fail> {
 pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     if c.pos.first().is_some_and(|p| p == "--") {
         return Err(Fail::hint(
-            "this lighting client cannot run commands yet",
-            "<command> > out.txt 2>&1; lighting squeeze out.txt",
+            "this wisply client cannot run commands yet",
+            "<command> > out.txt 2>&1; wisply squeeze out.txt",
         ));
     }
     if c.pos.is_empty() {

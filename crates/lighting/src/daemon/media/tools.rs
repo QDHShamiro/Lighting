@@ -125,7 +125,7 @@ pub fn fetch(url: &str) -> Result<Vec<u8>, Fail> {
         .config()
         .timeout_global(Some(FETCH_WAIT))
         .build()
-        .header("User-Agent", "Mozilla/5.0 lighting")
+        .header("User-Agent", "Mozilla/5.0 wisply")
         .call()
         .map_err(|e| Fail::new(format!("download failed: {e}")))?;
     if resp.status().as_u16() != 200 {

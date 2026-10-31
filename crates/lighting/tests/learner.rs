@@ -9,12 +9,12 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-const EXE: &str = env!("CARGO_BIN_EXE_lighting");
+const EXE: &str = env!("CARGO_BIN_EXE_wisply");
 
 fn run(home: &Path, args: &[&str]) -> (i32, String) {
     let out = Command::new(EXE)
         .args(args)
-        .env("LIGHTING_HOME", home)
+        .env("WISPLY_HOME", home)
         .env(if cfg!(windows) { "USERPROFILE" } else { "HOME" }, home)
         .env_remove("GEMINI_API_KEY")
         .env("CLAUDE_CODE_SESSION_ID", "it-learn")
@@ -93,7 +93,7 @@ fn sessions_are_learned_into_notes_and_vault_pages() {
     assert!(
         code == 0
             && said.starts_with("learning ")
-            && said.ends_with("sessions in the background (lighting memory shows the state)"),
+            && said.ends_with("sessions in the background (wisply memory shows the state)"),
         "{said}"
     );
     let sessions = home.join("vault").join("Sessions").join("general");

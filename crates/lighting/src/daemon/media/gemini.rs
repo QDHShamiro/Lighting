@@ -39,7 +39,7 @@ pub struct Answer {
 pub fn gemini(home: &Path) -> Result<Gemini, Fail> {
     let cfg = config::load(home);
     if !config::on(&cfg, "gemini") {
-        return Err(Fail::hint("Gemini is off", "lighting config gemini on"));
+        return Err(Fail::hint("Gemini is off", "wisply config gemini on"));
     }
     let key = gemini_key().ok_or_else(|| Fail::hint("no Gemini key", KEY_HINT))?;
     Ok(Gemini { key, model: config::text(&cfg, "gemini_model") })
@@ -57,7 +57,7 @@ fn refused(status: u16, text: &str) -> Fail {
     match status {
         429 => Fail::hint(
             format!("Gemini free quota is used up for now ({})", detail(text)),
-            "wait a minute, or lighting watch ... --local",
+            "wait a minute, or wisply watch ... --local",
         ),
         401 | 403 => Fail::hint("the Gemini key was refused", KEY_HINT),
         _ => Fail::new(format!("Gemini answered {status}: {}", detail(text))),

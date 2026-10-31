@@ -33,8 +33,8 @@ fn first_lines(seen: &[String]) -> String {
 }
 
 pub fn sessions_check(d: &Daemon, base: &str) -> (bool, String) {
-    let mut a = Ctx::scratch("selftest-a", "Lighting selftest a");
-    let mut b = Ctx::scratch("selftest-b", "Lighting selftest b");
+    let mut a = Ctx::scratch("selftest-a", "Wisply selftest a");
+    let mut b = Ctx::scratch("selftest-b", "Wisply selftest b");
     let (second, quiet) = (format!("{base}second"), format!("{base}quiet"));
     run(d, &mut a, &["open", &second]);
     run(d, &mut b, &["open", &quiet]);
@@ -55,7 +55,7 @@ pub fn sessions_check(d: &Daemon, base: &str) -> (bool, String) {
 }
 
 pub fn reopen_check(d: &Daemon, base: &str) -> (bool, String) {
-    let mut c = Ctx::scratch("selftest-reopen", "Lighting selftest r");
+    let mut c = Ctx::scratch("selftest-reopen", "Wisply selftest r");
     run(d, &mut c, &["open", &format!("{base}second")]);
     let seen = vec![run(d, &mut c, &["done"]), run(d, &mut c, &["snap", "--force"])];
     run(d, &mut c, &["done"]);
@@ -64,7 +64,7 @@ pub fn reopen_check(d: &Daemon, base: &str) -> (bool, String) {
 }
 
 pub fn brake_check(d: &Daemon) -> (bool, String) {
-    let mut c = Ctx::scratch("selftest-brake", "Lighting selftest k");
+    let mut c = Ctx::scratch("selftest-brake", "Wisply selftest k");
     let words = argv(&["tab", "t9998"]);
     let mut last = Ok(String::new());
     for _ in 0..BRAKE_AT {
@@ -115,7 +115,7 @@ pub fn browser(r: &mut Run, srv: &Server, decoy: &str) {
     let script = r.d.home.join("out").join("selftest.js");
     let _ = fs::write(&script, "return document.title");
     let script = script.display().to_string();
-    r.step("js --file", &["js", "--file", &script], |o, _| o.trim() == "Lighting Fixture");
+    r.step("js --file", &["js", "--file", &script], |o, _| o.trim() == "Wisply Fixture");
     r.step("unknown tab alias", &["tab", "t9999"], |o, e| e && o.contains("no tab t9999"));
     r.step("viewport 390x844", &["viewport", "390x844"], |o, e| !e && o.contains("mobile"));
     r.step("viewport applied", &["js", "innerWidth"], |o, _| o.trim() == "390");
@@ -156,8 +156,8 @@ pub fn browser(r: &mut Run, srv: &Server, decoy: &str) {
     r.step("upload through a label", &["upload", &aref, &script], |o, e| !e && o.contains("1 file set"));
     r.step("upload landed", &["expect", "Avatar: selftest.js"], ok);
     r.step("table as tsv", &["table", "#prices"], |o, e| !e && o.contains("Beta\t2.50"));
-    r.step("type contenteditable", &["type", "Notes", "hello from lighting"], ok);
-    r.step("notes text present", &["expect", "hello from lighting"], ok);
+    r.step("type contenteditable", &["type", "Notes", "hello from wisply"], ok);
+    r.step("notes text present", &["expect", "hello from wisply"], ok);
     r.step("focus the email field", &["js", "document.getElementById('email').focus(); 1"], ok);
     r.step("type into the focused field", &["type", "focused", "focus@example.com"], ok);
     r.step("focused field got the text", &["js", "document.getElementById('email').value"], |o, _| {
@@ -169,7 +169,7 @@ pub fn browser(r: &mut Run, srv: &Server, decoy: &str) {
             && !o.contains("<iframe")
             && !o.contains("readable view")
     });
-    r.step("js", &["js", "document.title"], |o, _| o.trim() == "Lighting Fixture");
+    r.step("js", &["js", "document.title"], |o, _| o.trim() == "Wisply Fixture");
     r.step("js with const", &["js", "const v = 2; v * 3"], |o, _| o.trim() == "6");
     r.step("js with const again", &["js", "const v = 2; v * 3"], |o, _| o.trim() == "6");
     r.step("js with await and const", &["js", "const r = await Promise.resolve(21); r * 2"], |o, _| o.trim() == "42");
@@ -192,13 +192,13 @@ pub fn browser(r: &mut Run, srv: &Server, decoy: &str) {
     r.step("new tab event", &["click", "Open in new tab"], |o, e| !e && o.contains("new tab t"));
     r.step("close popup tab", &["close"], ok);
     r.step("read url without browser", &["read", base], |o, e| {
-        !e && o.contains("Lighting Fixture") && !o.contains("IGNORE")
+        !e && o.contains("Wisply Fixture") && !o.contains("IGNORE")
     });
     r.step("read 2 urls in parallel", &["read", base, &at("second")], |o, e| {
-        !e && o.contains("Lighting Fixture") && o.contains("Opened in a new tab")
+        !e && o.contains("Wisply Fixture") && o.contains("Opened in a new tab")
     });
     r.step("read pdf as text", &["read", &at("doc.pdf")], |o, e| {
-        !e && o.contains("Hello Lighting PDF") && o.contains("pdf, 1 pages")
+        !e && o.contains("Hello Wisply PDF") && o.contains("pdf, 1 pages")
     });
     let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |t| t.as_millis());
     let leak = format!("http://leak-{stamp}.invalid/?d={}", "x".repeat(300));
@@ -240,7 +240,7 @@ pub fn browser(r: &mut Run, srv: &Server, decoy: &str) {
         .map(|re| re.captures_iter(&tabs).filter_map(|c| c.get(1)).any(|m| m.as_str() != tref));
     let launched = r.ctx.desk.get("launched").and_then(|v| v.as_object()).is_some_and(|m| !m.is_empty());
     if lit.unwrap_or(true) || launched {
-        r.skip("done closes tabs (other Lighting tabs or launched apps are open)");
+        r.skip("done closes tabs (other Wisply tabs or launched apps are open)");
         r.step("close throwaway tab", &["close", &tref], ok);
     } else {
         let probe = focus_probe(r);

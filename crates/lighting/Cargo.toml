@@ -7,11 +7,11 @@ repository.workspace = true
 publish.workspace = true
 
 [[bin]]
-name = "lighting"
+name = "wisply"
 path = "src/main.rs"
 
 [[bin]]
-name = "lighting-task"
+name = "wisply-task"
 path = "src/task.rs"
 
 [dependencies]

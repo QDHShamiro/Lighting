@@ -22,8 +22,8 @@ const WIDTH: u32 = 1280;
 const CRF: &str = "30";
 const SPARE: Duration = Duration::from_secs(30);
 const KINDS: &[&str] = &["mp4"];
-const HINT: &str = "lighting shot w3 --seconds 10 --out C:/shots/clip.mp4";
-const SHORTER: &str = "lighting shot w3 --seconds 5 (a shorter video)";
+const HINT: &str = "wisply shot w3 --seconds 10 --out C:/shots/clip.mp4";
+const SHORTER: &str = "wisply shot w3 --seconds 5 (a shorter video)";
 
 fn even(n: f64) -> u32 {
     ((n.max(2.0) as u32) / 2 * 2).max(2)
@@ -164,7 +164,7 @@ pub fn video(x: &mut Desk, c: &Call) -> Result<Out, Fail> {
         return Err(Fail::hint(
             "a video films the screen or a window",
             format!(
-                "lighting shot screen --seconds {secs}  (a browser: lighting windows -f brave, then shot w<N> --seconds {secs})"
+                "wisply shot screen --seconds {secs}  (a browser: wisply windows -f brave, then shot w<N> --seconds {secs})"
             ),
         ));
     }

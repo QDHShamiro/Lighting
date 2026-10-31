@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::thread;
 
-const EXE: &str = env!("CARGO_BIN_EXE_lighting");
+const EXE: &str = env!("CARGO_BIN_EXE_wisply");
 const KEYS: [&str; 3] = ["GEMINI_API_KEY", "GROQ_API_KEY", "OPENAI_API_KEY"];
 
 struct Home(PathBuf);
@@ -12,7 +12,7 @@ impl Home {
     fn run(&self, args: &[&str]) -> (i32, String) {
         let mut cmd = Command::new(EXE);
         cmd.args(args)
-            .env("LIGHTING_HOME", &self.0)
+            .env("WISPLY_HOME", &self.0)
             .env(if cfg!(windows) { "USERPROFILE" } else { "HOME" }, &self.0)
             .env("CLAUDE_CODE_SESSION_ID", "it-media")
             .env_remove("MSYSTEM")

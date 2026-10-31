@@ -98,7 +98,7 @@ fn message_list(hwnd: isize) -> Result<El, Fail> {
     best.map(|(_, el)| el).ok_or_else(|| {
         Fail::hint(
             format!("no message list in {}", title(hwnd)),
-            "lighting focus w<N> (a minimized window may hide it), or lighting snap w<N>",
+            "wisply focus w<N> (a minimized window may hide it), or wisply snap w<N>",
         )
     })
 }
@@ -165,7 +165,7 @@ struct Watch {
 impl Watch {
     fn check(&self, home: &Path, last: bool) -> Result<Option<String>, Fail> {
         if !win::alive(self.hwnd) {
-            return Err(Fail::hint("the chat window was closed", "lighting windows -f chat"));
+            return Err(Fail::hint("the chat window was closed", "wisply windows -f chat"));
         }
         let (msgs, rows) = news(home, self.hwnd, &self.base, &self.who)?;
         let wref = &self.wref;
@@ -209,7 +209,7 @@ fn no_chat(x: &mut Desk, spec: &str) -> Fail {
     let chats: Vec<win::Win> =
         win::windows().into_iter().filter(|w| CHAT_EXES.contains(&w.exe.to_lowercase().as_str())).collect();
     let Some(first) = chats.first() else {
-        return Fail::hint(format!("no window matches \"{spec}\""), "lighting windows -f chat");
+        return Fail::hint(format!("no window matches \"{spec}\""), "wisply windows -f chat");
     };
     let open: Vec<String> = chats
         .iter()
@@ -219,7 +219,7 @@ fn no_chat(x: &mut Desk, spec: &str) -> Fail {
     let at = x.wref(first.hwnd);
     let hint = match keys::key_for(&x.d.home, &first.exe.to_lowercase(), &SWITCHER) {
         Some(key) => format!(
-            "open it first: lighting press {key} {at}, then lighting type focused \"{}\" --enter",
+            "open it first: wisply press {key} {at}, then wisply type focused \"{}\" --enter",
             spec.trim_start_matches(['@', '#'])
         ),
         None => "open that chat in the app first, then repeat".into(),
@@ -294,7 +294,7 @@ fn composer(hwnd: isize) -> Result<(El, String), Fail> {
     let Some((_, el, name)) = best else {
         return Err(Fail::hint(
             format!("no message field in {}", title(hwnd)),
-            "lighting snap w<N> -f nachricht, then type d<N> text --enter",
+            "wisply snap w<N> -f nachricht, then type d<N> text --enter",
         ));
     };
     Ok((el, if name.is_empty() { "message field".into() } else { name }))
@@ -328,7 +328,7 @@ fn reply(x: &mut Desk, c: &Call, aim: Option<&str>, may_wait: bool) -> Res<Out> 
         None if c.pos.len() >= 2 => (c.pos[0].as_str(), &c.pos[1..]),
         None => {
             return Err(
-                Fail::hint("reply needs the chat and the text", "lighting reply \"@Name\" \"text\" [--wait]").into()
+                Fail::hint("reply needs the chat and the text", "wisply reply \"@Name\" \"text\" [--wait]").into()
             );
         }
     };
@@ -342,7 +342,7 @@ fn reply(x: &mut Desk, c: &Call, aim: Option<&str>, may_wait: bool) -> Res<Out> 
     if talk::has_link(&text) && !yes {
         return Err(Fail::hint(
             "the message contains a link",
-            "send it only if the user asked for it: lighting reply ... --yes",
+            "send it only if the user asked for it: wisply reply ... --yes",
         )
         .into());
     }
@@ -350,7 +350,7 @@ fn reply(x: &mut Desk, c: &Call, aim: Option<&str>, may_wait: bool) -> Res<Out> 
     if unanswered >= UNANSWERED && !yes {
         return Err(Fail::hint(
             format!("{unanswered} messages in a row without an answer"),
-            format!("wait for an answer (lighting inbox {wref}) or ask the user; --yes sends anyway"),
+            format!("wait for an answer (wisply inbox {wref}) or ask the user; --yes sends anyway"),
         )
         .into());
     }
@@ -381,7 +381,7 @@ fn reply(x: &mut Desk, c: &Call, aim: Option<&str>, may_wait: bool) -> Res<Out> 
         return Ok(Out::Text(head));
     }
     if !may_wait {
-        return Ok(Out::Text(format!("{head}\n-> lighting inbox {wref} waits for the answer")));
+        return Ok(Out::Text(format!("{head}\n-> wisply inbox {wref} waits for the answer")));
     }
     Watch { hwnd, wref, base, who: who(c), total: timeout(c)?, prefix: head + "\n" }.start(x)
 }

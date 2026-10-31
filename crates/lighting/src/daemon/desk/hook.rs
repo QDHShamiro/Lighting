@@ -117,7 +117,7 @@ unsafe extern "system" fn badge_proc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARA
         let old = SelectObject(dc, font.into());
         SetBkMode(dc, TRANSPARENT);
         SetTextColor(dc, COLORREF(WHITE));
-        let mut text: Vec<u16> = "\u{25CF} REC Lighting".encode_utf16().collect();
+        let mut text: Vec<u16> = "\u{25CF} REC Wisply".encode_utf16().collect();
         DrawTextW(dc, &mut text, &raw mut r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         SelectObject(dc, old);
         let _ = DeleteObject(font.into());

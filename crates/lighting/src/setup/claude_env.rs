@@ -3,8 +3,7 @@ use std::path::{Path, PathBuf};
 
 use serde_json::{Map, Value};
 
-const BIN: &str = "LIGHTING_BIN";
-const CLIENT: &str = "LIGHTING_CLIENT";
+const KEYS: [(&str, &str); 2] = [("WISPLY_BIN", "WISPLY_CLIENT"), ("LIGHTING_BIN", "LIGHTING_CLIENT")];
 
 pub fn settings_file() -> PathBuf {
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
@@ -20,9 +19,14 @@ fn slashed(p: &Path) -> String {
 }
 
 fn wanted(exe: &Path) -> Vec<(&'static str, String)> {
-    let mut out = vec![(BIN, exe.parent().map(slashed).unwrap_or_default())];
-    if !cfg!(windows) {
-        out.push((CLIENT, exe.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()));
+    let dir = exe.parent().map(slashed).unwrap_or_default();
+    let name = exe.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let mut out = Vec::new();
+    for (bin, client) in KEYS {
+        out.push((bin, dir.clone()));
+        if !cfg!(windows) {
+            out.push((client, name.clone()));
+        }
     }
     out
 }
@@ -41,7 +45,7 @@ fn load(file: &Path) -> Result<Map<String, Value>, String> {
 
 fn save(file: &Path, map: Map<String, Value>) -> Result<(), String> {
     let text = serde_json::to_string_pretty(&Value::Object(map)).map_err(|e| e.to_string())? + "\n";
-    let tmp = file.with_extension("json.lighting-tmp");
+    let tmp = file.with_extension("json.wisply-tmp");
     fs::write(&tmp, text)
         .and_then(|()| fs::rename(&tmp, file))
         .map_err(|e| format!("cannot write {}: {e}", file.display()))
@@ -73,7 +77,7 @@ pub fn unpoint(file: &Path) -> Result<bool, String> {
     }
     let mut map = load(file)?;
     let Some(Value::Object(env)) = map.get_mut("env") else { return Ok(false) };
-    let gone = [BIN, CLIENT].iter().filter(|k| env.shift_remove(**k).is_some()).count();
+    let gone = KEYS.iter().flat_map(|(b, c)| [b, c]).filter(|k| env.shift_remove(**k).is_some()).count();
     if gone > 0 {
         save(file, map)?;
     }
@@ -92,7 +96,7 @@ mod tests {
         let file = dir.join("settings.json");
         fs::write(&file, "{\n  \"model\": \"opus\",\n  \"env\": {\n    \"A\": \"ü\"\n  },\n  \"z\": [1, 2]\n}\n")
             .unwrap();
-        let exe = dir.join("bin").join(if cfg!(windows) { "lighting.exe" } else { "lighting" });
+        let exe = dir.join("bin").join(if cfg!(windows) { "wisply.exe" } else { "wisply" });
         assert!(point(&file, &exe).unwrap());
         assert!(!point(&file, &exe).unwrap());
         let map = load(&file).unwrap();
@@ -100,8 +104,10 @@ mod tests {
         assert_eq!(keys, ["model", "env", "z"]);
         let env = map["env"].as_object().unwrap();
         assert_eq!(env["A"], "ü");
-        assert_eq!(env[BIN].as_str(), Some(slashed(&dir.join("bin")).as_str()));
-        assert_eq!(env.contains_key(CLIENT), !cfg!(windows));
+        for (bin, client) in KEYS {
+            assert_eq!(env[bin].as_str(), Some(slashed(&dir.join("bin")).as_str()));
+            assert_eq!(env.contains_key(client), !cfg!(windows));
+        }
         assert!(unpoint(&file).unwrap());
         assert!(!unpoint(&file).unwrap());
         assert_eq!(load(&file).unwrap()["env"].as_object().unwrap().len(), 1);

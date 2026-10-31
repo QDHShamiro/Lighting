@@ -39,7 +39,7 @@ mod tests {
     #[test]
     fn texts_read_like_the_2x_errors() {
         assert_eq!(Fail::new("no command").text(), "err: no command");
-        assert_eq!(Fail::hint("no command", "lighting help").text(), "err: no command -> try: lighting help");
+        assert_eq!(Fail::hint("no command", "wisply help").text(), "err: no command -> try: wisply help");
         assert_eq!(Fail::hint("x", "").text(), "err: x");
         assert_eq!(Fail::said("! STOP").text(), "! STOP");
         let timeout = Fail::uncounted("err: browser did not answer 'snap' within 30s");

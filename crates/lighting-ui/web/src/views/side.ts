@@ -70,7 +70,7 @@ export async function learned(view: HTMLElement): Promise<void> {
                 "div",
                 { class: "item todo" },
                 h("span", { class: "kind" }, l.cmd),
-                h("span", { class: "grow" }, l.target ? `${l.target}: ` : "", l.kind, h("span", { class: "muted" }, " → "), h("code", {}, `lighting ${l.fix}`)),
+                h("span", { class: "grow" }, l.target ? `${l.target}: ` : "", l.kind, h("span", { class: "muted" }, " → "), h("code", {}, `wisply ${l.fix}`)),
                 h("span", { class: "when" }, T.learned.score(l.ups, l.downs)),
                 h("span", { class: "acts" }, h("button", { class: "danger", onclick: async () => { await board("unlearn", l.sig); redraw(); } }, T.learned.forget)),
               ),

@@ -139,7 +139,7 @@ fn route(target: &str, site: Site, visits: &AtomicUsize) -> Option<(Vec<u8>, &'s
             (format!("<!doctype html><title>Found</title><p>Found: {}</p>", escape(&q)).into_bytes(), html)
         }
         "/" | "/index.html" => (FIXTURE.to_vec(), html),
-        "/doc.pdf" => (pdf("Hello Lighting PDF"), "application/pdf"),
+        "/doc.pdf" => (pdf("Hello Wisply PDF"), "application/pdf"),
         "/slow.js" => {
             thread::sleep(SLOW_SCRIPT);
             (b"document.title = 'Slow done';".to_vec(), "text/javascript")
@@ -194,7 +194,7 @@ mod tests {
     #[test]
     fn the_fixture_server_answers_like_the_2x_one() {
         let srv = Server::start(Site::Fixture).unwrap();
-        assert!(get(&srv.base, "/").contains("Lighting Fixture"));
+        assert!(get(&srv.base, "/").contains("Wisply Fixture"));
         assert!(get(&srv.base, "/count").contains("Visit 1") && get(&srv.base, "/count?x").contains("Visit 2"));
         assert!(get(&srv.base, "/find?q=second+try%21").contains("Found: second try!"));
         assert!(get(&srv.base, "/find?q=%3Cb%3E").contains("Found: &lt;b&gt;"));
@@ -207,6 +207,6 @@ mod tests {
         let doc = pdf("Hi");
         assert!(doc.starts_with(b"%PDF-1.4") && doc.ends_with(b"%%EOF\n"));
         let demo = Server::start(Site::Demo).unwrap();
-        assert!(get(&demo.base, "/").contains("Lighting demo") && get(&demo.base, "/x").starts_with("HTTP/1.1 404"));
+        assert!(get(&demo.base, "/").contains("Wisply demo") && get(&demo.base, "/x").starts_with("HTTP/1.1 404"));
     }
 }

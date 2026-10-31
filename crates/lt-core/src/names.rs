@@ -133,7 +133,7 @@ pub fn built_later(name: &str) -> bool {
 pub fn unknown(name: &str) -> Fail {
     let guess = GUESS.iter().find(|(word, _)| *word == name).map(|(_, hint)| *hint);
     let hint = guess.or_else(|| close_match(name, &known())).unwrap_or("help");
-    Fail::hint(format!("unknown command '{name}'"), format!("lighting {hint}"))
+    Fail::hint(format!("unknown command '{name}'"), format!("wisply {hint}"))
 }
 
 #[cfg(test)]
@@ -167,7 +167,7 @@ mod tests {
             ("t", "help"),
         ];
         for (word, hint) in cases {
-            assert_eq!(unknown(word).text(), format!("err: unknown command '{word}' -> try: lighting {hint}"));
+            assert_eq!(unknown(word).text(), format!("err: unknown command '{word}' -> try: wisply {hint}"));
         }
         assert!(built_later("snap") && built_later("recall") && built_later("ping") && !built_later("snapp"));
     }

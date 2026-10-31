@@ -7,8 +7,8 @@ use super::{SNAP_LINES, call, cmds, keys, obj, out};
 
 const STEPS: &[(&str, i64)] = &[("ctrl+tab", 1), ("ctrl+pagedown", 1), ("ctrl+shift+tab", -1), ("ctrl+pageup", -1)];
 const CLOSE: &[&str] = &["ctrl+w", "ctrl+f4"];
-const NEW_TAB: &str = "lighting open <url> --new (a new tab in the background)";
-const OWN_TAB: &str = "lighting close (Lighting closes its own tab, browser windows stay)";
+const NEW_TAB: &str = "wisply open <url> --new (a new tab in the background)";
+const OWN_TAB: &str = "wisply close (Wisply closes its own tab, browser windows stay)";
 const BROWSER_ONLY: &[(&str, &str)] = &[
     ("ctrl+t", NEW_TAB),
     ("ctrl+n", NEW_TAB),
@@ -17,7 +17,7 @@ const BROWSER_ONLY: &[(&str, &str)] = &[
     ("ctrl+shift+w", OWN_TAB),
     ("alt+f4", OWN_TAB),
 ];
-const NO_START: &str = "lighting tabs, then lighting tab t3";
+const NO_START: &str = "wisply tabs, then wisply tab t3";
 const TABS_WAIT: f64 = 15.0;
 
 fn step(combo: &str) -> Option<i64> {
@@ -46,7 +46,7 @@ pub fn press(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Option<String>, Fail
     let combos: Vec<String> = c.pos.iter().map(|p| keys::canon(p)).collect();
     for (p, k) in c.pos.iter().zip(&combos) {
         if let Some((_, hint)) = BROWSER_ONLY.iter().find(|(b, _)| b == k) {
-            return Err(Fail::hint(format!("{p} is a browser shortcut that Lighting cannot press"), *hint));
+            return Err(Fail::hint(format!("{p} is a browser shortcut that Wisply cannot press"), *hint));
         }
     }
     if let [only] = combos.as_slice()
@@ -59,10 +59,7 @@ pub fn press(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Option<String>, Fail
     let Some(by) = combos.iter().map(|k| step(k)).sum::<Option<i64>>() else { return Ok(None) };
     let msg = call(d, ctx, "tabs", obj(json!({"rows": true})), TABS_WAIT)?;
     let Some(rows) = msg.get("rows").and_then(Value::as_array) else {
-        return Err(Fail::hint(
-            "the Lighting extension in the browser is older than this Lighting",
-            "lighting ext-reload",
-        ));
+        return Err(Fail::hint("the Wisply extension in the browser is older than this Wisply", "wisply ext-reload"));
     };
     let Some((base, next)) = moved(rows, ctx.tabs.first().map(String::as_str), by) else {
         return Err(Fail::hint("no tab to start from", NO_START));
@@ -71,7 +68,7 @@ pub fn press(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Option<String>, Fail
         return Ok(Some(format!("{}: {base} is the only tab in its window, nothing to switch to", c.pos.join(" "))));
     }
     let res = out(d, ctx, "tab", obj(json!({"id": next})), TABS_WAIT, SNAP_LINES)?;
-    Ok(Some(format!("{res} ({}: Lighting's target tab moved, the visible tab stays)", c.pos.join(" "))))
+    Ok(Some(format!("{res} ({}: Wisply's target tab moved, the visible tab stays)", c.pos.join(" "))))
 }
 
 #[cfg(test)]

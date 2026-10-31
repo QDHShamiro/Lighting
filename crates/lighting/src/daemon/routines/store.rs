@@ -18,7 +18,7 @@ static APP_URL: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)^[a-z]+://(?
 const STOP: &str = "a an and are auf aus bei bin bis bitte can da dann das dass dem den der des die dir do doch du ein \
     eine einen einem einer er es for from für geht gib hab habe hast hat he hey hi i ich ihr im in is ist it ja kann \
     kannst mach mache machen mal me mein meine mich mir mit my nach nicht noch nur oder of on or please sag so soll the \
-    then to um und uns unter vom von vor was we wie will wir with wo you zu zum zur über lighting claude okay ok jetzt \
+    then to um und uns unter vom von vor was we wie will wir with wo you zu zum zur über wisply lighting claude okay ok jetzt \
     schnell einfach auch alle alles aber also hier dort mehr sehr gut kurz neu neue schau schaue guck gucke check checke \
     look see warum wieso weshalb welche welcher welches welchen wann wer wen wem woher wohin womit wofür this that these \
     those what when where why how have has had get got want need just also more some any all";
@@ -84,7 +84,7 @@ pub fn load(home: &Path, name: &str) -> Result<Value, Fail> {
         load_all(home).into_iter().filter(|r| r["name"].as_str().is_some_and(|n| n.starts_with(&low))).collect();
     match hits.len() {
         1 => Ok(hits.into_iter().next().unwrap_or_default()),
-        0 => Err(Fail::hint(format!("no routine \"{name}\""), "lighting routines")),
+        0 => Err(Fail::hint(format!("no routine \"{name}\""), "wisply routines")),
         _ => Err(Fail::hint(format!("\"{name}\" matches {}", names(&hits)), "use the full name")),
     }
 }
@@ -151,7 +151,7 @@ pub fn find(home: &Path, query: &str) -> Result<Value, Fail> {
         .collect();
     ranked.sort_by_key(|(n, _)| std::cmp::Reverse(*n));
     match ranked.as_slice() {
-        [] => Err(Fail::hint(format!("no routine fits \"{query}\""), "lighting routines")),
+        [] => Err(Fail::hint(format!("no routine fits \"{query}\""), "wisply routines")),
         [a, b, ..] if a.0 == b.0 => {
             let top: Vec<Value> = ranked.iter().take(3).map(|(_, r)| r.clone()).collect();
             Err(Fail::hint(format!("\"{query}\" fits several routines: {}", names(&top)), "use the full name"))
@@ -179,7 +179,7 @@ pub fn usage(r: &Value, values: &BTreeMap<String, String>) -> String {
         .flatten()
         .map(|(p, v)| format!(" {}", kv(p, values.get(p).map_or_else(|| text(v), Clone::clone).as_str())))
         .collect();
-    format!("lighting run {}{params}", r["name"].as_str().unwrap_or(""))
+    format!("wisply run {}{params}", r["name"].as_str().unwrap_or(""))
 }
 
 pub fn fill(text: &str, params: &BTreeMap<String, String>) -> String {
@@ -334,7 +334,7 @@ mod tests {
         assert_eq!(argv_of(&step, &p), vec!["type", "Search", "{q}", "--on", "web", "--enter", "--max", "3"]);
         let r = json!({"name": "github-issues", "params": {"page": "x"}, "steps": [{"cmd": "open", "args": ["github.com/QDHShamiro/{page}"]}],
             "check": {"kind": "web", "has": ["{page}"], "url": null}, "tags": ["issues"]});
-        assert_eq!(usage(&r, &p), "lighting run github-issues page=Context-Engine");
+        assert_eq!(usage(&r, &p), "wisply run github-issues page=Context-Engine");
         let mut w = Map::new();
         w.insert("url".into(), json!("https://github.com/QDHShamiro/Context-Engine/issues"));
         w.insert("title".into(), json!("Issues"));

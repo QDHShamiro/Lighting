@@ -238,7 +238,7 @@ mod imp {
                 "drag" => act::drag(&mut x, c),
                 "hover" => Err(Fail::hint(
                     "hover on desktop apps would steal your mouse",
-                    "use lighting shot or read to look, or click",
+                    "use wisply shot or read to look, or click",
                 )
                 .into()),
                 "read" | "text" => look::read(&mut x, c),
@@ -338,7 +338,7 @@ mod imp {
                     return Ok(new);
                 }
                 if hwnd == 0 || !win::alive(hwnd) {
-                    return Err(Fail::hint(format!("window {spec} is gone (closed)"), "lighting windows").into());
+                    return Err(Fail::hint(format!("window {spec} is gone (closed)"), "wisply windows").into());
                 }
                 return Ok(hwnd);
             }
@@ -351,7 +351,7 @@ mod imp {
                 }
             }
             let Some((_, hwnd)) = best else {
-                return Err(Fail::hint(format!("no window matches \"{text}\""), "lighting windows").into());
+                return Err(Fail::hint(format!("no window matches \"{text}\""), "wisply windows").into());
             };
             self.list_windows();
             Ok(hwnd)
@@ -382,7 +382,7 @@ mod imp {
                     let Some(hwnd) = self.front_app() else {
                         return Err(Fail::hint(
                             "no window chosen",
-                            "lighting snap app:<name> picks that app's window (several: lighting windows -f <app>)",
+                            "wisply snap app:<name> picks that app's window (several: wisply windows -f <app>)",
                         )
                         .into());
                     };
@@ -459,7 +459,7 @@ mod imp {
 
         pub fn focus_cmd(&mut self, c: &Call) -> Res<String> {
             if c.pos.is_empty() {
-                return Err(Fail::hint("focus needs a window", "lighting focus w2").into());
+                return Err(Fail::hint("focus needs a window", "wisply focus w2").into());
             }
             let hwnd = self.target(c.pos.first().map(String::as_str))?;
             if self.bg(hwnd) && win::foreground() != hwnd {
@@ -481,7 +481,7 @@ mod imp {
                 }
                 thread::sleep(Duration::from_millis(100));
             }
-            Ok(format!("asked to close {head} (still open, it may show a save dialog) -> try: lighting windows"))
+            Ok(format!("asked to close {head} (still open, it may show a save dialog) -> try: wisply windows"))
         }
 
         fn clip(&mut self, c: &Call) -> Res<String> {

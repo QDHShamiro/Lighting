@@ -32,7 +32,7 @@ const TASK_SHORT: usize = 80;
 const QUERY_BUDGET: Duration = Duration::from_secs(4);
 const EMBED_BUDGET: Duration = Duration::from_secs(10);
 const TODO_HELP: &str =
-    "lighting todo | todo add \"task\" [--list name] | todo done|doing|drop|todo <id> | todo note <id> \"text\"";
+    "wisply todo | todo add \"task\" [--list name] | todo done|doing|drop|todo <id> | todo note <id> \"text\"";
 
 thread_local! {
     static STORE: RefCell<Option<Store>> = const { RefCell::new(None) };
@@ -135,7 +135,7 @@ fn recall(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
     if c.pos.is_empty() {
         return Err(Fail::hint(
             "recall needs words or a number",
-            "lighting recall \"how did we deploy\" | lighting recall 42",
+            "wisply recall \"how did we deploy\" | wisply recall 42",
         ));
     }
     if let [one] = c.pos.as_slice()
@@ -151,7 +151,7 @@ fn recall(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
         })?;
         return found
             .map(|n| full_note(&n))
-            .ok_or_else(|| Fail::hint(format!("no note #{id}"), "lighting recall \"<words>\""));
+            .ok_or_else(|| Fail::hint(format!("no note #{id}"), "wisply recall \"<words>\""));
     }
     let text = c.pos.join(" ");
     let here = project(ctx, c);
@@ -173,7 +173,7 @@ fn recall(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
     }
     let lines: Vec<String> = found.iter().map(|h| line(&h.note, !here.is_empty() && h.note.project != here)).collect();
     let tail = if note.is_empty() { String::new() } else { format!("; {note}") };
-    Ok(format!("{}\n(lighting recall <id> shows one in full, ~Nt = its size{tail})", lines.join("\n")))
+    Ok(format!("{}\n(wisply recall <id> shows one in full, ~Nt = its size{tail})", lines.join("\n")))
 }
 
 fn first_sentence(text: &str) -> &str {
@@ -190,11 +190,11 @@ fn first_sentence(text: &str) -> &str {
 fn remember(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
     let text = scrub(&c.pos.join(" ").split_whitespace().collect::<Vec<_>>().join(" "));
     if text.chars().count() < 4 {
-        return Err(Fail::hint("what should Lighting remember?", "lighting remember \"Brave is the only browser\""));
+        return Err(Fail::hint("what should Wisply remember?", "wisply remember \"Brave is the only browser\""));
     }
     let kind = c.val("kind").filter(|k| !k.is_empty()).unwrap_or("fact");
     let id = keep(d, ctx, text, kind, &project(ctx, c))?;
-    Ok(format!("remembered #{id} (lighting forget {id} undoes it)"))
+    Ok(format!("remembered #{id} (wisply forget {id} undoes it)"))
 }
 
 fn keep(d: &Daemon, ctx: &Ctx, text: String, kind: &str, here: &str) -> Result<i64, Fail> {
@@ -216,7 +216,7 @@ fn keep(d: &Daemon, ctx: &Ctx, text: String, kind: &str, here: &str) -> Result<i
 }
 
 fn forget(d: &Daemon, c: &Call) -> Result<String, Fail> {
-    let Some(first) = c.pos.first() else { return Err(Fail::hint("forget needs a note number", "lighting forget 42")) };
+    let Some(first) = c.pos.first() else { return Err(Fail::hint("forget needs a note number", "wisply forget 42")) };
     let id = ident(first)?;
     match with_store(d, |s| s.forget(id))? {
         Err(msg) => Err(Fail::new(msg)),
@@ -243,7 +243,7 @@ fn todo_list(rows: &[Todo], short: bool) -> String {
         out.push(format!("  {}", todo_line(t, short)));
     }
     if !short && (out.iter().any(|l| l.contains('…')) || rows.iter().any(|t| t.note.trim().contains('\n'))) {
-        out.push("(lighting todo <id> shows one in full)".into());
+        out.push("(wisply todo <id> shows one in full)".into());
     }
     out.join("\n")
 }
@@ -271,7 +271,7 @@ fn todo(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
     if is_ident(sub) {
         let id = ident(sub)?;
         let t = with_store(d, |s| s.todo(id))?;
-        let missing = || Fail::hint(format!("no to-do #{}", sub.trim_start_matches('#')), "lighting todo");
+        let missing = || Fail::hint(format!("no to-do #{}", sub.trim_start_matches('#')), "wisply todo");
         return t.map(|t| todo_full(&t)).ok_or_else(missing);
     }
     let here = project(ctx, c);
@@ -298,7 +298,7 @@ fn todo(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
             let text = c.pos[2..].join(" ");
             let note = (!text.is_empty()).then_some(text.as_str());
             let t = with_store(d, |s| s.todo_set(id, Some(status), note))?;
-            let t = t.ok_or_else(|| Fail::hint(format!("no to-do #{which}"), "lighting todo"))?;
+            let t = t.ok_or_else(|| Fail::hint(format!("no to-do #{which}"), "wisply todo"))?;
             Ok(format!("#{} is {}: {}", t.id, t.status, oneline(&t.task, TASK_SHORT)))
         }
         "note" => {
@@ -308,7 +308,7 @@ fn todo(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
             let id = ident(&c.pos[1])?;
             let text = c.pos[2..].join(" ");
             let t = with_store(d, |s| s.todo_set(id, None, Some(&text)))?;
-            let t = t.ok_or_else(|| Fail::hint(format!("no to-do #{}", c.pos[1]), "lighting todo"))?;
+            let t = t.ok_or_else(|| Fail::hint(format!("no to-do #{}", c.pos[1]), "wisply todo"))?;
             Ok(format!("#{} noted", t.id))
         }
         "" => {
@@ -318,7 +318,7 @@ fn todo(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
                 rows.retain(|t| t.list == list);
             }
             Ok(if rows.is_empty() {
-                "no open to-dos (lighting todo add \"task\")".into()
+                "no open to-dos (wisply todo add \"task\")".into()
             } else {
                 todo_list(&rows, false)
             })

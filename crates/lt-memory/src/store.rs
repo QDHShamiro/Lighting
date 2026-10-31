@@ -409,11 +409,11 @@ mod tests {
             source: "user",
             session: "s1",
         };
-        let a = s.add_note(&new("Brave is the only browser", "lighting")).unwrap().unwrap();
+        let a = s.add_note(&new("Brave is the only browser", "wisply")).unwrap().unwrap();
         let b = s.add_note(&new("Deploy with ship.sh and token: abcdefgh1", "other")).unwrap().unwrap();
         assert_eq!(s.add_note(&new("   ", "x")).unwrap(), None);
         assert_eq!(s.note(b).unwrap().unwrap().title, "Deploy with ship.sh and token: [secret]");
-        let hits = s.search("which browser", "lighting", 8, None, 0.0).unwrap();
+        let hits = s.search("which browser", "wisply", 8, None, 0.0).unwrap();
         assert_eq!(hits.iter().map(|h| h.note.id).collect::<Vec<_>>(), [a]);
         s.save_vecs(&[(a, unit(1)), (b, unit(2))]).unwrap();
         let hits = s.search("zzz", "", 8, Some(&unit(2)), 0.0).unwrap();

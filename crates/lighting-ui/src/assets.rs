@@ -1,5 +1,5 @@
-pub const CSP: &str = "default-src 'self' lighting: http://lighting.localhost; script-src 'self' lighting: http://lighting.localhost; \
-                       style-src 'self' 'unsafe-inline' lighting: http://lighting.localhost; img-src 'self' data: lighting: http://lighting.localhost; \
+pub const CSP: &str = "default-src 'self' wisply: http://wisply.localhost; script-src 'self' wisply: http://wisply.localhost; \
+                       style-src 'self' 'unsafe-inline' wisply: http://wisply.localhost; img-src 'self' data: wisply: http://wisply.localhost; \
                        connect-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'";
 
 const FILES: &[(&str, &str, &[u8])] = &[

@@ -32,7 +32,7 @@ const DEFAULT_SIZE: (i32, i32) = (1080, 2400);
 const TOOLS: &str = "platform-tools";
 const PLUG: &str = "plug it in with USB debugging on (Settings > Developer options)";
 const ALLOW: &str = "unlock it and tap Allow on the USB debugging prompt";
-const HELP: &str = "lighting phone devices | snap [-f x] | tap p3|\"text\" | type \"text\" [--enter] | key back|home|enter | swipe up|down|left|right | shot | launch <app> | open <url> | apps [-f x] | setup";
+const HELP: &str = "wisply phone devices | snap [-f x] | tap p3|\"text\" | type \"text\" [--enter] | key back|home|enter | swipe up|down|left|right | shot | launch <app> | open <url> | apps [-f x] | setup";
 const KEYS: &[(&str, u32)] = &[
     ("back", 4),
     ("home", 3),
@@ -120,7 +120,7 @@ fn install_tools(home: &Path) -> Result<PathBuf, Fail> {
     let ran = tools::run(&tool, &args, Duration::from_secs(DUMP_S));
     let _ = fs::remove_file(&zip);
     if !ran.as_ref().is_ok_and(|r| r.ok) {
-        return Err(Fail::hint("could not unpack platform-tools", format!("install {exe}, then lighting phone setup")));
+        return Err(Fail::hint("could not unpack platform-tools", format!("install {exe}, then wisply phone setup")));
     }
     #[cfg(unix)]
     for name in ["adb", "fastboot"] {
@@ -134,7 +134,7 @@ fn adb_raw(home: &Path, serial: Option<&str>, args: &[&str], secs: u64) -> Resul
     let exe = adb_path(home).ok_or_else(|| {
         Fail::hint(
             "phone control needs adb (Android platform-tools)",
-            "lighting phone setup (downloads them from Google)",
+            "wisply phone setup (downloads them from Google)",
         )
     })?;
     let mut all: Vec<String> = serial.map(|s| vec!["-s".to_string(), s.to_string()]).unwrap_or_default();
@@ -142,7 +142,7 @@ fn adb_raw(home: &Path, serial: Option<&str>, args: &[&str], secs: u64) -> Resul
     tools::run(&exe, &all, Duration::from_secs(secs)).map_err(|_| {
         Fail::hint(
             format!("adb did not answer within {secs} s"),
-            "unplug and plug the phone in, then lighting phone devices",
+            "unplug and plug the phone in, then wisply phone devices",
         )
     })
 }
@@ -200,7 +200,7 @@ impl Job<'_> {
             }
             many => Err(Fail::hint(
                 format!("{} phones connected", many.len()),
-                format!("lighting phone snap --device {}", many[0].0),
+                format!("wisply phone snap --device {}", many[0].0),
             )),
         }
     }
@@ -208,14 +208,14 @@ impl Job<'_> {
     fn snapshot(&mut self, f: Option<&str>) -> Result<String, Fail> {
         let mut raw = self.adb(&["exec-out", "uiautomator", "dump", "/dev/tty"]);
         if raw.as_deref().ok().and_then(tree_xml).is_none() {
-            let cmd = "uiautomator dump /sdcard/lighting.xml >/dev/null && cat /sdcard/lighting.xml";
+            let cmd = "uiautomator dump /sdcard/wisply.xml >/dev/null && cat /sdcard/wisply.xml";
             raw = adb(&self.d.home, self.ph.serial.as_deref(), &["shell", cmd], DUMP_S);
         }
         let raw = raw?;
         let xml = tree_xml(&raw).ok_or_else(|| {
             Fail::hint(
                 "the phone gave no screen tree (screen off or a secure screen?)",
-                "lighting phone key wake, then snap",
+                "wisply phone key wake, then snap",
             )
         })?;
         let filt = terms(f.unwrap_or(""));
@@ -236,7 +236,7 @@ impl Job<'_> {
     fn find(&mut self, spec: &str) -> Result<Target, Fail> {
         if PREF.is_match(spec) {
             return self.ph.refs.iter().find(|(r, _)| r == spec).map(|(_, t)| t.clone()).ok_or_else(|| {
-                Fail::hint(format!("{spec} is unknown or from an older snapshot"), "lighting phone snap")
+                Fail::hint(format!("{spec} is unknown or from an older snapshot"), "wisply phone snap")
             });
         }
         self.snapshot(None)?;
@@ -252,7 +252,7 @@ impl Job<'_> {
             .into_iter()
             .find(|(r, _)| top > 0 && *r == top)
             .map(|(_, t)| t.clone())
-            .ok_or_else(|| Fail::hint(format!("nothing called \"{spec}\" on the phone"), "lighting phone snap"))
+            .ok_or_else(|| Fail::hint(format!("nothing called \"{spec}\" on the phone"), "wisply phone snap"))
     }
 
     fn after(&mut self, what: String) -> Result<Out, Fail> {
@@ -345,9 +345,9 @@ impl Job<'_> {
     fn shot(&mut self) -> Result<Out, Fail> {
         let ran = adb_raw(&self.d.home, self.ph.serial.as_deref(), &["exec-out", "screencap", "-p"], DUMP_S)?;
         let img = image::load_from_memory(&ran.bytes)
-            .map_err(|_| Fail::hint("the phone sent no picture", "unlock the phone, then lighting phone shot"))?;
+            .map_err(|_| Fail::hint("the phone sent no picture", "unlock the phone, then wisply phone shot"))?;
         let key = format!("phone-{}", self.ph.serial.clone().unwrap_or_default());
-        save_picture(self.d, self.ctx, self.c, &img, &key, "lighting phone shot --out shot.png").map(Out::Text)
+        save_picture(self.d, self.ctx, self.c, &img, &key, "wisply phone shot --out shot.png").map(Out::Text)
     }
 
     fn packages(&self, third: bool) -> Result<Vec<String>, Fail> {
@@ -360,7 +360,7 @@ impl Job<'_> {
 
     fn launch(&mut self, rest: &[String]) -> Result<Out, Fail> {
         if rest.is_empty() {
-            return Err(Fail::hint("launch needs an app", "lighting phone launch spotify"));
+            return Err(Fail::hint("launch needs an app", "wisply phone launch spotify"));
         }
         let mut name = rest.join(" ");
         if !name.contains('.') {
@@ -369,7 +369,7 @@ impl Job<'_> {
                 self.packages(false)?.into_iter().filter(|p| p.to_lowercase().contains(&low)).collect();
             hits.sort_by_key(|p| (!p.to_lowercase().ends_with(&format!(".{low}")), p.len()));
             name = hits.into_iter().next().ok_or_else(|| {
-                Fail::hint(format!("no app matches \"{name}\""), format!("lighting phone apps -f {name}"))
+                Fail::hint(format!("no app matches \"{name}\""), format!("wisply phone apps -f {name}"))
             })?;
         }
         let out = self.adb(&["shell", "monkey", "-p", &name, "-c", "android.intent.category.LAUNCHER", "1"])?;
@@ -424,7 +424,7 @@ impl Job<'_> {
             "launch" | "start" => self.launch(&rest),
             "open" => {
                 let Some(url) = rest.first() else {
-                    return Err(Fail::hint("open needs a link", "lighting phone open https://example.com"));
+                    return Err(Fail::hint("open needs a link", "wisply phone open https://example.com"));
                 };
                 self.adb(&["shell", "am", "start", "-a", "android.intent.action.VIEW", "-d", url])?;
                 self.after(format!("ok (opened {} on the phone)", url.chars().take(URL_SHOWN).collect::<String>()))
