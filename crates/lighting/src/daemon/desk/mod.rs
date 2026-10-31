@@ -26,6 +26,8 @@ mod hook;
 #[cfg(windows)]
 mod input;
 #[cfg(windows)]
+mod keyway;
+#[cfg(windows)]
 mod launch;
 #[cfg(windows)]
 mod look;

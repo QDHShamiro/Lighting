@@ -9,6 +9,7 @@ use super::super::web::{keys, ref_kind};
 use super::combo;
 use super::focus::{self, Keys};
 use super::input::{self, Button};
+use super::keyway;
 use super::uia::{self, El};
 use super::win;
 use super::{Desk, Halt, Res, TERMINALS, windowish};
@@ -16,6 +17,7 @@ use super::{Desk, Halt, Res, TERMINALS, windowish};
 const TYPE_SETTLE_S: f64 = 0.3;
 const KEY_QUIET_S: f64 = 0.25;
 const FIELD_ROLES: &[&str] = &["edit", "combobox", "document", "spinner"];
+const BROWSER_TABS: &str = "lighting tabs, then lighting tab t3 (Lighting moves its own tab, the visible tab stays)";
 
 fn press_keys(keys: &Keys, raw: &str, scancode: bool) -> Result<(), Fail> {
     let parsed = combo::parse(raw, input::scan).map_err(Fail::new)?;
@@ -26,6 +28,22 @@ fn press_keys(keys: &Keys, raw: &str, scancode: bool) -> Result<(), Fail> {
             Ok(())
         }
     }
+}
+
+type Way = (String, Option<&'static str>);
+
+fn press_or_ui(keys: &Keys, raw: &str, scancode: bool) -> Result<Option<Way>, Fail> {
+    match (press_keys(keys, raw, scancode), keys) {
+        (Ok(()), _) => Ok(None),
+        (Err(f), Keys::Behind(hwnd)) => {
+            combo::parse(raw, input::scan).ok().and_then(|c| keyway::by_ui(*hwnd, &c)).map(Some).ok_or(f)
+        }
+        (Err(f), Keys::Front) => Err(f),
+    }
+}
+
+fn browser_tab_keys(hwnd: isize, combos: &[&String]) -> bool {
+    Desk::is_browser(hwnd) && combos.iter().any(|p| combo::parse(p, input::scan).is_ok_and(|c| keyway::tab_key(&c)))
 }
 
 fn type_keys(keys: &Keys, text: &str) {
@@ -283,13 +301,21 @@ pub fn press(x: &mut Desk, c: &Call) -> Res<String> {
     let before = if game { None } else { x.before_action(hwnd) };
     let known = window_set();
     let bg = x.bg(hwnd);
-    focus::with_focus(bg, hwnd, c.on("stay"), |to| {
+    let mut ways: Vec<Way> = Vec::new();
+    let sent = focus::with_focus(bg, hwnd, c.on("stay"), |to| {
         for p in &combos {
-            press_keys(&to, p, game)?;
+            ways.extend(press_or_ui(&to, p, game)?);
             thread::sleep(Duration::from_millis(30));
         }
         Ok(())
-    })?;
+    });
+    if let Err(Halt::Fail(f)) = &sent
+        && f.msg.contains("needs the window in front")
+        && browser_tab_keys(hwnd, &combos)
+    {
+        return Err(Fail::hint(f.msg.clone(), BROWSER_TABS).into());
+    }
+    sent?;
     let quiet = combos.iter().all(|p| combo::quick(p)).then_some(KEY_QUIET_S);
     let diff = x.after_action(hwnd, before, 0.6, quiet);
     if diff.starts_with(" (+")
@@ -299,7 +325,16 @@ pub fn press(x: &mut Desk, c: &Call) -> Res<String> {
         keys::learn(&x.d.home, &win::exe_of_window(hwnd).to_lowercase(), combos[0], line);
     }
     let label = x.label(hwnd);
-    Ok(format!("ok ({all} sent to {label}){diff}{}", x.new_windows(&known)))
+    if ways.is_empty() {
+        return Ok(format!("ok ({all} sent to {label}){diff}{}", x.new_windows(&known)));
+    }
+    let how: Vec<&str> = ways.iter().map(|(how, _)| how.as_str()).collect();
+    let notes: String = ways.iter().filter_map(|(_, note)| *note).map(|n| format!("\n{n}")).collect();
+    Ok(format!(
+        "ok ({all}: {} via UI Automation, {label} stays in the background){diff}{notes}{}",
+        how.join("; "),
+        x.new_windows(&known)
+    ))
 }
 
 pub fn scroll(x: &mut Desk, c: &Call) -> Res<String> {

@@ -58,6 +58,10 @@ pub fn desktop(r: &mut Run) {
     });
     r.step("wait in an app", &["wait", "clicked 1", &app, "--timeout", "5s"], |o, e| !e && o.starts_with("ok ("));
     r.step("app wait gives up", &["wait", "never shown", &app, "--timeout", "1s"], |o, e| e && o.contains("not there"));
+    r.step("tab key in background", &["press", &app, "ctrl+tab"], |o, e| {
+        !e && o.contains("tab 2/3 \"Two\" selected via UI Automation")
+    });
+    r.step("tab number in background", &["press", &app, "ctrl+alt+3"], |o, e| !e && o.contains("tab 3/3 \"Three\""));
     r.step("ocr read", &["read", &app], |o, e| !e && o.contains("Remember"));
     r.check("ocr via PrintWindow", |_, _| match probe::titled(APP_TITLE).first().map(|h| probe::ocr_text(*h)) {
         Some(Ok(text)) => (text.contains("Remember"), text),

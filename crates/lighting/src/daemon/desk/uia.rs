@@ -328,6 +328,14 @@ impl El {
             .find_map(|id| self.text(id).filter(|s| !s.is_empty()))
     }
 
+    pub fn selected(&self) -> bool {
+        self.flag(UIA_SelectionItemIsSelectedPropertyId) == Some(true)
+    }
+
+    pub fn select(&self) -> bool {
+        self.step("select", false).is_some()
+    }
+
     pub fn texts(&self) -> Vec<String> {
         [UIA_NamePropertyId, UIA_ValueValuePropertyId].into_iter().filter_map(|id| self.text(id)).collect()
     }

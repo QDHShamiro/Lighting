@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use windows::Win32::Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::Graphics::Gdi::{DEFAULT_GUI_FONT, GetStockObject, HBRUSH};
-use windows::Win32::System::LibraryLoader::GetModuleHandleW;
+use windows::Win32::System::LibraryLoader::{GetModuleHandleW, LoadLibraryW};
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, GetWindowTextW, HMENU, HWND_BOTTOM, IDC_ARROW,
     IsDialogMessageW, KillTimer, LoadCursorW, MSG, PostQuitMessage, RegisterClassW, SWP_NOACTIVATE, SWP_NOMOVE,
@@ -27,6 +27,20 @@ const ID_SEND: usize = 1;
 const PEER_TIMER: usize = 7;
 const PEER_MS: u32 = 300;
 const ROOMS: &[&str] = &["Friends, 3 unread messages", "2 mentions General", "Unread messages, News", "Quiet room"];
+const TABS: &[&str] = &["One", "Two", "Three"];
+const TCM_INSERTITEMW: u32 = 0x133E;
+const TCIF_TEXT: u32 = 0x1;
+
+#[repr(C)]
+struct TabItem {
+    mask: u32,
+    state: u32,
+    state_mask: u32,
+    text: *mut u16,
+    max: i32,
+    image: i32,
+    param: isize,
+}
 
 struct State {
     clicks: u32,
@@ -189,6 +203,21 @@ fn app() {
     m.make("BUTTON", "Go", TAB_STOP, (90, 64, 100, 32), ID_GO);
     m.make("BUTTON", "Remember me", TAB_STOP | BS_AUTOCHECKBOX, (210, 64, 200, 32), 102);
     let status = m.make("STATIC", "Status: ready", 0, (20, 120, 400, 24), 103);
+    let _ = unsafe { LoadLibraryW(&HSTRING::from("comctl32.dll")) };
+    let tabs = m.make("SysTabControl32", "", TAB_STOP, (20, 150, 400, 30), 104);
+    for (i, name) in TABS.iter().enumerate() {
+        let text = HSTRING::from(*name);
+        let item = TabItem {
+            mask: TCIF_TEXT,
+            state: 0,
+            state_mask: 0,
+            text: text.as_ptr().cast_mut(),
+            max: 0,
+            image: -1,
+            param: 0,
+        };
+        unsafe { SendMessageW(hwnd(tabs), TCM_INSERTITEMW, Some(WPARAM(i)), Some(LPARAM(&raw const item as isize))) };
+    }
     {
         let mut s = state();
         s.edit = edit;
