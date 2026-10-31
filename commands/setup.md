@@ -8,7 +8,7 @@ Set up Lighting for this user and switch Claude Code over to it. Keep your repor
    - macOS: `"${CLAUDE_PLUGIN_ROOT}/bin/lighting-macos" setup`
    - Linux: `"${CLAUDE_PLUGIN_ROOT}/bin/lighting-linux-x64" setup` (ARM: `lighting-linux-arm64`)
 
-   It installs uv if it is missing and the Python dependencies, registers the native messaging host for Brave, Chrome,
+   It copies its programs to `~/.lighting/bin`, registers the native messaging host for Brave, Chrome,
    Edge (and Chromium on macOS/Linux), copies the extension to `~/.lighting/extension`, puts `lighting` on the PATH
    (`~/.local/bin` on macOS/Linux) and loads the extension into the browser by itself through the accessibility API.
    Report the lines it prints. On macOS/Linux it also sets `LIGHTING_CLIENT` in `~/.claude/settings.json` so the MCP
