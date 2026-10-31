@@ -75,7 +75,7 @@ One call. Everything clickable has a ref. A click answers in one line (**13-53**
 
 ## Quick start
 
-Windows 10/11, macOS or Linux, and Brave, Chrome or Edge ([uv](https://docs.astral.sh/uv/getting-started/installation/) installs itself if it is missing). In Claude Code:
+Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. In Claude Code:
 
 ```
 /plugin marketplace add QDHShamiro/Lighting
@@ -287,7 +287,7 @@ Brave 154, Windows 11, Lighting 0.7.2. Tokens are characters / 4. Small numbers 
 | `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
 | Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
 
-- `lighting selftest`: **145/145** on Windows, 145/145 on Linux, 144/144 on macOS (browser, desktop, chat and sessions, cold start included). Unit tests: `python tests/test_units.py` (61/61), `cargo test` in `client/`.
+- `lighting selftest`: **159/159** on Windows (browser, desktop, chat and sessions, cold start included); CI runs it on Windows, macOS and Linux on every push. Tests: `cargo test --workspace`.
 - `lighting bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
 - `lighting demo` shows Lighting in about 30 s on a made-up shop page served from your own computer (open, find, fill, pick, tick, click, read a table), with the time and size of every answer. `--fast` skips the pauses that are there for screen recordings.
 - Filling and submitting a form: ~160 ms.
@@ -315,6 +315,13 @@ your logged-in browser and your apps, cheaply.
 
 ## What's new
 
+- **3.0.0** (not released yet) Lighting is one Rust program: no Python, no venv, the MCP server takes ~12 MB per
+  session instead of ~45 MB and answers its first call in ~30 ms. A window (`lighting ui`) with your projects,
+  notes, to-dos and a graph of notes and code. Headroom: long Bash logs and JSON reach the model as their
+  important lines, the full text stays on disk. Hooks and the MCP server start from `~/.lighting/bin`, so a
+  sleeping data drive no longer slows Claude down. `tabs` shows Lighting's tabs and the tab in front (`--all` for
+  every tab), `type focused` works on pages, `click @x,y` clicks a point that `read` printed, `ctrl+w`/`ctrl+tab`
+  act on Lighting's own tab. A git worktree counts as its main project in the memory.
 - **2.0.0** A memory across sessions (`recall`, `remember`, `todo`, a start summary of ~500 tokens, learned by a
   local model that Lighting downloads itself), `lighting watch` (any video in one call: chapters, speech, screen
   text and scenes in one image), macOS and Linux, Android phones (`lighting phone`), and a brain: on pages it
@@ -348,7 +355,7 @@ All changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Install
 
-Requirements: Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. [uv](https://docs.astral.sh/uv/getting-started/installation/) installs itself if it is missing.
+Requirements: Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. Nothing else: Lighting is one program.
 
 **Claude Code**
 
@@ -364,18 +371,21 @@ Requirements: Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. [uv](htt
 codex plugin marketplace add QDHShamiro/Lighting
 ```
 
-Then install `lighting` from `/plugins`, and run once in a terminal:
+Then install `lighting` from `/plugins`, download the release archive for your system (below), and run once in a
+terminal, in the unpacked folder:
 
 ```
-<plugin folder>\bin\lighting.exe setup
+./lighting setup
 lighting install codex
 ```
 
 **Antigravity, Cursor, Gemini CLI, VS Code (Copilot), Windsurf, Claude Desktop, LM Studio / Bionic, Cline, Roo Code, Zed, any MCP client**
 
+Download `lighting-<version>-<system>` from [Releases](https://github.com/QDHShamiro/Lighting/releases/latest),
+unpack it, then:
+
 ```bash
-git clone https://github.com/QDHShamiro/Lighting.git
-Lighting\bin\lighting.exe setup
+./lighting setup               # in the unpacked folder
 lighting install cursor        # or: antigravity | gemini | vscode | windsurf | claude-desktop | codex
                                #     bionic | lmstudio | cline | roo | zed
 ```
@@ -386,9 +396,10 @@ where Bionic picks up global skills; later updates refresh that copy. `install a
 the skill into `~/.gemini/skills/lighting` and Antigravity's own skill folders that exist; click Refresh under
 Manage MCP Servers afterwards.
 
-`setup` installs the Python side into `~/.lighting`, registers the native messaging host,
+`setup` copies Lighting to `~/.lighting/bin`, registers the native messaging host,
 **loads the extension into your browser by itself** (it opens the extensions page, switches on
-Developer mode and picks the folder through UI Automation) and puts `lighting` on your PATH.
+Developer mode and picks the folder through UI Automation) and puts `lighting` on your PATH. For Claude Code it also sets `LIGHTING_BIN` in `~/.claude/settings.json`, so the
+hooks and the MCP server start from `~/.lighting/bin`.
 `install <ai>` adds the MCP server to that AI's config and leaves everything else in it alone.
 
 <details>
@@ -479,13 +490,13 @@ On Windows clicks and typing go through UI Automation in the background, your mo
 - A URL with a long query to a site not opened yet needs `--yes`, so injected instructions cannot quietly send data out.
 - Secrets come from environment variables (`--env VAR`) and are never logged.
 - **Ctrl+Alt+End** stops everything immediately.
-- Every push runs CI (unit tests, all modules compile, extension parses, client builds with clippy clean). Every release carries the clients built by CI from the tag (`lighting.exe`, `lighting-macos`, `lighting-linux-x64`, `lighting-linux-arm64`), each with a GitHub build attestation (`gh attestation verify <file> -R QDHShamiro/Lighting`), and `SHA256SUMS.txt`, which also lists the hash of each client in the repo's `bin/`: check yours with `certutil -hashfile bin\lighting.exe SHA256` (Windows) or `shasum -a 256 bin/lighting-macos`, or build it yourself with `cd client && cargo build --release`. Pushes also run the self-test on GitHub's macOS and Linux machines.
+- Every push runs CI on Windows, macOS and Linux (format, clippy, tests, cargo-deny licenses and advisories, the extension and plugin files, the self-test in a real Chrome). Every release carries the archives and clients built by CI from the tag (`lighting.exe`, `lighting-macos`, `lighting-linux-x64`, `lighting-linux-arm64`), each with a GitHub build attestation (`gh attestation verify <file> -R QDHShamiro/Lighting`), and `SHA256SUMS.txt`: check yours with `certutil -hashfile lighting.exe SHA256` (Windows) or `shasum -a 256 lighting-macos`, or build it yourself with `cargo build --release -p lighting`.
 
 <details>
 <summary><b>Files it creates, and how to remove it</b></summary>
 
-Everything lives in `~/.lighting/` (`%USERPROFILE%\.lighting\` on Windows): the Python venv, the extension copy, the native host,
-`bin\lighting.exe`, the pipe key, the blocklist, a 24 h output cache and the action log (typed text
+Everything lives in `~/.lighting/` (`%USERPROFILE%\.lighting\` on Windows): the extension copy, the native host,
+`bin\` (lighting, lighting-ui, lighting-task), the memory database, the pipe key, the blocklist, a 24 h output cache and the action log (typed text
 and secrets are never logged). Routines live in `routines\`, the last 300 tasks they are learned from
 in `episodes.jsonl` (typed text included so routines can replay it; `--env` secrets are stored as
 `@secret`; `lighting routine forget` clears it, `lighting config learn off` stops it). On Windows the registry gets the
@@ -494,8 +505,8 @@ macOS and Linux the host manifests go into each browser's `NativeMessagingHosts`
 `~/.local/bin`.
 
 ```
-lighting uninstall          # registry keys off, daemon stopped
-lighting uninstall --purge  # also removes ~/.lighting except the venv
+lighting uninstall          # browser link and LIGHTING_BIN off, daemon stopped
+lighting uninstall --purge  # also removes the Lighting files in ~/.lighting (memory and notes stay)
 ```
 
 </details>
@@ -518,7 +529,7 @@ lighting uninstall --purge  # also removes ~/.lighting except the venv
 | Symptom | Fix |
 |---|---|
 | `no browser ... connected` | `lighting setup` |
-| `lighting: command not found` | open a new terminal after `setup`, or run `bin\lighting.exe setup` again |
+| `lighting: command not found` | open a new terminal after `setup`, or run `setup` again from the unpacked release |
 | `cannot script this page` (brave://, Web Store) | `lighting snap w1 --web` controls the browser window instead |
 | Something hangs | `lighting stop`, the next call starts a fresh daemon |
 
@@ -540,10 +551,14 @@ lighting uninstall --purge  # also removes ~/.lighting except the venv
 ## Development
 
 ```
-cd client && cargo build --release && copy target\release\lighting.exe ..\bin\
-lighting stop && lighting ext-reload && lighting selftest && lighting bench
+cargo build --release -p lighting -p lighting-ui
+target/release/lighting setup --manual    # copies to ~/.lighting/bin, restarts an old daemon
+lighting ext-reload && lighting selftest && lighting bench
+cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace
 claude plugin validate .
 ```
+
+`HOW-TO-SETUP.md` is the runbook: layout, traps and the verification protocol.
 
 ## License
 

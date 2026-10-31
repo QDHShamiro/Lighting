@@ -9,25 +9,34 @@ Runbook for Claude Code: building, verifying and changing Lighting without redis
 .claude-plugin/plugin.json, marketplace.json   Claude Code plugin + marketplace (source "./")
 .codex-plugin/plugin.json                      Codex plugin (skills only, MCP comes from `lighting install codex`)
 .agents/plugins/marketplace.json               Codex marketplace (source local "./")
-bin/lighting.exe                               Rust client (client/), on Claude's PATH through the plugin bin/ dir
-.mcp.json                                      MCP server: lighting.exe mcp (1 tool)
+.mcp.json                                      MCP server: ${LIGHTING_BIN:-${CLAUDE_PLUGIN_ROOT}/bin}/lighting.exe mcp (1 tool)
+hooks/hooks.json                               SessionStart/Stop/PreCompact/SessionEnd/UserPromptSubmit memory + cleanup, PostToolUse Headroom
 skills/lighting/                               SKILL.md + references/, loaded on description match
-commands/                                      /lighting:setup, :status, :bench, :doctor
-hooks/hooks.json                               Stop hook: `lighting done --quiet` after every Claude reply
-tests/test_units.py                            unit tests, plain asserts (python tests/test_units.py or pytest)
-docs/                                          demo.gif (rendered from a real run's output) + frames-example.jpg (CC0 clip), used by the README
-.github/workflows/                             ci.yml (every push/PR), release.yml (tag v* -> release + SHA256)
-lighting/                                      Python package: daemon, CLI fallback, host, desktop, OCR, MCP, selftest
-lighting/routines.py                           task trace, repetition learning (alignment), run, repair, stats
-lighting/record.py, deskrec.py                 record start/stop; low-level mouse/keyboard hooks + own UIA worker
+commands/                                      /lighting:setup, :status, :bench, :doctor, :tokens
+crates/lighting/                               the one binary: client, daemon, MCP server, native host, setup, selftest
+crates/lighting/src/daemon/                    web/, desk/ (Windows UIA, macOS AX, Linux AT-SPI), memory/, routines/, brain/, check/ (selftest, bench)
+crates/lighting/src/setup/                     setup, install <ai>, uninstall, settings.json env, PATH and native host
+crates/lighting/src/hook.rs                    Headroom (`lighting hook post`), runs without the daemon in its 50 ms budget
+crates/lighting/assets/fixture.html            selftest page (traps: hidden injection text, modal, confirm(), cookie banner, iframe, long lists, nameless button, video)
+crates/lighting-ui/                            the window (wry), web/ is TypeScript built into web/dist
+crates/lt-core, lt-proto, lt-memory, lt-code, lt-squeeze   argument parsing, pipe protocol, memory DB, code map, Bash-output squeeze
 extension/                                     MV3 extension (ES modules) + page scripts + vendored Defuddle
-extension/page-rec.js                          in-page recorder (injected while recording, REC badge)
-tests/fixture.html                             selftest page (traps: hidden injection text, modal, confirm(), cookie banner, iframe, long lists, nameless button, video)
+docs/                                          demo.gif + frames-example.jpg, used by the README
+.github/workflows/                             v3.yml (every push/PR, 3 systems), release.yml (tag v* -> archives, clients, mcpb, SHA256SUMS), registry.yml
 ```
 
-Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, extension copy, host.bat + host.py, host json, client-root, log, config, bin/, routines/, episodes.jsonl, apps.json, bench-real.json). The plugin root changes on every update, so nothing is written there; `client-root` records the active one.
+`bin/` is not in git. `lighting setup` copies `lighting`, `lighting-ui` and `lighting-task` to `~/.lighting/bin` and sets
+`LIGHTING_BIN` (plus `LIGHTING_CLIENT` on macOS/Linux) in `~/.claude/settings.json`, so hooks and the MCP server start
+from there; the plugin's own `bin/` is only the fallback before the first setup.
+
+Runtime state is in `%USERPROFILE%\.lighting\` (`~/.lighting` on macOS/Linux): bin/, key, blocklist, out/, extension copy,
+host json, memory/ (SQLite), log.jsonl, config.json, routines/, episodes.jsonl, apps.json, headroom/ (log + full
+outputs, a file `off` turns Headroom off), the v3 marker. `LIGHTING_HOME` moves all of it (tests use that).
 
 ## 2. Ground truth (verified on Windows 11, Brave 154, Claude Code plugin docs 2026-09)
+
+Found while building 2.x (Python) and still true for the browser, Windows and Claude Code; where a line names a 2.x file
+(`install.py`, `autoload.py`, `host.bat`, `common.py`), the same job now lives in `crates/lighting/src` (`setup/`, `daemon/desk/autoload.rs`, `host.rs`, `daemon/mod.rs`).
 
 - Plugin `bin/` is on the Bash tool's PATH. A file named `lighting` (no extension) beats `lighting.exe`, so there is **only** the exe. `rtk` can start the exe, it cannot start a bash script.
 - Git Bash spawning any process costs ~50-70 ms; a bash script adds another ~70 ms. That is why the client is native.
@@ -147,26 +156,30 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 
 ## 3. Build order when changing things
 
-1. Python: edit `lighting/*.py`, `py_compile`, then `lighting stop` (next call starts the new daemon).
-2. Extension: edit `extension/*.js`, check the modules load (copy to `.mjs`, `node --check`, import with a mocked `chrome`), then `lighting ext-reload`. If the service worker is broken it cannot reload itself: run `lighting setup`, which reloads it through the extensions page.
-3. Client: `cd client && cargo build --release`, copy `target/release/lighting.exe` to `bin/` (rename the old one to `bin/lighting.old` if it is running). It links the CRT statically (no VC++ runtime needed). `lighting stop`: the next daemon copies it to `~/.lighting/bin`, which is the one on PATH.
-4. Versions: bump `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together; the runtime reads the Claude one. The extension manifest version is rewritten from it when the extension is copied; a mismatch makes the daemon reload the extension once.
+1. Rust: `cargo build --release -p lighting -p lighting-ui`, then `target/release/lighting.exe setup --manual`. Setup renames
+   the running exe in `~/.lighting/bin` before copying (Windows locks a running exe against writes, not against
+   renames) and stops a daemon that runs the old build; the next command starts the new one.
+2. Extension: edit `extension/*.js`, check the modules parse (copy to `.mjs`, `node --check`), then `lighting ext-reload`.
+   If the service worker is broken it cannot reload itself: run `lighting setup`, which reloads it through the extensions page.
+3. Window: edit `crates/lighting-ui/web/src`, `npm run build` there, commit `web/dist` (CI checks it is current).
+4. Versions: bump `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json` and the workspace version in `Cargo.toml`
+   together; the release workflow refuses a tag that does not match them.
 
 ## 4. Verification protocol (do not report done before all pass)
 
 ```
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace                 # unit + integration tests (fake browser, setup in a temp home)
 claude plugin validate .
-claude plugin validate .claude-plugin/plugin.json
-claude plugin validate skills
-claude plugin validate commands
-python tests/test_units.py     # 47/47
-lighting doctor                # 0 problems (memory/errors warnings depend on the PC and the log)
-cd client && cargo test && cargo clippy --release --all-targets
-lighting selftest              # must print 135/135 passed (134/134 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
+lighting doctor                        # 0 problems (memory/errors warnings depend on the PC and the log)
+lighting selftest                      # 159/159 on Windows (a SKIP line when other Lighting tabs are open or you used the mouse)
 lighting bench
-lighting bench --real          # compare tokens with the last run
+lighting bench --real                  # compare tokens with the last run
 ```
-Cold start through a pipe, isolated from the browser's own daemon restart: `USERNAME=ltest lighting stop; rtk lighting status | cat` must return at once (`USERNAME` picks the pipe name).
+CI (`v3.yml`) runs fmt, clippy, tests, cargo-deny, the window build check, the extension/plugin file check and the
+selftest in Chrome for Testing on Windows, macOS and Linux. Lint for the other systems locally:
+`cargo clippy -p lighting --all-targets --target x86_64-unknown-linux-gnu` (needs a C compiler stub for bundled SQLite).
 Then one real page by hand (`open`, `snap`, `click`, `text`) and one real app (`windows`, `snap w<N>`, `click d<N>`).
 For routines: do one task twice with different values, `lighting routine learn`, then `lighting run <name> param=...`.
 

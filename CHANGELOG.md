@@ -2,7 +2,38 @@
 
 Versions follow semver. Every release on GitHub carries the clients (`lighting.exe`, `lighting-macos`,
 `lighting-linux-x64`, `lighting-linux-arm64`) built from the tag by CI, `lighting.mcpb`, a source zip and
-`SHA256SUMS.txt` (including the hash of each `bin/` client in the repo at that tag).
+`SHA256SUMS.txt`, from 3.0.0 also one archive per system with the window and the extension.
+
+## [3.0.0] - unreleased
+
+Lighting is rewritten in Rust as one program. Same commands, same extension protocol, no Python.
+
+### Added
+- One binary for client, daemon, MCP server, native host, setup and self-test; a window (`lighting ui`, wry) with
+  projects, notes (editor with wikilinks and backlinks), to-dos, search and a graph of notes and code per project.
+- Headroom: a PostToolUse hook shortens long Bash logs and JSON to their important lines before the model reads
+  them, keeps the full text in `~/.lighting/headroom/out` and leaves every tenth session untouched as a holdout. A
+  file `~/.lighting/headroom/off` turns it off.
+- `type focused "text"` and `click focused` on web pages use the field that has the focus.
+- `click @957,695` clicks a point that `read` printed (a bare `957,695` only when no element has that text).
+- `tabs` lists Lighting's tabs and the tab in front of each window; `--all` or `-f` lists every tab.
+- `press ctrl+w` closes Lighting's tab, `ctrl+tab`/`ctrl+pagedown` move Lighting's target tab, `ctrl+t` and other
+  browser-only shortcuts say how to do it instead.
+
+### Changed
+- Hooks and the MCP server start `~/.lighting/bin/lighting(.exe)`: setup sets `LIGHTING_BIN` in
+  `~/.claude/settings.json`, `.mcp.json` falls back to the plugin folder. The plugin folder carries no programs
+  any more; `/lighting:setup` downloads the client from the release and checks its SHA-256.
+- Setup stops a daemon that still runs the old build.
+- A git worktree counts as its main repository's project in the memory.
+- No new wiki drafts while 30 wait for a yes or no; the start info says so once a day.
+- The start info lists project notes before global ones and, without a project, only says how to list to-dos.
+- A session without a tab is told which tab is in front (`lighting tab t42 uses the tab in front (...)`).
+- The local learner waits longer after each rate limit (60 s up to 10 min) instead of retrying every minute.
+- URLs in `tabs` and links hide secret query values (`token`, `code`, `sig`, `key`, `password`, ...) as `***`.
+
+### Removed
+- The Python package, the 2.x client (`client/`), `requirements.txt`, the Python tests and the 2.x workflows.
 
 ## [2.0.0] - unreleased
 
