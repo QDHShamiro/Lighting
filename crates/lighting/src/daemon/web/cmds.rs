@@ -195,10 +195,13 @@ pub fn fill(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     let mut pairs = Vec::new();
     for p in &c.pos {
         let Some((label, value)) = p.split_once('=') else {
-            return Err(Fail::hint(
-                "fill wants Label=value pairs",
-                "lighting fill \"Email=me@x.de\" \"Password=@secret\" --env PASS",
-            ));
+            let hint = match c.pos.as_slice() {
+                [r, _, ..] if super::ref_kind(r) == Some("e") => {
+                    format!("lighting type {r} \"<value>\" (one field by its ref)")
+                }
+                _ => "lighting fill \"Email=me@x.de\" \"Password=@secret\" --env PASS".into(),
+            };
+            return Err(Fail::hint("fill wants Label=value pairs", hint));
         };
         let value = match (value, &ctx.secret) {
             ("@secret", Some(secret)) => secret.clone(),

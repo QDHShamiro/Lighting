@@ -81,6 +81,8 @@ fn a_v3_home_starts_its_daemon_and_answers_like_2x() {
     assert_eq!((last["sid"].as_str(), last["ok"].as_bool()), (Some("it-1"), Some(false)));
     assert_eq!(last["e"].as_str(), Some("unknown command 'zzz'"));
     assert!(last["id"].as_str().is_some_and(|id| id.ends_with(".6")), "{last}");
+    let by_ref = "err: fill wants Label=value pairs -> try: lighting type e36 \"<value>\" (one field by its ref)";
+    assert_eq!(home.run(&["fill", "e36", "x"]), (1, by_ref.into()));
     let (code, help) = home.run(&[]);
     assert!(code == 0 && help.starts_with("lighting 3.0 <command>"), "{help}");
     assert_eq!(home.run(&["abort"]), (0, "stopped the running and queued commands".into()));
