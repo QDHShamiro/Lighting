@@ -15,6 +15,8 @@ use super::{pystr, re};
 const HINT_EVERY_S: f64 = 7200.0;
 const WHAT_CHARS: usize = 60;
 const HARVEST_MAX: usize = 40;
+const MOD_ORDER: &[&str] = &["ctrl", "alt", "shift", "win"];
+const PAGE: &[(&str, &str)] = &[("pgdn", "pagedown"), ("pgup", "pageup"), ("next", "pagedown"), ("prior", "pageup")];
 const BROWSER: &[(&str, &str)] =
     &[("ctrl+l", "address bar"), ("ctrl+t", "new tab"), ("ctrl+w", "close tab"), ("ctrl+f", "find on page")];
 const SEED: &[(&str, &[(&str, &str)])] = &[
@@ -110,6 +112,16 @@ pub fn norm(combo: &str) -> String {
         .map(|p| ALIAS.iter().find(|(from, _)| from == p).map_or(*p, |(_, to)| *to))
         .collect::<Vec<_>>()
         .join("+")
+}
+
+pub fn canon(combo: &str) -> String {
+    let joined = norm(combo);
+    let mut parts: Vec<&str> = joined.split('+').collect();
+    let Some(main) = parts.pop() else { return joined };
+    parts.sort_by_key(|m| MOD_ORDER.iter().position(|o| o == m).unwrap_or(MOD_ORDER.len()));
+    parts.dedup();
+    parts.push(PAGE.iter().find(|(from, _)| *from == main).map_or(main, |(_, to)| *to));
+    parts.join("+")
 }
 
 fn load(home: &Path) -> Map<String, Value> {

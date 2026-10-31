@@ -16,7 +16,7 @@ use super::super::{Daemon, brain};
 use super::url::{leak_check, local_file, normalize_url, watch_url, web_scheme};
 use super::{
     CALL_TIMEOUT, LOAD_TIMEOUT, REF_RE, SNAP_LINES, TEXT_CHARS, call, capped, flag, keys, num, number, obj, out,
-    plural, re, sites, target_args, text_of,
+    plural, re, sites, tabkeys, target_args, text_of,
 };
 
 const ACTED_LINES: usize = NAV_LINES + 8;
@@ -220,6 +220,9 @@ pub fn fill(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
 pub fn press(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
     if c.pos.is_empty() {
         return Err(Fail::hint("press needs keys", "lighting press Enter | ctrl+a | Escape"));
+    }
+    if let Some(done) = tabkeys::press(d, ctx, c)? {
+        return Ok(done);
     }
     let res = out(d, ctx, "press", obj(json!({"keys": c.pos})), LOAD_TIMEOUT + 10.0, ACTED_LINES)?;
     let mut lines = res.splitn(3, '\n');

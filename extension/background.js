@@ -741,7 +741,7 @@ async function route(cmd, a, tab) {
       return { out: "", kept: ids.length };
     }
     case "tabs":
-      return T.list();
+      return a.rows ? T.rows() : T.list();
     case "tab":
       return tabCmd(a);
     case "open":

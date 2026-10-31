@@ -8,6 +8,7 @@ mod launch;
 mod read;
 mod shot;
 mod sites;
+mod tabkeys;
 mod url;
 mod wait;
 

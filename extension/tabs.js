@@ -290,6 +290,11 @@ export async function list() {
   return lines.join("\n");
 }
 
+export async function rows() {
+  const tabs = await chrome.tabs.query({});
+  return { out: "", rows: tabs.map((t) => ({ id: "t" + sid(t.id), win: t.windowId, index: t.index, active: t.active, target: t.id === target })) };
+}
+
 async function painted(tabId) {
   try {
     await chrome.scripting.executeScript({ target: { tabId }, func: () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))) });
