@@ -250,8 +250,19 @@ fn split_long(block: &str) -> Vec<String> {
     out
 }
 
+fn stem(w: &str) -> String {
+    match w.strip_suffix('s') {
+        Some(base) if w.len() > 4 && !base.ends_with('s') => base.to_string(),
+        _ => w.to_string(),
+    }
+}
+
 pub fn bm25(passages: &[Passage], query: &[String]) -> Vec<f64> {
-    let docs: Vec<Vec<String>> = passages.iter().map(|p| words(&format!("{} {}", p.heading, p.text))).collect();
+    let docs: Vec<Vec<String>> = passages
+        .iter()
+        .map(|p| words(&format!("{} {}", p.heading, p.text)).into_iter().map(|w| stem(&w)).collect())
+        .collect();
+    let query: Vec<String> = query.iter().map(|w| stem(w)).collect();
     let n = docs.len().max(1) as f64;
     let avg = docs.iter().map(Vec::len).sum::<usize>() as f64 / n;
     let terms: HashSet<&String> = query.iter().collect();

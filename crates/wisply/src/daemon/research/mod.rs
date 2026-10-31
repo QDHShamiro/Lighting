@@ -18,6 +18,8 @@ use super::web;
 use engines::{ENGINES, Kind, Outcome};
 use rank::{Candidate, Passage, Pool};
 
+const EXPAND_WEIGHT: f64 = 0.4;
+const PAGE_WEIGHT: f64 = 0.5;
 const DOMAINS: &str = "research/domains.txt";
 const VAULT_DIR: &str = "Research";
 const REPORT_MARK: &str = "<!-- report -->";
@@ -152,7 +154,7 @@ fn gather(
         found.pages.extend(fetch(&todo, deadline));
         found.rounds = round + 1;
         if round + 1 < level.rounds {
-            let (all, scores) = ranked(&found.pages, queries, year);
+            let (all, scores) = ranked(&found.pages, queries, &[], year);
             let mut order: Vec<usize> = (0..all.len()).collect();
             order.sort_by(|a, b| scores[*b].total_cmp(&scores[*a]));
             let top: Vec<&Passage> =
@@ -283,9 +285,11 @@ fn query_words(queries: &[String]) -> Vec<String> {
     queries.iter().flat_map(|q| rank::words(q)).filter(|w| seen.insert(w.clone())).collect()
 }
 
-fn ranked(pages: &[Page], queries: &[String], year: i32) -> (Vec<Passage>, Vec<f64>) {
+fn ranked(pages: &[Page], queries: &[String], extra: &[String], year: i32) -> (Vec<Passage>, Vec<f64>) {
     let all: Vec<Passage> = pages.iter().enumerate().flat_map(|(i, p)| rank::passages(i, &p.text)).collect();
     let words = query_words(queries);
+    let more: Vec<String> = query_words(extra).into_iter().filter(|w| !words.contains(w)).collect();
+    let bonus = rank::bm25(&all, &more);
     let phrases: Vec<String> = queries.iter().map(|q| q.to_lowercase()).collect();
     let bm = rank::bm25(&all, &words);
     let technical = rank::technical(queries);
@@ -293,11 +297,12 @@ fn ranked(pages: &[Page], queries: &[String], year: i32) -> (Vec<Passage>, Vec<f
     let top = pages.iter().map(|p| p.score).fold(0.001, f64::max);
     let scores = all
         .iter()
-        .zip(bm)
-        .map(|(p, s)| {
+        .zip(bm.into_iter().zip(bonus))
+        .map(|(p, (s, b))| {
             let page = &pages[p.page];
             let age = if fresh { rank::freshness(page.date.as_deref(), year) } else { 1.0 };
-            s * rank::boost(p, &phrases, &words, technical) * (0.7 + 0.3 * page.score / top) * age
+            let trust = 1.0 - PAGE_WEIGHT + PAGE_WEIGHT * page.score / top;
+            (s + EXPAND_WEIGHT * b) * rank::boost(p, &phrases, &words, technical) * trust * age
         })
         .collect();
     (all, scores)
@@ -313,7 +318,7 @@ fn one_line(text: &str, n: usize) -> String {
 }
 
 fn report(found: &Found, year: i32, took: Duration) -> String {
-    let (all, scores) = ranked(&found.pages, &found.queries, year);
+    let (all, scores) = ranked(&found.pages, &found.queries[..found.asked], &found.queries[found.asked..], year);
     let mut best: Vec<(usize, f64)> = (0..found.pages.len())
         .map(|i| {
             let top = all.iter().zip(&scores).filter(|(p, _)| p.page == i).map(|(_, s)| *s).fold(0.0, f64::max);
