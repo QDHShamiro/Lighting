@@ -33,6 +33,7 @@ cleanup done [--quiet]   keep [t]   config cleanup on|off
 system  status   channels   stop   abort   config [key value]   log [n] | log stats [n]   version
         more <ref> (a squeezed tool output in full, --lines a-b, --grep \"word|other\")
         secure [folder] [--history] [--no-deps] (keys, vulnerable dependencies, risky code; not while a game runs)
+        think <step> (finds, fixes and proves improvements without AI; wisply think help lists the steps)
 
 Any action takes -f \"a|b\" to show the matching lines of the result in the same call.
 Output is plain text, one line per action. Big results go to a file (path printed).

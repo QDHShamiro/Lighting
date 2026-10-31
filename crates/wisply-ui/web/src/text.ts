@@ -1,6 +1,6 @@
 export const T = {
   app: "Wisply",
-  nav: { projects: "Projects", graph: "Graph", live: "Live", tokens: "Tokens", learned: "Learned", settings: "Settings", search: "Search" },
+  nav: { projects: "Projects", graph: "Graph", live: "Live", tokens: "Tokens", learned: "Learned", blind: "Blind", settings: "Settings", search: "Search" },
   find: "Search notes…",
   status: {
     running: "Running",
@@ -95,6 +95,19 @@ export const T = {
     none: "Nothing learned yet.",
     forget: "Forget",
     score: (ups: number, downs: number) => `${ups} hits${downs ? ` · ${downs} misses` : ""}`,
+  },
+  blind: {
+    title: "Blind choice",
+    sub: "Two versions from wisply think, in random order. Pick the better one without knowing which is new.",
+    which: (name: string, n: number) => (n === 1 ? `Run ${name}` : `Run ${name} · ${n - 1} more waiting`),
+    one: "Version 1",
+    two: "Version 2",
+    pickOne: "1 is better",
+    pickTwo: "2 is better",
+    same: "No difference",
+    none: "Nothing to compare. wisply think blind <before> <after> puts a pair here.",
+    missing: "File is gone.",
+    cut: "… cut, the file is longer",
   },
   settings: {
     title: "Settings",

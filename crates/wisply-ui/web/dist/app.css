@@ -191,6 +191,11 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14p
 .pill { font-size: 11px; padding: 1px 7px; border-radius: 6px; background: var(--raise); }
 .pill.on { color: var(--good); }
 .pill.err { color: var(--bad); }
+.blind { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.blind-side { border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
+.blind-label { font-weight: 600; margin-bottom: 8px; }
+.blind-text { white-space: pre-wrap; font-family: var(--mono); font-size: 13px; max-height: 70vh; overflow: auto; margin: 0; }
+.blind-img { max-width: 100%; display: block; }
 
 .head { align-items: flex-end; margin-bottom: 4px; }
 .head input[type="search"] { width: 220px; }

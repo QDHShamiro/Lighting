@@ -107,6 +107,12 @@ pub fn send(home: &Path, args: &[String]) -> ExitCode {
     if (first == "suggest" || hook) && !hook_input.is_empty() {
         argv.push(hook_input.replace('\0', " "));
     }
+    if wants_stdin(&argv) && !io::stdin().is_terminal() {
+        let text = read_hook_input();
+        if !text.trim().is_empty() {
+            argv.push(format!("--input={}", text.replace('\0', " ")));
+        }
+    }
     let token = match wisply_proto::key_token(home) {
         Some(token) => token,
         None if silent => return ExitCode::SUCCESS,
@@ -242,6 +248,18 @@ fn json_str(text: &str, key: &str) -> String {
     let Some(rest) = rest.strip_prefix(':') else { return String::new() };
     let Some(rest) = rest.trim_start().strip_prefix('"') else { return String::new() };
     rest.split('"').next().unwrap_or("").to_string()
+}
+
+fn wants_stdin(argv: &[String]) -> bool {
+    let words: Vec<&str> = argv.iter().map(String::as_str).filter(|a| !a.starts_with("--")).collect();
+    let has = |flag: &str| argv.iter().any(|a| a == flag || a.starts_with(&format!("{flag}=")));
+    if words.first() != Some(&"think") || has("--input") {
+        return false;
+    }
+    if let Some(i) = words.iter().position(|w| matches!(*w, "idea" | "ideas")) {
+        return words.get(i + 1) == Some(&"add") && words.len() == i + 2;
+    }
+    words.contains(&"save") && !has("--file")
 }
 
 fn read_hook_input() -> String {

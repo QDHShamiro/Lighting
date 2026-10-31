@@ -1,3 +1,4 @@
+mod blind;
 mod board;
 pub mod chat;
 mod code;

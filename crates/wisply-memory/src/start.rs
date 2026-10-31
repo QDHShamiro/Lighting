@@ -46,6 +46,14 @@ impl Store {
         Ok(())
     }
 
+    pub fn recent_cwds(&self, limit: usize) -> rusqlite::Result<Vec<String>> {
+        let mut stmt = self.db.prepare(
+            "select cwd from sessions where cwd is not null and cwd != '' group by cwd order by max(last) desc limit ?1",
+        )?;
+        let rows = stmt.query_map(params![limit as i64], |r| r.get::<_, String>(0))?;
+        rows.collect()
+    }
+
     pub fn sessions(&self, project: &str, limit: usize) -> rusqlite::Result<Vec<Session>> {
         let mut sql = String::from("select last, title, summary, next from sessions where summary != ''");
         if !project.is_empty() {
@@ -166,6 +174,7 @@ mod tests {
         s.session_seen("s1", "web", "C:/web", "", false).unwrap();
         s.session_seen("s1", "web", "C:/web", "C:/t.jsonl", true).unwrap();
         s.session_seen("", "web", "", "", false).unwrap();
+        assert_eq!(s.recent_cwds(5).unwrap(), ["C:/web"]);
         s.db.execute(
             "update sessions set summary = 'built the cart', title = 'Cart', next = 'tests' where id = 's1'",
             [],
