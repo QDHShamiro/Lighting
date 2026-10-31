@@ -262,12 +262,15 @@ export function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+const SECRET_PARAM = /^((access|id|refresh|auth)_?token|token|code|sig|signature|key|api_?key|secret|password|pass|otp|x-amz-(signature|credential|security-token)|x-goog-(signature|credential))$/i;
+
 export function short(url, max) {
   try {
     const u = new URL(url);
     if (u.protocol === "about:" || u.protocol === "data:") return url.slice(0, max || 60);
     for (const k of [...u.searchParams.keys()]) {
       if (/^(utm_|fbclid|gclid|mc_|ref_|igshid|si$)/i.test(k)) u.searchParams.delete(k);
+      else if (SECRET_PARAM.test(k)) u.searchParams.set(k, "***");
     }
     const s = u.host.replace(/^www\./, "") + u.pathname.replace(/\/$/, "") + u.search + u.hash;
     const lim = max || 70;

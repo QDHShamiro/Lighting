@@ -265,6 +265,7 @@
       const yt = /(^|\.)youtube\.com$/.test(u.hostname);
       for (const k of [...u.searchParams.keys()]) {
         if (/^(utm_|fbclid|gclid|dclid|msclkid|yclid|twclid|ttclid|mc_|igshid|_hsenc|_hsmi|mkt_tok)/i.test(k) || (yt && /^(pp|si|feature)$/.test(k))) u.searchParams.delete(k);
+        else if (/^((access|id|refresh|auth)_?token|token|code|sig|signature|key|api_?key|secret|password|pass|otp|x-amz-(signature|credential|security-token)|x-goog-(signature|credential))$/i.test(k)) u.searchParams.set(k, "***");
       }
       const qs = u.search.length > 40 ? "?…" : u.search;
       const hex = (s) => (s.includes("/file=") ? s : s.replace(/[0-9a-f]{12,}/g, (m) => m.slice(0, 7) + "…"));
