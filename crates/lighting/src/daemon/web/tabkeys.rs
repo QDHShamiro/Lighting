@@ -28,7 +28,7 @@ fn field<'a>(row: &'a Value, key: &str) -> &'a Value {
     row.get(key).unwrap_or(&Value::Null)
 }
 
-fn moved(rows: &[Value], own: Option<&str>, by: i64) -> Option<String> {
+fn moved(rows: &[Value], own: Option<&str>, by: i64) -> Option<(String, String)> {
     let id = |r: &Value| field(r, "id").as_str().unwrap_or("").to_string();
     let base = own
         .and_then(|o| rows.iter().find(|r| id(r) == o))
@@ -39,7 +39,7 @@ fn moved(rows: &[Value], own: Option<&str>, by: i64) -> Option<String> {
     let at = row.iter().position(|r| id(r) == id(base))?;
     let len = i64::try_from(row.len()).ok()?;
     let next = usize::try_from((i64::try_from(at).ok()? + by).rem_euclid(len)).ok()?;
-    Some(id(row[next]))
+    Some((id(base), id(row[next])))
 }
 
 pub fn press(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Option<String>, Fail> {
@@ -64,9 +64,12 @@ pub fn press(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Option<String>, Fail
             "lighting ext-reload",
         ));
     };
-    let Some(next) = moved(rows, ctx.tabs.first().map(String::as_str), by) else {
+    let Some((base, next)) = moved(rows, ctx.tabs.first().map(String::as_str), by) else {
         return Err(Fail::hint("no tab to start from", NO_START));
     };
+    if base == next {
+        return Ok(Some(format!("{}: {base} is the only tab in its window, nothing to switch to", c.pos.join(" "))));
+    }
     let res = out(d, ctx, "tab", obj(json!({"id": next})), TABS_WAIT, SNAP_LINES)?;
     Ok(Some(format!("{res} ({}: Lighting's target tab moved, the visible tab stays)", c.pos.join(" "))))
 }
@@ -87,12 +90,12 @@ mod tests {
             row("t3", 1, 2, false, true),
             row("t9", 2, 0, true, false),
         ];
-        assert_eq!(moved(&rows, Some("t3"), 1).as_deref(), Some("t1"));
-        assert_eq!(moved(&rows, Some("t3"), -1).as_deref(), Some("t2"));
-        assert_eq!(moved(&rows, Some("t3"), 2).as_deref(), Some("t2"));
-        assert_eq!(moved(&rows, Some("gone"), -1).as_deref(), Some("t2"));
-        assert_eq!(moved(&rows, Some("t9"), 1).as_deref(), Some("t9"));
-        assert_eq!(moved(&rows[..2], None, 1).as_deref(), Some("t1"));
+        assert_eq!(moved(&rows, Some("t3"), 1).map(|(_, n)| n).as_deref(), Some("t1"));
+        assert_eq!(moved(&rows, Some("t3"), -1).map(|(_, n)| n).as_deref(), Some("t2"));
+        assert_eq!(moved(&rows, Some("t3"), 2).map(|(_, n)| n).as_deref(), Some("t2"));
+        assert_eq!(moved(&rows, Some("gone"), -1).map(|(_, n)| n).as_deref(), Some("t2"));
+        assert_eq!(moved(&rows, Some("t9"), 1).map(|(_, n)| n).as_deref(), Some("t9"));
+        assert_eq!(moved(&rows[..2], None, 1).map(|(_, n)| n).as_deref(), Some("t1"));
         assert_eq!(moved(&[], None, 1), None);
     }
 
