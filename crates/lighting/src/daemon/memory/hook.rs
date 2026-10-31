@@ -113,11 +113,17 @@ fn start_text(s: &mut Store, here: &str, commits: Vec<String>) -> DbResult<Strin
     if !about.is_empty() {
         lines.push(format!("About: {}", oneline(&about.join(" "), ABOUT_CHARS)));
     }
-    let scope = if here.is_empty() { None } else { Some(here) };
-    let todos: Vec<_> = s.todos(scope, true)?.into_iter().take(START_TODOS).collect();
-    if !todos.is_empty() {
-        lines.push("Open to-dos:".into());
-        lines.extend(todo_list(&todos, true).lines().map(|l| format!("  {l}")));
+    if here.is_empty() {
+        let open = s.todos(None, true)?.len();
+        if open > 0 {
+            lines.push(format!("Open to-dos: {open} (lighting todo --all lists them)"));
+        }
+    } else {
+        let todos: Vec<_> = s.todos(Some(here), true)?.into_iter().take(START_TODOS).collect();
+        if !todos.is_empty() {
+            lines.push("Open to-dos:".into());
+            lines.extend(todo_list(&todos, true).lines().map(|l| format!("  {l}")));
+        }
     }
     let recent = s.sessions(here, START_SESSIONS)?;
     if !recent.is_empty() {

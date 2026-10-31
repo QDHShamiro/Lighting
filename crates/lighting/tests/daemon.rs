@@ -365,6 +365,10 @@ fn hooks_show_the_start_info_and_keep_what_the_user_says() {
         "{info}"
     );
     assert!(info.contains("\nOpen to-dos:\n  to-dos:\n    #1 ship it"), "{info}");
+    let loose = json!({"cwd": std::env::temp_dir().display().to_string(), "session_id": "it-2", "source": "startup"});
+    let (_, none) = home.run(&["hook", "start", &loose.to_string()]);
+    assert!(none.starts_with("Lighting memory (no project)"), "{none}");
+    assert!(none.contains("\nOpen to-dos: 1 (lighting todo --all lists them)") && !none.contains("ship it"), "{none}");
     let compact = json!({"cwd": cwd, "session_id": "it-1", "source": "compact"}).to_string();
     let (_, after) = home.run(&["hook", "start", &compact]);
     assert!(after.starts_with("Lighting after the summary ("), "{after}");
