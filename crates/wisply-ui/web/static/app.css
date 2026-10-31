@@ -176,3 +176,8 @@ h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .pill { font-size: 11px; padding: 1px 7px; border-radius: 6px; background: var(--raise); }
 .pill.on { color: var(--good); }
 .pill.err { color: var(--bad); }
+.blind { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.blind-side { border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
+.blind-label { font-weight: 600; margin-bottom: 8px; }
+.blind-text { white-space: pre-wrap; font-family: var(--mono); font-size: 13px; max-height: 70vh; overflow: auto; margin: 0; }
+.blind-img { max-width: 100%; display: block; }

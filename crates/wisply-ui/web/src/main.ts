@@ -2,6 +2,7 @@ import { board, type Pulse } from "./api";
 import { enc, go, h, mount } from "./dom";
 import { T } from "./text";
 import { graph } from "./views/graph";
+import { blind } from "./views/blind";
 import { home } from "./views/home";
 import { live } from "./views/live";
 import { note } from "./views/note";
@@ -22,6 +23,7 @@ const links: [string, string][] = [
   ["#/live", T.nav.live],
   ["#/tokens", T.nav.tokens],
   ["#/learned", T.nav.learned],
+  ["#/blind", T.nav.blind],
   ["#/settings", T.nav.settings],
 ];
 const nav = h("nav", {}, links.map(([href, text]) => h("a", { href }, text)));
@@ -61,6 +63,7 @@ async function route(): Promise<void> {
     else if (parts[0] === "live") done = await live(view);
     else if (parts[0] === "tokens") done = await tokens(view);
     else if (parts[0] === "learned") done = await learned(view);
+    else if (parts[0] === "blind") done = await blind(view);
     else if (parts[0] === "settings") done = await settings(view);
     else if (parts[0] === "search" && parts[1]) done = await search(view, parts.slice(1).join("/"));
     else done = await home(view);

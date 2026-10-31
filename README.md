@@ -85,6 +85,7 @@ Antigravity): [Install](#install).
 | 🧠 **Learns your tasks** | Do something twice and it becomes a routine that runs in one call. |
 | 💾 **Remembers** | A memory on your computer: decisions, to-dos and what happened in earlier sessions, ~500 tokens at the start of each session. |
 | 🎞️ **Watches videos** | Chapters, speech, the text on screen and 12 scenes in one image. |
+| 🔍 **Thinks without AI** | `wisply think` checks code, web, texts and images with rules that fit the project and your own CLAUDE.md rules, fixes what is safe, proves it with your build and keeps a blind A/B for you. |
 | 🧹 **Cleans up** | When the AI finishes its reply, what it opened closes again and your window comes back. |
 | 🔒 **Safe by default** | Banking sites are read-only, buy/pay/delete buttons need `--yes`, hidden page text never reaches the model. |
 
@@ -277,6 +278,7 @@ Want every agent on your PC to prefer it? Put this in `CLAUDE.md` or `AGENTS.md`
 | **Clean up** | `done` · `keep t3` (hand it to you) · `config cleanup off` |
 | **Routines** | `routines` · `run <name> k=v` · `record start` … `record stop` |
 | **Memory** | `remember "fact"` · `recall "words"` · `todo add "task"` |
+| **Improve** | `think start "name" src/` · `think scan` · `think fix` · `think report` |
 
 <details>
 <summary><b>All commands</b></summary>
@@ -326,6 +328,16 @@ Want every agent on your PC to prefer it? Put this in `CLAUDE.md` or `AGENTS.md`
 | Find | `recall "words" [--all]` · `recall 42` · `forget 42` |
 | To-dos | `todo [--all]` · `todo add "task" --list x` · `todo doing\|done\|drop 12` · `todo note 12 "text"` |
 | Model | `memory` · `memory model` · `memory learn` · `memory import claude-mem` · `config memory_api <url>` · `memory off` |
+
+**Think** (critical thinking without AI, runs in `~/.wisply/think`)
+
+| | |
+|---|---|
+| Run | `think start "name" <paths> --goal "..." [--quick]` · `think status` · `think round` · `think report` |
+| Find | `think scan` (rule packs that fit the project and you, plus your CLAUDE.md and memory rules) · `think rules` · `think profile set web` |
+| Fix | `think fix [--deep]` (spaces, repeated words, PNG, rustfmt, clippy, prettier, ruff; proven by the build, reverted when it breaks) |
+| Prove | `think measure before` · `think compare` · `think blind a b` (pick in `wisply ui` → Blind) · `think diff` · `think revert <id>` |
+| After each edit | names new weak spots in the edited file to Claude (`~/.wisply/think/quick-off` turns it off) |
 
 </details>
 

@@ -22,6 +22,7 @@ mod routines;
 mod secure;
 mod squeeze;
 mod system;
+mod think;
 mod tokens;
 mod web;
 mod words;

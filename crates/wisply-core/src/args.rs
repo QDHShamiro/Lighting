@@ -52,6 +52,20 @@ const VALUED: &[&str] = &[
     "mtime",
     "task",
     "words",
+    "anyway",
+    "cmd",
+    "ext",
+    "goal",
+    "grade",
+    "input",
+    "proof",
+    "round",
+    "run",
+    "size",
+    "status",
+    "tag",
+    "top",
+    "why",
 ];
 const MULTI: &[&str] = &["glob", "include", "exclude", "exclude-dir"];
 const ALIAS: &[(&str, &str)] = &[

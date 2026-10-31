@@ -7,6 +7,16 @@ and `lighting.mcpb`, from 3.0.0 `wisply.exe`, `wisply-macos`, `wisply-linux-x64`
 
 ## [Unreleased]
 
+### Added
+- `wisply think`: critical thinking without AI. A run keeps goal, criteria, ideas, checkpoints, measurements and
+  lessons; `scan` checks code (Rust, Java/Paper plugins, Python, JS/TS), web (alt text, contrast, viewport), texts
+  (broken links, repeated words, long sentences), images (size, PNG recompress) and skills, with the packs that fit the
+  project and the person, plus the user's own rules read from CLAUDE.md and Claude memory. `fix` repairs what is
+  safe, proves it with the build and reverts when it breaks; `round` locks until criteria, baseline, idea goal and
+  review are done; `blind` puts two versions side by side in the window (Blind page).
+- After every Edit or Write the hook names new weak spots in that file (`~/.wisply/think/quick-off` turns it off).
+- `Store::recent_cwds` gives the folders recent sessions worked in, used for the person profile.
+
 ### Changed
 - The repository is now `QDHShamiro/Wisply` (old links redirect). The crates are `wisply`, `wisply-ui` and
   `wisply-core`, `wisply-memory`, `wisply-proto`, `wisply-code`, `wisply-squeeze`.

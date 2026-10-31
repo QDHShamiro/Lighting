@@ -4374,6 +4374,7 @@ dependencies = [
  "wisply-memory",
  "wisply-proto",
  "wisply-squeeze",
+ "wisply-think",
  "x11rb",
  "xa11y",
 ]
@@ -4419,6 +4420,16 @@ dependencies = [
  "proptest",
  "regex",
  "serde_json",
+]
+
+[[package]]
+name = "wisply-think"
+version = "3.0.1"
+dependencies = [
+ "image",
+ "regex",
+ "serde_json",
+ "wisply-core",
 ]
 
 [[package]]

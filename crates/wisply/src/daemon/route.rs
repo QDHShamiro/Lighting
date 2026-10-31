@@ -5,7 +5,7 @@ use regex::Regex;
 use wisply_core::{APP_ONLY, CHAT, Call, Fail, Flag, SHARED, WEB_ONLY, built_later, unknown};
 
 use super::ctx::Ctx;
-use super::{Daemon, Out, brain, channels, claude, desk, flow, media, phone, record, routines, secure, web};
+use super::{Daemon, Out, brain, channels, claude, desk, flow, media, phone, record, routines, secure, think, web};
 
 const POST_VIEW: &[&str] = &[
     "click", "type", "press", "fill", "select", "check", "scroll", "hover", "drag", "do", "run", "search", "back",
@@ -149,6 +149,7 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "close" if first.is_some_and(windowish) => desk::run(d, ctx, c, None),
         "watch" | "listen" => media::run(d, ctx, c),
         "secure" => secure::run(d, ctx, c),
+        "think" => think::run(d, ctx, c),
         "autoload" => autoload(d, c),
         "ext-reload" => super::ext::reload(d).map(Out::Text),
         "selftest" => super::check::selftest(d, ctx, c).map(Out::Text),

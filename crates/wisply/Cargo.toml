@@ -26,6 +26,7 @@ wisply-core.workspace = true
 wisply-memory.workspace = true
 wisply-proto.workspace = true
 wisply-squeeze.workspace = true
+wisply-think.workspace = true
 pdf-extract.workspace = true
 regex.workspace = true
 roxmltree.workspace = true

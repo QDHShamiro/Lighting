@@ -12,6 +12,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use wisply_proto::home;
 use wisply_squeeze::{commas, squeeze};
 
+const EDITS: &[&str] = &["Edit", "Write", "MultiEdit", "NotebookEdit"];
 const MIN_CHARS: usize = 2000;
 const BUDGET: Duration = Duration::from_millis(50);
 const HOLDOUT_EVERY: u64 = 10;
@@ -57,12 +58,19 @@ impl Paths {
 pub fn post() {
     let started = Instant::now();
     panic::set_hook(Box::new(|_| {}));
-    let paths = Paths::new(&home());
-    if paths.state.join("off").exists() {
-        return;
-    }
+    let root = home();
     let mut input = Vec::new();
     if io::stdin().lock().read_to_end(&mut input).is_err() {
+        return;
+    }
+    if let Some(text) = edited(&input, &root) {
+        let mut out = io::stdout().lock();
+        let _ = out.write_all(text.as_bytes());
+        let _ = out.flush();
+        return;
+    }
+    let paths = Paths::new(&root);
+    if paths.state.join("off").exists() {
         return;
     }
     let (reply, kept) = run(&input, &paths, started, BUDGET);
@@ -74,6 +82,22 @@ pub fn post() {
     if kept {
         tidy(&paths);
     }
+}
+
+fn edited(input: &[u8], root: &Path) -> Option<String> {
+    let event: Value = serde_json::from_slice(input).ok()?;
+    if !EDITS.contains(&event["tool_name"].as_str()?) {
+        return None;
+    }
+    let file = event["tool_input"]["file_path"].as_str().or_else(|| event["tool_input"]["notebook_path"].as_str())?;
+    let user = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from)?;
+    let found = panic::catch_unwind(|| wisply_think::quick(root, &user, Path::new(file))).ok().flatten();
+    let context = found.unwrap_or_default();
+    Some(if context.is_empty() {
+        String::new()
+    } else {
+        json!({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": context}}).to_string()
+    })
 }
 
 fn run(input: &[u8], paths: &Paths, started: Instant, budget: Duration) -> (Option<String>, bool) {
