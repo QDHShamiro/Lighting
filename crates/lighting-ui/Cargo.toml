@@ -10,6 +10,9 @@ publish.workspace = true
 name = "wisply-ui"
 path = "src/main.rs"
 
+[build-dependencies]
+winresource.workspace = true
+
 [dependencies]
 lt-proto.workspace = true
 serde_json.workspace = true

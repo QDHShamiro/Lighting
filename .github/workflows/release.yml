@@ -65,6 +65,30 @@ jobs:
               cp target/release/wisply target/release/wisply-ui out/
             fi
           fi
+      - name: Unsigned Windows programs
+        id: unsigned
+        if: runner.os == 'Windows' && github.ref_type == 'tag' && vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-windows
+          path: out/*.exe
+      - name: Sign with SignPath
+        if: steps.unsigned.outcome == 'success'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+      - name: Use the signed programs
+        if: steps.unsigned.outcome == 'success'
+        shell: bash
+        run: |
+          cp signed/*.exe out/
+          ls -l out
       - name: Pack
         shell: bash
         run: |
@@ -146,6 +170,7 @@ jobs:
           printf '\n### Checksums (SHA-256)\n```\n' >> notes.md
           cat dist/SHA256SUMS.txt >> notes.md
           printf '```\nEvery file here has a GitHub build attestation: `gh attestation verify <file> -R QDHShamiro/Lighting`\n' >> notes.md
+          printf '\nCode signing policy: https://github.com/QDHShamiro/Lighting/blob/main/CODE_SIGNING.md\n' >> notes.md
       - name: Keep the files (dry run)
         if: github.ref_type != 'tag'
         uses: actions/upload-artifact@v7
