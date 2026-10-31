@@ -265,36 +265,38 @@ pub fn type_in(x: &mut Desk, c: &Call) -> Res<String> {
 }
 
 pub fn press(x: &mut Desk, c: &Call) -> Res<String> {
-    if c.pos.is_empty() {
-        return Err(Fail::hint("press needs keys", "lighting press ctrl+s").into());
+    let window = c.pos.iter().find(|p| windowish(p)).map(String::as_str);
+    let combos: Vec<&String> = c.pos.iter().filter(|p| !windowish(p)).collect();
+    if combos.is_empty() {
+        return Err(Fail::hint("press needs keys", "lighting press ctrl+s | press w3 ctrl+s").into());
     }
-    let all = c.pos.join(" ");
-    if c.pos.iter().all(|p| combo::media(p)) {
-        for p in &c.pos {
+    let all = combos.iter().map(|k| k.as_str()).collect::<Vec<_>>().join(" ");
+    if combos.iter().all(|p| combo::media(p)) {
+        for p in &combos {
             press_keys(&Keys::Front, p, false)?;
             thread::sleep(Duration::from_millis(30));
         }
         return Ok(format!("ok ({all}, media key for the whole system)"));
     }
-    let hwnd = x.target(None)?;
+    let hwnd = x.target(window)?;
     let game = c.on("game");
     let before = if game { None } else { x.before_action(hwnd) };
     let known = window_set();
     let bg = x.bg(hwnd);
     focus::with_focus(bg, hwnd, c.on("stay"), |to| {
-        for p in &c.pos {
+        for p in &combos {
             press_keys(&to, p, game)?;
             thread::sleep(Duration::from_millis(30));
         }
         Ok(())
     })?;
-    let quiet = c.pos.iter().all(|p| combo::quick(p)).then_some(KEY_QUIET_S);
+    let quiet = combos.iter().all(|p| combo::quick(p)).then_some(KEY_QUIET_S);
     let diff = x.after_action(hwnd, before, 0.6, quiet);
     if diff.starts_with(" (+")
-        && c.pos.len() == 1
+        && combos.len() == 1
         && let Some(line) = diff.split('\n').nth(1)
     {
-        keys::learn(&x.d.home, &win::exe_of_window(hwnd).to_lowercase(), &c.pos[0], line);
+        keys::learn(&x.d.home, &win::exe_of_window(hwnd).to_lowercase(), combos[0], line);
     }
     let label = x.label(hwnd);
     Ok(format!("ok ({all} sent to {label}){diff}{}", x.new_windows(&known)))
