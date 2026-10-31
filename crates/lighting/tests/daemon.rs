@@ -83,6 +83,15 @@ fn a_v3_home_starts_its_daemon_and_answers_like_2x() {
     assert!(last["id"].as_str().is_some_and(|id| id.ends_with(".6")), "{last}");
     let by_ref = "err: fill wants Label=value pairs -> try: lighting type e36 \"<value>\" (one field by its ref)";
     assert_eq!(home.run(&["fill", "e36", "x"]), (1, by_ref.into()));
+    let (_, nothing) = home.run(&["upload"]);
+    assert!(nothing.starts_with("err: upload needs the ref of the upload button or file field first, got nothing"));
+    let (_, no_files) = home.run(&["upload", "e5"]);
+    assert_eq!(no_files, "err: upload needs the files after the ref -> try: lighting upload e5 C:/path/file.png");
+    if cfg!(windows) {
+        let screen =
+            "err: o74 is screen text, not a field -> try: lighting click o74, then lighting type focused \"<text>\"";
+        assert_eq!(home.run(&["type", "o74", "hi"]), (1, screen.into()));
+    }
     let (code, help) = home.run(&[]);
     assert!(code == 0 && help.starts_with("lighting 3.0 <command>"), "{help}");
     assert_eq!(home.run(&["abort"]), (0, "stopped the running and queued commands".into()));
@@ -228,6 +237,9 @@ fn a_browser_host_gets_the_session_tab_and_done_closes_it() {
     assert_eq!(asked.iter().map(|(c, _)| *c).collect::<Vec<_>>(), ["tabs", "tab", "close", "press"], "{keys:?}");
     assert_eq!((asked[0].1["rows"].as_bool(), asked[1].1["id"].as_str()), (Some(true), Some("t2")));
     assert_eq!((keys[2]["tab"].as_str(), asked[3].1["keys"].clone()), (Some("t2"), json!(["ctrl+l"])));
+    assert_eq!(home.run(&["done"]), (0, "closed 1 tab".into()));
+    let (code, lost) = home.run(&["press", "Enter"]);
+    assert!(code == 1 && lost.starts_with("err: this session has no tab: its tabs were closed"), "{lost}");
     assert_eq!(home.run(&["stop"]).1, "lighting daemon stopped");
     browser.join().unwrap();
 }
@@ -267,8 +279,20 @@ fn memory_keeps_notes_and_todos_in_memory_db() {
     assert_eq!(home.run(&["todo", "add", "ship it", "--list", "release"]).1, "to-do #1 added to release");
     assert_eq!(home.run(&["todo"]).1, "release:\n  #1 ship it");
     assert_eq!(home.run(&["todo", "list"]).1, "release:\n  #1 ship it");
+    assert_eq!(home.run(&["todo", "list", "release"]).1, "release:\n  #1 ship it");
+    assert_eq!(home.run(&["todo", "ls", "other"]).1, "no open to-dos (lighting todo add \"task\")");
     let (code, bare) = home.run(&["todo", "1"]);
-    assert!(code == 1 && bare.starts_with("err: what should happen with #1? -> try: lighting todo done 1 "), "{bare}");
+    assert!(code == 0 && bare.starts_with("#1 2") && bare.contains(" todo [release, ") && bare.ends_with("]\nship it"));
+    assert_eq!(home.run(&["todo", "9"]), (1, "err: no to-do #9 -> try: lighting todo".into()));
+    assert_eq!(home.run(&["todo", "note", "1", "first step"]).1, "#1 noted");
+    assert_eq!(home.run(&["todo", "note", "1", "second step"]).1, "#1 noted");
+    let (_, listed) = home.run(&["todo"]);
+    assert!(
+        listed.starts_with("release:\n  #1 ship it (") && listed.ends_with("\n(lighting todo <id> shows one in full)")
+    );
+    let (_, full) = home.run(&["todo", "show", "#1"]);
+    let notes: Vec<&str> = full.split("\nnotes:\n").nth(1).unwrap_or("").split('\n').collect();
+    assert!(notes.len() == 2 && notes[0].ends_with("first step") && notes[1].ends_with("second step"), "{full}");
     assert_eq!(home.run(&["todo", "close", "1"]).1, "#1 is done: ship it");
     assert_eq!(home.run(&["todo", "reopen", "1"]).1, "#1 is todo: ship it");
     assert_eq!(home.run(&["todo", "done", "1", "all", "good"]).1, "#1 is done: ship it");

@@ -6,10 +6,11 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use lt_core::{Call, Fail, Flag};
+use regex::Regex;
 use serde_json::{Value, json};
 
 use super::super::ctx::now;
-use super::super::web::parse_ms;
+use super::super::web::{keys, parse_ms};
 use super::super::{Out, Pending};
 use super::imp::{BROWSER_EXES, CHAT_EXES};
 use super::talk::{self, Base, DOC, EDIT, FIELD_NAME, ITEM, LIST, LIST_NAME, Msg, Row, SEARCHY, TREEITEM};
@@ -28,6 +29,11 @@ const CONFIRM: Duration = Duration::from_secs(3);
 const CONFIRM_POLL: Duration = Duration::from_millis(250);
 const TITLE: usize = 50;
 const MEMO: &str = "chat.json";
+const CHATS_SHOWN: usize = 3;
+const CHAT_TITLE: usize = 40;
+
+static SWITCHER: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)quick switcher|find a channel|jump to").expect("switcher"));
 
 #[derive(Default)]
 struct Chat {
@@ -194,11 +200,31 @@ fn resolve(x: &mut Desk, spec: Option<&str>) -> Res<isize> {
     let mut hits: Vec<win::Win> =
         win::windows().into_iter().filter(|w| w.title.to_lowercase().contains(&want)).collect();
     hits.sort_by_key(|w| (BROWSER_EXES.contains(&w.exe.to_lowercase().as_str()), !w.fg));
-    let Some(w) = hits.first() else {
-        return Err(Fail::hint(format!("no window matches \"{spec}\""), "lighting windows -f chat").into());
-    };
+    let Some(w) = hits.first() else { return Err(no_chat(x, spec).into()) };
     choose(x, w.hwnd);
     Ok(w.hwnd)
+}
+
+fn no_chat(x: &mut Desk, spec: &str) -> Fail {
+    let chats: Vec<win::Win> =
+        win::windows().into_iter().filter(|w| CHAT_EXES.contains(&w.exe.to_lowercase().as_str())).collect();
+    let Some(first) = chats.first() else {
+        return Fail::hint(format!("no window matches \"{spec}\""), "lighting windows -f chat");
+    };
+    let open: Vec<String> = chats
+        .iter()
+        .take(CHATS_SHOWN)
+        .map(|w| format!("{} \"{}\"", x.wref(w.hwnd), w.title.chars().take(CHAT_TITLE).collect::<String>()))
+        .collect();
+    let at = x.wref(first.hwnd);
+    let hint = match keys::key_for(&x.d.home, &first.exe.to_lowercase(), &SWITCHER) {
+        Some(key) => format!(
+            "open it first: lighting press {key} {at}, then lighting type focused \"{}\" --enter",
+            spec.trim_start_matches(['@', '#'])
+        ),
+        None => "open that chat in the app first, then repeat".into(),
+    };
+    Fail::hint(format!("no chat window shows \"{spec}\" (open: {})", open.join(", ")), hint)
 }
 
 fn choose(x: &mut Desk, hwnd: isize) {

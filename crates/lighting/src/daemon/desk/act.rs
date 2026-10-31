@@ -256,6 +256,10 @@ pub fn type_in(x: &mut Desk, c: &Call) -> Res<String> {
         )
         .into());
     };
+    if ref_kind(first) == Some("o") {
+        let how = format!("lighting click {first}, then lighting type focused \"<text>\"");
+        return Err(Fail::hint(format!("{first} is screen text, not a field"), how).into());
+    }
     let (label, el) = if ref_kind(first) == Some("d") {
         (first.clone(), x.element(first)?)
     } else if first.eq_ignore_ascii_case("focused") {

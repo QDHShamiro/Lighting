@@ -25,7 +25,7 @@ const ADVICE: &[(&str, &str)] = &[
     (r"no tab yet|has no tab", "open a page first (lighting open <url>); a script must stop when its tab is gone"),
     (r"is gone|older snapshot", "the page changed under the ref: snap again (the brain now retries by name)"),
     (
-        r"nothing matches|nothing called|no field called",
+        r"nothing matches|nothing called|no field called|no field for",
         "the name was guessed: look first with snap -f <word> (the brain learns real names)",
     ),
     (r"mouse or keyboard", "the user was busy; Lighting waits up to 10 s for a pause now"),
@@ -33,10 +33,14 @@ const ADVICE: &[(&str, &str)] = &[
     (r"unknown command", "check the name in lighting help"),
     (r"did not answer|disconnected|not connected", "the browser was busy or restarted: lighting status"),
     (
-        r"not there after|still there after|timed out",
+        r"not there after|still there after|timed out|timeout after",
         "the page was slower than the wait: raise --timeout or wait for other text",
     ),
     (r"matches several", "use a longer name or --first"),
+    (
+        r"runs as administrator",
+        "an elevated window takes no clicks or keys from normal apps: lighting read / shot, or an admin terminal",
+    ),
     (r"needs --yes|irreversible", "a risky step: only after the user agreed, then --yes"),
     (
         r"no frame matching",
@@ -231,5 +235,9 @@ mod tests {
         assert_eq!((s.runs, s.failed, s.patterns.len(), s.patterns[0].n), (3, 2, 1, 2));
         assert!(s.patterns[0].advice.starts_with("the name was guessed"));
         let _ = fs::remove_dir_all(&home);
+        let advice = |e: &str| RULES.iter().find(|(p, _)| p.is_match(e)).map_or("", |(_, a)| *a);
+        assert!(advice("no field for \"Email\"").starts_with("the name was guessed"));
+        assert!(advice("wait: timeout after 5000 ms").starts_with("the page was slower"));
+        assert!(advice("this window runs as administrator; Windows blocks control").starts_with("an elevated window"));
     }
 }

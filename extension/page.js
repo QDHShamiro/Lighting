@@ -128,7 +128,8 @@
     }
     if (op === "wait") {
       const t0 = Date.now();
-      while (el.readyState < 1 && Date.now() - t0 < 4000) await new Promise((res) => setTimeout(res, 100));
+      const loading = () => el.networkState === el.NETWORK_LOADING || Date.now() - t0 < 300;
+      while (el.readyState < 1 && Date.now() - t0 < 4000 && loading()) await new Promise((res) => setTimeout(res, 100));
       const d = el.duration;
       return { duration: isFinite(d) ? d : 0, seekable: isFinite(d) && d > 1 && el.seekable.length > 0 };
     }

@@ -227,6 +227,14 @@ fn known(home: &Path, app: &str) -> Vec<(String, Value)> {
     out
 }
 
+#[cfg(windows)]
+pub fn key_for(home: &Path, app: &str, what: &Regex) -> Option<String> {
+    known(home, app)
+        .into_iter()
+        .find(|(_, v)| v.get("what").and_then(Value::as_str).is_some_and(|w| what.is_match(w)))
+        .map(|(k, _)| k)
+}
+
 fn ranked(home: &Path, app: &str) -> Vec<(String, Value)> {
     let mut rows = known(home, app);
     rows.sort_by_key(|(k, v)| {

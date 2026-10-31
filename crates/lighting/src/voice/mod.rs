@@ -350,7 +350,8 @@ pub fn command(home: &Path, pos: &[String]) -> Result<String, Fail> {
                 lines.push(format!("heard: {}", field("last_heard")));
                 lines.push(format!("said: {}", field("last_said")));
             }
-            if let Ok(log) = fs::read_to_string(p.file("voice.log")) {
+            if let Ok(raw) = fs::read(p.file("voice.log")) {
+                let log = String::from_utf8_lossy(&raw);
                 let all: Vec<&str> = log.lines().collect();
                 lines.push("log:".into());
                 lines.extend(all[all.len().saturating_sub(LOG_TAIL)..].iter().map(|l| (*l).to_string()));

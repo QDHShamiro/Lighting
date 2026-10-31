@@ -328,8 +328,22 @@ fn mime(path: &Path) -> &'static str {
 }
 
 pub fn upload(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
-    if c.pos.len() < 2 || !REF_RE.is_match(&c.pos[0]) {
-        return Err(Fail::hint("upload needs a ref and files", "lighting upload e5 C:/path/file.png"));
+    let Some(field) = c.pos.first().filter(|p| REF_RE.is_match(p)) else {
+        let got = match c.pos.first() {
+            None => "nothing".to_string(),
+            Some(p) if local_file(ctx, p).is_file() => "the file".to_string(),
+            Some(p) => format!("\"{p}\""),
+        };
+        return Err(Fail::hint(
+            format!("upload needs the ref of the upload button or file field first, got {got}"),
+            "lighting snap -f \"upload|file\", then lighting upload e5 C:/path/file.png",
+        ));
+    };
+    if c.pos.len() < 2 {
+        return Err(Fail::hint(
+            "upload needs the files after the ref",
+            format!("lighting upload {field} C:/path/file.png"),
+        ));
     }
     let mut files = Vec::new();
     for raw in &c.pos[1..] {

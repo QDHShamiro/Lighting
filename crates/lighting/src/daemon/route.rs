@@ -122,7 +122,7 @@ fn on_web(d: &Daemon, ctx: &Ctx, c: &Call) -> bool {
         return false;
     }
     if ["press", "type", "scroll", "drag"].contains(&verb) && !ctx.sid.is_empty() && ctx.tabs.is_empty() {
-        return false;
+        return ctx.closed_url.is_some() && ctx.kind() == Some("web");
     }
     match ctx.kind() {
         Some("app") => return false,

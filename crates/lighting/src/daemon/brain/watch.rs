@@ -14,6 +14,9 @@ const REFS_MAX: usize = 3000;
 const REFS_DROP: usize = 1000;
 const FIX_SURE: u64 = 2;
 const FIX_WINDOW_S: f64 = 90.0;
+const FIX_ALIKE: f64 = 0.6;
+const ALIKE_CHARS: usize = 200;
+const WORD_MIN: usize = 3;
 
 static HEADER: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\[(t\d+)").expect("header"));
 static GONE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"is gone").expect("gone"));
@@ -76,6 +79,39 @@ fn ref_name(ctx: &Ctx, r: &str) -> Option<(String, String)> {
     Some((got[0].as_str().unwrap_or("").to_string(), name.to_string()))
 }
 
+fn common(a: &[char], b: &[char]) -> usize {
+    let (mut best, mut at_a, mut at_b) = (0, 0, 0);
+    for i in 0..a.len() {
+        for j in 0..b.len() {
+            let k = a[i..].iter().zip(&b[j..]).take_while(|(x, y)| x == y).count();
+            if k > best {
+                (best, at_a, at_b) = (k, i, j);
+            }
+        }
+    }
+    if best == 0 {
+        return 0;
+    }
+    best + common(&a[..at_a], &b[..at_b]) + common(&a[at_a + best..], &b[at_b + best..])
+}
+
+fn words(s: &str) -> Vec<&str> {
+    s.split(|c: char| !c.is_alphanumeric() && c != '_').filter(|w| w.chars().count() >= WORD_MIN).collect()
+}
+
+fn alike(miss: &str, label: &str) -> bool {
+    let (asked, label) = (norm(miss), norm(label));
+    let asked = asked.trim_matches(['"', '\'']);
+    let theirs = words(&label);
+    if words(asked).iter().any(|w| theirs.contains(w)) {
+        return true;
+    }
+    let a: Vec<char> = asked.chars().take(ALIKE_CHARS).collect();
+    let b: Vec<char> = label.chars().take(ALIKE_CHARS).collect();
+    let total = a.len() + b.len();
+    total > 0 && 2.0 * common(&a, &b) as f64 / total as f64 >= FIX_ALIKE
+}
+
 fn fix_for(d: &Daemon, ctx: &Ctx, cmd: &str, text: &str) -> Option<(String, u64)> {
     let key = site(ctx);
     let k = format!("{cmd}|{}", norm(text));
@@ -117,7 +153,7 @@ pub fn retry(d: &Daemon, ctx: &mut Ctx, c: &Call, fail: &Fail) -> Option<(Out, V
     }
     if kind.is_none() && MISS.is_match(&text) {
         let (to, n) = fix_for(d, ctx, &c.name, first)?;
-        if n < FIX_SURE {
+        if n < FIX_SURE || !alike(first, &to) {
             return None;
         }
         let mut again = c.clone();
@@ -208,4 +244,26 @@ pub fn observe(d: &Daemon, ctx: &mut Ctx, argv: &[String], out: &str, ok: bool) 
         s.dirty = true;
         save_soon(s);
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::alike;
+
+    #[test]
+    fn a_learned_fix_is_only_used_for_an_alike_name() {
+        for (miss, label) in [
+            ("Save", "Save changes"),
+            ("\"Sign in\"", "Sign-in"),
+            ("log in", "Login"),
+            ("Einstellungen", "Einstellung"),
+            ("submit", "Sumbit"),
+            ("accept all", "Accept"),
+        ] {
+            assert!(alike(miss, label), "{miss} ~ {label}");
+        }
+        for (miss, label) in [("Delete", "Cancel"), ("OK", "Abbrechen"), ("weiter", "Next"), ("Pay now", "Log out")] {
+            assert!(!alike(miss, label), "{miss} !~ {label}");
+        }
+    }
 }

@@ -24,7 +24,7 @@ const ERR_CHARS: usize = 120;
 
 static TRANSIENT: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r"(?i)nothing matches|nothing called|no field|is gone|no window matches|page changed|no tab yet|did not react|did not answer|not found|older snapshot|no match|nothing focused|still loading|navigated during",
+        r"(?i)nothing matches|nothing called|no field|is gone|no window matches|no chat window|page changed|no tab yet|did not react|did not answer|not found|older snapshot|no match|nothing focused|still loading|navigated during",
     )
     .expect("transient")
 });

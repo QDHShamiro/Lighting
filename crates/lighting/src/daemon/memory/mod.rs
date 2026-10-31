@@ -242,13 +242,26 @@ fn todo_list(rows: &[Todo], short: bool) -> String {
         }
         out.push(format!("  {}", todo_line(t, short)));
     }
+    if !short && (out.iter().any(|l| l.contains('…')) || rows.iter().any(|t| t.note.trim().contains('\n'))) {
+        out.push("(lighting todo <id> shows one in full)".into());
+    }
     out.join("\n")
 }
 
+fn todo_full(t: &Todo) -> String {
+    let notes: Vec<&str> = t.note.split('\n').filter(|l| !l.trim().is_empty()).collect();
+    let tail = if notes.is_empty() { String::new() } else { format!("\nnotes:\n  {}", notes.join("\n  ")) };
+    let list = if t.list.is_empty() { "to-dos" } else { &t.list };
+    let project = if t.project.is_empty() { "global" } else { &t.project };
+    format!("#{} {} {} [{list}, {project}]\n{}{tail}", t.id, date(t.updated), t.status, t.task)
+}
+
 fn todo(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
-    let sub = c.pos.first().map(|s| s.to_lowercase()).unwrap_or_default();
-    let sub = match sub.as_str() {
-        "list" | "ls" | "show" => "",
+    let raw = c.pos.first().map(|s| s.to_lowercase()).unwrap_or_default();
+    let listing = matches!(raw.as_str(), "list" | "ls" | "show");
+    let named = c.pos.get(1).filter(|_| listing);
+    let sub = match raw.as_str() {
+        "list" | "ls" | "show" => named.filter(|n| is_ident(n)).map_or("", String::as_str),
         "close" | "finish" | "complete" => "done",
         "start" => "doing",
         "rm" | "remove" | "delete" => "drop",
@@ -256,14 +269,13 @@ fn todo(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
         other => other,
     };
     if is_ident(sub) {
-        let n = sub.trim_start_matches('#');
-        return Err(Fail::hint(
-            format!("what should happen with #{n}?"),
-            format!("lighting todo done {n} | doing {n} | drop {n} | note {n} \"text\""),
-        ));
+        let id = ident(sub)?;
+        let t = with_store(d, |s| s.todo(id))?;
+        let missing = || Fail::hint(format!("no to-do #{}", sub.trim_start_matches('#')), "lighting todo");
+        return t.map(|t| todo_full(&t)).ok_or_else(missing);
     }
     let here = project(ctx, c);
-    let list = c.val("list").unwrap_or("");
+    let list = c.val("list").or_else(|| named.map(String::as_str)).unwrap_or("");
     match sub {
         "add" => {
             let task = c.pos[1..].join(" ");
