@@ -247,9 +247,24 @@ fn todo_list(rows: &[Todo], short: bool) -> String {
 
 fn todo(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
     let sub = c.pos.first().map(|s| s.to_lowercase()).unwrap_or_default();
+    let sub = match sub.as_str() {
+        "list" | "ls" | "show" => "",
+        "close" | "finish" | "complete" => "done",
+        "start" => "doing",
+        "rm" | "remove" | "delete" => "drop",
+        "reopen" => "open",
+        other => other,
+    };
+    if is_ident(sub) {
+        let n = sub.trim_start_matches('#');
+        return Err(Fail::hint(
+            format!("what should happen with #{n}?"),
+            format!("lighting todo done {n} | doing {n} | drop {n} | note {n} \"text\""),
+        ));
+    }
     let here = project(ctx, c);
     let list = c.val("list").unwrap_or("");
-    match sub.as_str() {
+    match sub {
         "add" => {
             let task = c.pos[1..].join(" ");
             if task.is_empty() {
@@ -262,7 +277,7 @@ fn todo(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
         }
         "done" | "doing" | "drop" | "dropped" | "todo" | "open" => {
             let Some(which) = c.pos.get(1) else { return Err(Fail::hint("which to-do?", TODO_HELP)) };
-            let status = match sub.as_str() {
+            let status = match sub {
                 "drop" => "dropped",
                 "open" => "todo",
                 other => other,

@@ -242,6 +242,11 @@ fn memory_keeps_notes_and_todos_in_memory_db() {
     assert_eq!(home.run(&["recall", "zebra"]).1, none);
     assert_eq!(home.run(&["todo", "add", "ship it", "--list", "release"]).1, "to-do #1 added to release");
     assert_eq!(home.run(&["todo"]).1, "release:\n  #1 ship it");
+    assert_eq!(home.run(&["todo", "list"]).1, "release:\n  #1 ship it");
+    let (code, bare) = home.run(&["todo", "1"]);
+    assert!(code == 1 && bare.starts_with("err: what should happen with #1? -> try: lighting todo done 1 "), "{bare}");
+    assert_eq!(home.run(&["todo", "close", "1"]).1, "#1 is done: ship it");
+    assert_eq!(home.run(&["todo", "reopen", "1"]).1, "#1 is todo: ship it");
     assert_eq!(home.run(&["todo", "done", "1", "all", "good"]).1, "#1 is done: ship it");
     assert_eq!(home.run(&["todo"]).1, "no open to-dos (lighting todo add \"task\")");
     assert_eq!(home.run(&["forget", "1"]).1, "forgot #1");
