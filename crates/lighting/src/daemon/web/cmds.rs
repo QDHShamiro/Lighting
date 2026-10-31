@@ -370,7 +370,8 @@ pub fn upload(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
 }
 
 pub fn tabs(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<String, Fail> {
-    let msg = call(d, ctx, "tabs", Map::new(), 15.0)?;
+    let all = c.on("all") || c.val("f").is_some_and(|f| !f.is_empty());
+    let msg = call(d, ctx, "tabs", obj(json!({"all": all})), 15.0)?;
     let mut text = text_of(&msg, "out").to_string();
     if let Some(f) = c.val("f").filter(|f| !f.is_empty()) {
         let words = terms(f);

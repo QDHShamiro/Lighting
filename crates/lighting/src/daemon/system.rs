@@ -15,7 +15,7 @@ web     open <url> [-n] [-f \"a|b\"] [--text]   snap [-f \"a|b\"] [-s css|ref] [
         check <ref> [off]   hover <ref>   drag <ref> <ref>   scroll [ref|up|down] [--until \"text\"]
         wait <\"text\"|url:x|ms|ref> [--gone] [--reload 15s --timeout 10m]   expect <\"text\"|url:x> [--gone]
         fetch <url> [--pick a.b]   js <code|--file f>   dismiss   viewport <WxH|reset>
-        upload <ref> <file>   tabs [-f x]   tab <id>   close [id]   back   forward   reload   table <ref|css>
+        upload <ref> <file>   tabs [-f x] [--all]   tab <id>   close [id]   back   forward   reload   table <ref|css>
         dialog accept|dismiss [text]   downloads   console   net [n] [-f x] (JSON the page loaded)
         tools   call <tool> '{json}' [--yes] (WebMCP)
 apps    windows   focus <w3|app:Name>   launch <app|uri|file> [--yes]   close <w3>   clip [set \"text\"]   shot w3|screen --seconds 10 (mp4)
@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn help_names_one_command_like_2x() {
-        assert!(about("tabs").is_some_and(|row| row.starts_with("upload <ref> <file>   tabs [-f x]")));
+        assert!(about("tabs").is_some_and(|row| row.starts_with("upload <ref> <file>   tabs [-f x] [--all]")));
         assert!(about("dismiss").is_some_and(|row| row.starts_with("fetch <url>")));
         assert!(about("abort").is_some_and(|row| row.starts_with("status ")));
         assert!(about("listen").is_some_and(|row| row.starts_with("listen <link|file|e40>")));

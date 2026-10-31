@@ -139,6 +139,10 @@ fn fake_browser(link: lt_proto::Link, got: Arc<Mutex<Vec<Value>>>) {
             "tabs" if msg["args"]["rows"] == true => json!({"ok": true, "out": "", "rows": [
                 {"id": "t1", "win": 1, "index": 0, "active": false, "target": true},
                 {"id": "t2", "win": 1, "index": 1, "active": true, "target": false}]}),
+            "tabs" if msg["args"]["all"] == true => json!({"ok": true, "out": "t1 L* One - one.com
+t3 a Mine - mine.com"}),
+            "tabs" => json!({"ok": true, "out": "t1 L* One - one.com
++1 other tabs of yours (lighting tabs --all lists them)"}),
             "tab" => json!({"ok": true, "where": {"tab": "t2", "url": "https://example.com/2"},
                             "out": "target t2 Two - example.com/2"}),
             "close" => json!({"ok": true, "out": "closed t2, target now t1"}),
@@ -237,6 +241,10 @@ fn a_browser_host_gets_the_session_tab_and_done_closes_it() {
     assert_eq!(asked.iter().map(|(c, _)| *c).collect::<Vec<_>>(), ["tabs", "tab", "close", "press"], "{keys:?}");
     assert_eq!((asked[0].1["rows"].as_bool(), asked[1].1["id"].as_str()), (Some(true), Some("t2")));
     assert_eq!((keys[2]["tab"].as_str(), asked[3].1["keys"].clone()), (Some("t2"), json!(["ctrl+l"])));
+    let (_, own) = home.run(&["tabs"]);
+    assert!(own.starts_with("t1 L* One") && own.contains("+1 other tabs of yours"), "{own}");
+    assert!(home.run(&["tabs", "--all"]).1.contains("t3 a Mine"));
+    assert!(home.run(&["tabs", "-f", "mine"]).1.starts_with("t3 a Mine"));
     assert_eq!(home.run(&["done"]), (0, "closed 1 tab".into()));
     let (code, lost) = home.run(&["press", "Enter"]);
     assert!(code == 1 && lost.starts_with("err: this session has no tab: its tabs were closed"), "{lost}");

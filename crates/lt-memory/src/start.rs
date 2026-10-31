@@ -2,6 +2,8 @@ use rusqlite::{OptionalExtension, params};
 
 use super::store::{Store, now};
 
+pub const DRAFTS_MAX: i64 = 30;
+
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Counts {
     pub notes: i64,
@@ -100,6 +102,10 @@ impl Store {
             [key, value],
         )?;
         Ok(())
+    }
+
+    pub fn drafts_full(&self) -> rusqlite::Result<bool> {
+        Ok(self.drafts()? >= DRAFTS_MAX)
     }
 
     pub fn drafts(&self) -> rusqlite::Result<i64> {

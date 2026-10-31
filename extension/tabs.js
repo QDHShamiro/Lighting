@@ -280,16 +280,23 @@ export function short(url, max) {
   }
 }
 
-export async function list() {
-  const tabs = await chrome.tabs.query({});
+export async function list(all) {
+  const every = await chrome.tabs.query({});
+  const tabs = [];
+  const groups = {};
+  for (const t of every) {
+    groups[t.id] = t.groupId !== -1 ? await groupOf(t.id) : null;
+    if (all || groups[t.id] || t.active || t.id === target) tabs.push(t);
+  }
   const lines = [];
   for (const t of tabs.slice(0, 60)) {
-    const g = t.groupId !== -1 ? await groupOf(t.id) : null;
+    const g = groups[t.id];
     const flags = (g ? "L" + g.replace(/^Lighting( #)?/, "") : "") + (t.id === target ? "*" : "") + (t.active ? "a" : "");
     const title = (t.title || "").replace(/\s+/g, " ").slice(0, 50);
     lines.push("t" + sid(t.id) + (flags ? " " + flags : "") + " " + title + " - " + short(t.url || t.pendingUrl || "", 60));
   }
   if (tabs.length > 60) lines.push("... +" + (tabs.length - 60) + " more tabs");
+  if (every.length > tabs.length) lines.push("+" + (every.length - tabs.length) + " other tabs of yours (lighting tabs --all lists them)");
   return lines.join("\n");
 }
 

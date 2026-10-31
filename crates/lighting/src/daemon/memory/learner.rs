@@ -218,7 +218,8 @@ fn learn(home: &Path, store: &mut Store, p: &Provider, row: &Due) -> Result<usiz
             r.title = field(&out, "title");
         }
     }
-    for lesson in lessons.iter().take(WIKI_PER_SESSION) {
+    let room = if store.drafts_full().unwrap_or(true) { 0 } else { WIKI_PER_SESSION };
+    for lesson in lessons.iter().take(room) {
         draft(home, store, p, lesson, &project, &row.id, &r);
     }
     let open_since = if c.more { 0.0 } else { began };

@@ -222,7 +222,7 @@ pub fn browser(r: &mut Run, srv: &Server, decoy: &str) {
     r.step("close fixture tab", &["close"], ok);
     r.step("target back to decoy", &["snap"], |o, e| !e && o.contains("Second"));
     r.step("keep hands tab over", &["keep", decoy], |o, e| !e && o.contains("kept 1 tab"));
-    r.step("kept tab left the group", &["tabs"], |o, _| listed(o, decoy, false));
+    r.step("kept tab left the group", &["tabs", "--all"], |o, _| listed(o, decoy, false));
     let thrown = r.step("throwaway tab", &["open", &at("second"), "--new"], |o, e| !e && o.contains("Second"));
     let tref = tab_ref(&thrown);
     r.step("open a slow page", &["open", &at("slow")], |o, e| {
@@ -243,7 +243,7 @@ pub fn browser(r: &mut Run, srv: &Server, decoy: &str) {
         if !out.starts_with("closed 1 tab") {
             r.rows.push(format!("DIAG {:<26} | {probe}", "focus before done"));
         }
-        r.step("done kept the kept tab", &["tabs"], |o, _| !listed(o, &tref, true) && listed(o, decoy, false));
+        r.step("done kept the kept tab", &["tabs", "--all"], |o, _| !listed(o, &tref, true) && listed(o, decoy, false));
     }
     r.step("close kept tab", &["close", decoy, "--force"], ok);
 }

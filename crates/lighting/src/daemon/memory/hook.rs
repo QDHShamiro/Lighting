@@ -5,7 +5,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use lt_core::{Call, Fail};
-use lt_memory::{DbResult, Store, date, day, now, oneline, project_of, stop_word};
+use lt_memory::{DRAFTS_MAX, DbResult, Store, date, day, now, oneline, project_of, stop_word};
 use regex::Regex;
 use serde_json::Value;
 
@@ -142,7 +142,9 @@ fn start_text(s: &mut Store, here: &str, commits: Vec<String>) -> DbResult<Strin
     let today = date(now());
     if drafts > 0 && s.meta(DRAFTS_SHOWN)?.as_deref() != Some(today.as_str()) {
         s.set_meta(DRAFTS_SHOWN, &today)?;
-        lines.push(format!("{drafts} wiki drafts wait for a yes or no: lighting wiki"));
+        let paused =
+            if drafts >= DRAFTS_MAX { &format!(", no new ones until fewer than {DRAFTS_MAX} are open") } else { "" };
+        lines.push(format!("{drafts} wiki drafts wait for a yes or no: lighting wiki{paused}"));
     }
     Ok(lines.join("\n"))
 }
@@ -332,6 +334,15 @@ mod tests {
         assert!(!start_text(&mut s, "", Vec::new()).unwrap().contains("wiki drafts"));
         s.set_meta(DRAFTS_SHOWN, "2000-01-01").unwrap();
         assert!(start_text(&mut s, "", Vec::new()).unwrap().ends_with(line));
+        for _ in 1..DRAFTS_MAX {
+            s.add_note(&draft).unwrap();
+        }
+        s.set_meta(DRAFTS_SHOWN, "2000-01-01").unwrap();
+        assert!(s.drafts_full().unwrap());
+        let full = format!(
+            "{DRAFTS_MAX} wiki drafts wait for a yes or no: lighting wiki, no new ones until fewer than {DRAFTS_MAX} are open"
+        );
+        assert!(start_text(&mut s, "", Vec::new()).unwrap().ends_with(&full));
         drop(s);
         let _ = std::fs::remove_dir_all(&home);
     }

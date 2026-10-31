@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" hook start",
+            "command": "L=\"${LIGHTING_HOME:-$HOME/.lighting}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; \"$L\" hook start",
             "timeout": 20
           }
         ]
@@ -17,13 +17,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" done --quiet",
+            "command": "L=\"${LIGHTING_HOME:-$HOME/.lighting}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; \"$L\" done --quiet",
             "timeout": 15,
             "async": true
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" hook stop",
+            "command": "L=\"${LIGHTING_HOME:-$HOME/.lighting}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; \"$L\" hook stop",
             "timeout": 10,
             "async": true
           }
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" hook compact",
+            "command": "L=\"${LIGHTING_HOME:-$HOME/.lighting}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; \"$L\" hook compact",
             "timeout": 10
           }
         ]
@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" hook end",
+            "command": "L=\"${LIGHTING_HOME:-$HOME/.lighting}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; \"$L\" hook end",
             "timeout": 10
           }
         ]
@@ -57,7 +57,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" suggest",
+            "command": "L=\"${LIGHTING_HOME:-$HOME/.lighting}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\"; \"$L\" suggest",
             "timeout": 5
           }
         ]

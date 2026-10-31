@@ -90,9 +90,18 @@ pub fn root_of(p: &Path) -> Option<PathBuf> {
     Some(root.to_path_buf())
 }
 
+fn main_of(root: &Path) -> PathBuf {
+    let Ok(text) = std::fs::read_to_string(root.join(".git")) else { return root.to_path_buf() };
+    let dir = text.trim().strip_prefix("gitdir:").unwrap_or_default().trim().replace('\\', "/");
+    match dir.rsplit_once("/.git/worktrees/") {
+        Some((main, _)) if !main.is_empty() => PathBuf::from(main),
+        _ => root.to_path_buf(),
+    }
+}
+
 fn find(p: &Path) -> String {
     match root_of(p) {
-        Some(root) => name(&root),
+        Some(root) => name(&main_of(&root)),
         None if scratch(p, &home()) => String::new(),
         None => name(p),
     }
@@ -135,7 +144,16 @@ mod tests {
         let plain = base.join("Tool").join("deep");
         fs::create_dir_all(&plain).unwrap();
         fs::write(base.join("Tool").join("Cargo.toml"), "").unwrap();
+        let tree = base.join("Shop-fix").join("src");
+        fs::create_dir_all(&tree).unwrap();
+        let main_git = repo.join(".git").join("worktrees").join("Shop-fix");
+        fs::write(base.join("Shop-fix").join(".git"), format!("gitdir: {}\n", main_git.display())).unwrap();
+        let sub = base.join("Lib");
+        fs::create_dir_all(&sub).unwrap();
+        fs::write(sub.join(".git"), "gitdir: ../Shop/.git/modules/Lib\n").unwrap();
         let s = |p: &Path| p.to_string_lossy().into_owned();
+        assert_eq!(project_of(&s(&tree)), "Shop");
+        assert_eq!(project_of(&s(&sub)), "Lib");
         assert_eq!(project_of(&s(&repo.join("web").join("src"))), "web");
         assert_eq!(project_of(&s(&repo.join("docs"))), "Shop");
         assert_eq!(project_of(&s(&repo)), "Shop");
