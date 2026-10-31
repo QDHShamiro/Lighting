@@ -72,6 +72,17 @@ fn point_of(arg: &str) -> Option<(i32, i32)> {
     Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
 }
 
+fn point_click(x: &mut Desk, hwnd: isize, (px, py): (i32, i32), c: &Call) -> Res<String> {
+    if hwnd == 0 {
+        return Err(
+            Fail::hint(format!("@{px},{py}: which window?"), "lighting read w3, then lighting click @x,y").into()
+        );
+    }
+    let (b, n) = button(c);
+    focus::click(x.bg(hwnd), px, py, b, n, hwnd)?;
+    Ok(format!("ok (clicked at {px},{py} via mouse, cursor restored)"))
+}
+
 fn button(c: &Call) -> (Button, u32) {
     (if c.on("right") { Button::Right } else { Button::Left }, if c.on("double") { 2 } else { 1 })
 }
@@ -206,16 +217,9 @@ pub fn click(x: &mut Desk, c: &Call) -> Res<String> {
     if kind == Some("o") {
         return x.ocr_click(arg, c).map(Option::unwrap_or_default);
     }
-    if let Some((px, py)) = point_of(arg) {
+    if let Some(point) = point_of(arg).filter(|_| arg.starts_with('@')) {
         let hwnd = x.st.hwnd;
-        if hwnd == 0 {
-            return Err(
-                Fail::hint(format!("{arg}: which window?"), "lighting read w3, then lighting click @x,y").into()
-            );
-        }
-        let (b, n) = button(c);
-        focus::click(x.bg(hwnd), px, py, b, n, hwnd)?;
-        return Ok(format!("ok (clicked at {px},{py} via mouse, cursor restored)"));
+        return point_click(x, hwnd, point, c);
     }
     if windowish(arg) {
         return x.focus_cmd(c);
@@ -231,6 +235,9 @@ pub fn click(x: &mut Desk, c: &Call) -> Res<String> {
                     && let Some(done) = x.ocr_click(arg, c)?
                 {
                     return Ok(done);
+                }
+                if let Some(point) = point_of(arg) {
+                    return point_click(x, hwnd, point, c);
                 }
                 let wref = x.wref(hwnd);
                 return Err(Fail::hint(

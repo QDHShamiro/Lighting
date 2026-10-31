@@ -69,6 +69,8 @@ pub fn desktop(r: &mut Run) {
     } else {
         r.step("click a screen point", &["click", &format!("@{at}")], |o, e| !e && o.contains("clicked at"));
         r.step("screen point hit Go", &["snap", &app, "--text", "-f", "status"], |o, _| o.contains("clicked 2"));
+        r.step("click a bare point", &["click", &at], |o, e| !e && o.contains("clicked at"));
+        r.step("bare point hit Go", &["snap", &app, "--text", "-f", "status"], |o, _| o.contains("clicked 3"));
     }
     r.check("ocr via PrintWindow", |_, _| match probe::titled(APP_TITLE).first().map(|h| probe::ocr_text(*h)) {
         Some(Ok(text)) => (text.contains("Remember"), text),
