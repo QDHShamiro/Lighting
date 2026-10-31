@@ -141,6 +141,11 @@ pub fn parse(argv: &[String]) -> Call {
         }
         i += 1;
     }
+    if call.name == "find" && !call.pos.is_empty() && !call.flags.contains_key("f") {
+        let words = std::mem::take(&mut call.pos).join(" ");
+        call.name = "snap".into();
+        call.flags.insert("f".into(), Flag::Val(words));
+    }
     call
 }
 
@@ -180,6 +185,9 @@ mod tests {
         assert_eq!(call.flags.get("max"), Some(&Flag::On));
         assert!(call.on("all") && !call.on("none"));
         assert_eq!(parse(&argv(&["video", "--", "--x=1"])).name, "watch");
+        let found = parse(&argv(&["find", "Save", "draft"]));
+        assert_eq!((found.name.as_str(), found.pos.len(), found.flags.get("f")), ("snap", 0, Some(&val("Save draft"))));
+        assert_eq!(parse(&argv(&["find"])).name, "find");
         let call = parse(&argv(&["log", "--", "--=v", "-f"]));
         assert_eq!(call.pos, ["--"]);
         assert_eq!(call.flags.get(""), Some(&val("v")));
