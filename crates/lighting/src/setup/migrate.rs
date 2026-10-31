@@ -43,8 +43,7 @@ fn copy_all(src: &Path, dst: &Path) -> io::Result<()> {
     Ok(())
 }
 
-fn stop_old(old: &Path) {
-    let exe = old.join("bin").join(exe_name(ALIAS));
+fn stop_old(exe: &Path, old: &Path) {
     if !exe.is_file() {
         return;
     }
@@ -81,7 +80,14 @@ pub fn from_old(home: &Path, old: &Path) -> io::Result<Option<String>> {
     if !lt_proto::is_default_home(home) || home.join("memory").exists() || !old.join("memory").is_dir() {
         return Ok(None);
     }
-    stop_old(old);
+    let bin = old.join("bin").join(exe_name(ALIAS));
+    let me = std::env::current_exe()?;
+    let kept = bin.with_extension("old");
+    if bin.is_file() && place::replace(&me, &bin)? {
+        stop_old(&kept, old);
+    } else {
+        stop_old(&bin, old);
+    }
     let moved = copy_old(home, old)?;
     Ok(Some(format!(
         "copied your data from {} to {} ({} MB); the old folder stays until 3.1",
@@ -97,6 +103,32 @@ pub fn forward_old(home: &Path, old: &Path, exe: &Path) -> io::Result<bool> {
         return Ok(false);
     }
     place::replace(exe, &bin.join(exe_name(ALIAS)))
+}
+
+pub fn link_extension(home: &Path, old: &Path) -> io::Result<bool> {
+    let from = old.join("extension");
+    let to = home.join("extension");
+    if !lt_proto::is_default_home(home) || !to.is_dir() || !from.is_dir() || fs::read_link(&from).is_ok() {
+        return Ok(false);
+    }
+    let aside = old.join("extension.old");
+    let _ = fs::remove_dir_all(&aside);
+    fs::rename(&from, &aside)?;
+    #[cfg(windows)]
+    let made = Command::new("cmd")
+        .args(["/c", "mklink", "/J"])
+        .arg(&from)
+        .arg(&to)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success());
+    #[cfg(unix)]
+    let made = std::os::unix::fs::symlink(&to, &from).is_ok();
+    if !made {
+        fs::rename(&aside, &from)?;
+    }
+    Ok(made)
 }
 
 #[cfg(test)]

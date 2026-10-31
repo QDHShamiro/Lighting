@@ -2,7 +2,7 @@ name: v3
 
 on:
   push:
-    branches: ["feat/lighting-3.0"]
+    branches: ["main", "feat/lighting-3.0"]
     paths: ["crates/**", "extension/**", "scripts/**", "skills/**", "Cargo.toml", "Cargo.lock", "deny.toml", "rustfmt.toml", ".cargo/**", "hooks/**", ".mcp.json", ".claude-plugin/**", ".codex-plugin/**", ".github/workflows/v3.yml"]
   pull_request:
     paths: ["crates/**", "extension/**", "scripts/**", "skills/**", "Cargo.toml", "Cargo.lock", "deny.toml", "rustfmt.toml", ".cargo/**", "hooks/**", ".mcp.json", ".claude-plugin/**", ".codex-plugin/**", ".github/workflows/v3.yml"]
