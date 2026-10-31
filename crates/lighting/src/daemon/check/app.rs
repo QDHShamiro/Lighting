@@ -72,6 +72,12 @@ pub fn desktop(r: &mut Run) {
         r.step("click a bare point", &["click", &at], |o, e| !e && o.contains("clicked at"));
         r.step("bare point hit Go", &["snap", &app, "--text", "-f", "status"], |o, _| o.contains("clicked 3"));
     }
+    let front = probe::foreground();
+    r.step("app that jumps to the front", &["click", "Front"], |o, e| !e && !o.contains("could not put"));
+    r.check("previous window back in front", |_, _| {
+        let now = probe::foreground();
+        (now == front || !probe::titled(APP_TITLE).contains(&now), format!("in front {now:#x}, before {front:#x}"))
+    });
     r.check("ocr via PrintWindow", |_, _| match probe::titled(APP_TITLE).first().map(|h| probe::ocr_text(*h)) {
         Some(Ok(text)) => (text.contains("Remember"), text),
         Some(Err(e)) => (false, e),

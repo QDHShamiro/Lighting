@@ -3,11 +3,13 @@ use std::sync::Mutex;
 use windows::Win32::Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::Graphics::Gdi::{DEFAULT_GUI_FONT, GetStockObject, HBRUSH};
 use windows::Win32::System::LibraryLoader::{GetModuleHandleW, LoadLibraryW};
+use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, GetWindowTextW, HMENU, HWND_BOTTOM, IDC_ARROW,
-    IsDialogMessageW, KillTimer, LoadCursorW, MSG, PostQuitMessage, RegisterClassW, SWP_NOACTIVATE, SWP_NOMOVE,
-    SWP_NOSIZE, SWP_SHOWWINDOW, SendMessageW, SetTimer, SetWindowPos, SetWindowTextW, TranslateMessage,
-    WINDOW_EX_STYLE, WINDOW_STYLE, WM_COMMAND, WM_DESTROY, WM_SETFONT, WM_TIMER, WNDCLASSW,
+    CreateWindowExW, DefWindowProcW, DispatchMessageW, GetForegroundWindow, GetMessageW, GetWindowTextW,
+    GetWindowThreadProcessId, HMENU, HWND_BOTTOM, IDC_ARROW, IsDialogMessageW, KillTimer, LoadCursorW, MSG,
+    PostQuitMessage, RegisterClassW, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SendMessageW,
+    SetForegroundWindow, SetTimer, SetWindowPos, SetWindowTextW, TranslateMessage, WINDOW_EX_STYLE, WINDOW_STYLE,
+    WM_COMMAND, WM_DESTROY, WM_SETFONT, WM_TIMER, WNDCLASSW,
 };
 use windows::core::{HSTRING, PCWSTR};
 
@@ -23,6 +25,7 @@ const BS_AUTOCHECKBOX: u32 = 0x3;
 const LBS_NOTIFY_VSCROLL: u32 = 0x0020_0001;
 const LB_ADDSTRING: u32 = 0x0180;
 const ID_GO: usize = 101;
+const ID_FRONT: usize = 105;
 const ID_SEND: usize = 1;
 const PEER_TIMER: usize = 7;
 const PEER_MS: u32 = 300;
@@ -84,11 +87,28 @@ unsafe extern "system" fn app_proc(w: HWND, msg: u32, wp: WPARAM, lp: LPARAM) ->
         set_text(s.status, &format!("Status: clicked {} with {shown}", s.clicks));
         return LRESULT(0);
     }
+    if msg == WM_COMMAND && wp.0 & 0xFFFF == ID_FRONT {
+        jump(w);
+        return LRESULT(0);
+    }
     if msg == WM_DESTROY {
         unsafe { PostQuitMessage(0) };
         return LRESULT(0);
     }
     unsafe { DefWindowProcW(w, msg, wp, lp) }
+}
+
+fn jump(w: HWND) {
+    let me = unsafe { GetCurrentThreadId() };
+    let them = unsafe { GetWindowThreadProcessId(GetForegroundWindow(), None) };
+    let attach = them != 0 && them != me;
+    if attach {
+        let _ = unsafe { AttachThreadInput(me, them, true) };
+    }
+    let _ = unsafe { SetForegroundWindow(w) };
+    if attach {
+        let _ = unsafe { AttachThreadInput(me, them, false) };
+    }
 }
 
 unsafe extern "system" fn chat_proc(w: HWND, msg: u32, wp: WPARAM, lp: LPARAM) -> LRESULT {
@@ -201,7 +221,8 @@ fn app() {
     m.make("STATIC", "Name:", 0, (20, 24, 60, 22), 0);
     let edit = m.make("EDIT", "", TAB_STOP | ES_AUTOHSCROLL, (90, 20, 320, 26), 100);
     m.make("BUTTON", "Go", TAB_STOP, (90, 64, 100, 32), ID_GO);
-    m.make("BUTTON", "Remember me", TAB_STOP | BS_AUTOCHECKBOX, (210, 64, 200, 32), 102);
+    m.make("BUTTON", "Remember me", TAB_STOP | BS_AUTOCHECKBOX, (210, 64, 120, 32), 102);
+    m.make("BUTTON", "Front", TAB_STOP, (340, 64, 80, 32), ID_FRONT);
     let status = m.make("STATIC", "Status: ready", 0, (20, 120, 400, 24), 103);
     let _ = unsafe { LoadLibraryW(&HSTRING::from("comctl32.dll")) };
     let tabs = m.make("SysTabControl32", "", TAB_STOP, (20, 150, 400, 30), 104);

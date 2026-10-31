@@ -259,12 +259,15 @@ pub fn click(x: &mut Desk, c: &Call) -> Res<String> {
         let after = x.after_action(hwnd, before, 0.6, None);
         return Ok(format!("ok {name} (mouse click, cursor restored){after}{}", x.new_windows(&known)));
     }
+    let prev = if bg { win::foreground() } else { 0 };
     if let Some(how) = el.act(focus::front_ok(&x.d.home)) {
         if before.is_none() {
             thread::sleep(Duration::from_millis(150));
         }
+        let back = focus::put_back(prev, hwnd);
         let after = x.after_action(hwnd, before, 0.6, None);
-        return Ok(format!("ok {name} ({how} in background){after}{}", x.new_windows(&known)));
+        let back = back.or_else(|| focus::put_back(prev, hwnd)).map_or(String::new(), |b| format!("\n{b}"));
+        return Ok(format!("ok {name} ({how} in background){after}{back}{}", x.new_windows(&known)));
     }
     focus::click(bg, px, py, Button::Left, 1, hwnd)?;
     let after = x.after_action(hwnd, before, 0.6, None);

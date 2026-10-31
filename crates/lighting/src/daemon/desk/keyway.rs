@@ -1,6 +1,6 @@
 use super::combo::{self, ALT, CTRL, Combo};
 use super::uia::{self, El};
-use super::{Desk, input, win};
+use super::{Desk, focus, input, win};
 
 const TAB: i32 = 50018;
 const TAB_ITEM: i32 = 50019;
@@ -71,13 +71,7 @@ pub fn by_ui(hwnd: isize, c: &Combo) -> Option<(String, Option<&'static str>)> {
     }
     let prev = win::foreground();
     let how = select_tab(hwnd, c)?;
-    let back = if prev == 0 || win::foreground() == prev || !win::alive(prev) {
-        None
-    } else if win::set_foreground(prev) {
-        Some("! the app jumped to the front, Lighting put the previous window back")
-    } else {
-        Some("! the app jumped to the front and Lighting could not put the previous window back")
-    };
+    let back = focus::put_back(prev, hwnd);
     Some((how, back))
 }
 

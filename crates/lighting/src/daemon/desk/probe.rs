@@ -21,3 +21,7 @@ pub fn cursor() -> (i32, i32) {
 pub fn idle_ms() -> u32 {
     input::idle_ms()
 }
+
+pub fn foreground() -> isize {
+    win::foreground()
+}

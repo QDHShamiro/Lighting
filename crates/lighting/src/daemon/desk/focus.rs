@@ -22,6 +22,23 @@ pub fn front_ok(home: &std::path::Path) -> bool {
     mode == "idle" || input::idle_ms() >= AWAY_MS
 }
 
+pub fn put_back(prev: isize, app: isize) -> Option<&'static str> {
+    let fg = win::foreground();
+    if prev == 0
+        || fg == prev
+        || !win::alive(prev)
+        || win::pid_of(fg) != win::pid_of(app)
+        || win::pid_of(prev) == win::pid_of(app)
+    {
+        return None;
+    }
+    Some(if win::set_foreground(prev) {
+        "! the app jumped to the front, Lighting put the previous window back"
+    } else {
+        "! the app jumped to the front and Lighting could not put the previous window back"
+    })
+}
+
 pub fn wait_idle() -> bool {
     let deadline = Instant::now() + BLITZ_WAIT;
     while input::idle_ms() < IDLE_MS {
