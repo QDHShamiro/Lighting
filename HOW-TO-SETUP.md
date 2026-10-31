@@ -21,7 +21,7 @@ crates/wisply/assets/fixture.html            selftest page (traps: hidden inject
 crates/wisply-ui/                            the window (wry), web/ is TypeScript built into web/dist
 crates/wisply-core, wisply-proto, wisply-memory, wisply-code, wisply-squeeze   argument parsing, pipe protocol, memory DB, code map, Bash-output squeeze
 extension/                                     MV3 extension (ES modules) + page scripts + vendored Defuddle
-docs/                                          demo.gif + frames-example.jpg, used by the README
+docs/                                          README graphics (compare/how SVGs), frames-example.jpg
 .github/workflows/                             v3.yml (every push/PR, 3 systems), release.yml (tag v* -> archives, clients, mcpb, SHA256SUMS), registry.yml
 ```
 

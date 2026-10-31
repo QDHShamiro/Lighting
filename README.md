@@ -1,81 +1,67 @@
 <p align="center">
-  <img src="docs/icon.png" width="112" height="112" alt="Wisply icon">
+  <img src="docs/icon.png" width="104" height="104" alt="Wisply icon">
 </p>
 
 <h1 align="center">Wisply</h1>
 
 <p align="center">
-  <em>Your real browser and every app on your computer, as a few lines of text.</em>
-  <br>
-  <sub>by <a href="https://github.com/QDHShamiro">QDHShamiro</a> · formerly Lighting</sub>
+  <b>Your AI uses your real browser and every app on your computer,<br>with a few lines of text instead of screenshots.</b>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/claude%20code-plugin-1B3A66?style=flat-square&labelColor=0A1A30" alt="Claude Code plugin">
-  <img src="https://img.shields.io/badge/codex-plugin-1B3A66?style=flat-square&labelColor=0A1A30" alt="Codex plugin">
-  <img src="https://img.shields.io/badge/mcp-any%20client-1B3A66?style=flat-square&labelColor=0A1A30" alt="MCP for any client">
-  <img src="https://img.shields.io/badge/routines-self--learning-1B3A66?style=flat-square&labelColor=0A1A30" alt="Self-learning routines">
-  <img src="https://img.shields.io/badge/selftest-161%2F161-1B3A66?style=flat-square&labelColor=0A1A30" alt="161/161 selftest">
-  <img src="https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-1B3A66?style=flat-square&labelColor=0A1A30" alt="Windows, macOS, Linux">
-  <img src="https://img.shields.io/badge/license-Apache--2.0-1B3A66?style=flat-square&labelColor=0A1A30" alt="Apache 2.0 license">
-  <br>
-  <img src="https://img.shields.io/badge/first%20look%20at%20a%20page-%E2%88%9297%25%20tokens-1E7BEF?style=flat-square&labelColor=0A1A30" alt="-97% tokens per page">
-  <img src="https://img.shields.io/badge/click%20result-%E2%88%9298%25%20tokens-1E7BEF?style=flat-square&labelColor=0A1A30" alt="-98% tokens per click">
-  <img src="https://img.shields.io/badge/known%20task-%E2%88%9296%25%20tokens-1E7BEF?style=flat-square&labelColor=0A1A30" alt="-96% tokens per known task">
-</p>
-
-https://github.com/user-attachments/assets/ff2f8cf2-f22a-4cb5-8c94-75e3bebd9a6d
-
-<h3 align="center">An AI that looks at a page with screenshots pays ~15,850 tokens. Wisply pays ~440.</h3>
-
-<table>
-<tr>
-<th width="50%">📸 Screenshot agent · ~15,850 tokens</th>
-<th width="50%">🔦 Wisply · ~440 tokens</th>
-</tr>
-<tr>
-<td valign="top">
-
-One screenshot (**~2,350** image tokens), then the page as text (**~13,500** tokens, cut off at 50,000 of 64,787 characters). After every click: another screenshot, another **~2,350**. Agents that drive a fresh browser are logged out on top of that.
-
-</td>
-<td valign="top">
-
-```
-[t17] QDHShamiro/Wisply: Claude Code plugin ... - github.com/QDHShamiro/Wisply
-e16 link "Issues" ->./issues
-e17 link "Pull requests" ->./pulls
-e27 button "Star QDHShamiro/Wisply"
-...
-```
-One call. Everything clickable has a ref. A click answers in one line (**13-53** tokens). Your real browser, your logins.
-
-</td>
-</tr>
-</table>
-
-<p align="center"><b>A 10-step task: ~37,000 tokens with screenshots, ~890 with Wisply. That is ~36,000 tokens saved, every time.</b><br><sub>Computed from the measured rows below: 1 page look + 9 clicks with a screenshot each, against 1 <code>open</code> + 9 one-line clicks.</sub></p>
-
-<p align="center">
-  <img src="docs/demo.gif" alt="Wisply demo: a filtered GitHub page, a click, a video as one image, the Windows calculator, then everything closes again" width="820">
-  <br><sub>A real run rendered from the terminal output (only the home folder is shortened to ~): 8 commands, 6.7 s, ~713 tokens of output, everything closed again.</sub>
+  <a href="https://github.com/QDHShamiro/Wisply/releases/latest"><img src="https://img.shields.io/github/v/release/QDHShamiro/Wisply?style=flat-square&label=release&color=111111" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/windows%20%7C%20macos%20%7C%20linux-111111?style=flat-square" alt="Windows, macOS, Linux">
+  <img src="https://img.shields.io/badge/claude%20code%20%7C%20codex%20%7C%20any%20MCP-111111?style=flat-square" alt="Claude Code, Codex, any MCP client">
+  <img src="https://img.shields.io/badge/selftest-162%2F162-111111?style=flat-square" alt="162/162 selftest">
+  <img src="https://img.shields.io/badge/license-Apache--2.0-111111?style=flat-square" alt="Apache 2.0">
 </p>
 
 <p align="center">
+  <a href="#what-you-need">What you need</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#what-it-does">What it does</a> ·
-  <a href="#built-for-claude">Built for Claude</a> ·
-  <a href="#-the-numbers">The numbers</a> ·
-  <a href="#how-it-compares">How it compares</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#the-numbers">Numbers</a> ·
   <a href="#commands">Commands</a> ·
   <a href="#safety">Safety</a>
 </p>
 
----
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/compare-dark.svg">
+  <img src="docs/compare-light.svg" width="880" alt="Tokens per step. Look at a page: 15,850 with screenshots, 440 with Wisply (−97%). See what a click did: 2,350 vs 13–53 (−98%). A 14-minute video: 14,100 vs 518 (−96%). A task done before: 916 vs 40 (−96%).">
+</picture>
+
+## In one minute
+
+AI agents usually look at a website by taking screenshots and reading the whole page. That costs thousands of
+tokens per step, and the agent drives a fresh browser that is logged out of everything.
+
+Wisply gives your AI **your** browser (with your logins) and your desktop apps as short text: what is on the screen,
+what can be clicked, and one line after every click saying what changed. It runs on your computer, in the
+background, and closes what it opened when the AI is done.
+
+```
+$ wisply open github.com/QDHShamiro/Wisply -f "Issues|Pull requests"
+[t1] QDHShamiro/Wisply - github.com/QDHShamiro/Wisply
+e3 link "Issues" ->./issues
+e4 link "Pull requests" ->./pulls
+$ wisply click "Issues"
+ok e3 -> github.com/QDHShamiro/Wisply/issues
+```
+
+## What you need
+
+| | |
+|---|---|
+| 💻 **A computer** | Windows 10/11, macOS or Linux |
+| 🌐 **A browser** | Brave, Chrome or Edge (Firefox does not work) |
+| 🤖 **An AI app** | Claude Code, Codex, Cursor, VS Code, Claude Desktop or any other MCP client |
+
+Nothing else. No Python, no Node, no account. Wisply is one program.
 
 ## Quick start
 
-Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. In Claude Code:
+In Claude Code:
 
 ```
 /plugin marketplace add QDHShamiro/Wisply
@@ -83,187 +69,100 @@ Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. In Claude Code:
 /wisply:setup
 ```
 
-`/wisply:setup` loads the extension into your browser by itself, runs the self-test and tells Claude Code to use
-Wisply for browser and desktop work. Then just ask, for example *"open my GitHub notifications and summarize them"*.
-Codex, Cursor, Gemini CLI, VS Code, Claude Desktop, LM Studio / Bionic, Cline, Roo Code, Zed: see [Install](#install).
+Setup loads the browser extension by itself, runs a self-test and tells Claude Code to use Wisply. Then just ask:
+*"open my GitHub notifications and summarize them"*.
 
-## The problem
-
-You ask your AI to check something on a website. It takes a screenshot: ~2,350 tokens. It reads the
-page: ~13,500 tokens, cut off halfway. It clicks, and takes another screenshot to see what happened.
-
-Ten steps later the context is full of pixels and accessibility dumps, and the AI is still logged
-out, because it drives a fresh browser that knows none of your accounts.
-
-None of that is what the AI needs. It needs to know what it can click, and whether the click worked.
+Other apps (Codex, Cursor, Gemini CLI, VS Code, Claude Desktop, LM Studio, Cline, Roo Code, Zed, Windsurf,
+Antigravity): [Install](#install).
 
 ## What it does
 
 | | |
 |---|---|
-| 🌐 **Your real browser** | Brave, Chrome or Edge with all your logins, through a small extension. Wisply's tabs live in their own orange "Wisply" group, in the background. |
-| 🖥️ **Every app** | The accessibility tree for normal apps (UI Automation on Windows, AX on macOS, AT-SPI on Linux), OCR for games and canvas UIs. On Windows clicks and typing go through in the background; your mouse stays where it is. |
-| 📱 **Your Android phone** | `wisply phone snap` lists what is on the screen, `phone tap p3` taps it, over USB debugging. |
-| 🧠 **Learns your tasks** | Do something twice and it becomes a routine that runs in one call ([how](#the-second-time-is-one-call)). |
-| 🎞️ **Watches videos** | `watch <link\|file>` gives chapters, the speech, the text on screen and 12 scenes in one image, then zooms in on request. `snap --media` lists images, `shot e57` shows one. |
-| 🧹 **Cleans up after itself** | When the AI finishes its reply, what it opened closes again. The tab group's color is a status light: orange working, red stopped, green done. |
-| 🔒 **Safe by default** | Banking sites are read-only, buy/pay/delete/merge buttons need `--yes`, hidden text never reaches the model, secrets never reach the log. |
+| 🌐 **Your real browser** | All your logins, through a small extension. Wisply's tabs live in their own window and tab group, in the background. |
+| 🖥️ **Every app** | Reads normal apps through the accessibility tree, games and canvas apps through OCR. On Windows clicks and typing reach the app in the background; your mouse stays where it is. |
+| 📱 **Your Android phone** | `phone snap` shows the screen as text, `phone tap p3` taps, over USB debugging. |
+| 🧠 **Learns your tasks** | Do something twice and it becomes a routine that runs in one call. |
+| 💾 **Remembers** | A memory on your computer: decisions, to-dos and what happened in earlier sessions, ~500 tokens at the start of each session. |
+| 🎞️ **Watches videos** | Chapters, speech, the text on screen and 12 scenes in one image. |
+| 🧹 **Cleans up** | When the AI finishes its reply, what it opened closes again and your window comes back. |
+| 🔒 **Safe by default** | Banking sites are read-only, buy/pay/delete buttons need `--yes`, hidden page text never reaches the model. |
 
-Every answer is short text with refs:
+## How it works
 
-```
-$ wisply open github.com/QDHShamiro/Wisply -f "Issues|Pull requests"
-[t1] QDHShamiro/Wisply: Claude Code plugin: control your real browser ... - github.com/QDHShamiro/Wisply
-e1 link "All issues" ->/issues
-e2 link "All pull requests" ->/pulls
-e3 link "Issues" ->./issues
-e4 link "Pull requests" ->./pulls
-more: 74 below (scroll or snap --all)
-! routine github-issues can finish this in one call: wisply run github-issues page=Wisply
-$ wisply click "Issues"
-ok e3 -> github.com/QDHShamiro/Wisply/issues
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/how-dark.svg">
+  <img src="docs/how-light.svg" width="880" alt="Your AI sends a short command to wisply, one Rust program on your computer. Wisply drives your browser, every app, games through OCR and an Android phone, and answers with a few lines of text.">
+</picture>
 
-```
-  your AI ──Bash──→ wisply.exe (Rust) ──┐
-  your AI ──MCP───→ wisply mcp ─────────┴─→ daemon ──┬─→ extension ──→ your open browser
-                                                       ├─→ UI Automation / AX / AT-SPI ──→ desktop apps
-                                                       ├─→ OCR ──→ games, canvas UIs
-                                                       └─→ adb ──→ Android phone
-```
+- **Refs instead of pixels.** Everything clickable gets a short name (`e12` on a page, `d5` in an app, `t4` a tab,
+  `w2` a window). Only visible, usable elements are listed; page headers and 60-link footers collapse to one line.
+- **One call instead of many.** `open <url> -f "words"` returns only matching lines,
+  `do "fill Email=a@b.c; click Continue; expect Welcome"` runs a whole sequence, a known task is `run <name>`.
+- **Errors name the next step.** `err: nothing matches "Log in" -> try: wisply snap -f "log in"`.
+- **Never in your way.** No window jumps to the front, not even over a full-screen game. Each AI session gets its
+  own browser window, so parallel sessions never mix.
 
-Only visible, usable elements are listed. Hidden text never reaches the model, links under the
-current page are shown as `./path`, tracking parameters are dropped, and a page header, a 60-link
-footer or a header that repeats from the last page collapse to one line. You pay for what you can act on.
+### The second time is one call
 
-### Images and video
-
-<p align="center">
-  <img src="docs/frames-example.jpg" alt="frames: a flower opening, 6 moments with timestamps in one image" width="760">
-  <br><sub><code>wisply frames e1</code> on a 5-second CC0 clip: 6 moments in one image, ~518 tokens, 0.9 s.</sub>
-</p>
-
-`frames e40` jumps to 6 moments spread over the full length of a video (a 14-minute talk in 2.1 s instead of
-14 minutes), with timestamps and the captions at each moment, muted, and puts the video back where it was.
-`--scenes` picks the 6 most different scenes out of 24, `--from 1:30 --to 2:00` looks at one part, `--live`
-watches in real time (streams). `snap --media` gives every image a ref with its caption as name, and
-`shot e57` saves just that image (~112 tokens for a Wikipedia photo).
-
-### It cleans up after itself
-
-Each Claude session works in its own browser window (your logged-in profile) with its own tab group,
-`Wisply #1`, `Wisply #2`, ..., so your tabs stay yours and parallel sessions never mix
-(`wisply config window off` puts the tabs into your window instead).
-
-It never pulls you out of what you are doing: on Windows no window comes to the front and your cursor stays
-where it is, even in a full-screen game. Clicks and typing reach the app in the background.
-
-When the AI finishes its reply, the tabs and apps it opened close again and the window you were in
-comes back to the front (`wisply done`, run by a Claude Code hook). A tab you are looking at stays,
-an app that was open before stays, an app with unsaved work is only asked to close. `wisply keep`
-hands a tab or app over to you; `wisply config cleanup off` keeps everything open.
-
-## The second time is one call
-
-An AI that does a task twice pays twice: every snapshot, every click, every thought. Wisply keeps a
-trace of each task with stable targets (`click "Sign in"`, not `e12`). When a task ends, it aligns it
-with earlier ones like DNA sequences; the parts that differ become parameters.
+Wisply keeps a trace of each task. When a task repeats, it lines the runs up and turns the parts that differ into
+parameters:
 
 ```
-  run 1   launch spotify:search:SOS    → snap → click "SOS wiedergeben"
-  run 2   launch spotify:search:Numb   → snap → click "Numb wiedergeben"
-          ! learned routine spotify-wiedergeben from 2 runs
-  run 3   wisply run spotify-wiedergeben search=SOS
-          ok spotify-wiedergeben: 2 steps in 1.4 s, verified -> yukan archive - SOS - Spotify.exe
+run 1   launch spotify:search:SOS    → snap → click "SOS wiedergeben"
+run 2   launch spotify:search:Numb   → snap → click "Numb wiedergeben"
+        ! learned routine spotify-wiedergeben from 2 runs
+run 3   wisply run spotify-wiedergeben search=SOS
+        ok spotify-wiedergeben: 2 steps in 1.4 s, verified
 ```
 
-- **Learns by itself.** Seen twice, a routine exists. No prompt, no naming, no setup.
-- **Speaks up.** Start a known task and the first output says `! routine X can finish this in one call`.
-- **Checks its work.** A run passes only when the result shows up (the song in the window title, the repo in the URL).
-- **Repairs itself.** A step breaks, the AI finishes by hand, Wisply rebuilds the routine from what worked (`v2`).
-- **Keeps score.** Runs, success rate, time and tokens saved per routine; three failures in five runs mark it `FLAKY`.
-- **Or just show it.** `wisply record start`, do it yourself in the browser or any app, `wisply record stop song=SOS`.
+Routines check their result, repair themselves when a step breaks, and keep score (runs, success rate, tokens
+saved). You can also show it once: `wisply record start`, do it yourself, `wisply record stop`.
 
-```
-$ wisply routines
-github-issues page= | 2/3 ok, 3.4 s, saved ~1.7k tokens | open github.com/QDHShamiro/{page} > click Issues
-spotify-wiedergeben search= | 2/2 ok, 1.4 s, saved ~181 tokens | launch spotify:search:{search} > click "{search} wiedergeben"
-```
-
-(The failed `github-issues` run was a repo that does not exist: it clicked the global Issues link, the
-check caught it.)
-
-## It remembers
-
-Every new session starts from zero, so the AI asks again, searches again, decides again. Wisply keeps
-a memory on your computer and starts each session with about 500 tokens of it: the open to-dos, the
-last sessions in one line each, and what you asked it to keep.
+### It remembers
 
 ```
 you      merk dir, dass Brave der einzige Browser ist
          Wisply memory saved #14905: "Brave der einzige Browser ist"
-claude   wisply recall "game pause localai"
-         #13529 10-18 feature: Pause Mode Detection: Query Game State for Paused Execution | Added paused() …
-         #13555 10-18 change: SPEC.md Updated: Gaming Behavior Changed to Pause Mode | …
-claude   wisply todo add "Release 2.0" --list wisply
+claude   wisply recall "game pause"
+         #13529 10-18 feature: Pause Mode Detection …
 ```
 
-- **Learns by itself.** When a session ends, a local model reads it and keeps the decisions, fixes,
-  facts and what is still open. Wisply downloads the model itself (Qwen3.5 with llama.cpp) and never
-  runs it while you play a game.
-- **Finds by meaning.** Search mixes words and meaning, in any language: "welcher port für geyser" finds the
-  English note "Geyser Bedrock 20165, Simple Voice Chat 20166".
-- **Speaks up.** A prompt that clearly fits old notes of the same project shows their numbers, never more than two.
-- **Stays yours.** One SQLite file in `~/.wisply/memory`. Nothing is uploaded, keys and passwords
-  are cut out before anything is stored. Coming from claude-mem: `wisply memory import claude-mem`.
+When a session ends, a local model (downloaded by Wisply, never run while you play a game) keeps its decisions,
+fixes and open points. Search works by words and meaning, in any language. Everything stays in one SQLite file in
+`~/.wisply/memory`; keys and passwords are cut out before anything is stored.
 
-## Built for Claude
+### Images and video
 
-Every step of an AI agent costs a model round of 1-5 seconds, and everything a tool prints stays in the
-context. So Wisply saves steps first and tokens second:
+<p align="center">
+  <img src="docs/frames-example.jpg" alt="frames: a flower opening, 6 moments with timestamps in one image" width="700">
+  <br><sub><code>wisply frames e1</code> on a 5-second CC0 clip: 6 moments in one image, ~518 tokens, 0.9 s.</sub>
+</p>
 
-- **One call instead of two.** `open <url> -f "Issues|Pull"` returns only the matching lines,
-  `do "fill Email=a@b.c; click Continue; expect Welcome"` runs a whole sequence, a known task is `run <name> k=v`.
-- **Answers you can act on.** Everything clickable has a ref (`e12` web, `d5` app, `t4` tab, `w2` window).
-  An action answers with one line and what changed; the header says where you are (`[t4]` tab, `[w2]` window).
-- **Errors name the next step.** `err: nothing matches "Log in" -> try: wisply snap -f "log in"`.
-- **Small by construction.** Headers, navs and repeated lists collapse to one line, the first look at a page
-  stops at 1,600 characters, big results go to a file and only the path is printed.
-- **Knows the cheapest way.** The skill teaches the ladder: an API or `read <url>` (no browser) → `open -f` →
-  `snap -f` → `text` → `shot`, and says when a learned routine can finish the task.
-- **Leaves no mess.** A plugin hook closes what the agent opened after every reply; `keep t3` hands a tab to you.
-- **Fast on both paths.** A Bash call costs ~55 ms, almost all of it Git Bash starting a process. Through MCP a
-  call costs 1.2 ms and a browser command 2.9 ms.
+`watch <link|file>` gives an overview of any video (chapters, speech, screen text, scenes), `frames e40` turns a
+video on the page into one contact sheet, `listen` returns only the speech, `shot e57` looks at one image.
 
-Want every agent on your PC to prefer it? Put this in `CLAUDE.md` or `AGENTS.md`:
+## The numbers
 
-```markdown
-- Browser and desktop: use the `wisply` command (skill "wisply") for all web and Windows UI work.
-  Cheapest first: `wisply read <url>` for public pages, `open <url> -f "words"` when you know what you
-  need, `do "a; b; c"` for sequences, `run <routine>` for known tasks. Screenshots only when looks matter.
-```
-
----
-
-## 📊 The numbers
-
-Every number here comes from a run you can repeat: `wisply bench`, `wisply bench --real`, `wisply selftest`.
-Brave 154, Windows 11, Wisply 0.7.2. Tokens are characters / 4. Small numbers stay small, and a row where the comparison does not work says so.
-
-### Per action
+Every number comes from a run you can repeat: `wisply bench`, `wisply bench --real`, `wisply selftest`.
+Brave, Windows 11. Tokens are characters / 4.
 
 | Action | Without Wisply | With Wisply | Saved |
 |---|---:|---:|---:|
 | Look at a page (GitHub repo) | ~15,850 (screenshot + page text) | **~440** (`open`) | **−97%** |
-| See a 14-minute video (6 moments) | ~14,100 (6 screenshots, waiting while it plays) | **~518** (`frames`, one image, 2.1 s) | **−96%** |
-| See what a click did | ~2,350 (new screenshot) | **13-53** (one-line change report) | **−98%** |
-| Find one thing on a page | ~2,350 (screenshot) | **~36-50** (`snap -f`) | **−98%** |
-| Do a known task again (a repo's issues) | ~916 (every step by hand) | **~40** (`run github-issues`, 1 call) | **−96%** |
-| Screenshot, when you really need one | ~2,350 | ~700 (1024 px JPEG) | **−70%** |
+| See a 14-minute video | ~14,100 (6 screenshots, waiting while it plays) | **~518** (`frames`, 2.1 s) | **−96%** |
+| See what a click did | ~2,350 (new screenshot) | **13–53** (one line) | **−98%** |
+| Find one thing on a page | ~2,350 (screenshot) | **~36–50** (`snap -f`) | **−98%** |
+| Do a known task again | ~916 (every step by hand) | **~40** (`run`, 1 call) | **−96%** |
+| A screenshot, when you need one | ~2,350 | ~700 (1024 px JPEG) | **−70%** |
 
-### Whole page text, 6 real sites
+A 10-step task: **~37,000 tokens with screenshots, ~890 with Wisply.**
 
-`wisply text` against the page's own rendered text (`document.body.innerText`), which is already much smaller than what screenshot agents read. `text` keeps the first 6,000 characters in the answer and writes the rest to a file, so long pages save the most.
+<details>
+<summary><b>Whole page text on 6 real sites, and speed</b></summary>
+
+`wisply text` against the page's own rendered text (`document.body.innerText`). Long pages save the most, because
+`text` keeps the first 6,000 characters in the answer and writes the rest to a file.
 
 | Site | Page text | `wisply text` | Saved |
 |---|---:|---:|---:|
@@ -275,88 +174,38 @@ Brave 154, Windows 11, Wisply 0.7.2. Tokens are characters / 4. Small numbers st
 | TikTok For You | (no DOM text, video only) | 24 | n/a |
 | **Total** | **44,706** | **5,763** | **−87%** |
 
-### Speed
-
-| | |
+| Speed | |
 |---|---|
-| `snap` on GitHub, YouTube, Modrinth, Hugging Face, TikTok | 4-24 ms |
-| Browser command through MCP (`snap`, `js`, `tabs`) | 2.9 ms (was 17.5 ms before 0.7.0) |
-| Browser command through Bash | ~70 ms, of which ~55 ms is Git Bash starting a process |
+| `snap` on GitHub, YouTube, Modrinth, Hugging Face, TikTok | 4–24 ms |
+| Browser command through MCP | 2.9 ms |
+| Browser command through Bash | ~70 ms (~55 ms of it is Git Bash starting a process) |
 | Click with navigation check and change report | ~135 ms |
-| `shot` / `shot e5` | 172 ms / 100 ms |
-| `open` a real site (includes the page load) | 1.3-4.7 s (a light page: 330 ms) |
-| Cold start through `rtk` or any pipe | no hang (fixed in 0.5.0) |
+| `open` a real site, page load included | 1.3–4.7 s |
+| GitHub diff with 62,000 elements | `snap` 0.11 s, `scroll` 0.17 s |
 
-- `wisply selftest`: **161/161** on Windows (browser, desktop, chat and sessions, cold start included); CI runs it on Windows, macOS and Linux on every push. Tests: `cargo test --workspace`.
-- `wisply bench --real` times GitHub, Wikipedia, YouTube, Modrinth, Hugging Face and TikTok, prints the page-text comparison above and compares with the last run.
-- `wisply demo` shows Wisply in about 30 s on a made-up shop page served from your own computer (open, find, fill, pick, tick, click, read a table), with the time and size of every answer. `--fast` skips the pauses that are there for screen recordings.
-- Filling and submitting a form: ~160 ms.
-- GitHub diff with 62,000 elements: `snap` 0.11 s, `scroll` 0.17 s.
+`wisply demo` shows Wisply in about 30 s on a made-up shop page served from your own computer.
+
+</details>
 
 ## How it compares
 
 | | Wisply | Claude in Chrome | Playwright MCP | agent-browser |
 |---|---|---|---|---|
-| Your real browser profile and logins | ✅ | ✅ | with its extension, Chrome and Edge ([3]) | a copy of a profile, or attached over CDP ([2]) |
-| Desktop apps (accessibility tree + OCR) | ✅ Windows, macOS, Linux | – | – | – |
-| Tokens for a first look at a page | **~440** (measured) | ~15,850: screenshot + page text (measured) | 15,000-30,000 on dense pages ([1]) | no number published ([2]) |
+| Your real browser and logins | ✅ | ✅ | with its extension ([3]) | a profile copy or CDP ([2]) |
+| Desktop apps | ✅ Windows, macOS, Linux | – | – | – |
+| Tokens for a first look at a page | **~440** (measured) | ~15,850 (measured) | 15,000–30,000 on dense pages ([1]) | not published ([2]) |
 | Repeated tasks | learned routines, one call | saved shortcuts | – | – |
-| Memory across sessions | ✅ on your computer, learned by a local model | – | – | – |
-| A whole video as one image | ✅ `frames` | – | – | – |
-| Headless, CI | ❌ real browser only | desktop Chrome, no headless | ✅ | ✅ |
+| Memory across sessions | ✅ local | – | – | – |
+| Headless, CI | ❌ real browser only | – | ✅ | ✅ |
 
-`–` means not built in as far as the public docs say. Wisply is the wrong tool for headless tests or CI: take
-Playwright there. It is built for the other case: an agent on your computer (Windows, macOS or Linux) that has to use
-your logged-in browser and your apps, cheaply.
+`–` = not built in, as far as the public docs say. For headless tests and CI, take Playwright. Wisply is for an
+agent on your own computer that has to use your logged-in browser and your apps, cheaply.
 
 [1]: https://lite.ego.app/article/playwright-mcp-token-problem
 [2]: https://github.com/vercel-labs/agent-browser
 [3]: https://github.com/microsoft/playwright-mcp
 
-## What's new
-
-- **3.0.0** (not released yet) Lighting is now **Wisply** (people kept hearing "Lightning"). `lighting` still works as
-  a second name until 3.1, and setup copies your data from `~/.lighting` to `~/.wisply` (the old folder stays). Wisply is one Rust program: no Python, no venv, the MCP server takes ~12 MB per
-  session instead of ~45 MB and answers its first call in ~30 ms. A window (`wisply ui`) with your projects,
-  notes, to-dos and a graph of notes and code. Headroom: long Bash logs and JSON reach the model as their
-  important lines, the full text stays on disk. Hooks and the MCP server start from `~/.wisply/bin`, so a
-  sleeping data drive no longer slows Claude down. `tabs` shows Wisply's tabs and the tab in front (`--all` for
-  every tab), `type focused` works on pages, `click @x,y` clicks a point that `read` printed, `ctrl+w`/`ctrl+tab`
-  act on Wisply's own tab. A git worktree counts as its main project in the memory.
-- **2.0.0** A memory across sessions (`recall`, `remember`, `todo`, a start summary of ~500 tokens, learned by a
-  local model that Wisply downloads itself), `wisply watch` (any video in one call: chapters, speech, screen
-  text and scenes in one image), macOS and Linux, Android phones (`wisply phone`), and a brain: on pages it
-  knows, `snap` shows the controls you actually use (this repo's page ~450 → ~117 tokens). `wisply improve` checks the last days for
-  errors and loops, `wisply doctor --fix` repairs the setup, routines run on a schedule, `wisply demo` shows it
-  all in 30 s. A one-click bundle for Claude Desktop, an entry in the MCP registry, Apache-2.0.
-- **1.1.0** Sessions keep their tabs and windows through updates and restarts; `wait "text" w3` waits in any
-  app; a repeated `snap` shows only what changed (`--full` for all); `frames --small`; routines learn whole values
-  with clean names and skip one-off tasks.
-- **1.0.0** Every session gets its own browser window (`Wisply #1`, `Wisply #2`); `wisply claude "task" --yes`
-  opens a new terminal tab with Claude and Remote Control and hands it the task; `shot screen --seconds 10` films
-  the screen for your phone. Fixed from real sessions: clicks in payment and login frames, tabs lost after `done`,
-  `keep`, `wait` on button names, `snap -f` that missed text.
-- **0.9.0** Hears videos: `listen` says what a TikTok or YouTube video says (captions, else speech-to-text), also
-  for logged-in videos by recording the tab. Every Claude session keeps its own tabs and cleans up only those;
-  `unread` shows waiting Discord messages; `search youtube "x"` jumps to results and learns new sites; `net` shows
-  the JSON behind a page; Discord snapshots are 36% smaller; routines call routines; WebMCP tools.
-- **0.8.0** Chats and fewer rounds: `reply "@Name" "hi" --wait` sends in Discord and waits for the answer in one
-  call, `inbox` reads new messages in full; `-f` after any action shows its result; `wait --reload` instead of
-  sleep loops; `search`, `open --text`, app links (`obsidian://`); desktop actions report what changed;
-  shortcuts learned per app (`wisply keys`); routines found from the request itself. The skill got smaller.
-- **0.7.1** Claude uses it better: `js` with `const` no longer clashes between calls, `type focused` right after
-  `launch` works, merge buttons need `--yes`, the skill has the rules agents tripped over and is 9% shorter.
-- **0.7.0** Speed pass: a browser command through MCP 17.5 → 2.9 ms, screenshots 37-54% faster, `open -f`.
-- **0.6.0** Video analysis over the whole video with captions and scenes; leaner snapshots.
-- **0.5.0** Cleans up after itself, status light, images, CI and releases with SHA-256 checksums.
-
-All changes: [CHANGELOG.md](CHANGELOG.md).
-
----
-
 ## Install
-
-Requirements: Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. Nothing else: Wisply is one program.
 
 **Claude Code**
 
@@ -366,45 +215,25 @@ Requirements: Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. Nothing 
 /wisply:setup
 ```
 
-**Codex**
-
-```
-codex plugin marketplace add QDHShamiro/Wisply
-```
-
-Then install `wisply` from `/plugins`, download the release archive for your system (below), and run once in a
-terminal, in the unpacked folder:
-
-```
-./wisply setup
-wisply install codex
-```
-
-**Antigravity, Cursor, Gemini CLI, VS Code (Copilot), Windsurf, Claude Desktop, LM Studio / Bionic, Cline, Roo Code, Zed, any MCP client**
-
-Download `wisply-<version>-<system>` from [Releases](https://github.com/QDHShamiro/Wisply/releases/latest),
-unpack it, then:
+**Every other app.** Download `wisply-<version>-<system>` from
+[Releases](https://github.com/QDHShamiro/Wisply/releases/latest), unpack it, then in that folder:
 
 ```bash
-./wisply setup               # in the unpacked folder
-wisply install cursor        # or: antigravity | gemini | vscode | windsurf | claude-desktop | codex
-                               #     bionic | lmstudio | cline | roo | zed
+./wisply setup
+wisply install cursor     # or: codex | antigravity | gemini | vscode | windsurf | claude-desktop
+                          #     lmstudio | bionic | cline | roo | zed
 ```
 
-`install bionic` (same as `lmstudio`) also copies the Wisply skill into `~/.lmstudio/skills/wisply`,
-where Bionic picks up global skills; later updates refresh that copy. `install antigravity` writes
-`~/.gemini/config/mcp_config.json` (and the older `~/.gemini/antigravity/mcp_config.json` if it exists) and copies
-the skill into `~/.gemini/skills/wisply` and Antigravity's own skill folders that exist; click Refresh under
-Manage MCP Servers afterwards.
-
-`setup` copies Wisply to `~/.wisply/bin`, registers the native messaging host,
-**loads the extension into your browser by itself** (it opens the extensions page, switches on
-Developer mode and picks the folder through UI Automation) and puts `wisply` on your PATH. For Claude Code it also sets `WISPLY_BIN` in `~/.claude/settings.json`, so the
-hooks and the MCP server start from `~/.wisply/bin`.
-`install <ai>` adds the MCP server to that AI's config and leaves everything else in it alone.
+For Codex, add the plugin first: `codex plugin marketplace add QDHShamiro/Wisply`, then install `wisply` from
+`/plugins`.
 
 <details>
-<summary><b>MCP config by hand</b></summary>
+<summary><b>What setup does, and MCP config by hand</b></summary>
+
+`setup` copies Wisply to `~/.wisply/bin`, registers the browser link, loads the extension into your browser by
+itself and puts `wisply` on your PATH. For Claude Code it also sets `WISPLY_BIN` in `~/.claude/settings.json`.
+`install <app>` adds the MCP server to that app's config and leaves everything else alone; for LM Studio, Bionic and
+Antigravity it also copies the Wisply skill.
 
 ```json
 {
@@ -427,9 +256,30 @@ args = ["mcp"]
 
 </details>
 
----
+Want every agent on your PC to prefer it? Put this in `CLAUDE.md` or `AGENTS.md`:
+
+```markdown
+- Browser and desktop: use the `wisply` command (skill "wisply") for all web and UI work.
+  Cheapest first: `wisply read <url>` for public pages, `open <url> -f "words"` when you know what you
+  need, `do "a; b; c"` for sequences, `run <routine>` for known tasks. Screenshots only when looks matter.
+```
 
 ## Commands
+
+`wisply help` lists everything. The most used:
+
+| | |
+|---|---|
+| **Look** | `open <url>` · `snap [-f "a\|b"]` · `text` · `read <url>` (no browser) · `shot` |
+| **Act** | `click` · `type` · `fill "Email=a@b.c" --submit` · `press` · `select` · `scroll --until "text"` · `upload` |
+| **Wait** | `wait "text"` · `expect "text"` · `wait url:/x` |
+| **Apps** | `launch spotify` · `windows` · `snap w2` · `read w2` (OCR) · `click d5` · `press ctrl+s` |
+| **Clean up** | `done` · `keep t3` (hand it to you) · `config cleanup off` |
+| **Routines** | `routines` · `run <name> k=v` · `record start` … `record stop` |
+| **Memory** | `remember "fact"` · `recall "words"` · `todo add "task"` |
+
+<details>
+<summary><b>All commands</b></summary>
 
 **Browser** (your normal profile, all logins)
 
@@ -440,24 +290,24 @@ args = ["mcp"]
 | Wait | `wait "text" \| url:/x \| 1500 [--gone]` · `expect "text"` · `wait "Done" w3` (in an app) |
 | Data | `table e8` · `fetch /api/me --pick login` (with your cookies) · `js` |
 | Tabs | `tabs` · `tab t3` · `close` · `back` · `reload` · `dialog accept\|dismiss` · `dismiss` (cookie banners) · `viewport 390x844` |
-| Clean up | `done` (close what Wisply opened) · `keep [t3\|w2]` (hand it over to you) · `config cleanup off` (keep everything open) · `config window off` (tabs in your window, not an own one) · `config focus away` (may take the front when you are away; default never) |
-| Video | `watch <link\|file\|e40>` (overview: chapters, speech, screen text, scenes in one image) · `watch ... --from 4:05 --to 6:00` (closer) · `--at 1:23,2:45` (exact frames, readable code) · `--text` · `--full` · `listen` (speech only) · `frames e40 [--scenes] [--live]` (a video on the page as one contact sheet) |
-| Images | `snap --media` (images get refs, captions as names) · `shot e57` (look at one image) · `read <image url>` |
+| Clean up | `done` · `keep [t3\|w2]` · `config cleanup off` · `config window off` (tabs in your window) · `config focus away` (may take the front when you are away) |
+| Video | `watch <link\|file\|e40>` · `watch ... --from 4:05 --to 6:00` · `--at 1:23,2:45` · `--text` · `--full` · `listen` · `frames e40 [--scenes] [--live]` |
+| Images | `snap --media` · `shot e57` · `read <image url>` |
 
-**Desktop (Windows, macOS, Linux)**
-
-| | |
-|---|---|
-| Start | `launch spotify` · `launch "spotify:search:SOS"` · `launch calc` (Win+R names and Store apps too) · `close w4` · `close "app:Rechner"` |
-| Look | `windows` · `snap app:spotify` · `snap w2` (accessibility tree) · `read w2` (OCR) · `shot w2` (even when covered) · `shot screen --seconds 10` (a short video) |
-| Act | `click d5` · `click "Save"` · `click o3` (OCR text, real click, cursor goes back) · `type "Search" text` · `type focused text` · `press ctrl+s` · `clip get\|set` |
-| Claude | `claude "task" --yes` (new terminal tab: Claude with Remote Control, the task sent once it is ready) · `--dir E:/proj` · `--no-remote` |
-
-**Android phone** (USB debugging on, then `wisply phone setup` downloads Google's platform-tools)
+**Desktop** (Windows, macOS, Linux)
 
 | | |
 |---|---|
-| Look | `phone devices` · `phone snap [-f word]` (`p1`, `p2` refs) · `phone shot` · `phone apps [-f word]` |
+| Start | `launch spotify` · `launch "spotify:search:SOS"` · `launch calc` · `close w4` · `close "app:Rechner"` |
+| Look | `windows` · `snap app:spotify` · `snap w2` · `read w2` (OCR) · `shot w2` (even when covered) · `shot screen --seconds 10` |
+| Act | `click d5` · `click "Save"` · `click o3` (OCR text) · `type "Search" text` · `type focused text` · `press ctrl+s` · `clip get\|set` |
+| Claude | `claude "task" --yes` (new terminal tab with Claude and Remote Control) · `--dir E:/proj` · `--no-remote` |
+
+**Android phone** (USB debugging on, then `wisply phone setup`)
+
+| | |
+|---|---|
+| Look | `phone devices` · `phone snap [-f word]` · `phone shot` · `phone apps [-f word]` |
 | Act | `phone tap p3\|"Wi-Fi"` (`--long`) · `phone type "text" --enter` · `phone key back\|home\|enter` · `phone swipe up` · `phone launch spotify` · `phone open <url>` |
 
 **Routines**
@@ -466,88 +316,76 @@ args = ["mcp"]
 |---|---|
 | Use | `routines [-f word]` · `run <name> param=value` · `routine show <name>` |
 | Teach | learned by itself on repeat · `routine save <name> [param=value]` · `record start <name>` … `record stop [param=value]` |
-| Tidy | `routine rm\|rename <name>` · `routine forget` (task history) · `config learn off` |
+| Tidy | `routine rm\|rename <name>` · `routine forget` · `config learn off` |
 
 **Memory** (one file on your computer, `~/.wisply/memory`)
 
 | | |
 |---|---|
 | Keep | `remember "fact" [--kind decision] [--global]` · "merk dir …" / "remember …" in a prompt · learned from finished sessions |
-| Find | `recall "words" [--all]` · `recall 42` (in full) · `forget 42` |
+| Find | `recall "words" [--all]` · `recall 42` · `forget 42` |
 | To-dos | `todo [--all]` · `todo add "task" --list x` · `todo doing\|done\|drop 12` · `todo note 12 "text"` |
-| Model | `memory` (state) · `memory model` (download) · `memory learn` · `memory import claude-mem` · `config memory_api <url>` · `memory off` |
+| Model | `memory` · `memory model` · `memory learn` · `memory import claude-mem` · `config memory_api <url>` · `memory off` |
 
-On Windows clicks and typing go through UI Automation in the background, your mouse stays where it is.
-`do "fill Email=a@b.c; click Continue; expect Welcome"` runs several steps in one call.
-`wisply help` lists everything.
-
----
+</details>
 
 ## Safety
 
 - Banking and payment sites are read-only (`~/.wisply/blocklist.txt`).
-- Buttons that look irreversible (buy, pay, delete, merge a pull request, ...) need `--yes`.
-- Hidden text is never shown to the model, which blocks a common prompt-injection trick.
-- A URL with a long query to a site not opened yet needs `--yes`, so injected instructions cannot quietly send data out.
+- Buttons that look irreversible (buy, pay, delete, merge a pull request …) need `--yes`.
+- Hidden text never reaches the model, which blocks a common prompt-injection trick. A URL with a long query to a
+  site not opened yet needs `--yes`, so injected instructions cannot quietly send data out.
 - Secrets come from environment variables (`--env VAR`) and are never logged.
-- **Ctrl+Alt+End** stops everything immediately.
-- Every push runs CI on Windows, macOS and Linux (format, clippy, tests, cargo-deny licenses and advisories, the extension and plugin files, the self-test in a real Chrome). Every release carries the archives and clients built by CI from the tag (`wisply.exe`, `wisply-macos`, `wisply-linux-x64`, `wisply-linux-arm64`), each with a GitHub build attestation (`gh attestation verify <file> -R QDHShamiro/Wisply`), and `SHA256SUMS.txt`: check yours with `certutil -hashfile wisply.exe SHA256` (Windows) or `shasum -a 256 wisply-macos`, or build it yourself with `cargo build --release -p wisply`.
+- **Ctrl+Alt+End** stops everything at once.
+- Every release is built by CI from the tag, with a GitHub build attestation
+  (`gh attestation verify <file> -R QDHShamiro/Wisply`) and `SHA256SUMS.txt`. Or build it yourself:
+  `cargo build --release -p wisply`.
 
 <details>
 <summary><b>Files it creates, and how to remove it</b></summary>
 
-Everything lives in `~/.wisply/` (`%USERPROFILE%\.wisply\` on Windows): the extension copy, the native host,
-`bin\` (wisply, wisply-ui, wisply-task), the memory database, the pipe key, the blocklist, a 24 h output cache and the action log (typed text
-and secrets are never logged). Routines live in `routines\`, the last 300 tasks they are learned from
-in `episodes.jsonl` (typed text included so routines can replay it; `--env` secrets are stored as
-`@secret`; `wisply routine forget` clears it, `wisply config learn off` stops it). On Windows the registry gets the
-native messaging host keys for Brave, Chrome, Edge and Chromium, and `.wisply\bin` goes into your user `Path`. On
-macOS and Linux the host manifests go into each browser's `NativeMessagingHosts` folder and `wisply` into
-`~/.local/bin`.
+Everything lives in `~/.wisply/` (`%USERPROFILE%\.wisply\` on Windows): the programs in `bin\`, the extension, the
+memory database, routines, the last 300 tasks they are learned from (`wisply routine forget` clears them), a 24 h
+output cache and an action log without typed text or secrets. Windows also gets the browser link in the registry and
+`.wisply\bin` in your user `Path`; macOS and Linux get host files in each browser's `NativeMessagingHosts` folder and
+`wisply` in `~/.local/bin`.
 
 ```
 wisply uninstall          # browser link and WISPLY_BIN off, daemon stopped
-wisply uninstall --purge  # also removes the Wisply files in ~/.wisply (memory and notes stay)
+wisply uninstall --purge  # also removes the files in ~/.wisply (memory and notes stay)
 ```
 
 </details>
 
 <details>
-<summary><b>How it works</b></summary>
+<summary><b>Troubleshooting and limits</b></summary>
 
-- The daemon starts on the first call and stays. The pipe is protected by a random token in `~/.wisply/key`.
-- The extension only talks to the local native host, never to web pages.
-- Snapshots are built in the page by a small script (no full accessibility tree), refs stay stable in the extension's isolated world.
-- JavaScript dialogs do not freeze it: it reports them and waits for `dialog accept|dismiss`.
-- Links that open a new tab switch the target automatically.
+| Problem | Fix |
+|---|---|
+| `no browser ... connected` | `wisply setup` |
+| `wisply: command not found` | open a new terminal after `setup` |
+| `cannot script this page` (brave://, Web Store) | `wisply snap w1 --web` controls the browser window instead |
+| Something hangs | `wisply stop`; the next call starts fresh |
 
-`HOW-TO-SETUP.md` has every trap this works around.
+- Firefox is not supported (no `debugger` extension API). No iPhone.
+- macOS: the terminal needs Accessibility and Screen Recording in System Settings > Privacy & Security; `setup` says
+  when one is missing. Keys go to the app in front.
+- Linux: everything works on X11 and is tested there on every push. Under Wayland the basics work (AT-SPI, ydotool,
+  grim); filming a window needs X11. OCR needs tesseract.
+- macOS and Linux have had less real-world use than Windows.
+- Apps running as administrator only take input when the terminal runs as administrator too.
 
 </details>
 
-## Troubleshooting
+## What's new
 
-| Symptom | Fix |
-|---|---|
-| `no browser ... connected` | `wisply setup` |
-| `wisply: command not found` | open a new terminal after `setup`, or run `setup` again from the unpacked release |
-| `cannot script this page` (brave://, Web Store) | `wisply snap w1 --web` controls the browser window instead |
-| Something hangs | `wisply stop`, the next call starts a fresh daemon |
+- **3.0** Lighting is now **Wisply**. One Rust program: no Python, no venv, the MCP server takes ~12 MB per session
+  and answers its first call in ~30 ms. A window (`wisply ui`) with your projects, notes, to-dos and a graph of notes
+  and code. Long Bash logs reach the model as their important lines. Your data moves from `~/.lighting` to
+  `~/.wisply` by itself; the old `lighting` command works until 3.1.
+- **2.0** Memory across sessions, `watch` for any video, macOS and Linux, Android phones, Apache-2.0.
 
-## Limits
-
-- Firefox is not supported (no `debugger` extension API). No iPhone.
-- macOS: the terminal (and the browser, for the extension link) needs Accessibility and Screen Recording in System
-  Settings > Privacy & Security. `setup` says when one is missing.
-- macOS: keys and pasted text go to the app in front. If macOS will not bring an app to the front, Wisply sends the
-  keys to the app directly, which some apps ignore.
-- Linux: everything works on X11 and is tested there on every push. Under Wayland (Ubuntu's default) the basics work:
-  windows and controls through AT-SPI, keys and clicks through ydotool (`sudo apt install ydotool`, then start
-  `ydotoold`), screenshots through gnome-screenshot or grim. Filming a window needs X11. Wayland has not been tested
-  on a real desktop yet. OCR needs tesseract (`sudo apt install tesseract-ocr`).
-- macOS and Linux run on GitHub's machines in every push; they have had less real-world use than Windows.
-- Cross-origin iframes: snapshot with `--frame host`, clicks there are DOM clicks.
-- Apps running as administrator only take input when the terminal runs as administrator too.
+Everything else: [CHANGELOG.md](CHANGELOG.md).
 
 ## Development
 
@@ -556,18 +394,14 @@ cargo build --release -p wisply -p wisply-ui
 target/release/wisply setup --manual    # copies to ~/.wisply/bin, restarts an old daemon
 wisply ext-reload && wisply selftest && wisply bench
 cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace
-claude plugin validate .
 ```
 
-`HOW-TO-SETUP.md` is the runbook: layout, traps and the verification protocol.
+`HOW-TO-SETUP.md` is the runbook: layout, traps and how to verify a change.
 
-## Code signing policy
+## Code signing, license
 
-Windows releases are meant to be signed through the SignPath Foundation (application pending). What gets signed,
-who approves it and what Wisply sends where: [CODE_SIGNING.md](CODE_SIGNING.md).
+Windows releases are meant to be signed through the SignPath Foundation (application pending), see
+[CODE_SIGNING.md](CODE_SIGNING.md).
 
-## License
-
-Apache License 2.0 from version 2.0.0 (see `LICENSE` and `NOTICE`; up to 1.1.0 it was MIT). The name and the logo are
-not covered by the license, see `TRADEMARKS.md`. Security reports and what Wisply may do: `SECURITY.md`.
-Bundles [Defuddle](https://github.com/kepano/defuddle) (MIT, see `extension/defuddle.LICENSE.txt`).
+Apache License 2.0 (see `LICENSE` and `NOTICE`). The name and the logo are not covered by the license, see
+`TRADEMARKS.md`. Security reports: `SECURITY.md`. Bundles [Defuddle](https://github.com/kepano/defuddle) (MIT).

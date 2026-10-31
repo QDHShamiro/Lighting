@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="434" viewBox="0 0 880 434">
+<rect x="0.5" y="0.5" width="879" height="433" rx="14" fill="#0d1117" stroke="#30363d"/>
+<text x="32" y="46" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#f0f0f0">Tokens per step</text>
+<text x="32" y="70" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#9198a1">Measured on real sites. Fewer tokens = cheaper, faster, more room for the actual work.</text>
+<rect x="618" y="32" width="12" height="12" rx="3" fill="#3d444d"/>
+<text x="636" y="43" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#9198a1">Screenshot agent</text>
+<rect x="754" y="32" width="12" height="12" rx="3" fill="#ffffff"/>
+<text x="772" y="43" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#f0f0f0">Wisply</text>
+<line x1="32" y1="92" x2="848" y2="92" stroke="#30363d"/>
+<text x="32" y="134" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#f0f0f0">Look at a page</text>
+<rect x="250" y="108" width="430.0" height="16" rx="3" fill="#3d444d"/>
+<text x="688.0" y="121" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#9198a1">15,850</text>
+<rect x="250" y="132" width="11.9" height="16" rx="3" fill="#ffffff"/>
+<text x="269.9" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#f0f0f0">440</text>
+<text x="848" y="136" text-anchor="end" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" font-weight="800" fill="#f0f0f0">−97%</text>
+<line x1="32" y1="166" x2="848" y2="166" stroke="#30363d"/>
+<text x="32" y="208" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#f0f0f0">See what a click did</text>
+<rect x="250" y="182" width="63.8" height="16" rx="3" fill="#3d444d"/>
+<text x="321.8" y="195" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#9198a1">2,350</text>
+<rect x="250" y="206" width="6.0" height="16" rx="3" fill="#ffffff"/>
+<text x="264.0" y="219" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#f0f0f0">13–53</text>
+<text x="848" y="210" text-anchor="end" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" font-weight="800" fill="#f0f0f0">−98%</text>
+<line x1="32" y1="240" x2="848" y2="240" stroke="#30363d"/>
+<text x="32" y="282" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#f0f0f0">A 14-minute video</text>
+<rect x="250" y="256" width="382.5" height="16" rx="3" fill="#3d444d"/>
+<text x="640.5" y="269" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#9198a1">14,100</text>
+<rect x="250" y="280" width="14.1" height="16" rx="3" fill="#ffffff"/>
+<text x="272.1" y="293" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#f0f0f0">518</text>
+<text x="848" y="284" text-anchor="end" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" font-weight="800" fill="#f0f0f0">−96%</text>
+<line x1="32" y1="314" x2="848" y2="314" stroke="#30363d"/>
+<text x="32" y="356" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#f0f0f0">A task it has done before</text>
+<rect x="250" y="330" width="24.9" height="16" rx="3" fill="#3d444d"/>
+<text x="282.9" y="343" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#9198a1">916</text>
+<rect x="250" y="354" width="6.0" height="16" rx="3" fill="#ffffff"/>
+<text x="264.0" y="367" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#f0f0f0">40</text>
+<text x="848" y="358" text-anchor="end" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" font-weight="800" fill="#f0f0f0">−96%</text>
+<text x="32" y="416" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#9198a1">Repeat it yourself: wisply bench --real · Tokens = characters / 4 · details in the numbers section</text>
+</svg>
