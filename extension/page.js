@@ -13,6 +13,8 @@
   const ROLE_INPUT = { checkbox: "checkbox", radio: "radio", range: "slider", number: "spinbutton", search: "searchbox", button: "button", submit: "button", reset: "button", image: "button", file: "file", color: "color", date: "date", "datetime-local": "date", time: "time", month: "date", week: "date" };
   const TEXTISH = new Set(["textbox", "searchbox", "spinbutton", "combobox", "date", "time", "color"]);
   const HIT_BUDGET_MS = 60;
+  const WIDE_BUDGET_MS = 500;
+  const WIDE_LINES = 12;
 
   const ours = (n) => n.nodeName === OURS;
   new MutationObserver((list) => {
@@ -126,7 +128,8 @@
     }
     if (op === "wait") {
       const t0 = Date.now();
-      while (el.readyState < 1 && Date.now() - t0 < 4000) await new Promise((res) => setTimeout(res, 100));
+      const loading = () => el.networkState === el.NETWORK_LOADING || Date.now() - t0 < 300;
+      while (el.readyState < 1 && Date.now() - t0 < 4000 && loading()) await new Promise((res) => setTimeout(res, 100));
       const d = el.duration;
       return { duration: isFinite(d) ? d : 0, seekable: isFinite(d) && d > 1 && el.seekable.length > 0 };
     }
@@ -262,6 +265,7 @@
       const yt = /(^|\.)youtube\.com$/.test(u.hostname);
       for (const k of [...u.searchParams.keys()]) {
         if (/^(utm_|fbclid|gclid|dclid|msclkid|yclid|twclid|ttclid|mc_|igshid|_hsenc|_hsmi|mkt_tok)/i.test(k) || (yt && /^(pp|si|feature)$/.test(k))) u.searchParams.delete(k);
+        else if (/^((access|id|refresh|auth)_?token|token|code|sig|signature|key|api_?key|secret|password|pass|otp|x-amz-(signature|credential|security-token)|x-goog-(signature|credential))$/i.test(k)) u.searchParams.set(k, "***");
       }
       const qs = u.search.length > 40 ? "?…" : u.search;
       const hex = (s) => (s.includes("/file=") ? s : s.replace(/[0-9a-f]{12,}/g, (m) => m.slice(0, 7) + "…"));
@@ -408,6 +412,10 @@
     });
     let n = tw.nextNode();
     while (n) {
+      if (cut && cut.until && (cut.late || performance.now() > cut.until)) {
+        cut.late = true;
+        return;
+      }
       const t = n.tagName;
       const cs = t === "BODY" || t === "HTML" ? null : getComputedStyle(n);
       let isInt = n.matches(INTERACTIVE);
@@ -485,7 +493,7 @@
     const cap = document.querySelector('iframe[src*="recaptcha"],iframe[src*="hcaptcha"],iframe[src*="challenges.cloudflare.com"],iframe[src*="arkoselabs"],#challenge-form,.cf-turnstile,#px-captcha');
     if (cap && cap.checkVisibility()) out.push("! captcha on page: ask the user to solve it");
     const ck = document.querySelector('#onetrust-banner-sdk,#didomi-host,#usercentrics-root,#CybotCookiebotDialog,.cc-window,[id*="cookie" i][role="dialog"],[class*="cookie-banner" i],[id*="cookie-banner" i],[class*="consent-banner" i],[id*="consent" i][role="dialog"]');
-    if (ck && ck.checkVisibility({ opacityProperty: true, visibilityProperty: true })) out.push("! cookie banner: lighting dismiss");
+    if (ck && ck.checkVisibility({ opacityProperty: true, visibilityProperty: true })) out.push("! cookie banner: wisply dismiss");
     for (const f of frames.slice(0, 5)) {
       if (!f.checkVisibility()) continue;
       const r = f.getBoundingClientRect();
@@ -494,29 +502,29 @@
       try {
         host = new URL(f.src, location.href).host;
       } catch (e) {}
-      if (host) out.push("iframe " + host + " (cross-origin, lighting snap --frame " + host + ")");
+      if (host) out.push("iframe " + host + " (cross-origin, wisply snap --frame " + host + ")");
     }
     return out;
   }
 
   function collectLines(opts) {
     const vw = innerWidth, vh = innerHeight;
-    let scope = document.documentElement;
+    let scope = document.documentElement, modal = null;
     const notesOut = [];
     if (opts.scope) {
       const s = /^e\d+$/.test(opts.scope) ? get(opts.scope) : document.querySelector(opts.scope);
       if (!s) return { error: "scope " + opts.scope + " not found" };
       scope = s;
     } else if (!opts.all) {
-      const m = modalOf();
-      if (m) {
-        scope = m;
-        notesOut.push('modal "' + q(trunc(nameOf(m), 50)) + '" open: page behind is hidden (press Escape to close)');
+      modal = modalOf();
+      if (modal) {
+        scope = modal;
+        notesOut.push('modal "' + q(trunc(nameOf(modal), 50)) + '" open: page behind is hidden (press Escape to close)');
       }
     }
     flushAnimations();
     const items = [], frames = [];
-    const cut = { below: 0, above: 0, layers: [], prune: !opts.all, images: !!opts.media };
+    const cut = { below: 0, above: 0, layers: [], prune: !opts.all, images: !!opts.media, until: opts.until };
     walk(scope, { x: 0, y: 0 }, items, frames, cut);
     const layers = overlays(cut);
     let hitMs = 0;
@@ -530,6 +538,10 @@
     const groups = new Map();
     const collapseOk = !opts.all && !opts.scope && !filter;
     for (const it of items) {
+      if (cut.until && performance.now() > cut.until) {
+        cut.late = true;
+        break;
+      }
       const el = it.el;
       const r = el.getBoundingClientRect();
       if (r.width <= 1 || r.height <= 1) continue;
@@ -613,6 +625,7 @@
         }
       } else if (hrefOf(pv) === h && !pv.drop && pv.name === e.name) e.drop = true;
     }
+    const hit = filter ? filter.map((_, i) => lines.some((e) => !e.drop && !e.heading && e.ft && e.ft[i] > 0)) : [];
     const banner = (lm) => lm.tagName === "HEADER" || lm.getAttribute("role") === "banner";
     const bigLand = new Set([...land.entries()].filter(([lm, b]) => b.count > (banner(lm) ? 7 : 12)).map(([lm]) => lm));
     const bigList = new Map();
@@ -644,7 +657,7 @@
               names += (names ? " | " : ": ") + n;
             }
           }
-          out.push(ref(lm) + " " + kind + (nm ? ' "' + q(nm) + '"' : "") + ": " + land.get(lm).count + " items (lighting snap -s " + ref(lm) + ")" + names);
+          out.push(ref(lm) + " " + kind + (nm ? ' "' + q(nm) + '"' : "") + ": " + land.get(lm).count + " items (wisply snap -s " + ref(lm) + ")" + names);
         }
         continue;
       }
@@ -655,7 +668,7 @@
             listDone.add(e.list);
             const total = groups.get(e.list).items.size;
             ids.add(ref(e.list));
-            out.push("... +" + (total - keep.length) + " similar items (lighting snap -s " + ref(e.list) + " --all)");
+            out.push("... +" + (total - keep.length) + " similar items (wisply snap -s " + ref(e.list) + " --all)");
           }
           continue;
         }
@@ -663,20 +676,55 @@
       ids.add(ref(e.el));
       out.push(line(e.el, e.role, e.name));
     }
-    return { lines: out, ids, below: below + cut.below, above: above + cut.above, notes: notesOut.concat(notes(frames)) };
+    return { lines: out, ids, hit, modal: !!modal, late: !!cut.late, below: below + cut.below, above: above + cut.above, notes: notesOut.concat(notes(frames)) };
   }
 
-  function textHits(filter) {
-    const words = filter.toLowerCase().split("|").map((s) => s.trim()).filter(Boolean);
-    const out = [];
+  function textHits(terms) {
+    const words = terms.map((w) => w.toLowerCase());
+    const said = [], seen = new Set();
     for (const raw of (document.body ? document.body.innerText : "").split("\n")) {
       const s = raw.replace(/\s+/g, " ").trim();
-      const at = Math.min(...words.map((w) => (s.toLowerCase().indexOf(w) + 1 || Infinity) - 1));
-      if (at === Infinity) continue;
-      out.push('"' + (at > 60 ? "..." + trunc(s.slice(at - 30), 90) : trunc(s, 120)) + '"');
-      if (out.length >= 3) break;
+      const low = s.toLowerCase();
+      const pos = words.map((w) => low.indexOf(w));
+      const fresh = pos.some((x, i) => x >= 0 && !seen.has(i));
+      if (!fresh && (said.length >= 3 || !pos.some((x) => x >= 0))) continue;
+      pos.forEach((x, i) => x >= 0 && seen.add(i));
+      const at = Math.min(...pos.filter((x) => x >= 0));
+      said.push('"' + (at > 60 ? "..." + trunc(s.slice(at - 30), 90) : trunc(s, 120)) + '"');
+      if (said.length >= 3 && seen.size === words.length) break;
     }
-    return out;
+    return { said, has: terms.filter((_, i) => seen.has(i)), none: terms.filter((_, i) => !seen.has(i)) };
+  }
+
+  function widen(opts, res) {
+    const terms = opts.filter.split("|").map((s) => s.trim()).filter(Boolean);
+    let miss = terms.filter((_, i) => !res.hit[i]);
+    if (!miss.length) return res;
+    if (!res.lines.some((l) => /^e\d+ /.test(l))) {
+      if (!opts.all) res = collectLines(Object.assign({}, opts, { all: true }));
+      miss = terms.filter((_, i) => !res.hit[i]);
+      if (miss.length < terms.length) res.notes = res.notes.concat("(no match in view, matches from the whole page; click scrolls to them)");
+    } else if (!opts.all && !res.modal) {
+      const wide = collectLines(Object.assign({}, opts, { all: true, filter: miss.join("|"), until: performance.now() + WIDE_BUDGET_MS }));
+      const found = wide.lines.filter((l) => /^e\d+ /.test(l) && !res.ids.has(l.split(" ")[0]));
+      const fresh = found.slice(0, WIDE_LINES);
+      for (const l of fresh) res.ids.add(l.split(" ")[0]);
+      res.lines = res.lines.concat(fresh);
+      const rest = found.length > fresh.length ? ", " + (found.length - fresh.length) + ' more: wisply snap --all -f "' + miss.join("|") + '"' : "";
+      if (fresh.length > 1) res.notes = res.notes.concat("(the last " + fresh.length + " are outside the view; click scrolls to them" + rest + ")");
+      else if (fresh.length) res.notes = res.notes.concat("(the last one is outside the view; click scrolls to it)");
+      if (wide.late) {
+        res.notes = res.notes.concat('(large page: stopped looking for "' + miss.join("|") + '" outside the view -> wisply snap --all -f "' + miss.join("|") + '")');
+        miss = [];
+      } else miss = miss.filter((_, i) => !wide.hit[i]);
+    }
+    if (miss.length) {
+      const t = textHits(miss);
+      if (t.has.length) res.notes = res.notes.concat(['(no control matches "' + t.has.join("|") + '", this text does:)'].concat(t.said));
+      if (t.none.length) res.notes = res.notes.concat('(no match for "' + t.none.join("|") + '" on the whole page)');
+    }
+    res.searched = true;
+    return res;
   }
 
   function snap(opts) {
@@ -691,15 +739,7 @@
       S.links = false;
       return res;
     }
-    if (opts.filter && !res.lines.some((l) => /^e\d+ /.test(l))) {
-      if (!opts.all) res = collectLines(Object.assign({}, opts, { all: true }));
-      if (res.lines.some((l) => /^e\d+ /.test(l))) res.notes = res.notes.concat("(no match in view, matches from the whole page; click scrolls to them)");
-      else {
-        const said = textHits(opts.filter);
-        res.notes = res.notes.concat(said.length ? ['(no control matches "' + opts.filter + '", this text does:)'].concat(said) : '(no match for "' + opts.filter + '" on the whole page)');
-      }
-      res.searched = true;
-    }
+    if (opts.filter) res = widen(opts, res);
     S.links = false;
     const prev = S.last;
     S.last = res.ids;
@@ -718,7 +758,7 @@
       const gone = [...seenLines].filter((l) => !S.plainLines.has(l)).length;
       if (added.length + gone <= Math.max(4, res.lines.length / 2)) {
         out.lines = added;
-        out.delta = { gone, total: res.lines.length };
+        out.delta = { gone, total: res.lines.length, chars: res.lines.reduce((n, l) => n + l.length + 1, 0) };
       }
     }
     if (S.keys.size) out.keys = [...S.keys].slice(0, 40);

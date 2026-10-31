@@ -1,0 +1,143 @@
+name: v3
+
+on:
+  push:
+    branches: ["feat/lighting-3.0"]
+    paths: ["crates/**", "extension/**", "scripts/**", "skills/**", "Cargo.toml", "Cargo.lock", "deny.toml", "rustfmt.toml", ".cargo/**", "hooks/**", ".mcp.json", ".claude-plugin/**", ".codex-plugin/**", ".github/workflows/v3.yml"]
+  pull_request:
+    paths: ["crates/**", "extension/**", "scripts/**", "skills/**", "Cargo.toml", "Cargo.lock", "deny.toml", "rustfmt.toml", ".cargo/**", "hooks/**", ".mcp.json", ".claude-plugin/**", ".codex-plugin/**", ".github/workflows/v3.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: never
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  rust:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - name: Toolchain
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy,rustfmt --no-self-update
+          rustup default stable
+          rustc --version
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest,cargo-deny
+      - name: Linux packages
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends libxkbcommon-dev libwebkit2gtk-4.1-dev libgtk-3-dev ffmpeg xvfb xauth at-spi2-core zenity
+          echo "LT_NEED_FFMPEG=1" >> "$GITHUB_ENV"
+      - name: Window web files are current
+        id: web
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        working-directory: crates/lighting-ui/web
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx --no-install tsc --noEmit
+          npm run build
+          git diff --exit-code -- dist
+      - name: Format
+        id: fmt
+        continue-on-error: true
+        run: cargo fmt --all --check
+      - name: Extension and plugin files parse
+        id: files
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/ext"
+          for f in extension/*.js; do cp "$f" "$RUNNER_TEMP/ext/$(basename "${f%.js}").mjs"; done
+          for f in "$RUNNER_TEMP"/ext/*.mjs; do node --check "$f"; done
+          for f in extension/manifest.json hooks/hooks.json .mcp.json .claude-plugin/plugin.json .codex-plugin/plugin.json; do jq -e . "$f" > /dev/null; done
+          test "$(jq -r .version .claude-plugin/plugin.json)" = "$(jq -r .version .codex-plugin/plugin.json)"
+          jq -r '.hooks.Stop[0].hooks[0].command' hooks/hooks.json | grep -q 'done --quiet$'
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Test
+        id: test
+        continue-on-error: true
+        run: cargo nextest run --workspace --locked --no-tests=pass --no-fail-fast
+      - name: Linux desktop through AT-SPI
+        id: xdesk
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: LT_XDESK=1 dbus-run-session -- xvfb-run -a cargo nextest run -p lighting --test xdesk --locked --no-fail-fast
+      - name: Licenses and advisories
+        id: deny
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: cargo deny check
+      - name: Release build
+        id: build
+        continue-on-error: true
+        run: cargo build --release --locked -p lighting -p lighting-ui
+      - name: Size
+        if: steps.build.outcome == 'success'
+        shell: bash
+        run: ls -l target/release/ | grep -E "wisply(-ui)?(\.exe)?$"
+      - name: Keep the Windows exe
+        if: runner.os == 'Windows' && steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: wisply-v3-windows
+          path: |
+            target/release/wisply.exe
+            target/release/wisply-ui.exe
+            target/release/wisply-task.exe
+          retention-days: 7
+      - name: Setup loads the extension into Edge
+        id: setup
+        if: runner.os == 'Windows' && steps.build.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          target/release/wisply.exe setup edge
+          L="$USERPROFILE/.wisply/bin/wisply.exe"
+          "$L" status
+          "$L" status | grep -E "^browser .*edge"
+      - name: Setup evidence
+        if: steps.setup.outcome == 'failure'
+        continue-on-error: true
+        shell: bash
+        run: |
+          L="$USERPROFILE/.wisply/bin/wisply.exe"
+          "$L" windows
+          "$L" shot screen
+          tail -40 "$USERPROFILE/.wisply/daemon.log"
+      - name: Keep the setup evidence
+        if: steps.setup.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: setup-evidence
+          path: ~/.wisply/out/
+          retention-days: 7
+      - name: Selftest in Chrome for Testing (plus test app and chat on Windows)
+        id: selftest
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 12
+        shell: bash
+        run: bash scripts/ci-browser.sh
+      - name: Result
+        if: always()
+        shell: bash
+        run: echo "::notice title=v3 ${{ matrix.os }}::fmt=${{ steps.fmt.outcome }} files=${{ steps.files.outcome }} lint=${{ steps.lint.outcome }} test=${{ steps.test.outcome }} web=${{ steps.web.outcome }} xdesk=${{ steps.xdesk.outcome }} deny=${{ steps.deny.outcome }} build=${{ steps.build.outcome }} setup=${{ steps.setup.outcome }} selftest=${{ steps.selftest.outcome }}"

@@ -5,6 +5,8 @@ import * as I from "./input.js";
 export const cfg = { blocklist: [], risk: [], pointer: true, navLines: 40, navChars: 1600, abort: false };
 
 const LOAD_MS = 20000;
+const LOADING_WAIT_MS = 8000;
+const EARLY = new Set(["snap", "diff", "act.text", "act.visibleText", "act.table", "act.peek", "act.settle"]);
 
 function trunc(s, n) {
   s = String(s || "");
@@ -26,21 +28,40 @@ function risky(name) {
   return cfg.risk.some((w) => new RegExp("(^|[^\\p{L}])" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^\\p{L}]|$)", "u").test(n));
 }
 
-function callLt(fn, args) {
+function callLt(fn, args, wait) {
   const L = globalThis.__lt;
   if (!L || !L.act) return { __missing: true };
-  const dot = fn.indexOf(".");
-  const f = dot > 0 ? L[fn.slice(0, dot)][fn.slice(dot + 1)] : L[fn];
-  return f.apply(null, args || []);
+  const nav = wait ? performance.getEntriesByType("navigation")[0] : null;
+  if (nav && !(nav.domContentLoadedEventStart > 0)) {
+    return new Promise((ok) => {
+      let done = false;
+      const go = (late) => {
+        if (done) return;
+        done = true;
+        Promise.resolve(callLt(fn, args, 0)).then((r) => ok(late && r && typeof r === "object" ? Object.assign(r, { loading: true }) : r));
+      };
+      document.addEventListener("DOMContentLoaded", () => go(false), { once: true });
+      setTimeout(() => go(true), Math.max(0, wait - performance.now()));
+    });
+  }
+  const failed = (e) => ({ __error: String((e && e.message) || e).slice(0, 200) });
+  try {
+    const dot = fn.indexOf(".");
+    const f = dot > 0 ? L[fn.slice(0, dot)][fn.slice(dot + 1)] : L[fn];
+    const r = f.apply(null, args || []);
+    return r && typeof r.then === "function" ? r.then((v) => v, failed) : r;
+  } catch (e) {
+    return failed(e);
+  }
 }
 
 function friendly(e, url) {
   const m = String((e && e.message) || e);
   if (/cannot access|cannot be scripted|chrome:\/\/|brave:\/\/|edge:\/\/|extensions gallery|Missing host permission/i.test(m)) {
-    return new Error("cannot script this page (" + T.short(url || "", 60) + ") -> try: lighting windows, then lighting snap w<N> (desktop control)");
+    return new Error("cannot script this page (" + T.short(url || "", 60) + ") -> try: wisply windows, then wisply snap w<N> (desktop control)");
   }
-  if (/No tab with id|Tab .* not found/i.test(m)) return new Error("tab is gone -> try: lighting tabs");
-  if (/Frame with ID .* was removed|document.*unloaded|Execution context was destroyed/i.test(m)) return new Error("page navigated during the command -> try: lighting snap");
+  if (/No tab with id|Tab .* not found/i.test(m)) return new Error("tab is gone -> try: wisply tabs");
+  if (/Frame with ID .* was removed|document.*unloaded|Execution context was destroyed/i.test(m)) return new Error("page navigated during the command -> try: wisply snap");
   return e instanceof Error ? e : new Error(m);
 }
 
@@ -50,7 +71,7 @@ async function withDialog(tabId, promise, ms) {
     const t0 = Date.now();
     const tick = () => {
       const d = C.dialog(tabId);
-      if (d) return reject(new Error("dialog open: " + d.type + ' "' + trunc(d.message, 80) + '" -> try: lighting dialog accept|dismiss'));
+      if (d) return reject(new Error("dialog open: " + d.type + ' "' + trunc(d.message, 80) + '" -> try: wisply dialog accept|dismiss'));
       if (Date.now() - t0 > ms) return reject(new Error("page did not answer within " + Math.round(ms / 1000) + "s"));
       timer = setTimeout(tick, 100);
     };
@@ -68,11 +89,11 @@ const FRAME_REF = /^f(\d+)\.(e\d+)$/;
 async function frameOrigin(tabId, fid) {
   const frames = (await chrome.webNavigation.getAllFrames({ tabId })) || [];
   const me = frames.find((f) => f.frameId === fid);
-  if (!me) throw new Error("frame f" + fid + " is gone -> try: lighting snap");
+  if (!me) throw new Error("frame f" + fid + " is gone -> try: wisply snap");
   const size = await page(tabId, "act.viewSize", [], fid);
   const twins = frames.filter((f) => f.parentFrameId === me.parentFrameId && f.url === me.url).sort((x, y) => x.frameId - y.frameId);
   const box = await page(tabId, "act.frameBox", [me.url, size, twins.indexOf(me)], me.parentFrameId);
-  if (!box) throw new Error("frame f" + fid + " is not on the page any more -> try: lighting snap");
+  if (!box) throw new Error("frame f" + fid + " is not on the page any more -> try: wisply snap");
   const up = me.parentFrameId > 0 ? await frameOrigin(tabId, me.parentFrameId) : { x: 0, y: 0 };
   return { x: box.x + up.x, y: box.y + up.y };
 }
@@ -83,7 +104,7 @@ async function inFrame(tabId, fid, fn, args, ms) {
   try {
     res = await page(tabId, fn, args, fid, ms);
   } catch (e) {
-    if (/no frame with id/i.test(String(e && e.message))) throw new Error("frame f" + fid + " is gone -> try: lighting snap");
+    if (/no frame with id/i.test(String(e && e.message))) throw new Error("frame f" + fid + " is gone -> try: wisply snap");
     throw e;
   }
   if (res && typeof res === "object") {
@@ -101,16 +122,18 @@ export async function page(tabId, fn, args, frameId, ms) {
   const fr = !frameId && args && typeof args[0] === "string" ? FRAME_REF.exec(args[0]) : null;
   if (fr) return inFrame(tabId, Number(fr[1]), fn, [fr[2]].concat(args.slice(1)), ms);
   const target = { tabId, frameIds: [frameId || 0] };
-  const call = () => chrome.scripting.executeScript({ target, func: callLt, args: [fn, args || []] });
+  const early = EARLY.has(fn);
+  const call = () => chrome.scripting.executeScript({ target, func: callLt, args: [fn, args || [], early ? LOADING_WAIT_MS : 0], injectImmediately: early });
   let tab = null;
   try {
     tab = await chrome.tabs.get(tabId);
     let [r] = await withDialog(tabId, call(), ms || 15000);
     if (r && r.result && r.result.__missing) {
-      await chrome.scripting.executeScript({ target, files: ["page.js", "page-act.js"] });
+      await chrome.scripting.executeScript({ target, files: ["page.js", "page-act.js"], injectImmediately: early });
       [r] = await withDialog(tabId, call(), ms || 15000);
     }
     if (!r) throw new Error("page did not answer");
+    if (r.result && r.result.__error) throw new Error("page script error: " + r.result.__error + " -> try: wisply text or wisply shot");
     return r.result;
   } catch (e) {
     throw friendly(e, tab && tab.url);
@@ -119,20 +142,21 @@ export async function page(tabId, fn, args, frameId, ms) {
 
 async function tabOf(requested, need) {
   const id = await T.resolve(requested);
-  if (id === null && need !== false) throw new Error("no tab yet -> try: lighting open <url>  (or lighting tabs + lighting tab <id>)");
+  if (id === null && need !== false) throw new Error("no tab yet -> try: wisply open <url>  (or wisply tabs + wisply tab <id>)");
   return id;
 }
 
 async function guard(tabId, what) {
   const tab = await chrome.tabs.get(tabId);
   const b = blockedHost(tab.url || tab.pendingUrl || "");
-  if (b) throw new Error("blocked: " + b + " is read-only for lighting (" + what + ") - edit ~/.lighting/blocklist.txt to change");
+  if (b) throw new Error("blocked: " + b + " is read-only for wisply (" + what + ") - edit ~/.wisply/blocklist.txt to change");
   return tab;
 }
 
 function header(tabId, res) {
   let h = "[t" + T.sid(tabId) + "] " + trunc(res.title || "(no title)", 70) + " - " + T.short(res.url || "", 80);
   if (res.scroll !== undefined) h += " (scroll " + res.scroll + "%)";
+  if (res.loading) h += " (still loading)";
   return h;
 }
 
@@ -151,7 +175,7 @@ function sameHead(tabId, res, lines) {
   while (n < lines.length && bare[n] !== null && bare[n] === prev.bare[n]) n++;
   if (n < 6) return lines;
   const first = lines[0].split(" ")[0], last = lines[n - 1].split(" ")[0];
-  return [first + "-" + last + " same header as the last page (" + n + " items, lighting snap --all)"].concat(lines.slice(n));
+  return [first + "-" + last + " same header as the last page (" + n + " items, wisply snap --all)"].concat(lines.slice(n));
 }
 
 function formatSnap(tabId, res, limit, whole) {
@@ -161,7 +185,8 @@ function formatSnap(tabId, res, limit, whole) {
   for (const n of res.notes || []) out.push(n);
   if (res.delta) {
     const d = res.delta;
-    out.push(res.lines.length || d.gone ? "changed since your last snap: +" + res.lines.length + (d.gone ? ", -" + d.gone + " gone" : "") + " (all " + d.total + " lines: lighting snap --full)" : "no change since your last snap (all " + d.total + " lines: lighting snap --full)");
+    const all = " (all " + d.total + " lines" + (d.chars ? ", ~" + Math.round(d.chars / 4).toLocaleString("en-US") + " tokens" : "") + ": wisply snap --full)";
+    out.push(res.lines.length || d.gone ? "changed since your last snap: +" + res.lines.length + (d.gone ? ", -" + d.gone + " gone" : "") + all : "no change since your last snap" + all);
     out.push(...res.lines);
     return out.join("\n");
   }
@@ -179,11 +204,11 @@ function formatSnap(tabId, res, limit, whole) {
   if (!lines.length && !res.searched) {
     if (res.removed !== undefined) out.push("(nothing new)");
     else if (res.peek) out.push("(no controls in view) text: " + res.peek);
-    else if (res.peek === "") out.push("(nothing drawn yet: some pages only draw in a visible window -> try: lighting shot)");
+    else if (res.peek === "") out.push("(nothing drawn yet: some pages only draw in a visible window -> try: wisply shot)");
     else out.push("(no interactive elements in view)");
   }
   if (res.removed) out.push("-" + res.removed + " gone");
-  if (cut) out.push("... +" + cut + " more (lighting snap)");
+  if (cut) out.push("... +" + cut + " more (wisply snap)");
   const more = [];
   if (res.below) more.push(res.below + " below");
   if (res.above) more.push(res.above + " above");
@@ -192,7 +217,7 @@ function formatSnap(tabId, res, limit, whole) {
 }
 
 function dialogText(d) {
-  return "dialog open: " + d.type + ' "' + trunc(d.message, 80) + '" -> lighting dialog accept|dismiss';
+  return "dialog open: " + d.type + ' "' + trunc(d.message, 80) + '" -> wisply dialog accept|dismiss';
 }
 
 async function dispatch(tabId, promise) {
@@ -235,7 +260,7 @@ async function after(tabId, nav, beforeUrl, extra, mark, startBudget, beforeTitl
   if (mark) mark("nav");
   const navigated = st.started || st.dcl;
   if (navigated || st.spa) {
-    await quiet;
+    if (!navigated) await quiet;
     if (st.spa && !navigated && beforeTitle !== undefined) await titleChange(tabId, beforeTitle, 3000);
     await page(tabId, "act.settle", [250, 3000], 0, 8000).catch(() => {});
   } else {
@@ -265,15 +290,21 @@ async function after(tabId, nav, beforeUrl, extra, mark, startBudget, beforeTitl
   let s = "ok" + (extra || "");
   if (d.added.length) s += " (+" + d.added.length + " new" + (d.removed ? ", -" + d.removed + " gone" : "") + ")\n" + shown.join("\n");
   else s += " (-" + d.removed + " gone)";
-  if (d.added.length > shown.length) s += "\n... +" + (d.added.length - shown.length) + " more (lighting snap --diff)";
+  if (d.added.length > shown.length) s += "\n... +" + (d.added.length - shown.length) + " more (wisply snap --diff)";
   return s;
 }
 
 async function resolveRef(tabId, a) {
   if (a.ref) return { ref: a.ref };
+  if (a.focused) {
+    const f = await page(tabId, "act.focusedRef", []);
+    if (f.frame) throw new Error("the focused field is inside a frame -> try: wisply snap, then wisply type f1.e3 \"text\"");
+    if (!f.ref) throw new Error("nothing on the page has the focus -> try: wisply click <field>, then wisply type focused \"text\"");
+    return f;
+  }
   if (!a.text) throw new Error("need a ref (e12) or \"text\"");
   const f = await page(tabId, "act.find", [a.text, { role: a.role, first: a.first }]);
-  if (f.none) throw new Error('nothing matches "' + a.text + '" -> try: lighting snap -f "' + a.text.split(" ")[0] + '"');
+  if (f.none) throw new Error('nothing matches "' + a.text + '" -> try: wisply snap -f "' + a.text.split(" ")[0] + '"');
   if (f.ambiguous) throw new Error('"' + a.text + '" matches several:\n' + f.ambiguous.join("\n") + "\n-> use a ref");
   return f;
 }
@@ -289,8 +320,8 @@ export async function click(a, tab) {
   mark("find");
   const r = await page(tabId, "rect", [f.ref]);
   mark("rect");
-  if (r.gone) throw new Error(f.ref + " is gone (page changed) -> try: lighting snap");
-  if (r.covered && !a.force) throw new Error(f.ref + " is covered by " + r.covered + " -> try: lighting dismiss, press Escape, or click --force");
+  if (r.gone) throw new Error(f.ref + " is gone (page changed) -> try: wisply snap");
+  if (r.covered && !a.force) throw new Error(f.ref + " is covered by " + r.covered + " -> try: wisply dismiss, press Escape, or click --force");
   if (!a.yes && risky(r.name)) throw new Error('confirm: "' + trunc(r.name, 50) + '" looks irreversible -> rerun with --yes');
   const bt = await chrome.tabs.get(tabId);
   const before = bt.url;
@@ -300,7 +331,7 @@ export async function click(a, tab) {
     const done = await page(tabId, "act.domClick", [f.ref]);
     if (done && done.gone) {
       nav.stop();
-      throw new Error(f.ref + " is gone (page changed) -> try: lighting snap");
+      throw new Error(f.ref + " is gone (page changed) -> try: wisply snap");
     }
     return after(tabId, nav, before, (a.text ? " " + f.ref : "") + " (clicked inside the frame: " + over.covered + " lies over it)", null, 100, bt.title, { ref: f.ref, line: r.line });
   }
@@ -336,7 +367,7 @@ export async function type(a, tab) {
   await guard(tabId, "type");
   const f = await resolveRef(tabId, a);
   const r = await page(tabId, "rect", [f.ref]);
-  if (r.gone) throw new Error(f.ref + " is gone -> try: lighting snap");
+  if (r.gone) throw new Error(f.ref + " is gone -> try: wisply snap");
   await point(tabId, r.x, r.y);
   const fo = await page(tabId, "act.focusFor", [f.ref, !!a.append]);
   if (!fo.focused) await I.click(tabId, r.x, r.y);
@@ -346,9 +377,22 @@ export async function type(a, tab) {
   if (typeof v.value === "string" && text && !v.value.includes(text)) await page(tabId, "act.setValue", [f.ref, a.append ? v.value + text : text]);
   const before = (await chrome.tabs.get(tabId)).url;
   const nav = T.watchNav(tabId);
-  if (a.enter) await I.press(tabId, "Enter");
+  let lost = "";
+  if (a.enter) {
+    await page(tabId, "act.armKey", [f.ref]).catch(() => {});
+    await I.press(tabId, "Enter");
+    let seen = null;
+    for (let i = 0; i < 3 && !(seen && seen.seen !== false); i++) {
+      if (i) await new Promise((res) => setTimeout(res, 60));
+      seen = await page(tabId, "act.keySeen", [f.ref]).catch(() => null);
+    }
+    if (seen && seen.seen === false) {
+      const done = await page(tabId, "act.domEnter", [f.ref]).catch(() => null);
+      if (done && done.ok) lost = " (the Enter did not reach the page, so it was sent inside it)";
+    }
+  }
   const shown = a.secret ? text.length + " secret chars" : text.length + " chars";
-  return after(tabId, nav, before, " (typed " + shown + ")");
+  return after(tabId, nav, before, " (typed " + shown + ")" + lost);
 }
 
 function truthy(v) {
@@ -365,7 +409,7 @@ export async function fill(a, tab) {
   for (let i = 0; i < found.length; i++) {
     const fld = found[i];
     const value = pairs[i].value;
-    if (fld.none) throw new Error('no field for "' + fld.label + '" (filled: ' + (done.join(", ") || "none") + ") -> try: lighting snap -f " + fld.label.split(" ")[0]);
+    if (fld.none) throw new Error('no field for "' + fld.label + '" (filled: ' + (done.join(", ") || "none") + ") -> try: wisply snap -f " + fld.label.split(" ")[0]);
     const r = await page(tabId, "rect", [fld.ref]);
     if (fld.role === "checkbox" || fld.role === "radio" || fld.role === "switch") {
       const st = await page(tabId, "act.checked", [fld.ref]);
@@ -387,7 +431,7 @@ export async function fill(a, tab) {
   let extra = " (filled " + done.join(", ") + ")";
   if (!a.submit || !lastRef) return "ok" + extra;
   const sub = await page(tabId, "act.submitOf", [lastRef]);
-  if (sub.ref && !a.yes && risky(sub.name)) throw new Error('filled, but submit "' + trunc(sub.name, 50) + '" looks irreversible -> rerun with --yes, or: lighting click ' + sub.ref + " --yes");
+  if (sub.ref && !a.yes && risky(sub.name)) throw new Error('filled, but submit "' + trunc(sub.name, 50) + '" looks irreversible -> rerun with --yes, or: wisply click ' + sub.ref + " --yes");
   const before = (await chrome.tabs.get(tabId)).url;
   const nav = T.watchNav(tabId);
   let dlg = null;
@@ -427,7 +471,7 @@ export async function select(a, tab) {
   await guard(tabId, "select");
   const f = await resolveRef(tabId, a);
   const s = await page(tabId, "act.selectOpt", [f.ref, a.option]);
-  if (s.gone) throw new Error(f.ref + " is gone -> try: lighting snap");
+  if (s.gone) throw new Error(f.ref + " is gone -> try: wisply snap");
   if (s.notSelect) throw new Error(f.ref + " is not a <select> -> click it, then click the option text");
   if (s.missing) throw new Error('"' + a.option + '" not found, options: ' + s.missing.join(" | "));
   const before = (await chrome.tabs.get(tabId)).url;
@@ -439,7 +483,7 @@ export async function check(a, tab) {
   await guard(tabId, "check");
   const f = await resolveRef(tabId, a);
   const st = await page(tabId, "act.checked", [f.ref]);
-  if (st.gone) throw new Error(f.ref + " is gone -> try: lighting snap");
+  if (st.gone) throw new Error(f.ref + " is gone -> try: wisply snap");
   const want = a.on !== false;
   if (st.on === want) return "ok (already " + (want ? "on" : "off") + ")";
   const r = await page(tabId, "rect", [f.ref]);
@@ -454,7 +498,7 @@ export async function hover(a, tab) {
   const tabId = await tabOf(tab);
   const f = await resolveRef(tabId, a);
   const r = await page(tabId, "rect", [f.ref]);
-  if (r.gone) throw new Error(f.ref + " is gone -> try: lighting snap");
+  if (r.gone) throw new Error(f.ref + " is gone -> try: wisply snap");
   await point(tabId, r.x, r.y);
   const before = (await chrome.tabs.get(tabId)).url;
   const nav = T.watchNav(tabId);
@@ -467,7 +511,7 @@ export async function drag(a, tab) {
   await guard(tabId, "drag");
   const r1 = await page(tabId, "rect", [a.from]);
   const r2 = await page(tabId, "rect", [a.to, { noScroll: true }]);
-  if (r1.gone || r2.gone) throw new Error("a ref is gone -> try: lighting snap");
+  if (r1.gone || r2.gone) throw new Error("a ref is gone -> try: wisply snap");
   await point(tabId, r1.x, r1.y);
   const before = (await chrome.tabs.get(tabId)).url;
   const nav = T.watchNav(tabId);
@@ -481,7 +525,7 @@ export async function scroll(a, tab) {
   let x = Math.round(info.vw / 2), y = Math.round(info.vh / 2);
   if (a.ref) {
     const r = await page(tabId, "rect", [a.ref, { noScroll: true }]);
-    if (r.gone) throw new Error(a.ref + " is gone -> try: lighting snap");
+    if (r.gone) throw new Error(a.ref + " is gone -> try: wisply snap");
     x = r.x;
     y = r.y;
   }
@@ -518,4 +562,4 @@ export async function scroll(a, tab) {
   return "ok (scroll " + Math.max(0, Math.min(100, pct)) + "%)";
 }
 
-export { formatSnap, header, guard, tabOf, blockedHost, trunc, LOAD_MS };
+export { formatSnap, header, guard, tabOf, blockedHost, trunc, LOAD_MS, LOADING_WAIT_MS };

@@ -1,5 +1,5 @@
-const GROUP = "Lighting";
-const OURS = /^Lighting( #\d+)?$/;
+const GROUP = "Wisply";
+const OURS = /^(Wisply|Lighting)( #\d+)?$/;
 const colors = {};
 let target = null;
 const alias = { seq: 0, fwd: {}, back: {} };
@@ -136,8 +136,20 @@ export function setOwnWindow(on) {
   ownWindow = on;
 }
 
+let acting = 0;
+let settleUntil = 0;
+
+export function acts(on) {
+  acting = Math.max(0, acting + (on ? 1 : -1));
+  if (!on) settleUntil = Date.now() + FOCUS_GRACE_MS;
+}
+
 export function noteFocus(id) {
-  if (id !== chrome.windows.WINDOW_ID_NONE) focusedAt[id] = Date.now();
+  if (id !== chrome.windows.WINDOW_ID_NONE && acting === 0 && Date.now() >= settleUntil) focusedAt[id] = Date.now();
+}
+
+export function focusInfo(id) {
+  return { born: born[id] || null, focused: focusedAt[id] || null, now: Date.now() };
 }
 
 export function userPicked(id) {
@@ -164,9 +176,8 @@ export async function ownWindows() {
 async function tabInOwnWindow(label) {
   const w = await loadWins();
   if (w[label] !== undefined && (await alive(w[label]))) return chrome.tabs.create({ windowId: w[label], url: "about:blank", active: true });
-  const asked = Date.now();
   const nw = await chrome.windows.create({ url: "about:blank", focused: false });
-  born[nw.id] = asked;
+  born[nw.id] = Date.now();
   w[label] = nw.id;
   chrome.storage.local.set({ wins: w }).catch(() => {});
   return nw.tabs && nw.tabs[0] ? nw.tabs[0] : (await chrome.tabs.query({ windowId: nw.id }))[0];
@@ -227,12 +238,12 @@ export function watchNav(tabId) {
   st.stop = () => {
     for (const k in on) chrome.webNavigation[k].removeListener(on[k]);
   };
-  st.wait = async (startBudget, loadBudget) => {
+  st.wait = async (startBudget, loadBudget, committedBudget) => {
     const t0 = Date.now();
     while (!st.started && !st.dcl && !st.spa && Date.now() - t0 < startBudget) await sleep(15);
     if (st.started && !st.dcl) {
       const t1 = Date.now();
-      while (!st.dcl && Date.now() - t1 < loadBudget) await sleep(20);
+      while (!st.dcl && Date.now() - t1 < loadBudget && !(committedBudget && st.committed && Date.now() - t0 >= committedBudget)) await sleep(20);
     }
     st.stop();
     return st;
@@ -240,10 +251,10 @@ export function watchNav(tabId) {
   return st;
 }
 
-export async function navigate(tabId, url, loadBudget) {
+export async function navigate(tabId, url, loadBudget, committedBudget) {
   const nav = watchNav(tabId);
   await chrome.tabs.update(tabId, { url });
-  await nav.wait(3000, loadBudget);
+  await nav.wait(3000, loadBudget, committedBudget);
   return nav;
 }
 
@@ -251,12 +262,15 @@ export function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+const SECRET_PARAM = /^((access|id|refresh|auth)_?token|token|code|sig|signature|key|api_?key|secret|password|pass|otp|x-amz-(signature|credential|security-token)|x-goog-(signature|credential))$/i;
+
 export function short(url, max) {
   try {
     const u = new URL(url);
     if (u.protocol === "about:" || u.protocol === "data:") return url.slice(0, max || 60);
     for (const k of [...u.searchParams.keys()]) {
       if (/^(utm_|fbclid|gclid|mc_|ref_|igshid|si$)/i.test(k)) u.searchParams.delete(k);
+      else if (SECRET_PARAM.test(k)) u.searchParams.set(k, "***");
     }
     const s = u.host.replace(/^www\./, "") + u.pathname.replace(/\/$/, "") + u.search + u.hash;
     const lim = max || 70;
@@ -266,17 +280,29 @@ export function short(url, max) {
   }
 }
 
-export async function list() {
-  const tabs = await chrome.tabs.query({});
+export async function list(all) {
+  const every = await chrome.tabs.query({});
+  const tabs = [];
+  const groups = {};
+  for (const t of every) {
+    groups[t.id] = t.groupId !== -1 ? await groupOf(t.id) : null;
+    if (all || groups[t.id] || t.active || t.id === target) tabs.push(t);
+  }
   const lines = [];
   for (const t of tabs.slice(0, 60)) {
-    const g = t.groupId !== -1 ? await groupOf(t.id) : null;
-    const flags = (g ? "L" + g.replace(/^Lighting( #)?/, "") : "") + (t.id === target ? "*" : "") + (t.active ? "a" : "");
+    const g = groups[t.id];
+    const flags = (g ? "L" + g.replace(/^Wisply( #)?/, "") : "") + (t.id === target ? "*" : "") + (t.active ? "a" : "");
     const title = (t.title || "").replace(/\s+/g, " ").slice(0, 50);
     lines.push("t" + sid(t.id) + (flags ? " " + flags : "") + " " + title + " - " + short(t.url || t.pendingUrl || "", 60));
   }
   if (tabs.length > 60) lines.push("... +" + (tabs.length - 60) + " more tabs");
+  if (every.length > tabs.length) lines.push("+" + (every.length - tabs.length) + " other tabs of yours (wisply tabs --all lists them)");
   return lines.join("\n");
+}
+
+export async function rows() {
+  const tabs = await chrome.tabs.query({});
+  return { out: "", rows: tabs.map((t) => ({ id: "t" + sid(t.id), win: t.windowId, index: t.index, active: t.active, target: t.id === target })) };
 }
 
 async function painted(tabId) {

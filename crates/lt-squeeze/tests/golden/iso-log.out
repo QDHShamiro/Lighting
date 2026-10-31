@@ -1,0 +1,7 @@
+2026-10-30T04:00:00.819Z INFO [main] [db-pool]: query took 859 ms rows=4864 (x10)
+... 110 lines (110 x query took #)
+2026-10-30 04:02:00,123 SEVERE [main]: Unable to open database file: permission denied
+    at org.sqlite.core.DB.newSQLException(DB.java:1179)
+2026-10-30T04:02:02.704Z INFO [main] [db-pool]: query took 627 ms rows=3902 (x2)
+... 46 lines (46 x query took #)
+2026-10-30T04:02:50.295Z INFO [main] [db-pool]: query took 411 ms rows=1101 (x30)

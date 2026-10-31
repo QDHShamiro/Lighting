@@ -1,12 +1,12 @@
 {
-  "description": "Closes the tabs and apps Lighting opened when Claude finishes a reply (lighting config cleanup off keeps them), names a learned routine that fits the user's request, and keeps the Lighting memory: a short start summary, notes that fit a request, sessions queued for local learning (lighting memory off turns it off)",
+  "description": "Closes the tabs and apps Wisply opened when Claude finishes a reply (wisply config cleanup off keeps them), names a learned routine that fits the user's request, and keeps the Wisply memory: a short start summary, notes that fit a request, sessions queued for local learning (wisply memory off turns it off), and shortens long Bash logs and JSON to their important lines with the full text kept in ~/.wisply/headroom/out (a file ~/.wisply/headroom/off turns that off)",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" hook start",
+            "command": "L=\"${WISPLY_HOME:-$HOME/.wisply}/bin/${WISPLY_CLIENT:-wisply.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${WISPLY_CLIENT:-wisply.exe}\"; \"$L\" hook start",
             "timeout": 20
           }
         ]
@@ -17,15 +17,26 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" done --quiet",
+            "command": "L=\"${WISPLY_HOME:-$HOME/.wisply}/bin/${WISPLY_CLIENT:-wisply.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${WISPLY_CLIENT:-wisply.exe}\"; \"$L\" done --quiet",
             "timeout": 15,
             "async": true
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" hook stop",
+            "command": "L=\"${WISPLY_HOME:-$HOME/.wisply}/bin/${WISPLY_CLIENT:-wisply.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${WISPLY_CLIENT:-wisply.exe}\"; \"$L\" hook stop",
             "timeout": 10,
             "async": true
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "L=\"${WISPLY_HOME:-$HOME/.wisply}/bin/${WISPLY_CLIENT:-wisply.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${WISPLY_CLIENT:-wisply.exe}\"; \"$L\" hook compact",
+            "timeout": 10
           }
         ]
       }
@@ -35,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" hook end",
+            "command": "L=\"${WISPLY_HOME:-$HOME/.wisply}/bin/${WISPLY_CLIENT:-wisply.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${WISPLY_CLIENT:-wisply.exe}\"; \"$L\" hook end",
             "timeout": 10
           }
         ]
@@ -46,7 +57,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/${LIGHTING_CLIENT:-lighting.exe}\" suggest",
+            "command": "L=\"${WISPLY_HOME:-$HOME/.wisply}/bin/${WISPLY_CLIENT:-wisply.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${WISPLY_CLIENT:-wisply.exe}\"; \"$L\" suggest",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "L=\"${WISPLY_HOME:-$HOME/.wisply}/bin/${WISPLY_CLIENT:-wisply.exe}\"; [ -f \"$L\" ] || L=\"${CLAUDE_PLUGIN_ROOT}/bin/${WISPLY_CLIENT:-wisply.exe}\"; \"$L\" hook post",
             "timeout": 5
           }
         ]

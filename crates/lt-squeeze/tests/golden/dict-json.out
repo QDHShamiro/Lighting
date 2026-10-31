@@ -1,0 +1,25 @@
+{
+"version": "2.1.0"
+"builds": [
+  <80 items, 1 with error words>
+  {"id":0,"ms":359,"os":"macos","status":"success"}
+  {"id":1,"ms":524,"os":"windows","status":"success"}
+  {"id":2,"ms":775,"os":"windows","status":"success"}
+  <... 30 more items>
+  {"id":33,"ms":236,"os":"macos","status":"failure"}
+  <... 45 more items>
+  {"id":79,"ms":426,"os":"linux","status":"success"}
+]
+"summary": {"failed":1,"total":80,"nested":{"deep":["<12 items>",0,1,2,"<... 8 more items>",11]},"long":"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz... (+200 chars)"}
+"empty": []
+"single": [1]
+"matrix": [
+  <30 items>
+  [0,0,0]
+  [1,2,3]
+  [2,4,6]
+  <... 26 more items>
+  [29,58,87]
+]
+"квота": "ünicode ключ"
+}

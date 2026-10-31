@@ -1,6 +1,6 @@
 {
-  "name": "lighting",
-  "version": "2.0.0",
+  "name": "wisply",
+  "version": "3.0.0",
   "description": "Drive your real browser and any app on Windows, macOS or Linux from Codex with compact text snapshots, and replay tasks it has learned in one call.",
   "author": {
     "name": "QDHShamiro",
@@ -22,9 +22,9 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Lighting",
+    "displayName": "Wisply",
     "shortDescription": "Your real browser and desktop apps, as a few lines of text",
-    "longDescription": "The lighting command drives your open Brave, Chrome or Edge through a small extension and any app on Windows, macOS or Linux through the accessibility APIs and OCR. Every action answers in one short line. Tasks that repeat become routines that run in one call.",
+    "longDescription": "The wisply command drives your open Brave, Chrome or Edge through a small extension and any app on Windows, macOS or Linux through the accessibility APIs and OCR. Every action answers in one short line. Tasks that repeat become routines that run in one call.",
     "developerName": "QDHShamiro",
     "category": "Productivity",
     "capabilities": [
@@ -33,7 +33,7 @@
     ],
     "websiteURL": "https://github.com/QDHShamiro/Lighting",
     "defaultPrompt": [
-      "Use Lighting to open example.com and tell me what is on the page."
+      "Use Wisply to open example.com and tell me what is on the page."
     ],
     "brandColor": "#FF8A00"
   }

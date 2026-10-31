@@ -4,6 +4,7 @@
   const { S, get, ref, nameOf, clean, trunc, q, describe } = L;
   const REJECT = /(reject|decline|deny|refuse|necessary only|only necessary|essential only|ablehnen|nur notwendige|nur erforderliche|verweigern)/i;
   const ACCEPT = /(accept all|accept|agree|allow all|got it|okay|^ok$|akzeptieren|zustimmen|einverstanden|alle erlauben|verstanden)/i;
+  const IMPLICIT = /^(text|search|url|tel|email|password|date|month|week|time|datetime-local|number)$/;
   const FIELD = 'input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]),textarea,select,[contenteditable=""],[contenteditable="true"],[role="textbox"],[role="combobox"],[role="searchbox"],[role="checkbox"],[role="radio"],[role="switch"]';
 
   const visible = (el) => {
@@ -576,5 +577,43 @@
     return { seen: !!S.clickedAt };
   }
 
-  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info, viewSize, frameBox, frameHit, domClick, armClick, clickSeen };
+  function armKey() {
+    S.keyAt = 0;
+    window.addEventListener("keydown", () => {
+      S.keyAt = Date.now();
+    }, { capture: true, once: true });
+    return { ok: true };
+  }
+
+  function keySeen() {
+    return { seen: S.keyAt === undefined ? null : !!S.keyAt };
+  }
+
+  function domEnter(r) {
+    const el = get(r);
+    if (!el) return { gone: true };
+    const form = el.tagName === "INPUT" ? el.form : null;
+    if (!form) {
+      for (const type of ["keydown", "keypress", "keyup"]) {
+        el.dispatchEvent(new KeyboardEvent(type, { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true, cancelable: true }));
+      }
+      return { ok: true };
+    }
+    const els = [...form.elements];
+    const btn = els.find((x) => x.type === "submit" && !x.disabled);
+    if (btn) btn.click();
+    else if (els.filter((x) => x.tagName === "INPUT" && IMPLICIT.test(x.type)).length <= 1) form.requestSubmit();
+    else return { none: true };
+    return { ok: true };
+  }
+
+  function focusedRef() {
+    let el = document.activeElement;
+    while (el && el.shadowRoot && el.shadowRoot.activeElement) el = el.shadowRoot.activeElement;
+    if (!el || el === document.body || el === document.documentElement) return { none: true };
+    if (el.tagName === "IFRAME" || el.tagName === "FRAME") return { frame: true };
+    return { ref: ref(el) };
+  }
+
+  L.act = { find, focusedRef, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info, viewSize, frameBox, frameHit, domClick, armClick, clickSeen, armKey, keySeen, domEnter };
 })();

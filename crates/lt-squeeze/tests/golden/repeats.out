@@ -1,0 +1,6 @@
+GET /api/v1/items/63323 200 26ms (x10)
+... 290 lines (200 x GET /api/v#/items/# #, 90 x worker # heartbeat)
+POST /api/v1/orders 500 Internal Server Error (x3)
+GET /api/v1/items/68669 200 26ms
+... 266 lines (205 x GET /api/v#/items/# #, 60 x worker # heartbeat)
+worker 3 heartbeat ok (x30)

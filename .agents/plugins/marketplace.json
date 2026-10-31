@@ -1,11 +1,11 @@
 {
-  "name": "lighting",
+  "name": "wisply",
   "interface": {
-    "displayName": "Lighting"
+    "displayName": "Wisply"
   },
   "plugins": [
     {
-      "name": "lighting",
+      "name": "wisply",
       "source": {
         "source": "local",
         "path": "./"

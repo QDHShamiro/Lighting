@@ -1,8 +1,48 @@
 # Changelog
 
-Versions follow semver. Every release on GitHub carries the clients (`lighting.exe`, `lighting-macos`,
-`lighting-linux-x64`, `lighting-linux-arm64`) built from the tag by CI, `lighting.mcpb`, a source zip and
-`SHA256SUMS.txt` (including the hash of each `bin/` client in the repo at that tag).
+Versions follow semver. Every release on GitHub carries the clients built from the tag by CI, a `.mcpb`, a source
+zip and `SHA256SUMS.txt`: up to 2.x `lighting.exe`, `lighting-macos`, `lighting-linux-x64`, `lighting-linux-arm64`
+and `lighting.mcpb`, from 3.0.0 `wisply.exe`, `wisply-macos`, `wisply-linux-x64`, `wisply-linux-arm64`,
+`wisply.mcpb` and one archive per system with the window and the extension.
+
+## [3.0.0] - unreleased
+
+Lighting is now **Wisply**, rewritten in Rust as one program. Same commands, same extension protocol, no Python.
+
+### Added
+- One binary for client, daemon, MCP server, native host, setup and self-test; a window (`wisply ui`, wry) with
+  projects, notes (editor with wikilinks and backlinks), to-dos, search and a graph of notes and code per project.
+- Headroom: a PostToolUse hook shortens long Bash logs and JSON to their important lines before the model reads
+  them, keeps the full text in `~/.wisply/headroom/out` and leaves every tenth session untouched as a holdout. A
+  file `~/.wisply/headroom/off` turns it off.
+- `type focused "text"` and `click focused` on web pages use the field that has the focus.
+- `click @957,695` clicks a point that `read` printed (a bare `957,695` only when no element has that text).
+- `tabs` lists Wisply's tabs and the tab in front of each window; `--all` or `-f` lists every tab.
+- `press ctrl+w` closes Wisply's tab, `ctrl+tab`/`ctrl+pagedown` move Wisply's target tab, `ctrl+t` and other
+  browser-only shortcuts say how to do it instead.
+- A click through UI Automation that makes an app jump to the front puts the previous window back and says so.
+
+### Changed
+- New name: Wisply. The program is `wisply` (`wisply-ui`, `wisply-task`), the data folder `~/.wisply`, the plugin,
+  skill and MCP server `wisply`, the browser host `dev.qdhshamiro.wisply`. The extension keeps its ID. Until 3.1
+  `lighting` still works as a second name of the program, the MCP tool answers to both names, `LIGHTING_HOME` still
+  works, and setup copies `~/.lighting` to `~/.wisply` once (programs and caches excluded, the old folder stays) and
+  puts the new program into `~/.lighting/bin`, so older hooks and sessions keep working.
+- Hooks and the MCP server start `~/.wisply/bin/wisply(.exe)`: setup sets `WISPLY_BIN` in `~/.claude/settings.json`,
+  `.mcp.json` falls back to the plugin folder. The plugin folder carries no programs any more; `/wisply:setup`
+  downloads the client from the release and checks its SHA-256.
+- `wisply claude "task"` hands the task to Claude at start instead of typing it into the new tab: no focus needed,
+  and `; & | ^ % " < >` arrive unchanged.
+- Setup stops a daemon that still runs the old build.
+- A git worktree counts as its main repository's project in the memory.
+- No new wiki drafts while 30 wait for a yes or no; the start info says so once a day.
+- The start info lists project notes before global ones and, without a project, only says how to list to-dos.
+- A session without a tab is told which tab is in front (`wisply tab t42 uses the tab in front (...)`).
+- The local learner waits longer after each rate limit (60 s up to 10 min) instead of retrying every minute.
+- URLs in `tabs` and links hide secret query values (`token`, `code`, `sig`, `key`, `password`, ...) as `***`.
+
+### Removed
+- The Python package, the 2.x client (`client/`), `requirements.txt`, the Python tests and the 2.x workflows.
 
 ## [2.0.0] - unreleased
 

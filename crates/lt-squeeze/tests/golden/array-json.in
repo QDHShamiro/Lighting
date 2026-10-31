@@ -1,0 +1,3983 @@
+[
+  {
+    "id": 0,
+    "name": "item-0",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.8,
+    "ok": true,
+    "url": "https://example.com/items/0",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 1,
+    "name": "item-1",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.23,
+    "ok": true,
+    "url": "https://example.com/items/1",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 2,
+    "name": "item-2",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.16,
+    "ok": true,
+    "url": "https://example.com/items/2",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 3,
+    "name": "item-3",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.88,
+    "ok": true,
+    "url": "https://example.com/items/3",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 4,
+    "name": "item-4",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.78,
+    "ok": true,
+    "url": "https://example.com/items/4",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 5,
+    "name": "item-5",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.47,
+    "ok": true,
+    "url": "https://example.com/items/5",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 6,
+    "name": "item-6",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.11,
+    "ok": true,
+    "url": "https://example.com/items/6",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 7,
+    "name": "item-7",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.71,
+    "ok": true,
+    "url": "https://example.com/items/7",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 8,
+    "name": "item-8",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.4,
+    "ok": true,
+    "url": "https://example.com/items/8",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 9,
+    "name": "item-9",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.87,
+    "ok": true,
+    "url": "https://example.com/items/9",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 10,
+    "name": "item-10",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.04,
+    "ok": true,
+    "url": "https://example.com/items/10",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 11,
+    "name": "item-11",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.96,
+    "ok": true,
+    "url": "https://example.com/items/11",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 12,
+    "name": "item-12",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.34,
+    "ok": true,
+    "url": "https://example.com/items/12",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 13,
+    "name": "item-13",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.42,
+    "ok": true,
+    "url": "https://example.com/items/13",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 14,
+    "name": "item-14",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.89,
+    "ok": true,
+    "url": "https://example.com/items/14",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 15,
+    "name": "item-15",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.94,
+    "ok": true,
+    "url": "https://example.com/items/15",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 16,
+    "name": "item-16",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.01,
+    "ok": true,
+    "url": "https://example.com/items/16",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 17,
+    "name": "item-17",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.24,
+    "ok": true,
+    "url": "https://example.com/items/17",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 18,
+    "name": "item-18",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.25,
+    "ok": true,
+    "url": "https://example.com/items/18",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 19,
+    "name": "item-19",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.97,
+    "ok": true,
+    "url": "https://example.com/items/19",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 20,
+    "name": "item-20",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.94,
+    "ok": true,
+    "url": "https://example.com/items/20",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 21,
+    "name": "item-21",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.54,
+    "ok": true,
+    "url": "https://example.com/items/21",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 22,
+    "name": "item-22",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.59,
+    "ok": true,
+    "url": "https://example.com/items/22",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 23,
+    "name": "item-23",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.28,
+    "ok": true,
+    "url": "https://example.com/items/23",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 24,
+    "name": "item-24",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.3,
+    "ok": true,
+    "url": "https://example.com/items/24",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 25,
+    "name": "item-25",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.71,
+    "ok": true,
+    "url": "https://example.com/items/25",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 26,
+    "name": "item-26",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.54,
+    "ok": true,
+    "url": "https://example.com/items/26",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 27,
+    "name": "item-27",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.44,
+    "ok": true,
+    "url": "https://example.com/items/27",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 28,
+    "name": "item-28",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.04,
+    "ok": true,
+    "url": "https://example.com/items/28",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 29,
+    "name": "item-29",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.7,
+    "ok": true,
+    "url": "https://example.com/items/29",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 30,
+    "name": "item-30",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.54,
+    "ok": true,
+    "url": "https://example.com/items/30",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 31,
+    "name": "item-31",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.56,
+    "ok": true,
+    "url": "https://example.com/items/31",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 32,
+    "name": "item-32",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.05,
+    "ok": true,
+    "url": "https://example.com/items/32",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 33,
+    "name": "item-33",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.79,
+    "ok": true,
+    "url": "https://example.com/items/33",
+    "tags": [
+      "a"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 34,
+    "name": "item-34",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.32,
+    "ok": true,
+    "url": "https://example.com/items/34",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 35,
+    "name": "item-35",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.26,
+    "ok": true,
+    "url": "https://example.com/items/35",
+    "tags": [
+      "a"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 36,
+    "name": "item-36",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.77,
+    "ok": true,
+    "url": "https://example.com/items/36",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 37,
+    "name": "item-37",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.14,
+    "ok": true,
+    "url": "https://example.com/items/37",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 38,
+    "name": "item-38",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.3,
+    "ok": true,
+    "url": "https://example.com/items/38",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 39,
+    "name": "item-39",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.81,
+    "ok": true,
+    "url": "https://example.com/items/39",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 40,
+    "name": "item-40",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.37,
+    "ok": true,
+    "url": "https://example.com/items/40",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 41,
+    "name": "item-41",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.97,
+    "ok": true,
+    "url": "https://example.com/items/41",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 42,
+    "name": "item-42",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.41,
+    "ok": true,
+    "url": "https://example.com/items/42",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 43,
+    "name": "item-43",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.18,
+    "ok": true,
+    "url": "https://example.com/items/43",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 44,
+    "name": "item-44",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.6,
+    "ok": true,
+    "url": "https://example.com/items/44",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 45,
+    "name": "item-45",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.81,
+    "ok": true,
+    "url": "https://example.com/items/45",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 46,
+    "name": "item-46",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.23,
+    "ok": true,
+    "url": "https://example.com/items/46",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 47,
+    "name": "item-47",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.01,
+    "ok": true,
+    "url": "https://example.com/items/47",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 48,
+    "name": "item-48",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.66,
+    "ok": true,
+    "url": "https://example.com/items/48",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 49,
+    "name": "item-49",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.65,
+    "ok": true,
+    "url": "https://example.com/items/49",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 50,
+    "name": "item-50",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.44,
+    "ok": true,
+    "url": "https://example.com/items/50",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 51,
+    "name": "item-51",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.2,
+    "ok": true,
+    "url": "https://example.com/items/51",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 52,
+    "name": "item-52",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.7,
+    "ok": true,
+    "url": "https://example.com/items/52",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 53,
+    "name": "item-53",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.58,
+    "ok": true,
+    "url": "https://example.com/items/53",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 54,
+    "name": "item-54",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.72,
+    "ok": true,
+    "url": "https://example.com/items/54",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 55,
+    "name": "item-55",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.28,
+    "ok": true,
+    "url": "https://example.com/items/55",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 56,
+    "name": "item-56",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.55,
+    "ok": true,
+    "url": "https://example.com/items/56",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 57,
+    "name": "item-57",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.78,
+    "ok": true,
+    "url": "https://example.com/items/57",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 58,
+    "name": "item-58",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.51,
+    "ok": true,
+    "url": "https://example.com/items/58",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 59,
+    "name": "item-59",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.29,
+    "ok": true,
+    "url": "https://example.com/items/59",
+    "tags": [
+      "a"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 60,
+    "name": "item-60",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.46,
+    "ok": true,
+    "url": "https://example.com/items/60",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 61,
+    "name": "item-61",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.32,
+    "ok": true,
+    "url": "https://example.com/items/61",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 62,
+    "name": "item-62",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.31,
+    "ok": true,
+    "url": "https://example.com/items/62",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 63,
+    "name": "item-63",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.8,
+    "ok": true,
+    "url": "https://example.com/items/63",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 64,
+    "name": "item-64",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.28,
+    "ok": true,
+    "url": "https://example.com/items/64",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 65,
+    "name": "item-65",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.38,
+    "ok": true,
+    "url": "https://example.com/items/65",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 66,
+    "name": "item-66",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.66,
+    "ok": true,
+    "url": "https://example.com/items/66",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 67,
+    "name": "item-67",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.37,
+    "ok": true,
+    "url": "https://example.com/items/67",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 68,
+    "name": "item-68",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.79,
+    "ok": true,
+    "url": "https://example.com/items/68",
+    "tags": [
+      "a"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 69,
+    "name": "item-69",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.86,
+    "ok": true,
+    "url": "https://example.com/items/69",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 70,
+    "name": "item-70",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.64,
+    "ok": true,
+    "url": "https://example.com/items/70",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 71,
+    "name": "item-71",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.27,
+    "ok": true,
+    "url": "https://example.com/items/71",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 72,
+    "name": "item-72",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.03,
+    "ok": true,
+    "url": "https://example.com/items/72",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 73,
+    "name": "item-73",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.34,
+    "ok": true,
+    "url": "https://example.com/items/73",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 74,
+    "name": "item-74",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.25,
+    "ok": true,
+    "url": "https://example.com/items/74",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 75,
+    "name": "item-75",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.01,
+    "ok": true,
+    "url": "https://example.com/items/75",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 76,
+    "name": "item-76",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.5,
+    "ok": true,
+    "url": "https://example.com/items/76",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 77,
+    "name": "item-77",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 99999.0,
+    "ok": true,
+    "url": "https://example.com/items/77",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 78,
+    "name": "item-78",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.79,
+    "ok": true,
+    "url": "https://example.com/items/78",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 79,
+    "name": "item-79",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.9,
+    "ok": true,
+    "url": "https://example.com/items/79",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 80,
+    "name": "item-80",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.19,
+    "ok": true,
+    "url": "https://example.com/items/80",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 81,
+    "name": "item-81",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.65,
+    "ok": true,
+    "url": "https://example.com/items/81",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 82,
+    "name": "item-82",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.69,
+    "ok": true,
+    "url": "https://example.com/items/82",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 83,
+    "name": "item-83",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.82,
+    "ok": true,
+    "url": "https://example.com/items/83",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 84,
+    "name": "item-84",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.39,
+    "ok": true,
+    "url": "https://example.com/items/84",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 85,
+    "name": "item-85",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.16,
+    "ok": true,
+    "url": "https://example.com/items/85",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 86,
+    "name": "item-86",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.01,
+    "ok": true,
+    "url": "https://example.com/items/86",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 87,
+    "name": "item-87",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.62,
+    "ok": true,
+    "url": "https://example.com/items/87",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 88,
+    "name": "item-88",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.64,
+    "ok": true,
+    "url": "https://example.com/items/88",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 89,
+    "name": "item-89",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.3,
+    "ok": true,
+    "url": "https://example.com/items/89",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 90,
+    "name": "item-90",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.82,
+    "ok": true,
+    "url": "https://example.com/items/90",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 91,
+    "name": "item-91",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.16,
+    "ok": true,
+    "url": "https://example.com/items/91",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 92,
+    "name": "item-92",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.08,
+    "ok": true,
+    "url": "https://example.com/items/92",
+    "tags": [
+      "a"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 93,
+    "name": "item-93",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.39,
+    "ok": true,
+    "url": "https://example.com/items/93",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 94,
+    "name": "item-94",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.83,
+    "ok": true,
+    "url": "https://example.com/items/94",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 95,
+    "name": "item-95",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.55,
+    "ok": true,
+    "url": "https://example.com/items/95",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 96,
+    "name": "item-96",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.34,
+    "ok": true,
+    "url": "https://example.com/items/96",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 97,
+    "name": "item-97",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.28,
+    "ok": true,
+    "url": "https://example.com/items/97",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 98,
+    "name": "item-98",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.16,
+    "ok": true,
+    "url": "https://example.com/items/98",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 99,
+    "name": "item-99",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.56,
+    "ok": true,
+    "url": "https://example.com/items/99",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 100,
+    "name": "item-100",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.03,
+    "ok": true,
+    "url": "https://example.com/items/100",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 101,
+    "name": "item-101",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.44,
+    "ok": true,
+    "url": "https://example.com/items/101",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 102,
+    "name": "item-102",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.46,
+    "ok": true,
+    "url": "https://example.com/items/102",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 103,
+    "name": "item-103",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.18,
+    "ok": true,
+    "url": "https://example.com/items/103",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 104,
+    "name": "item-104",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.12,
+    "ok": true,
+    "url": "https://example.com/items/104",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 105,
+    "name": "item-105",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.79,
+    "ok": true,
+    "url": "https://example.com/items/105",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 106,
+    "name": "item-106",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.75,
+    "ok": true,
+    "url": "https://example.com/items/106",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 107,
+    "name": "item-107",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.87,
+    "ok": true,
+    "url": "https://example.com/items/107",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 108,
+    "name": "item-108",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.66,
+    "ok": true,
+    "url": "https://example.com/items/108",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 109,
+    "name": "item-109",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.79,
+    "ok": true,
+    "url": "https://example.com/items/109",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 110,
+    "name": "item-110",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.28,
+    "ok": true,
+    "url": "https://example.com/items/110",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 111,
+    "name": "item-111",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.74,
+    "ok": true,
+    "url": "https://example.com/items/111",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 112,
+    "name": "item-112",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.54,
+    "ok": true,
+    "url": "https://example.com/items/112",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 113,
+    "name": "item-113",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.2,
+    "ok": true,
+    "url": "https://example.com/items/113",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 114,
+    "name": "item-114",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.36,
+    "ok": true,
+    "url": "https://example.com/items/114",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 115,
+    "name": "item-115",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.99,
+    "ok": true,
+    "url": "https://example.com/items/115",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 116,
+    "name": "item-116",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.45,
+    "ok": true,
+    "url": "https://example.com/items/116",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 117,
+    "name": "item-117",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.54,
+    "ok": true,
+    "url": "https://example.com/items/117",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 118,
+    "name": "item-118",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.68,
+    "ok": true,
+    "url": "https://example.com/items/118",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 119,
+    "name": "item-119",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.8,
+    "ok": true,
+    "url": "https://example.com/items/119",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 120,
+    "name": "item-120",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.67,
+    "ok": true,
+    "url": "https://example.com/items/120",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 121,
+    "name": "item-121",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.91,
+    "ok": true,
+    "url": "https://example.com/items/121",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 122,
+    "name": "item-122",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.39,
+    "ok": true,
+    "url": "https://example.com/items/122",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 123,
+    "name": "item-123",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.21,
+    "ok": true,
+    "url": "https://example.com/items/123",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 124,
+    "name": "item-124",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.57,
+    "ok": true,
+    "url": "https://example.com/items/124",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 125,
+    "name": "item-125",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.6,
+    "ok": true,
+    "url": "https://example.com/items/125",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 126,
+    "name": "item-126",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.3,
+    "ok": true,
+    "url": "https://example.com/items/126",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 127,
+    "name": "item-127",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.81,
+    "ok": true,
+    "url": "https://example.com/items/127",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 128,
+    "name": "item-128",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.54,
+    "ok": true,
+    "url": "https://example.com/items/128",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 129,
+    "name": "item-129",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.51,
+    "ok": true,
+    "url": "https://example.com/items/129",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 130,
+    "name": "item-130",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.04,
+    "ok": true,
+    "url": "https://example.com/items/130",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 131,
+    "name": "item-131",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.0,
+    "ok": true,
+    "url": "https://example.com/items/131",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 132,
+    "name": "item-132",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.47,
+    "ok": true,
+    "url": "https://example.com/items/132",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 133,
+    "name": "item-133",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.79,
+    "ok": true,
+    "url": "https://example.com/items/133",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 134,
+    "name": "item-134",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.24,
+    "ok": true,
+    "url": "https://example.com/items/134",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 135,
+    "name": "item-135",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.47,
+    "ok": true,
+    "url": "https://example.com/items/135",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 136,
+    "name": "item-136",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.8,
+    "ok": true,
+    "url": "https://example.com/items/136",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 137,
+    "name": "item-137",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.99,
+    "ok": true,
+    "url": "https://example.com/items/137",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 138,
+    "name": "item-138",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.87,
+    "ok": true,
+    "url": "https://example.com/items/138",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 139,
+    "name": "item-139",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.2,
+    "ok": true,
+    "url": "https://example.com/items/139",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 140,
+    "name": "item-140",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.39,
+    "ok": true,
+    "url": "https://example.com/items/140",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 141,
+    "name": "item-141",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.06,
+    "ok": true,
+    "url": "https://example.com/items/141",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 142,
+    "name": "item-142",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.6,
+    "ok": true,
+    "url": "https://example.com/items/142",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 143,
+    "name": "item-143",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.42,
+    "ok": true,
+    "url": "https://example.com/items/143",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 144,
+    "name": "item-144",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.99,
+    "ok": true,
+    "url": "https://example.com/items/144",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 145,
+    "name": "item-145",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.37,
+    "ok": true,
+    "url": "https://example.com/items/145",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 146,
+    "name": "item-146",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.53,
+    "ok": true,
+    "url": "https://example.com/items/146",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 147,
+    "name": "item-147",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.48,
+    "ok": true,
+    "url": "https://example.com/items/147",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 148,
+    "name": "item-148",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.75,
+    "ok": true,
+    "url": "https://example.com/items/148",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 149,
+    "name": "item-149",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.38,
+    "ok": true,
+    "url": "https://example.com/items/149",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 150,
+    "name": "item-150",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.02,
+    "ok": false,
+    "url": "https://example.com/items/150",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 151,
+    "name": "item-151",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.68,
+    "ok": true,
+    "url": "https://example.com/items/151",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 152,
+    "name": "item-152",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.29,
+    "ok": true,
+    "url": "https://example.com/items/152",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 153,
+    "name": "item-153",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.83,
+    "ok": true,
+    "url": "https://example.com/items/153",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 154,
+    "name": "item-154",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.72,
+    "ok": true,
+    "url": "https://example.com/items/154",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 155,
+    "name": "item-155",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.3,
+    "ok": true,
+    "url": "https://example.com/items/155",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 156,
+    "name": "item-156",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.4,
+    "ok": true,
+    "url": "https://example.com/items/156",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 157,
+    "name": "item-157",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.07,
+    "ok": true,
+    "url": "https://example.com/items/157",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 158,
+    "name": "item-158",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.48,
+    "ok": true,
+    "url": "https://example.com/items/158",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 159,
+    "name": "item-159",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.2,
+    "ok": true,
+    "url": "https://example.com/items/159",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 160,
+    "name": "item-160",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.28,
+    "ok": true,
+    "url": "https://example.com/items/160",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 161,
+    "name": "item-161",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.05,
+    "ok": true,
+    "url": "https://example.com/items/161",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 162,
+    "name": "item-162",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.51,
+    "ok": true,
+    "url": "https://example.com/items/162",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 163,
+    "name": "item-163",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.37,
+    "ok": true,
+    "url": "https://example.com/items/163",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 164,
+    "name": "item-164",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.34,
+    "ok": true,
+    "url": "https://example.com/items/164",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 165,
+    "name": "item-165",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.74,
+    "ok": true,
+    "url": "https://example.com/items/165",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 166,
+    "name": "item-166",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.52,
+    "ok": true,
+    "url": "https://example.com/items/166",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 167,
+    "name": "item-167",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.04,
+    "ok": true,
+    "url": "https://example.com/items/167",
+    "tags": [
+      "a"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 168,
+    "name": "item-168",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.98,
+    "ok": true,
+    "url": "https://example.com/items/168",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 169,
+    "name": "item-169",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.36,
+    "ok": true,
+    "url": "https://example.com/items/169",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 170,
+    "name": "item-170",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.09,
+    "ok": true,
+    "url": "https://example.com/items/170",
+    "tags": [
+      "a"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 171,
+    "name": "item-171",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.84,
+    "ok": true,
+    "url": "https://example.com/items/171",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 172,
+    "name": "item-172",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.77,
+    "ok": true,
+    "url": "https://example.com/items/172",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 173,
+    "name": "item-173",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.79,
+    "ok": true,
+    "url": "https://example.com/items/173",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 174,
+    "name": "item-174",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.72,
+    "ok": true,
+    "url": "https://example.com/items/174",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 175,
+    "name": "item-175",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.49,
+    "ok": true,
+    "url": "https://example.com/items/175",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 176,
+    "name": "item-176",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.43,
+    "ok": true,
+    "url": "https://example.com/items/176",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 177,
+    "name": "item-177",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.5,
+    "ok": true,
+    "url": "https://example.com/items/177",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 178,
+    "name": "item-178",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.44,
+    "ok": true,
+    "url": "https://example.com/items/178",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 179,
+    "name": "item-179",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.94,
+    "ok": true,
+    "url": "https://example.com/items/179",
+    "tags": [
+      "a"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 180,
+    "name": "item-180",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.86,
+    "ok": true,
+    "url": "https://example.com/items/180",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 181,
+    "name": "item-181",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.88,
+    "ok": true,
+    "url": "https://example.com/items/181",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 182,
+    "name": "item-182",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.67,
+    "ok": true,
+    "url": "https://example.com/items/182",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 183,
+    "name": "item-183",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 19.31,
+    "ok": true,
+    "url": "https://example.com/items/183",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 184,
+    "name": "item-184",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.27,
+    "ok": true,
+    "url": "https://example.com/items/184",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 185,
+    "name": "item-185",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 10.17,
+    "ok": true,
+    "url": "https://example.com/items/185",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 186,
+    "name": "item-186",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.3,
+    "ok": true,
+    "url": "https://example.com/items/186",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 187,
+    "name": "item-187",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.92,
+    "ok": true,
+    "url": "https://example.com/items/187",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 188,
+    "name": "item-188",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.5,
+    "ok": true,
+    "url": "https://example.com/items/188",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 189,
+    "name": "item-189",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.03,
+    "ok": true,
+    "url": "https://example.com/items/189",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 190,
+    "name": "item-190",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.38,
+    "ok": true,
+    "url": "https://example.com/items/190",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": "connection refused by upstream"
+  },
+  {
+    "id": 191,
+    "name": "item-191",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.79,
+    "ok": true,
+    "url": "https://example.com/items/191",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 192,
+    "name": "item-192",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.19,
+    "ok": true,
+    "url": "https://example.com/items/192",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 193,
+    "name": "item-193",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.01,
+    "ok": true,
+    "url": "https://example.com/items/193",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 194,
+    "name": "item-194",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.9,
+    "ok": true,
+    "url": "https://example.com/items/194",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 195,
+    "name": "item-195",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.44,
+    "ok": true,
+    "url": "https://example.com/items/195",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 196,
+    "name": "item-196",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.21,
+    "ok": true,
+    "url": "https://example.com/items/196",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 197,
+    "name": "item-197",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.83,
+    "ok": true,
+    "url": "https://example.com/items/197",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 198,
+    "name": "item-198",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 12.41,
+    "ok": true,
+    "url": "https://example.com/items/198",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 199,
+    "name": "item-199",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.35,
+    "ok": true,
+    "url": "https://example.com/items/199",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 200,
+    "name": "item-200",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.45,
+    "ok": true,
+    "url": "https://example.com/items/200",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 201,
+    "name": "item-201",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.74,
+    "ok": true,
+    "url": "https://example.com/items/201",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 202,
+    "name": "item-202",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.29,
+    "ok": true,
+    "url": "https://example.com/items/202",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 203,
+    "name": "item-203",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.44,
+    "ok": true,
+    "url": "https://example.com/items/203",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 204,
+    "name": "item-204",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.04,
+    "ok": true,
+    "url": "https://example.com/items/204",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 205,
+    "name": "item-205",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.43,
+    "ok": true,
+    "url": "https://example.com/items/205",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 206,
+    "name": "item-206",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.48,
+    "ok": true,
+    "url": "https://example.com/items/206",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 207,
+    "name": "item-207",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.46,
+    "ok": true,
+    "url": "https://example.com/items/207",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 208,
+    "name": "item-208",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.79,
+    "ok": true,
+    "url": "https://example.com/items/208",
+    "tags": [
+      "a",
+      "b"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 209,
+    "name": "item-209",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.59,
+    "ok": true,
+    "url": "https://example.com/items/209",
+    "tags": [],
+    "note": "",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 210,
+    "name": "item-210",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 13.23,
+    "ok": true,
+    "url": "https://example.com/items/210",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 100.0,
+    "error": null
+  },
+  {
+    "id": 211,
+    "name": "item-211",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 18.86,
+    "ok": true,
+    "url": "https://example.com/items/211",
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e-07,
+    "error": null
+  },
+  {
+    "id": 212,
+    "name": "item-212",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 15.87,
+    "ok": true,
+    "url": "https://example.com/items/212",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 213,
+    "name": "item-213",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 17.46,
+    "ok": true,
+    "url": "https://example.com/items/213",
+    "tags": [
+      "a"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  },
+  {
+    "id": 214,
+    "name": "item-214",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.85,
+    "ok": true,
+    "url": "https://example.com/items/214",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 215,
+    "name": "item-215",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.34,
+    "ok": true,
+    "url": "https://example.com/items/215",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": -0.5,
+    "error": null
+  },
+  {
+    "id": 216,
+    "name": "item-216",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.75,
+    "ok": true,
+    "url": "https://example.com/items/216",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 0.1,
+    "error": null
+  },
+  {
+    "id": 217,
+    "name": "item-217",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 11.24,
+    "ok": true,
+    "url": "https://example.com/items/217",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 123456789.125,
+    "error": null
+  },
+  {
+    "id": 218,
+    "name": "item-218",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 14.15,
+    "ok": true,
+    "url": "https://example.com/items/218",
+    "tags": [],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 2.5e-05,
+    "error": null
+  },
+  {
+    "id": 219,
+    "name": "item-219",
+    "region": "eu-west",
+    "kind": "chest",
+    "price": 16.24,
+    "ok": true,
+    "url": "https://example.com/items/219",
+    "tags": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f"
+    ],
+    "note": "Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ",
+    "ratio": 1e+16,
+    "error": null
+  }
+]

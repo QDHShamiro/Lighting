@@ -1,0 +1,38 @@
+[graph]
+targets = [
+    "x86_64-pc-windows-msvc",
+    "aarch64-pc-windows-msvc",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+]
+all-features = true
+
+[advisories]
+yanked = "deny"
+ignore = [
+    { id = "RUSTSEC-2026-0192", reason = "ttf-parser is unmaintained, not vulnerable; lopdf needs it for pdf-extract and has no alternative" },
+    { id = "RUSTSEC-2026-0370", reason = "zvariant was merged into zbus 6, not vulnerable; xa11y-linux (Linux desktop) still uses zbus 5" },
+    { id = "RUSTSEC-2026-0371", reason = "zbus_names was merged into zbus 6, not vulnerable; xa11y-linux (Linux desktop) still uses zbus 5" },
+    { id = "RUSTSEC-2026-0372", reason = "zvariant_derive was merged into zbus 6, not vulnerable; xa11y-linux (Linux desktop) still uses zbus 5" },
+    { id = "RUSTSEC-2024-0370", reason = "proc-macro-error is unmaintained, not vulnerable; only glib-macros 0.18 (GTK3 bindings for the Linux window webview via wry) uses it at build time" },
+]
+
+[licenses]
+allow = ["MIT", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unicode-3.0", "Zlib", "BSL-1.0"]
+confidence-threshold = 0.9
+exceptions = [
+    { crate = "tiny-keccak", allow = ["CC0-1.0"] },
+    { crate = "webpki-roots", allow = ["CDLA-Permissive-2.0"] },
+    { crate = "option-ext", allow = ["MPL-2.0"] },
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

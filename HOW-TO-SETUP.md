@@ -1,35 +1,44 @@
 # HOW-TO-SETUP
 
-Runbook for Claude Code: building, verifying and changing Lighting without rediscovering the traps.
+Runbook for Claude Code: building, verifying and changing Wisply without rediscovering the traps.
 `README.md` is for humans. This file is about getting it right.
 
 ## 1. Layout
 
 ```
 .claude-plugin/plugin.json, marketplace.json   Claude Code plugin + marketplace (source "./")
-.codex-plugin/plugin.json                      Codex plugin (skills only, MCP comes from `lighting install codex`)
+.codex-plugin/plugin.json                      Codex plugin (skills only, MCP comes from `wisply install codex`)
 .agents/plugins/marketplace.json               Codex marketplace (source local "./")
-bin/lighting.exe                               Rust client (client/), on Claude's PATH through the plugin bin/ dir
-.mcp.json                                      MCP server: lighting.exe mcp (1 tool)
-skills/lighting/                               SKILL.md + references/, loaded on description match
-commands/                                      /lighting:setup, :status, :bench, :doctor
-hooks/hooks.json                               Stop hook: `lighting done --quiet` after every Claude reply
-tests/test_units.py                            unit tests, plain asserts (python tests/test_units.py or pytest)
-docs/                                          demo.gif (rendered from a real run's output) + frames-example.jpg (CC0 clip), used by the README
-.github/workflows/                             ci.yml (every push/PR), release.yml (tag v* -> release + SHA256)
-lighting/                                      Python package: daemon, CLI fallback, host, desktop, OCR, MCP, selftest
-lighting/routines.py                           task trace, repetition learning (alignment), run, repair, stats
-lighting/record.py, deskrec.py                 record start/stop; low-level mouse/keyboard hooks + own UIA worker
+.mcp.json                                      MCP server: ${WISPLY_BIN:-${CLAUDE_PLUGIN_ROOT}/bin}/wisply.exe mcp (1 tool)
+hooks/hooks.json                               SessionStart/Stop/PreCompact/SessionEnd/UserPromptSubmit memory + cleanup, PostToolUse Headroom
+skills/wisply/                               SKILL.md + references/, loaded on description match
+commands/                                      /wisply:setup, :status, :bench, :doctor, :tokens
+crates/lighting/                               the one binary: client, daemon, MCP server, native host, setup, selftest
+crates/lighting/src/daemon/                    web/, desk/ (Windows UIA, macOS AX, Linux AT-SPI), memory/, routines/, brain/, check/ (selftest, bench)
+crates/lighting/src/setup/                     setup, install <ai>, uninstall, settings.json env, PATH and native host
+crates/lighting/src/hook.rs                    Headroom (`wisply hook post`), runs without the daemon in its 50 ms budget
+crates/lighting/assets/fixture.html            selftest page (traps: hidden injection text, modal, confirm(), cookie banner, iframe, long lists, nameless button, video)
+crates/lighting-ui/                            the window (wry), web/ is TypeScript built into web/dist
+crates/lt-core, lt-proto, lt-memory, lt-code, lt-squeeze   argument parsing, pipe protocol, memory DB, code map, Bash-output squeeze
 extension/                                     MV3 extension (ES modules) + page scripts + vendored Defuddle
-extension/page-rec.js                          in-page recorder (injected while recording, REC badge)
-tests/fixture.html                             selftest page (traps: hidden injection text, modal, confirm(), cookie banner, iframe, long lists, nameless button, video)
+docs/                                          demo.gif + frames-example.jpg, used by the README
+.github/workflows/                             v3.yml (every push/PR, 3 systems), release.yml (tag v* -> archives, clients, mcpb, SHA256SUMS), registry.yml
 ```
 
-Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, extension copy, host.bat + host.py, host json, client-root, log, config, bin/, routines/, episodes.jsonl, apps.json, bench-real.json). The plugin root changes on every update, so nothing is written there; `client-root` records the active one.
+`bin/` is not in git. `wisply setup` copies `wisply`, `wisply-ui` and `wisply-task` to `~/.wisply/bin` and sets
+`WISPLY_BIN` (plus `WISPLY_CLIENT` on macOS/Linux; the old `LIGHTING_BIN` too until 3.1) in `~/.claude/settings.json`, so hooks and the MCP server start
+from there; the plugin's own `bin/` is only the fallback before the first setup.
+
+Runtime state is in `%USERPROFILE%\.wisply\` (`~/.wisply` on macOS/Linux): bin/, key, blocklist, out/, extension copy,
+host json, memory/ (SQLite), log.jsonl, config.json, routines/, episodes.jsonl, apps.json, headroom/ (log + full
+outputs, a file `off` turns Headroom off), the v3 marker. `WISPLY_HOME` (or the old `LIGHTING_HOME`) moves all of it (tests use that).
 
 ## 2. Ground truth (verified on Windows 11, Brave 154, Claude Code plugin docs 2026-09)
 
-- Plugin `bin/` is on the Bash tool's PATH. A file named `lighting` (no extension) beats `lighting.exe`, so there is **only** the exe. `rtk` can start the exe, it cannot start a bash script.
+Found while building 2.x (Python) and still true for the browser, Windows and Claude Code; where a line names a 2.x file
+(`install.py`, `autoload.py`, `host.bat`, `common.py`), the same job now lives in `crates/lighting/src` (`setup/`, `daemon/desk/autoload.rs`, `host.rs`, `daemon/mod.rs`).
+
+- Plugin `bin/` is on the Bash tool's PATH. A file named `wisply` (no extension) beats `wisply.exe`, so there is **only** the exe. `rtk` can start the exe, it cannot start a bash script.
 - Git Bash spawning any process costs ~50-70 ms; a bash script adds another ~70 ms. That is why the client is native.
 - Chromium >= 136 ignores `--remote-debugging-port` on the default profile. The extension + native messaging route is the only way to use the real profile.
 - Brave reads native messaging hosts from `HKCU\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts`; Chrome and Edge have their own keys. `install.py` writes all of them.
@@ -53,10 +62,10 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - `elementFromPoint` is a full hit test. On a GitHub diff with 62,000 elements it costs ~14 ms per call, which made the old 3-point cover check take 0.8 s per snapshot. Snapshots now hit-test only items that overlap a fixed/sticky/absolute element (collected during the walk), within a 60 ms budget, and skip off-screen `li/tr/article/row` subtrees (their controls are only counted). Elements of 1 px or less (screen-reader-only) are not listed.
 - Text search (`click "..."`) first searches the visible area only and stops on an exact visible match; only then it walks the whole page. A cheap `textContent`/attribute prefilter (whitespace removed) avoids `innerText` on non-matching elements.
 - CDP `mouseWheel` in a background or occluded window waits for a rendered frame (2.2 s on GitHub). `scroll` moves the nearest scrollable ancestor with JS; the wheel event is only the fallback for pages that cannot scroll at all (maps, canvas apps).
-- `chrome.storage.session` is cleared on every extension reload (update, `ext-reload`). The target falls back to the most recently used tab in the "Lighting" group, and tab aliases the extension does not know are rejected instead of being read as raw tab ids.
+- `chrome.storage.session` is cleared on every extension reload (update, `ext-reload`). The target falls back to the most recently used tab in the "Wisply" group, and tab aliases the extension does not know are rejected instead of being read as raw tab ids.
 - Device-metrics overrides in a background tab: a second change waits for a frame ack that never comes. `viewport` polls `innerWidth` and shows the tab for a moment if nothing changed within 250 ms.
 - Extensions cannot open `data:` URLs as top-level pages (the tab stays `about:blank`).
-- The Rust client treats the venv as stale when `requirements.txt` or `plugin.json` is newer than `venv/.lighting-stamp`; the Python side touches the stamp when nothing had to change. Without that a new dependency never got installed within the same plugin root.
+- The Rust client treats the venv as stale when `requirements.txt` or `plugin.json` is newer than `venv/.wisply-stamp`; the Python side touches the stamp when nothing had to change. Without that a new dependency never got installed within the same plugin root.
 - Chrome rejects an injected content script that contains a Unicode noncharacter (a raw U+FFFF sat in a Defuddle regex) with "It isn't UTF-8 encoded". Defuddle never loaded until the bundle was patched to use `￿` escapes; `text` silently used the `innerText` fallback. The injection error is now reported in the output.
 - Defuddle returns only the navigation on listing and app pages (Modrinth, YouTube home, SpigotMC lists). `text` switches to the page text when the reader view is under 30% of it.
 - Python's OpenSSL builds certificate chains from the Windows store and can pick an expired intermediate (`read https://en.wikipedia.org` failed, the browser was fine). `read` verifies with `truststore` (native Windows verification).
@@ -64,29 +73,29 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - GitHub hydrates `react-partial` islands on first interaction; the click's effect arrives ~300-400 ms later. When the diff after a click is empty and the clicked element did not change state, `after()` waits up to 500 ms for a mutation and diffs again. A changed element state is reported directly (`ok -> e5 checkbox "x" [x]`).
 - SPA navigation (GitHub Turbo/React) changes the URL first and renders later. Clicks on links to another URL wait up to 3 s for the navigation to start, then for the title to change, then for quiet.
 - `[tabindex]` alone does not make a control: focusable scroll containers and tooltip triggers (`tabindex=0`, no pointer cursor) are skipped; empty "stretched" links take the card's title as name.
-- Rust's `Command` on Windows passes every inheritable handle to the child, including handles the client itself inherited from its parent. `rtk` hands its own pipe down that way, so clearing `HANDLE_FLAG_INHERIT` on the client's three std handles was not enough: the daemon kept rtk's pipe open and the first `rtk lighting ...` of every session hung until the daemon stopped. The client now starts the daemon with `CreateProcessW` and `PROC_THREAD_ATTRIBUTE_HANDLE_LIST` (only the log handle). Python's `Popen(close_fds=True)` passes a handle list and is safe.
+- Rust's `Command` on Windows passes every inheritable handle to the child, including handles the client itself inherited from its parent. `rtk` hands its own pipe down that way, so clearing `HANDLE_FLAG_INHERIT` on the client's three std handles was not enough: the daemon kept rtk's pipe open and the first `rtk wisply ...` of every session hung until the daemon stopped. The client now starts the daemon with `CreateProcessW` and `PROC_THREAD_ATTRIBUTE_HANDLE_LIST` (only the log handle). Python's `Popen(close_fds=True)` passes a handle list and is safe.
 - `DETACHED_PROCESS` makes Windows ignore `CREATE_NO_WINDOW`. The uv `pythonw.exe` launcher starts a console `python.exe`, which then got a new, visible console window. Spawn with `CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP` only (`HIDDEN`); the child shares the hidden console.
-- `~/.lighting/bin/lighting.exe` comes first on PATH for bash, rtk and other AIs. It used to be refreshed only on a version bump, so a rebuilt client was never used from the shell. The daemon copies it on every start.
+- `~/.wisply/bin/wisply.exe` comes first on PATH for bash, rtk and other AIs. It used to be refreshed only on a version bump, so a rebuilt client was never used from the shell. The daemon copies it on every start.
 - Store (UWP) apps: the window belongs to `ApplicationFrameHost.exe`, the focused element to the app (`CalculatorApp.exe`). `type focused` accepts a focused element from another process when the target window is in the foreground.
 - `launch` order: exact Start menu name, then Win+R names (`calc`, `notepad`: an .exe in System32/Windows or an App Paths entry), then the fuzzy Start menu match. "calc" is the Start menu name of OpenOffice Calc; the Windows calculator is "Rechner" on German Windows.
-- Cleanup: `done` asks every connected extension to close the non-active tabs of the Lighting group (a tab the user made active is being looked at and stays), and closes the windows `launch` created (hwnd not in the window list before the launch; apps that were open stay) with WM_CLOSE, then gives the foreground back to the window that had it before the first launch. `keep` ungroups tabs and forgets windows. The Stop hook runs `done --quiet`; for `done` the client never sets anything up and never starts the daemon.
-- Status light: `paint()` in tabs.js sets the Lighting group color, orange before every command that works on a tab, red on an error or `abort`, green on `cleanup` (also with `cleanup off`, then nothing closes). New groups take the current color.
+- Cleanup: `done` asks every connected extension to close the non-active tabs of the Wisply group (a tab the user made active is being looked at and stays), and closes the windows `launch` created (hwnd not in the window list before the launch; apps that were open stay) with WM_CLOSE, then gives the foreground back to the window that had it before the first launch. `keep` ungroups tabs and forgets windows. The Stop hook runs `done --quiet`; for `done` the client never sets anything up and never starts the daemon.
+- Status light: `paint()` in tabs.js sets the Wisply group color, orange before every command that works on a tab, red on an error or `abort`, green on `cleanup` (also with `cleanup off`, then nothing closes). New groups take the current color.
 - Images are listed only with `snap --media` (image-heavy pages would cost tokens otherwise); they keep the visibility and aria-hidden checks that video skips, icons under 48 px are left out, and an image without alt takes its `figcaption`. `frames` keeps the tab in front for the whole capture because background tabs stop decoding video; "did not move" comes from equal timestamps or equal thumbnails (JPEG noise alone breaks exact comparisons).
 - Video analysis: `frames` seeks by default (sample i at from + (i + 0.5) * span / n), waits for `seeked` and `readyState >= 2`, then two animation frames (or 150 ms), and captures with `Page.captureScreenshot` + `clip` (rect center - size/2 + `cssVisualViewport.pageX/pageY`; rect first, it may scroll). It mutes the tab during capture and restores time, paused state and `controls` afterwards. A video counts as paused when it was paused or never loaded (`readyState < 2`): YouTube reports a deferred background video as playing, and restoring that once started it with sound.
 - Chrome defers media in background tabs until they are shown: `frames` waits up to 4 s for metadata while the tab is in front. A video that never played (`played.length === 0`) shows YouTube's cover image over the element, so every seek captured the same picture; it is started muted until `currentTime` moves, then paused.
 - YouTube `/embed/` URLs opened directly show "Error 153" (the player needs a referrer). Test with watch pages.
 - Captions: text tracks with mode `disabled` are set to `hidden` so their cues load (restored afterwards); YouTube captions are read from `.ytp-caption-segment` when CC is on.
 - Header collapse: `<header>`/`banner` outside article/aside/main/nav/section is a landmark; it collapses at 8+ own controls (navs inside it keep their own lines) and lists names up to 150 characters. The first-look cap is 40 lines and `navChars` 1,600 characters: with only a line cap, collapsing the header just pulled more lines in and `open` got bigger.
-- Where the time goes (0.7.0, measured): a Bash call costs 51-57 ms of Git Bash process start alone (`/usr/bin/true` 51 ms), Lighting adds ~5 ms. Through MCP a call is 1.2 ms (`ping`) and a browser command 2.9 ms; the daemon -> extension -> daemon trip is 1.7 ms. For an agent the model round per step (1-5 s) dominates, so fewer steps (`do`, `open -f`, routines) beat shaving milliseconds.
+- Where the time goes (0.7.0, measured): a Bash call costs 51-57 ms of Git Bash process start alone (`/usr/bin/true` 51 ms), Wisply adds ~5 ms. Through MCP a call is 1.2 ms (`ping`) and a browser command 2.9 ms; the daemon -> extension -> daemon trip is 1.7 ms. For an agent the model round per step (1-5 s) dominates, so fewer steps (`do`, `open -f`, routines) beat shaving milliseconds.
 - Opening and closing a file per command cost 14.3 ms because the virus scanner checks it on close. `log.jsonl` stays open (line buffered) and is rotated every 500 lines. Same trap for any per-command file write.
-- Profiling switch: create `~/.lighting/trace`, then `lighting stop`; `daemon.log` gets `trace <cmd>: route / observe / total / log` and `trace browser <cmd>: reply / inside extension` lines. Delete the file and stop again to turn it off (read once at start, no cost when off).
+- Profiling switch: create `~/.wisply/trace`, then `wisply stop`; `daemon.log` gets `trace <cmd>: route / observe / total / log` and `trace browser <cmd>: reply / inside extension` lines. Delete the file and stop again to turn it off (read once at start, no cost when off).
 - Tried and dropped (no measurable effect): `timeBeginPeriod(1)` in daemon and host, CDP `optimizeForSpeed` for JPEG screenshots (272 vs 278 ms). Pillow `optimize=True` only made files smaller (tokens depend on pixels), dropping it saved ~5 ms.
 - `showBriefly` waits for two animation frames in the tab (executeScript, max 300 ms; 120 ms if the page cannot be scripted) instead of a fixed sleep: faster on a 144 Hz screen and safe on slow pages.
 - After a desktop command, shared verbs (`snap`, `click`, ...) go to the desktop. Test the web side with web-only commands (`open`, `text`) or `--on web`.
 - Bionic (LM Studio's agent app) reads global skills from `~/.lmstudio/skills/<name>/SKILL.md` (folder name = skill name) and LM Studio reads MCP servers from `~/.lmstudio/mcp.json`.
 
-- Codex does not put a plugin's `bin/` on PATH. `refresh()` copies the exe to `~/.lighting/bin` (rename-then-write, a running exe can be renamed but not overwritten) and `setup` adds that folder to the user `Path`. The copied exe has no plugin root next to it, so the client falls back to `client-root` when `../lighting/__init__.py` is missing.
-- `lighting install <ai>` writes absolute paths to `~/.lighting/bin/lighting.exe`: plugin roots change on every update, that path does not. It is blocked through MCP because it prints to stdout.
+- Codex does not put a plugin's `bin/` on PATH. `refresh()` copies the exe to `~/.wisply/bin` (rename-then-write, a running exe can be renamed but not overwritten) and `setup` adds that folder to the user `Path`. The copied exe has no plugin root next to it, so the client falls back to `client-root` when `../wisply/__init__.py` is missing.
+- `wisply install <ai>` writes absolute paths to `~/.wisply/bin/wisply.exe`: plugin roots change on every update, that path does not. It is blocked through MCP because it prints to stdout.
 - Snapshot links: same-page links print `.`, links under the current path `./rest`, queries over 40 chars `?…`. On a GitHub repo page that cut the snapshot from 2,199 to 1,876 chars.
 
 - `snap -f` first filters the visible area; with no hit there it walks the whole page (unpruned) once. Word-start hits win over mid-word hits (`-f mit` lists "MIT license", not "commits").
@@ -102,16 +111,16 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - Routines: `commands.run_one` calls `routines.observe` after every non-system command. Actions become stable steps (`ctx.last_target` holds the resolved name/role/hint of e-/d-refs, the extension returns `target` + `where` with every tab command). Episodes end after 45 s idle or when an entry command (`open`/`launch`/`focus`) switches site after 2+ actions, or at `stop`. Learning = Smith-Waterman local alignment of the new episode against the last 150 (step similarity = token LCS ratio, gaps allowed), then a second pass after substituting the slot values found in the first. Differing token runs (punctuation glue merged) become params named after the fill/type label, the key before `:`/`=`, else item/page/app/text.
 - Episodes with a `--yes` step are never learned by themselves (`run` stops before such steps); `routine save` still can.
 - `run` retries transient errors (nothing matches, is gone, page changed, ...) for up to 6 s per step, adds `--first` on "matches several", skips optional steps, stops before `--yes` steps, verifies the end state (params in title/URL, else same URL prefix / same exe). Unverified = failed. A run that fails and is finished by hand becomes the next version at episode end (`repair`). Selftest and bench set `ctx.no_learn`.
-- Recorder: web events come from `page-rec.js` in the isolated world (trusted events only; Lighting's own CDP input counts as trusted, its `selectOpt`/`setValue` synthetic events do not). Desktop: `WH_MOUSE_LL` + `WH_KEYBOARD_LL` on their own thread with a message loop; the callbacks only queue, a second thread with its **own** COM apartment and `IUIAutomation` resolves `ElementFromPoint`/`GetFocusedElement` (UIA objects from the command thread cannot be used there). Injected input is ignored unless `--injected` (selftest). Keys become text via `ToUnicodeEx` with flag 4 (keeps dead-key state), AltGr = ctrl+alt + printable char.
+- Recorder: web events come from `page-rec.js` in the isolated world (trusted events only; Wisply's own CDP input counts as trusted, its `selectOpt`/`setValue` synthetic events do not). Desktop: `WH_MOUSE_LL` + `WH_KEYBOARD_LL` on their own thread with a message loop; the callbacks only queue, a second thread with its **own** COM apartment and `IUIAutomation` resolves `ElementFromPoint`/`GetFocusedElement` (UIA objects from the command thread cannot be used there). Injected input is ignored unless `--injected` (selftest). Keys become text via `ToUnicodeEx` with flag 4 (keeps dead-key state), AltGr = ctrl+alt + printable char.
 - Writing other programs' config files: keep their line endings (`eol_of`). Python's `write_text` on Windows turned the LF `~/.codex/config.toml` into CRLF.
 
 - The daemon has one worker thread for all commands of all sessions. A command that waits long returns a `Pending` (`common.py`: `poll(last)`, `deadline`, `interval`); the worker keeps a list, polls each one when due (`jobs.get(timeout=next due)`) and runs other jobs in between. `poll_pending` saves and restores `ctx.target/where/last_target` so a poll never redirects another session's next command. Inside `do`/`run`/selftest a `Pending` is drained synchronously (`commands.drain`). Abort bumps `abort_gen` and wakes the worker with a `(None, None)` job. The MCP path (`cli.execute`) waits `max(180 s, --timeout + 30 s)`; the Rust client waits without limit.
 - Chromium/Electron text fields accept a UIA `SetValue`, but the page's own input handlers never run: Discord's editor sends nothing on Enter, Obsidian's quick switcher keeps its unfiltered list and Enter opens the top note. In `Chrome_WidgetWin_1` windows `type` always pastes (`desktop.put_text`), and `--tab`/`--enter` wait for the UI to settle (`settle_ui`, at least 0.35 s, up to 1 s).
 - Discord in UIA: the message list is the `list` named `Nachrichten in <name>` / `Messages in ...`; every message is a direct `listitem` child with AutomationId `chat-messages-<channel>-<snowflake>` (snowflakes grow with time, so "new" = id above the baseline). Inside: a text `itsluiss (ItsLuis) 16:13` and a button with the sender (first message of a group only), `message-timestamp-<id>`, then the content as text/hyperlink nodes, then the hover toolbar buttons. Own messages have `Bearbeiten`/`Löschen` (`Edit`/`Delete`), others `Mehr`. Follow-ups carry `16:27` and the long date after the timestamp and no sender. `chat.parse` reads this; apps without it fall back to the item name and the sent text.
-- `launch` found an already open app with `owner_of`, which matched titles and exes in one pass with the foreground first: a terminal titled "◐ Obsidian lighting session" won over Obsidian.exe. Exe matches now come first.
+- `launch` found an already open app with `owner_of`, which matched titles and exes in one pass with the foreground first: a terminal titled "◐ Obsidian wisply session" won over Obsidian.exe. Exe matches now come first.
 - `normalize_url` passed every `scheme:` through to the browser, so `obsidian://` became an empty tab. Schemes outside `WEB_SCHEMES` go to `desktop.cmd_launch`; `RISKY_SCHEMES` need `--yes` there. `host:port` is http, not a scheme.
-- Shortcuts: `page.js nameOf` fills `S.keys` from `KEYHINT` matches, `aria-keyshortcuts` and `accesskey` before stripping the hint from the name; `snap`/`open` replies carry `keys`, `browser.call` stores them per host (`keys.harvest`). Desktop snapshots read UIA `AcceleratorKey`/`AccessKey` (in the cache request) and `(Ctrl+K)` name hints. `press` that produced new lines stores `combo -> first new line` as `learned`. Rank: learned/user > ui > seed. File `~/.lighting/keys.json`.
-- The Rust client swallows `--stats` (its own timing flag), so the log summary is `lighting log stats`, not a flag.
+- Shortcuts: `page.js nameOf` fills `S.keys` from `KEYHINT` matches, `aria-keyshortcuts` and `accesskey` before stripping the hint from the name; `snap`/`open` replies carry `keys`, `browser.call` stores them per host (`keys.harvest`). Desktop snapshots read UIA `AcceleratorKey`/`AccessKey` (in the cache request) and `(Ctrl+K)` name hints. `press` that produced new lines stores `combo -> first new line` as `learned`. Rank: learned/user > ui > seed. File `~/.wisply/keys.json`.
+- The Rust client swallows `--stats` (its own timing flag), so the log summary is `wisply log stats`, not a flag.
 - `suggest` (UserPromptSubmit hook) is on the client's silent path like `done`: never starts the daemon, reads the hook JSON from stdin and passes it as an argument. The daemon answers it without logging and without attaching pending `!` events (they would land in the user's prompt). Matching: stems (first 5 letters) of the prompt against routine name words, tags and its app/site; app + 1 word or 2 words.
 - `routines.persist` keeps `episodes.jsonl` open (line buffered) and trims every 50 writes; `routine forget` closes it first (Windows cannot delete an open file).
 
@@ -121,7 +130,7 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - Pasting into terminals: `put_text` pressed Ctrl+A to select the field first, which a console receives as `^A`. Terminal window classes (`CASCADIA_HOSTING_WINDOW_CLASS`, `ConsoleWindowClass`, mintty, ConEmu, PuTTY) get no Ctrl+A.
 - Sound: `HTMLMediaElement.captureStream()` gives the audio track of MSE videos (YouTube, TikTok) in a background tab; the tab is muted, the element unmuted for the capture (a blocked `play()` falls back to muted playback and says so). `listen` runs yt-dlp/ASR in a thread behind a `Pending`, so the daemon stays free. yt-dlp may skip one caption language silently (YouTube 429 behind `--quiet`); the picker prefers `-orig`, then en, then de. Whisper invents text on music: segments with `no_speech_prob >= 0.6`, low `avg_logprob` with some no-speech probability, or `compression_ratio >= 2.4` are dropped; tags like `[Music]`/`Outro Music` are filtered.
 - Desktop snapshots fold lines that repeat 4+ times without their ref (`desktop.fold`); `st.full` keeps the unfolded lines so `after_action` diffs stay exact.
-- `net`: `Network.enable` on every attached Lighting tab; only XHR/Fetch GET answers with a JSON mime type and status < 400 are kept (30 per tab); the body is fetched with `Network.getResponseBody` only when shown (it can be gone after a reload).
+- `net`: `Network.enable` on every attached Wisply tab; only XHR/Fetch GET answers with a JSON mime type and status < 400 are kept (30 per tab); the body is fetched with `Network.getResponseBody` only when shown (it can be gone after a reload).
 - WebMCP: `Page.addScriptToEvaluateOnNewDocument` wraps `registerTool`/`unregisterTool`/`provideContext` of `document.modelContext` and `navigator.modelContext` in the main world (`window.__ltWebMCP`); pages attached before the hook need a reload. Brave 154 has no WebMCP without an origin-trial token, so the selftest only checks that `tools` answers.
 
 - `done --quiet` (Stop hook) in a session paints the group green at once and closes 20 s later (`DONE_GRACE_S`): the daemon keeps `timers` that the worker runs between jobs. Any command of that session in between (not `done`/`suggest`/`status`...) or a pending wait of it keeps the tabs. Before, a session's background loop lost its Hugging Face tab when the reply ended and failed 648 times in an hour with "no tab yet" (2026-10-15). `closing` is saved in `sessions.json`; after a cleanup the "no tab" error names the closed page.
@@ -136,39 +145,43 @@ Runtime state is in `%USERPROFILE%\.lighting\` (venv, key, blocklist, out, exten
 - `browser.running` compares bytes: `tasklist` prints in the OEM code page, and under `-X utf8` the reader thread failed to decode it, `stdout` was `None` and `open`/`tabs` crashed (28x).
 - `scroll w5` without a d-ref uses the largest vertically scrollable UIA element in the background (`uia.main_scroller`, not for Chromium windows: their trees are too big); before, it ignored `w5` and scrolled the chosen window.
 - Desktop `type` waits `TYPE_SETTLE_S` (0.3 s) for the UI diff, 0.6 s with `--enter`/`--tab`.
-- Brain (`brain.py`, `~/.lighting/brain.json`): `observe` runs after every command next to `routines.observe` (only the worker thread touches it). Learned per page key (host + up to 4 path segments, numbers/hashes/long slugs -> `#`) and per host (or `app:<exe>`): element name (lowercase, digits -> `#`, `...` cut) -> [score, last use, role, label], score halves every 30 days. The first load builds it from `episodes.jsonl`; `focused`/`screen`/refs/`#hints` are not names. Saved at most every 30 s and on `stop` (one file write per command would cost ~14 ms, see above). Blocklisted hosts are never learned; `no_learn` (selftest, bench) stops learning but not trimming, so `bench --real` measures what users get.
+- Brain (`brain.py`, `~/.wisply/brain.json`): `observe` runs after every command next to `routines.observe` (only the worker thread touches it). Learned per page key (host + up to 4 path segments, numbers/hashes/long slugs -> `#`) and per host (or `app:<exe>`): element name (lowercase, digits -> `#`, `...` cut) -> [score, last use, role, label], score halves every 30 days. The first load builds it from `episodes.jsonl`; `focused`/`screen`/refs/`#hints` are not names. Saved at most every 30 s and on `stop` (one file write per command would cost ~14 ms, see above). Blocklisted hosts are never learned; `no_learn` (selftest, bench) stops learning but not trimming, so `bench --real` measures what users get.
 - Trimming: a page key with 3+ uses (else its host with 10+) is known; the top `snap_top` (15) names are kept by exact or substring match (4+ chars), alert/dialog/status lines and every non-element line always stay, deltas (`changed since your last snap`) are never trimmed, and nothing changes unless 3+ learned controls are shown and 5+ are hidden. Simulated on the recorded episodes: github.com/QDHShamiro/Lighting 450 -> 117 tokens, its pull list 433 -> 180, unknown sites unchanged.
 - Self-correction in `run_one`: on `eN is gone` the ref's role and name from the last snapshot of that tab (`ctx.refnames`, names cut with `...` are skipped) are retried once as a text target with `--role`; the extension's stale guard still refuses it when the URL changed. A miss (`nothing matches/called`, `no field called`) followed within 90 s by a success of the same command on the same page key is a fix; used automatically from the 2nd time, named in the error after the 1st. Retries never act twice: all those errors are raised before acting.
 - `improve` reads `log.jsonl` (+ `.old.jsonl`), groups errors by shape (quoted text, refs, numbers replaced), flags bursts (10+ within 10 min = a loop) and maps shapes to advice (`ADVICE`). `suggest` (UserPromptSubmit) adds the weekly summary when 7 days passed (`improve.json`) and 10+ commands failed. `read_log(since)` compares the fixed `{"t": "..."` prefix as text before parsing, so only the last 14 days are decoded (733 -> 269 ms on 26k lines).
-- `doctor` runs locally (client `LOCAL` list, `cli.py`, `mcp.py`), never through the daemon's worker: it must work when the daemon is hung, and asking the daemon from inside its own worker would deadlock. When `client-root` points to another root that has `doctor.py`, it re-runs itself from there (`LIGHTING_DOCTOR_ROOT` stops the loop), so the MCP server of an older plugin copy checks the Lighting that really runs. The daemon answers the hidden `doctor-info` (pid, version, root, hotkey, trace, hosts with `hostpid`, which `host.py` adds to its hello). Slow parts run in threads from the start (MCP probe through `lighting.exe mcp`, GitHub release check, Windows OCR import); rows are sorted by `AREAS` when printed. ~2.3 s on a loaded PC, most of it Python start.
+- `doctor` runs locally (client `LOCAL` list, `cli.py`, `mcp.py`), never through the daemon's worker: it must work when the daemon is hung, and asking the daemon from inside its own worker would deadlock. When `client-root` points to another root that has `doctor.py`, it re-runs itself from there (`LIGHTING_DOCTOR_ROOT` stops the loop), so the MCP server of an older plugin copy checks the Wisply that really runs. The daemon answers the hidden `doctor-info` (pid, version, root, hotkey, trace, hosts with `hostpid`, which `host.py` adds to its hello). Slow parts run in threads from the start (MCP probe through `wisply.exe mcp`, GitHub release check, Windows OCR import); rows are sorted by `AREAS` when printed. ~2.3 s on a loaded PC, most of it Python start.
 - `procs.py` lists processes with Toolhelp32 and reads command lines with `NtQueryInformationProcess(60)` (`PROCESS_QUERY_LIMITED_INFORMATION` is enough), no PowerShell/WMIC (WMIC is gone on Windows 11 24H2+). Daemon and host are two processes each (uv launcher + real interpreter, same command line): `tops()` keeps the launcher, `top_of()` walks up from the real pid. Stuck = a `done`/`suggest` client older than 60 s or any client but `mcp`/`doctor` older than 1 h; extra daemons are those not containing the daemon's pid (test daemons from `USERNAME=ltest`); orphan hosts are hosts older than 60 s not linked to a connected `hostpid`. `taskkill /T /F` on the top process.
-- The daemon prints `lighting daemon started <version> <time> pid <n>` to `daemon.log` after the pipe is open (not before: a second daemon that cannot get the pipe exits and must not hide the first one's errors); `doctor` counts tracebacks after the last marker.
+- The daemon prints `wisply daemon started <version> <time> pid <n>` to `daemon.log` after the pipe is open (not before: a second daemon that cannot get the pipe exits and must not hide the first one's errors); `doctor` counts tracebacks after the last marker.
 - The client reads hook JSON for `done --quiet`/`suggest` in a thread and waits at most 1 s (`HOOK_INPUT_WAIT`): with an open but silent stdin (an agent's shell) the old blocking read hung forever.
 
 ## 3. Build order when changing things
 
-1. Python: edit `lighting/*.py`, `py_compile`, then `lighting stop` (next call starts the new daemon).
-2. Extension: edit `extension/*.js`, check the modules load (copy to `.mjs`, `node --check`, import with a mocked `chrome`), then `lighting ext-reload`. If the service worker is broken it cannot reload itself: run `lighting setup`, which reloads it through the extensions page.
-3. Client: `cd client && cargo build --release`, copy `target/release/lighting.exe` to `bin/` (rename the old one to `bin/lighting.old` if it is running). It links the CRT statically (no VC++ runtime needed). `lighting stop`: the next daemon copies it to `~/.lighting/bin`, which is the one on PATH.
-4. Versions: bump `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` together; the runtime reads the Claude one. The extension manifest version is rewritten from it when the extension is copied; a mismatch makes the daemon reload the extension once.
+1. Rust: `cargo build --release -p lighting -p lighting-ui`, then `target/release/wisply.exe setup --manual`. Setup renames
+   the running exe in `~/.wisply/bin` before copying (Windows locks a running exe against writes, not against
+   renames) and stops a daemon that runs the old build; the next command starts the new one.
+2. Extension: edit `extension/*.js`, check the modules parse (copy to `.mjs`, `node --check`), then `wisply ext-reload`.
+   If the service worker is broken it cannot reload itself: run `wisply setup`, which reloads it through the extensions page.
+3. Window: edit `crates/lighting-ui/web/src`, `npm run build` there, commit `web/dist` (CI checks it is current).
+4. Versions: bump `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json` and the workspace version in `Cargo.toml`
+   together; the release workflow refuses a tag that does not match them.
 
 ## 4. Verification protocol (do not report done before all pass)
 
 ```
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace                 # unit + integration tests (fake browser, setup in a temp home)
 claude plugin validate .
-claude plugin validate .claude-plugin/plugin.json
-claude plugin validate skills
-claude plugin validate commands
-python tests/test_units.py     # 47/47
-lighting doctor                # 0 problems (memory/errors warnings depend on the PC and the log)
-cd client && cargo test && cargo clippy --release --all-targets
-lighting selftest              # must print 135/135 passed (134/134 with a SKIP line when other Lighting tabs are open or you used the mouse; frames/shot need a browser window that is not minimized)
-lighting bench
-lighting bench --real          # compare tokens with the last run
+wisply doctor                        # 0 problems (memory/errors warnings depend on the PC and the log)
+wisply selftest                      # 159/159 on Windows (a SKIP line when other Wisply tabs are open or you used the mouse)
+wisply bench
+wisply bench --real                  # compare tokens with the last run
 ```
-Cold start through a pipe, isolated from the browser's own daemon restart: `USERNAME=ltest lighting stop; rtk lighting status | cat` must return at once (`USERNAME` picks the pipe name).
+CI (`v3.yml`) runs fmt, clippy, tests, cargo-deny, the window build check, the extension/plugin file check and the
+selftest in Chrome for Testing on Windows, macOS and Linux. Lint for the other systems locally:
+`cargo clippy -p lighting --all-targets --target x86_64-unknown-linux-gnu` (needs a C compiler stub for bundled SQLite).
 Then one real page by hand (`open`, `snap`, `click`, `text`) and one real app (`windows`, `snap w<N>`, `click d<N>`).
-For routines: do one task twice with different values, `lighting routine learn`, then `lighting run <name> param=...`.
+For routines: do one task twice with different values, `wisply routine learn`, then `wisply run <name> param=...`.
 
 ## 5. Mistakes already made (do not repeat)
 
@@ -179,9 +192,9 @@ For routines: do one task twice with different values, `lighting routine learn`,
 - **Diff after an action overwrote the snapshot state**, so the next `snap` claimed "unchanged". `diff()` only updates the ref set.
 - **Filtered desktop snapshots dropped refs**, so `click "Go"` after `snap -f status` failed. Refs are kept for all items; the filter only hides lines.
 - **Testing the hotkey with injected keys while a SYSTEM window was in front** showed nothing; the hotkey was fine. Bring a normal window to the front first (`pointer.front`), then inject.
-- **`fetch /path` from Git Bash failed** because the path had been rewritten to the Git install folder before Lighting saw it.
+- **`fetch /path` from Git Bash failed** because the path had been rewritten to the Git install folder before Wisply saw it.
 - **Switching plugin roots killed the browser connection for good** because `refresh()` rewrote `host.bat` under a running `cmd.exe`, and `rmtree` of the loaded extension copy left a window where the files were missing. Now the host files are static and the extension copy is overwritten in place.
-- **Every cold start hung the calling shell** because the daemon inherited the client's stdout pipe. Test cold starts through a pipe: `lighting stop; timeout 25 lighting status | cat`.
+- **Every cold start hung the calling shell** because the daemon inherited the client's stdout pipe. Test cold starts through a pipe: `wisply stop; timeout 25 wisply status | cat`.
 - **The selftest reused the working tab** (`open` without `--new`) and closed it at the end. It now opens its own tabs, and a decoy tab proves that `close` returns to the previous tab instead of the first tab of the group (that bug made a test click land on GitHub).
 - **Benchmarks on the small test page hid the big-page costs.** Measure on a real heavy page too (a GitHub compare view with a large diff).
 - **A Python heredoc turned `\n` into a real line break again** (selftest.py). Anything with backslashes goes through the Edit tool.
@@ -189,15 +202,15 @@ For routines: do one task twice with different values, `lighting routine learn`,
 - **The first routine learner treated flags as data**: `open x -n` vs `open y` split "Context-Engine" into two parameters. Slots are computed from arguments only; flags only affect similarity.
 - **`routine learn` "worked" while nothing was verified**: a run that clicked the wrong "Issues" link reported ok. Verification failures now fail the run and count in the stats.
 - **The `text` selftest only checked the page title**, which the plain-text fallback also contains, so the broken Defuddle bundle went unnoticed. It now requires a Markdown table from the fixture.
-- **The first `rtk lighting ...` of every session hung for minutes** (0.4.0): cold-start tests used a plain pipe, and after `lighting stop` the browser's host restarted the daemon before the client could, so the client never spawned it. Test with a private pipe (`USERNAME=ltest`) and through `rtk`.
-- **Tests of a rebuilt client ran the old one**: `lighting` resolved to the stale `~/.lighting/bin` copy. Compare `md5sum bin/lighting.exe ~/.lighting/bin/lighting.exe`.
-- **Testing through Lighting leaves learned routines behind**: repeated test flows became routines (`github-confirm-merge` clicked "Merge pull request" and was offered on every PR page, `calc-focused` typed a fixed sum). After a test session run `lighting routines` and `routine rm` what the tests made. Merge buttons now need `--yes`.
+- **The first `rtk wisply ...` of every session hung for minutes** (0.4.0): cold-start tests used a plain pipe, and after `wisply stop` the browser's host restarted the daemon before the client could, so the client never spawned it. Test with a private pipe (`USERNAME=ltest`) and through `rtk`.
+- **Tests of a rebuilt client ran the old one**: `wisply` resolved to the stale `~/.wisply/bin` copy. Compare `md5sum bin/wisply.exe ~/.wisply/bin/wisply.exe`.
+- **Testing through Wisply leaves learned routines behind**: repeated test flows became routines (`github-confirm-merge` clicked "Merge pull request" and was offered on every PR page, `calc-focused` typed a fixed sum). After a test session run `wisply routines` and `routine rm` what the tests made. Merge buttons now need `--yes`.
 - **A focus fix stole the keyboard**: bringing a window forward for `type focused` without `pointer.wait_idle()` would have sent the user's own keystrokes into it. Everything that changes the foreground waits for 300 ms of user idle first.
 - **Frame refs were printed but never used** (until 1.0.0): `snap --frame` gave `f134.e1`, every action then looked for it in the top frame and said "is gone". Actions now run in the frame and add the frame's position on the page. The selftest clicks a button in a cross-origin frame (`localhost` inside `127.0.0.1`).
 - **The answer named the tab that was asked for, not the one used**: when a session's remembered tab was closed, `open` made a new tab but reported none, so the session lost it and said "no tab yet" after every `done`. `where` follows the tab the command really used.
 - **Tab ids live in `chrome.storage.session`**: an extension reload or a browser restart starts them at `t1` again. The extension sends an `epoch` in its hello; when it changes the daemon forgets every session's tab ids.
-- **`git checkout main` while a `lighting.exe` from this folder runs** stopped halfway (Windows cannot replace a running exe) and left the 0.7.2 files in the folder the daemon loads from (`~/.lighting/client-root`). Fast-forward first (`git fetch origin main:main`), then switch.
-- **Test rounds restart the daemon under other sessions**: `lighting stop` and `ext-reload` break their waits and tab ids. Batch the changes, restart once.
+- **`git checkout main` while a `wisply.exe` from this folder runs** stopped halfway (Windows cannot replace a running exe) and left the 0.7.2 files in the folder the daemon loads from (`~/.wisply/client-root`). Fast-forward first (`git fetch origin main:main`), then switch.
+- **Test rounds restart the daemon under other sessions**: `wisply stop` and `ext-reload` break their waits and tab ids. Batch the changes, restart once.
 - **`node --check` passes broken ES modules**: a `.js` file with `import`/`export` and a raw line break inside a string still exits 0. Check the extension as modules: copy each file to `.mjs`, then `node --check`.
 - **A Python replace turned `\n` into a real line break once more** (actions.js, 1.1.0): a heredoc typed through a tool call loses one level of backslashes, so `\\n` arrives as `\n`. The Edit tool for anything with backslashes, no exceptions.
 - **Only the fixture was tested.** A sweep over real sites (GitHub, YouTube, Wikipedia, SpigotMC, Modrinth, Hugging Face, PaperMC docs) found six output and timing problems in one hour. Repeat that sweep after bigger changes.
@@ -206,18 +219,18 @@ For routines: do one task twice with different values, `lighting routine learn`,
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `no browser ... connected` | extension not loaded, or service worker crashed | `lighting setup` |
+| `no browser ... connected` | extension not loaded, or service worker crashed | `wisply setup` |
 | Every click ~1 s | `mouseMoved` awaited | send pressed/released only |
-| `browser did not answer 'click' within 35s` | JS dialog opened by the click | `dispatch()` + `lighting dialog accept` |
+| `browser did not answer 'click' within 35s` | JS dialog opened by the click | `dispatch()` + `wisply dialog accept` |
 | Buttons show `[-]` | toggle state read without pattern check | check availability properties |
-| `lighting` runs slow (~200 ms) | bash script shadowing the exe | keep only `bin/lighting.exe` |
+| `wisply` runs slow (~200 ms) | bash script shadowing the exe | keep only `bin/wisply.exe` |
 | Host never connects after update | old multi-line `host.bat` rewritten under a running cmd.exe | static one-line `host.bat` + `host.py` reading `client-root`; kill the stuck `host.py` python once |
 | Daemon restarts on every call | two open Claude sessions run different plugin versions, each call switches `client-root` | expected until the old session ends; same version = no restart |
-| `lighting` hangs until timeout in a pipe | daemon inherited a pipe handle (the caller's, or one the caller inherited, e.g. from rtk) | client spawns the daemon with an explicit handle list |
+| `wisply` hangs until timeout in a pipe | daemon inherited a pipe handle (the caller's, or one the caller inherited, e.g. from rtk) | client spawns the daemon with an explicit handle list |
 | A console window pops up when the daemon starts | `DETACHED_PROCESS` voids `CREATE_NO_WINDOW` for the launcher's child | spawn with `HIDDEN` flags only |
 | `launch calc` opens OpenOffice Calc | fuzzy Start menu match won | Win+R names come before the fuzzy match |
-| Anything else, or not sure | | `lighting doctor`, then `lighting doctor --fix` |
-| Everything slow, even `lighting status` (~1 s) | the PC is out of memory (`doctor` memory line names the biggest programs) | close programs; not a Lighting bug |
+| Anything else, or not sure | | `wisply doctor`, then `wisply doctor --fix` |
+| Everything slow, even `wisply status` (~1 s) | the PC is out of memory (`doctor` memory line names the biggest programs) | close programs; not a Wisply bug |
 
 ## 7. Hard rules
 
@@ -225,4 +238,4 @@ For routines: do one task twice with different values, `lighting routine learn`,
 2. Output is plain text, one line per action, no JSON, no emoji.
 3. Never print secrets; `--env VAR` values stay out of logs and output.
 4. Blocklisted sites stay read-only; irreversible buttons need `--yes`.
-5. Every performance number in the README is measured and reproducible (`lighting bench`, `lighting selftest`, transcript timestamps).
+5. Every performance number in the README is measured and reproducible (`wisply bench`, `wisply selftest`, transcript timestamps).

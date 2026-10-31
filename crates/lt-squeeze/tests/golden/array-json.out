@@ -1,0 +1,14 @@
+[
+<220 items, 1 with error words, the same in all: region="eu-west", kind="chest">
+{"id":0,"price":11.8,"ok":true,"error":null,"name":"item-0","ratio":123456789.125,"note":"Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ","tags":["<7 items>","a","b","c","<... 3 more items>","g"],"url":"https://example.com/items/0"}
+{"id":1,"ok":true,"ratio":-0.5,"error":null,"price":15.23,"name":"item-1","tags":["a","b"],"note":"Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ... (+20 chars)","url":"https://example.com/items/1"}
+{"id":2,"ratio":0.1,"ok":true,"error":null,"price":18.16,"name":"item-2","tags":["a","b","c"],"note":"Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ","url":"https://example.com/items/2"}
+<... 74 more items>
+{"id":77,"ok":true,"error":null,"price":99999.0,"name":"item-77","ratio":123456789.125,"tags":["a","b","c"],"note":"Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ... (+100 chars)","url":"https://example.com/items/77"}
+<... 72 more items>
+{"id":150,"error":null,"price":10.02,"ok":false,"name":"item-150","tags":["a","b"],"ratio":123456789.125,"note":"Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ... (+100 chars)","url":"https://example.com/items/150"}
+<... 39 more items>
+{"id":190,"ratio":0.1,"ok":true,"price":14.38,"name":"item-190","tags":["a","b","c","d","e"],"error":"connection refused by upstream","note":"Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ... (+20 chars)","url":"https://example.com/items/190"}
+<... 28 more items>
+{"id":219,"ok":true,"error":null,"price":16.24,"ratio":1e+16,"name":"item-219","tags":["a","b","c","d","e","f"],"note":"Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ Ünïcödé ✓ ","url":"https://example.com/items/219"}
+]

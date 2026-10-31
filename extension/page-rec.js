@@ -172,7 +172,7 @@
   pill.style.cssText = "all:initial;position:fixed;right:12px;top:12px;z-index:2147483647;pointer-events:none";
   const sh = pill.attachShadow({ mode: "closed" });
   const badge = document.createElement("span");
-  badge.textContent = "● REC Lighting";
+  badge.textContent = "● REC Wisply";
   badge.style.cssText = "font:bold 12px/16px Arial,sans-serif;color:#fff;background:#d00000;padding:3px 9px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.5)";
   sh.appendChild(badge);
   document.documentElement.appendChild(pill);
