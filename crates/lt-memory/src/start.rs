@@ -137,7 +137,8 @@ impl Store {
             "select id, title from notes where kind = 'rule' and source = 'vault' and project = ?1 \
              order by updated desc limit ?2"
         } else {
-            "select id, title from notes where source = 'user' and project in (?1, '')              order by project = ?1 desc, updated desc limit ?2"
+            "select id, title from notes where source = 'user' and project in (?1, '') \
+             order by project = ?1 desc, updated desc limit ?2"
         };
         if rules && project.is_empty() {
             return Ok(Vec::new());
