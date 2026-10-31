@@ -16,6 +16,10 @@ and `lighting.mcpb`, from 3.0.0 `wisply.exe`, `wisply-macos`, `wisply-linux-x64`
   review are done; `blind` puts two versions side by side in the window (Blind page).
 - After every Edit or Write the hook names new weak spots in that file (`~/.wisply/think/quick-off` turns it off).
 - `Store::recent_cwds` gives the folders recent sessions worked in, used for the person profile.
+- `wisply research "words" ["other words"]`: asks 10 search engines and sites at once, reads the best pages, ranks
+  their passages without any AI model and returns a short report with links and what several sources agree on.
+  Two rounds by default (the second searches with terms found in the first), `--quick`, `--deep`, `--site`.
+  Reports are saved to the vault (`Research/`) and found again by `recall`.
 
 ### Changed
 - The repository is now `QDHShamiro/Wisply` (old links redirect). The crates are `wisply`, `wisply-ui` and

@@ -84,6 +84,7 @@ Antigravity): [Install](#install).
 | 📱 **Your Android phone** | `phone snap` shows the screen as text, `phone tap p3` taps, over USB debugging. |
 | 🧠 **Learns your tasks** | Do something twice and it becomes a routine that runs in one call. |
 | 💾 **Remembers** | A memory on your computer: decisions, to-dos and what happened in earlier sessions, ~500 tokens at the start of each session. |
+| 🔎 **Researches by itself** | `research "question"` asks 10 search engines and sites at once, reads the best pages and returns the passages that answer it, with links. No AI model, ~1,500 tokens. |
 | 🎞️ **Watches videos** | Chapters, speech, the text on screen and 12 scenes in one image. |
 | 🔍 **Thinks without AI** | `wisply think` checks code, web, texts and images with rules that fit the project and your own CLAUDE.md rules, fixes what is safe, proves it with your build and keeps a blind A/B for you. |
 | 🧹 **Cleans up** | When the AI finishes its reply, what it opened closes again and your window comes back. |
@@ -272,6 +273,7 @@ Want every agent on your PC to prefer it? Put this in `CLAUDE.md` or `AGENTS.md`
 | | |
 |---|---|
 | **Look** | `open <url>` · `snap [-f "a\|b"]` · `text` · `read <url>` (no browser) · `shot` |
+| **Research** | `research "words" "other words"` · `--quick` · `--deep` · `--site github.com` |
 | **Act** | `click` · `type` · `fill "Email=a@b.c" --submit` · `press` · `select` · `scroll --until "text"` · `upload` |
 | **Wait** | `wait "text"` · `expect "text"` · `wait url:/x` |
 | **Apps** | `launch spotify` · `windows` · `snap w2` · `read w2` (OCR) · `click d5` · `press ctrl+s` |

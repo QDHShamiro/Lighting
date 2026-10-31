@@ -4436,6 +4436,7 @@ dependencies = [
 name = "wisply-ui"
 version = "3.0.1"
 dependencies = [
+ "image",
  "serde_json",
  "tao",
  "winresource",

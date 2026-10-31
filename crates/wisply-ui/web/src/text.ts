@@ -12,8 +12,15 @@ export const T = {
   },
   home: {
     title: "Projects",
-    sub: (n: number) => `${n} projects, newest first`,
+    sub: (n: number) => `${n} projects`,
     filter: "Filter projects…",
+    pinned: "Pinned",
+    recent: "Active this week",
+    older: "Earlier",
+    all: "Projects",
+    pin: "Pin to the top",
+    unpin: "Unpin",
+    sort: { active: "Active", notes: "Notes", name: "A–Z" },
     none: "No projects yet. Wisply fills this as Claude works.",
     counts: (notes: number, todos: number, sessions: number) =>
       [`${notes} notes`, todos ? `${todos} open to-dos` : "", `${sessions} sessions`].filter(Boolean),
@@ -47,6 +54,7 @@ export const T = {
   },
   graph: {
     loading: "Loading graph…",
+    find: "Find a project or note…",
     layout: "Arranging…",
     nodes: (n: number, e: number) => `${n.toLocaleString("en-US")} nodes · ${e.toLocaleString("en-US")} links`,
     kinds: { note: "Notes", project: "Projects", session: "Sessions" },

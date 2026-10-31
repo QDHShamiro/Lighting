@@ -2,15 +2,20 @@ import Graph from "graphology";
 import { inferSettings } from "graphology-layout-forceatlas2";
 import FA2Layout from "graphology-layout-forceatlas2/worker";
 import Sigma from "sigma";
+import { animateNodes } from "sigma/utils";
 import { board, type GraphData } from "../api";
 import { enc, go, h, mount } from "../dom";
 import { T } from "../text";
 
-const PALETTE = ["#e6e6ea", "#8fb3ff", "#ff9f9f", "#9fe0b4", "#d3a6ff", "#ffd88a", "#7fd6dc", "#ffb3e0", "#c2c27a", "#a7b1c2"];
-const OTHER = "#6e6e78";
-const DIM = "#222228";
-const EDGE = "#34343c";
-const LABEL = "#ececef";
+const PALETTE = ["#ffffff", "#c8d3e6", "#e6c8c8", "#c8e6d2", "#dacbe6", "#e6dcc0", "#c0e0e2", "#e6c8da", "#d6d6b8", "#b9bec8"];
+const OTHER = "#6a6a6f";
+const DIM = "#1b1b1d";
+const EDGE = "rgba(255,255,255,0.07)";
+const EDGE_ON = "rgba(255,255,255,0.45)";
+const LABEL = "#f2f2f2";
+const STORE = "wisply.graph.v1:";
+const ANIMATE_MAX = 6000;
+const NUDGE_MS = 900;
 const KINDS = ["note", "project", "session"] as const;
 const REPORT_TOP = 10;
 const NAMED = 24;
@@ -20,6 +25,59 @@ type Attrs = { label: string; kind: Kind; group: string; t: number; x: number; y
 
 function layoutMs(n: number): number {
   return Math.min(8000, 1500 + n / 3);
+}
+
+type Spots = Record<string, [number, number]>;
+
+function loadSpots(key: string): Spots {
+  try {
+    return JSON.parse(localStorage.getItem(STORE + key) ?? "{}") as Spots;
+  } catch {
+    return {};
+  }
+}
+
+function saveSpots(key: string, g: Graph<Attrs>): void {
+  const out: Spots = {};
+  g.forEachNode((n, a) => {
+    out[n] = [Math.round(a.x * 10) / 10, Math.round(a.y * 10) / 10];
+  });
+  try {
+    localStorage.setItem(STORE + key, JSON.stringify(out));
+  } catch {
+    localStorage.removeItem(STORE + key);
+  }
+}
+
+function place(g: Graph<Attrs>, spots: Spots): number {
+  let fresh = 0;
+  g.forEachNode((n, a) => {
+    const s = spots[n];
+    if (s) {
+      a.x = s[0];
+      a.y = s[1];
+      return;
+    }
+    fresh++;
+    const near = g.neighbors(n).map((m) => spots[m]).filter((x): x is [number, number] => !!x);
+    if (near.length) {
+      a.x = near.reduce((v, s2) => v + s2[0], 0) / near.length + (Math.random() - 0.5) * 4;
+      a.y = near.reduce((v, s2) => v + s2[1], 0) / near.length + (Math.random() - 0.5) * 4;
+    }
+  });
+  return fresh;
+}
+
+function frame(f: () => void): () => void {
+  let queued = false;
+  return () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      f();
+    });
+  };
 }
 
 function seed(data: GraphData): { g: Graph<Attrs>; colors: Map<string, string> } {
@@ -96,6 +154,8 @@ export async function graph(view: HTMLElement, project?: string): Promise<() => 
   mount(view, h("div", { class: "empty", style: "padding:24px" }, T.graph.loading));
   const data = await board<GraphData>("graph", ...(project ? [project] : []));
   const { g, colors } = seed(data);
+  const key = project ?? "all";
+  const fresh = place(g, loadSpots(key));
   const canvas = h("div", { class: "canvas" });
   const info = h("span", { class: "info" }, T.graph.layout);
   const hidden = new Set<Kind>();
@@ -111,18 +171,29 @@ export async function graph(view: HTMLElement, project?: string): Promise<() => 
   const pick = (n: string | null) => {
     focus = n;
     near = n ? new Set(g.neighbors(n)) : new Set();
-    renderer.refresh({ skipIndexation: true });
+    redraw();
     if (n) {
       const d = renderer.getNodeDisplayData(n);
       if (d) void renderer.getCamera().animate({ x: d.x, y: d.y, ratio: 0.25 }, { duration: 400 });
     }
   };
-  const layout = new FA2Layout(g, { settings: { ...inferSettings(g), barnesHutOptimize: g.order > 2000, slowDown: 2 } });
-  layout.start();
-  const stop = window.setTimeout(() => {
-    layout.stop();
-    info.textContent = T.graph.nodes(g.order, g.size);
-  }, layoutMs(g.order));
+  const done = () => (info.textContent = T.graph.nodes(g.order, g.size));
+  const work = g.copy();
+  const layout = fresh ? new FA2Layout(work, { settings: { ...inferSettings(work), barnesHutOptimize: work.order > 2000, slowDown: 2 } }) : null;
+  const settle = () => {
+    layout?.stop();
+    const targets: Record<string, { x: number; y: number }> = {};
+    work.forEachNode((n, a) => (targets[n] = { x: a.x, y: a.y }));
+    if (g.order <= ANIMATE_MAX) animateNodes(g, targets, { duration: 500 }, () => saveSpots(key, g));
+    else {
+      g.updateEachNodeAttributes((n, a) => ({ ...a, ...targets[n] }), { attributes: ["x", "y"] });
+      saveSpots(key, g);
+    }
+    done();
+  };
+  layout?.start();
+  const stop = layout ? window.setTimeout(settle, fresh === g.order ? layoutMs(g.order) : NUDGE_MS) : 0;
+  if (!layout) done();
 
   let frames = 0;
   let fps = 0;
@@ -155,7 +226,7 @@ export async function graph(view: HTMLElement, project?: string): Promise<() => 
           onchange: (e: Event) => {
             if ((e.target as HTMLInputElement).checked) hidden.delete(k);
             else hidden.add(k);
-            renderer.refresh({ skipIndexation: true });
+            redraw();
           },
         }),
         T.graph.kinds[k],
@@ -169,13 +240,26 @@ export async function graph(view: HTMLElement, project?: string): Promise<() => 
         checked: false,
         onchange: (e: Event) => {
           orphans = (e.target as HTMLInputElement).checked;
-          renderer.refresh({ skipIndexation: true });
+          redraw();
         },
       }),
       T.graph.orphans,
     ),
     [...colors.entries()].map(([name, c]) => h("label", { onclick: () => pick(`p:${name}`) }, h("span", { class: "swatch", style: `background:${c}` }), name)),
   );
+  const find = h("input", {
+    type: "search",
+    class: "find",
+    placeholder: T.graph.find,
+    onkeydown: (e: Event) => {
+      if ((e as KeyboardEvent).key !== "Enter") return;
+      const w = (e.target as HTMLInputElement).value.trim().toLowerCase();
+      if (!w) return pick(null);
+      const hits = g.filterNodes((_, a) => a.label.toLowerCase().includes(w));
+      hits.sort((x, y) => Number(g.getNodeAttribute(y, "kind") === "project") - Number(g.getNodeAttribute(x, "kind") === "project") || g.getNodeAttribute(y, "deg") - g.getNodeAttribute(x, "deg"));
+      if (hits.length) pick(hits[0]);
+    },
+  });
   const label = h("span", {}, T.graph.all);
   const slider = h("input", {
     type: "range",
@@ -186,7 +270,7 @@ export async function graph(view: HTMLElement, project?: string): Promise<() => 
       const v = Number((e.target as HTMLInputElement).value) / 1000;
       until = t0 + (t1 - t0) * v;
       label.textContent = v >= 1 ? T.graph.all : `${T.graph.until} ${new Date(until * 1000).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}`;
-      renderer.refresh({ skipIndexation: true });
+      redraw();
     },
   });
   mount(
@@ -194,12 +278,19 @@ export async function graph(view: HTMLElement, project?: string): Promise<() => 
     h(
       "div",
       { class: "graph" },
-      h("div", { class: "stage" }, canvas, h("div", { class: "tools" }, info, fpsBox), t1 > t0 ? h("div", { class: "time" }, slider, label) : null),
+      h("div", { class: "stage" }, canvas, h("div", { class: "tools" }, find, info, fpsBox), t1 > t0 ? h("div", { class: "time" }, slider, label) : null),
       h("aside", {}, h("div", { class: "muted", style: "font-size:12px;margin-bottom:8px" }, T.graph.focus), toggles, h("h2", {}, T.graph.report), report(g, pick)),
     ),
   );
   const renderer = new Sigma(g, canvas, {
-    settings: { hideEdgesOnMove: true, labelRenderedSizeThreshold: 9, labelDensity: 0.6, minEdgeThickness: 0.6 },
+    settings: {
+      hideEdgesOnMove: true,
+      hideLabelsOnMove: g.order > ANIMATE_MAX,
+      labelRenderedSizeThreshold: 10,
+      labelDensity: 0.5,
+      labelGridCellSize: 120,
+      minEdgeThickness: 0.5,
+    },
     nodeReducer: (n, d, a) => {
       const out: Partial<typeof d> = { labelColor: LABEL };
       if (!shown(a)) out.visibility = "hidden";
@@ -215,10 +306,11 @@ export async function graph(view: HTMLElement, project?: string): Promise<() => 
       const a = gr.getNodeAttributes(s) as Attrs;
       const b = gr.getNodeAttributes(t) as Attrs;
       if (!shown(a) || !shown(b)) return { visibility: "hidden" };
-      if (focus) return s === focus || t === focus ? { color: "#6a6a75", size: 1 } : { visibility: "hidden" };
+      if (focus) return s === focus || t === focus ? { color: EDGE_ON, size: 1 } : { visibility: "hidden" };
       return { color: EDGE };
     },
   });
+  const redraw = frame(() => renderer.refresh({ skipIndexation: true }));
   renderer.on("clickNode", ({ node }) => pick(node === focus ? null : node));
   renderer.on("clickStage", () => pick(null));
   renderer.on("doubleClickNode", ({ node }) => {
@@ -230,7 +322,7 @@ export async function graph(view: HTMLElement, project?: string): Promise<() => 
   return () => {
     alive = false;
     clearTimeout(stop);
-    layout.kill();
+    layout?.kill();
     renderer.kill();
   };
 }

@@ -17,6 +17,7 @@ mod media;
 mod memory;
 mod phone;
 mod record;
+mod research;
 mod route;
 mod routines;
 mod secure;

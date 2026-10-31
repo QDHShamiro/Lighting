@@ -18,6 +18,7 @@ web     open <url> [-n] [-f \"a|b\"] [--text]   snap [-f \"a|b\"] [-s css|ref] [
         upload <ref> <file>   tabs [-f x] [--all]   tab <id>   close [id]   back   forward   reload   table <ref|css>
         dialog accept|dismiss [text]   downloads   console   net [n] [-f x] (JSON the page loaded)
         tools   call <tool> '{json}' [--yes] (WebMCP)
+        research \"words\" [\"other words\" ...] [--quick|--deep] [--site host] [--fresh] (10 engines, best passages, no AI)
 apps    windows   focus <w3|app:Name>   launch <app|uri|file> [--yes]   close <w3>   clip [set \"text\"]   shot w3|screen --seconds 10 (mp4)
         snap|click|type|press|scroll|drag|read|shot ... w3 (or app:Name)   wait \"text\" --on app [--gone]
 video   watch <link|file|e40> [\"question\"] [--from 1:00 --to 2:00] [--at 0:10,0:20] [--fps n] [--frames] [--text]

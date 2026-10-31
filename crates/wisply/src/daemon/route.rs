@@ -150,6 +150,7 @@ pub fn route(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
         "watch" | "listen" => media::run(d, ctx, c),
         "secure" => secure::run(d, ctx, c),
         "think" => think::run(d, ctx, c),
+        "research" => super::research::run(d, ctx, c).map(Out::Text),
         "autoload" => autoload(d, c),
         "ext-reload" => super::ext::reload(d).map(Out::Text),
         "selftest" => super::check::selftest(d, ctx, c).map(Out::Text),
