@@ -18,4 +18,4 @@ The code of Wisply is open source under the Apache License 2.0. The license cove
 
 A fork is welcome. Give it its own name and logo and keep the NOTICE file.
 
-Ask for permission through an issue: https://github.com/QDHShamiro/Lighting/issues
+Ask for permission through an issue: https://github.com/QDHShamiro/Wisply/issues

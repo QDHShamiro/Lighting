@@ -6,4 +6,4 @@
 *.png binary
 *.jpg binary
 *.gif binary
-crates/lt-squeeze/tests/golden/* -text
+crates/wisply-squeeze/tests/golden/* -text

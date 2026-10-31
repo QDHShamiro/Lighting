@@ -7,7 +7,7 @@ resolver = "3"
 version = "3.0.1"
 edition = "2024"
 license = "Apache-2.0"
-repository = "https://github.com/QDHShamiro/Lighting"
+repository = "https://github.com/QDHShamiro/Wisply"
 publish = false
 
 [workspace.dependencies]
@@ -18,11 +18,12 @@ half = { version = "2", default-features = false }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp"] }
 pdf-extract = "0.12"
 ureq = { version = "3", default-features = false, features = ["rustls-no-provider", "_ring", "platform-verifier", "gzip"] }
-lt-core = { path = "crates/lt-core" }
-lt-memory = { path = "crates/lt-memory" }
-lt-proto = { path = "crates/lt-proto" }
-lt-code = { path = "crates/lt-code" }
-lt-squeeze = { path = "crates/lt-squeeze" }
+wisply-core = { path = "crates/wisply-core" }
+wisply-memory = { path = "crates/wisply-memory" }
+wisply-proto = { path = "crates/wisply-proto" }
+wisply-code = { path = "crates/wisply-code" }
+wisply-squeeze = { path = "crates/wisply-squeeze" }
+wisply-think = { path = "crates/wisply-think" }
 proptest = { version = "1", default-features = false, features = ["std"] }
 rusqlite = { version = "0.41", features = ["bundled"] }
 roxmltree = "0.21"

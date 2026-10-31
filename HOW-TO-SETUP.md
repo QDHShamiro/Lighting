@@ -13,15 +13,15 @@ Runbook for Claude Code: building, verifying and changing Wisply without redisco
 hooks/hooks.json                               SessionStart/Stop/PreCompact/SessionEnd/UserPromptSubmit memory + cleanup, PostToolUse Headroom
 skills/wisply/                               SKILL.md + references/, loaded on description match
 commands/                                      /wisply:setup, :status, :bench, :doctor, :tokens
-crates/lighting/                               the one binary: client, daemon, MCP server, native host, setup, selftest
-crates/lighting/src/daemon/                    web/, desk/ (Windows UIA, macOS AX, Linux AT-SPI), memory/, routines/, brain/, check/ (selftest, bench)
-crates/lighting/src/setup/                     setup, install <ai>, uninstall, settings.json env, PATH and native host
-crates/lighting/src/hook.rs                    Headroom (`wisply hook post`), runs without the daemon in its 50 ms budget
-crates/lighting/assets/fixture.html            selftest page (traps: hidden injection text, modal, confirm(), cookie banner, iframe, long lists, nameless button, video)
-crates/lighting-ui/                            the window (wry), web/ is TypeScript built into web/dist
-crates/lt-core, lt-proto, lt-memory, lt-code, lt-squeeze   argument parsing, pipe protocol, memory DB, code map, Bash-output squeeze
+crates/wisply/                               the one binary: client, daemon, MCP server, native host, setup, selftest
+crates/wisply/src/daemon/                    web/, desk/ (Windows UIA, macOS AX, Linux AT-SPI), memory/, routines/, brain/, check/ (selftest, bench)
+crates/wisply/src/setup/                     setup, install <ai>, uninstall, settings.json env, PATH and native host
+crates/wisply/src/hook.rs                    Headroom (`wisply hook post`), runs without the daemon in its 50 ms budget
+crates/wisply/assets/fixture.html            selftest page (traps: hidden injection text, modal, confirm(), cookie banner, iframe, long lists, nameless button, video)
+crates/wisply-ui/                            the window (wry), web/ is TypeScript built into web/dist
+crates/wisply-core, wisply-proto, wisply-memory, wisply-code, wisply-squeeze   argument parsing, pipe protocol, memory DB, code map, Bash-output squeeze
 extension/                                     MV3 extension (ES modules) + page scripts + vendored Defuddle
-docs/                                          demo.gif + frames-example.jpg, used by the README
+docs/                                          README graphics (compare/how SVGs), frames-example.jpg
 .github/workflows/                             v3.yml (every push/PR, 3 systems), release.yml (tag v* -> archives, clients, mcpb, SHA256SUMS), registry.yml
 ```
 
@@ -36,7 +36,7 @@ outputs, a file `off` turns Headroom off), the v3 marker. `WISPLY_HOME` (or the 
 ## 2. Ground truth (verified on Windows 11, Brave 154, Claude Code plugin docs 2026-09)
 
 Found while building 2.x (Python) and still true for the browser, Windows and Claude Code; where a line names a 2.x file
-(`install.py`, `autoload.py`, `host.bat`, `common.py`), the same job now lives in `crates/lighting/src` (`setup/`, `daemon/desk/autoload.rs`, `host.rs`, `daemon/mod.rs`).
+(`install.py`, `autoload.py`, `host.bat`, `common.py`), the same job now lives in `crates/wisply/src` (`setup/`, `daemon/desk/autoload.rs`, `host.rs`, `daemon/mod.rs`).
 
 - Plugin `bin/` is on the Bash tool's PATH. A file named `wisply` (no extension) beats `wisply.exe`, so there is **only** the exe. `rtk` can start the exe, it cannot start a bash script.
 - Git Bash spawning any process costs ~50-70 ms; a bash script adds another ~70 ms. That is why the client is native.
@@ -146,7 +146,7 @@ Found while building 2.x (Python) and still true for the browser, Windows and Cl
 - `scroll w5` without a d-ref uses the largest vertically scrollable UIA element in the background (`uia.main_scroller`, not for Chromium windows: their trees are too big); before, it ignored `w5` and scrolled the chosen window.
 - Desktop `type` waits `TYPE_SETTLE_S` (0.3 s) for the UI diff, 0.6 s with `--enter`/`--tab`.
 - Brain (`brain.py`, `~/.wisply/brain.json`): `observe` runs after every command next to `routines.observe` (only the worker thread touches it). Learned per page key (host + up to 4 path segments, numbers/hashes/long slugs -> `#`) and per host (or `app:<exe>`): element name (lowercase, digits -> `#`, `...` cut) -> [score, last use, role, label], score halves every 30 days. The first load builds it from `episodes.jsonl`; `focused`/`screen`/refs/`#hints` are not names. Saved at most every 30 s and on `stop` (one file write per command would cost ~14 ms, see above). Blocklisted hosts are never learned; `no_learn` (selftest, bench) stops learning but not trimming, so `bench --real` measures what users get.
-- Trimming: a page key with 3+ uses (else its host with 10+) is known; the top `snap_top` (15) names are kept by exact or substring match (4+ chars), alert/dialog/status lines and every non-element line always stay, deltas (`changed since your last snap`) are never trimmed, and nothing changes unless 3+ learned controls are shown and 5+ are hidden. Simulated on the recorded episodes: github.com/QDHShamiro/Lighting 450 -> 117 tokens, its pull list 433 -> 180, unknown sites unchanged.
+- Trimming: a page key with 3+ uses (else its host with 10+) is known; the top `snap_top` (15) names are kept by exact or substring match (4+ chars), alert/dialog/status lines and every non-element line always stay, deltas (`changed since your last snap`) are never trimmed, and nothing changes unless 3+ learned controls are shown and 5+ are hidden. Simulated on the recorded episodes: github.com/QDHShamiro/Wisply 450 -> 117 tokens, its pull list 433 -> 180, unknown sites unchanged.
 - Self-correction in `run_one`: on `eN is gone` the ref's role and name from the last snapshot of that tab (`ctx.refnames`, names cut with `...` are skipped) are retried once as a text target with `--role`; the extension's stale guard still refuses it when the URL changed. A miss (`nothing matches/called`, `no field called`) followed within 90 s by a success of the same command on the same page key is a fix; used automatically from the 2nd time, named in the error after the 1st. Retries never act twice: all those errors are raised before acting.
 - `improve` reads `log.jsonl` (+ `.old.jsonl`), groups errors by shape (quoted text, refs, numbers replaced), flags bursts (10+ within 10 min = a loop) and maps shapes to advice (`ADVICE`). `suggest` (UserPromptSubmit) adds the weekly summary when 7 days passed (`improve.json`) and 10+ commands failed. `read_log(since)` compares the fixed `{"t": "..."` prefix as text before parsing, so only the last 14 days are decoded (733 -> 269 ms on 26k lines).
 - `doctor` runs locally (client `LOCAL` list, `cli.py`, `mcp.py`), never through the daemon's worker: it must work when the daemon is hung, and asking the daemon from inside its own worker would deadlock. When `client-root` points to another root that has `doctor.py`, it re-runs itself from there (`LIGHTING_DOCTOR_ROOT` stops the loop), so the MCP server of an older plugin copy checks the Wisply that really runs. The daemon answers the hidden `doctor-info` (pid, version, root, hotkey, trace, hosts with `hostpid`, which `host.py` adds to its hello). Slow parts run in threads from the start (MCP probe through `wisply.exe mcp`, GitHub release check, Windows OCR import); rows are sorted by `AREAS` when printed. ~2.3 s on a loaded PC, most of it Python start.
@@ -156,12 +156,12 @@ Found while building 2.x (Python) and still true for the browser, Windows and Cl
 
 ## 3. Build order when changing things
 
-1. Rust: `cargo build --release -p lighting -p lighting-ui`, then `target/release/wisply.exe setup --manual`. Setup renames
+1. Rust: `cargo build --release -p wisply -p wisply-ui`, then `target/release/wisply.exe setup --manual`. Setup renames
    the running exe in `~/.wisply/bin` before copying (Windows locks a running exe against writes, not against
    renames) and stops a daemon that runs the old build; the next command starts the new one.
 2. Extension: edit `extension/*.js`, check the modules parse (copy to `.mjs`, `node --check`), then `wisply ext-reload`.
    If the service worker is broken it cannot reload itself: run `wisply setup`, which reloads it through the extensions page.
-3. Window: edit `crates/lighting-ui/web/src`, `npm run build` there, commit `web/dist` (CI checks it is current).
+3. Window: edit `crates/wisply-ui/web/src`, `npm run build` there, commit `web/dist` (CI checks it is current).
 4. Versions: bump `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json` and the workspace version in `Cargo.toml`
    together; the release workflow refuses a tag that does not match them.
 
@@ -179,7 +179,7 @@ wisply bench --real                  # compare tokens with the last run
 ```
 CI (`v3.yml`) runs fmt, clippy, tests, cargo-deny, the window build check, the extension/plugin file check and the
 selftest in Chrome for Testing on Windows, macOS and Linux. Lint for the other systems locally:
-`cargo clippy -p lighting --all-targets --target x86_64-unknown-linux-gnu` (needs a C compiler stub for bundled SQLite).
+`cargo clippy -p wisply --all-targets --target x86_64-unknown-linux-gnu` (needs a C compiler stub for bundled SQLite).
 Then one real page by hand (`open`, `snap`, `click`, `text`) and one real app (`windows`, `snap w<N>`, `click d<N>`).
 For routines: do one task twice with different values, `wisply routine learn`, then `wisply run <name> param=...`.
 

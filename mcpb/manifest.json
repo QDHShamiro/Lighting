@@ -11,11 +11,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/QDHShamiro/Lighting"
+    "url": "https://github.com/QDHShamiro/Wisply"
   },
-  "homepage": "https://github.com/QDHShamiro/Lighting",
-  "documentation": "https://github.com/QDHShamiro/Lighting#readme",
-  "support": "https://github.com/QDHShamiro/Lighting/issues",
+  "homepage": "https://github.com/QDHShamiro/Wisply",
+  "documentation": "https://github.com/QDHShamiro/Wisply#readme",
+  "support": "https://github.com/QDHShamiro/Wisply/issues",
   "icon": "icon.png",
   "license": "Apache-2.0",
   "keywords": ["browser", "desktop", "automation", "accessibility", "ocr", "tokens"],

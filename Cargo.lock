@@ -1840,43 +1840,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lighting"
-version = "3.0.1"
-dependencies = [
- "base64 0.22.1",
- "encoding_rs",
- "fancy-regex",
- "image",
- "lt-code",
- "lt-core",
- "lt-memory",
- "lt-proto",
- "lt-squeeze",
- "pdf-extract",
- "regex",
- "roxmltree",
- "rusqlite",
- "serde_json",
- "sha2 0.10.9",
- "ureq",
- "windows",
- "winresource",
- "x11rb",
- "xa11y",
-]
-
-[[package]]
-name = "lighting-ui"
-version = "3.0.1"
-dependencies = [
- "lt-proto",
- "serde_json",
- "tao",
- "winresource",
- "wry",
-]
-
-[[package]]
 name = "linux-raw-sys"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1928,49 +1891,6 @@ dependencies = [
  "thiserror 2.0.21",
  "ttf-parser",
  "weezl",
-]
-
-[[package]]
-name = "lt-code"
-version = "3.0.1"
-dependencies = [
- "half",
- "lt-memory",
- "regex",
- "rusqlite",
- "tree-sitter",
- "tree-sitter-language-pack",
-]
-
-[[package]]
-name = "lt-core"
-version = "3.0.1"
-dependencies = [
- "serde_json",
-]
-
-[[package]]
-name = "lt-memory"
-version = "3.0.1"
-dependencies = [
- "half",
- "lt-core",
- "regex",
- "rusqlite",
- "serde_json",
-]
-
-[[package]]
-name = "lt-proto"
-version = "3.0.1"
-
-[[package]]
-name = "lt-squeeze"
-version = "3.0.1"
-dependencies = [
- "proptest",
- "regex",
- "serde_json",
 ]
 
 [[package]]
@@ -4430,6 +4350,98 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2bc6d36480b829272a5bdabf08e6dca8004761c1da7e35efef800540c66221b"
 dependencies = [
  "version_check",
+]
+
+[[package]]
+name = "wisply"
+version = "3.0.1"
+dependencies = [
+ "base64 0.22.1",
+ "encoding_rs",
+ "fancy-regex",
+ "image",
+ "pdf-extract",
+ "regex",
+ "roxmltree",
+ "rusqlite",
+ "serde_json",
+ "sha2 0.10.9",
+ "ureq",
+ "windows",
+ "winresource",
+ "wisply-code",
+ "wisply-core",
+ "wisply-memory",
+ "wisply-proto",
+ "wisply-squeeze",
+ "wisply-think",
+ "x11rb",
+ "xa11y",
+]
+
+[[package]]
+name = "wisply-code"
+version = "3.0.1"
+dependencies = [
+ "half",
+ "regex",
+ "rusqlite",
+ "tree-sitter",
+ "tree-sitter-language-pack",
+ "wisply-memory",
+]
+
+[[package]]
+name = "wisply-core"
+version = "3.0.1"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
+name = "wisply-memory"
+version = "3.0.1"
+dependencies = [
+ "half",
+ "regex",
+ "rusqlite",
+ "serde_json",
+ "wisply-core",
+]
+
+[[package]]
+name = "wisply-proto"
+version = "3.0.1"
+
+[[package]]
+name = "wisply-squeeze"
+version = "3.0.1"
+dependencies = [
+ "proptest",
+ "regex",
+ "serde_json",
+]
+
+[[package]]
+name = "wisply-think"
+version = "3.0.1"
+dependencies = [
+ "image",
+ "regex",
+ "serde_json",
+ "wisply-core",
+]
+
+[[package]]
+name = "wisply-ui"
+version = "3.0.1"
+dependencies = [
+ "image",
+ "serde_json",
+ "tao",
+ "winresource",
+ "wisply-proto",
+ "wry",
 ]
 
 [[package]]
