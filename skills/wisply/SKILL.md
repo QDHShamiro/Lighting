@@ -9,7 +9,7 @@ description: Drive the user's logged-in browser and any app (Windows, macOS, Lin
 
 ## Cheapest first
 1. Prompt says `Wisply routine fits ...`, or done before: `wisply run <name or words> k=v` (one call).
-2. Public page or API: `read <url>` (no browser, PDFs). Page data: `net`, then `fetch <url> --pick a.b`.
+2. Public page: `read <url>` (no browser, PDFs). Question: `research "q" "q en"` over WebSearch. Data: `net`, `fetch <url> --pick a.b`.
 3. `open <url> -f "a|b"` (find), `--text` (read), plain (first look); `search youtube "lofi"`.
 4. `-f "word"` on an action shows its result: `click "Merge" -f merged`. Then `snap -f`, `text -f`; `shot` last. Next `snap` = changes only, known pages = used controls only, `snap --full` = all.
 5. Many steps: `do "fill Email=a@b.c; click Continue; expect Welcome"` (`?step` optional, `--keep-going`). Waiting: `wait "text" --reload 15s --timeout 10m`, never sleep loops.

@@ -68,7 +68,7 @@ pub const WEB_ONLY: &[&str] = &[
     "viewport",
     "frames",
 ];
-const MORE: &[&str] = &["read", "listen", "watch", "voice", "phone", "claude", "desktop"];
+const MORE: &[&str] = &["read", "research", "listen", "watch", "voice", "phone", "claude", "desktop"];
 const HIDDEN: &[&str] = &["hook", "suggest", "board", "access-prompt", "autoload", "ping"];
 const GUESS: &[(&str, &str)] = &[
     ("find", "snap -f \"word\" (page), code <name> (code) or recall \"words\" (memory)"),
@@ -177,7 +177,7 @@ mod tests {
         let want = "back bench brain call channels check claude click clip close code config console demo desktop dialog \
                     dismiss do done downloads drag expect ext-reload fetch fill focus forget forward frames grep help \
                     hover improve inbox js keep keys launch listen log memory net open phone press read recall record \
-                    reload remember reply routine routines run scroll search secure select selftest shot snap squeeze \
+                    reload remember reply research routine routines run scroll search secure select selftest shot snap squeeze \
                     status stop tab table tabs text todo tokens tools type ui unread upload version viewport voice wait watch \
                     wiki windows";
         assert_eq!(known(), want.split(' ').collect::<Vec<_>>());
