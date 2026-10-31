@@ -94,6 +94,11 @@ pub fn status(home: &Path) -> String {
     if reachable(&base) { format!("{at}: ready") } else { format!("{at}: not reachable") }
 }
 
+pub fn ready(home: &Path) -> bool {
+    let down = STATE.lock().ok().and_then(|s| s.down.clone()).is_some_and(|(until, _)| Instant::now() < until);
+    !down && api(home).is_some_and(|(base, _)| reachable(&base))
+}
+
 pub fn embed(home: &Path, texts: &[String], query: bool, budget: Duration) -> Result<Vec<Vec<f32>>, String> {
     if let Some((until, why)) = STATE.lock().ok().and_then(|s| s.down.clone())
         && Instant::now() < until

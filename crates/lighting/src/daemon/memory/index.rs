@@ -126,7 +126,7 @@ fn pass(
 
 fn embed_some(home: &Path, store: &mut Store) {
     let end = Instant::now() + EMBED_PASS;
-    while Instant::now() < end {
+    while Instant::now() < end && embed::ready(home) {
         let Ok(todo) = store.unembedded(EMBED_BATCH) else { break };
         if todo.is_empty() || !game::running().is_empty() {
             break;
