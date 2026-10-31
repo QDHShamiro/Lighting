@@ -16,5 +16,6 @@ winresource.workspace = true
 [dependencies]
 wisply-proto.workspace = true
 serde_json.workspace = true
+image.workspace = true
 tao.workspace = true
 wry.workspace = true
