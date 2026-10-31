@@ -80,11 +80,18 @@ fn setup(home: &Path, manual: bool, global: bool, browser: Option<&str>) -> Resu
     let (ext_id, exe, daemon_new) = refresh(home, global)?;
     let browsers = crate::daemon::installed_browsers();
     println!("wisply {VERSION} set up in {}", home.display());
-    if let Some(line) = moved {
+    if let Some(line) = &moved {
         println!("{line}");
     }
-    if migrate::forward_old(home, &old, &exe).unwrap_or(false) {
+    if migrate::forward_old(home, &old, &exe).unwrap_or(false) || (moved.is_some() && old.join("bin").is_dir()) {
         println!("{} now runs Wisply, so older hooks and sessions keep working", old.join("bin").display());
+    }
+    if migrate::link_extension(home, &old).unwrap_or(false) {
+        println!(
+            "{} now points to {}: a browser that loaded the old folder gets the new extension",
+            old.join("extension").display(),
+            home.join("extension").display()
+        );
     }
     if daemon_new && installed(home, &exe, &["stop"]).is_ok_and(|out| out.ends_with("stopped")) {
         println!("stopped the daemon that ran the old build, the next command starts the new one");
@@ -101,7 +108,7 @@ fn setup(home: &Path, manual: bool, global: bool, browser: Option<&str>) -> Resu
         let file = claude_env::settings_file();
         match claude_env::point(&file, &exe) {
             Ok(true) => println!(
-                "set LIGHTING_BIN in {}: new Claude sessions start the MCP server from this drive",
+                "set WISPLY_BIN in {}: new Claude sessions start the MCP server from this drive",
                 file.display()
             ),
             Ok(false) => {}
@@ -163,7 +170,7 @@ fn uninstall(home: &Path, purge: bool, global: bool) -> Result<(), String> {
         place::unregister();
         let file = claude_env::settings_file();
         match claude_env::unpoint(&file) {
-            Ok(true) => println!("removed LIGHTING_BIN from {}", file.display()),
+            Ok(true) => println!("removed WISPLY_BIN from {}", file.display()),
             Ok(false) => {}
             Err(e) => println!("{e}"),
         }
