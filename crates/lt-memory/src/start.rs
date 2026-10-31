@@ -94,6 +94,14 @@ impl Store {
         self.db.query_row("select v from meta where k = ?1", [key], |r| r.get(0)).optional()
     }
 
+    pub fn set_meta(&self, key: &str, value: &str) -> rusqlite::Result<()> {
+        self.db.execute(
+            "insert into meta(k, v) values (?1, ?2) on conflict(k) do update set v = excluded.v",
+            [key, value],
+        )?;
+        Ok(())
+    }
+
     pub fn drafts(&self) -> rusqlite::Result<i64> {
         self.db.query_row("select count(*) from notes where source = 'vault' and kind = 'draft'", [], |r| r.get(0))
     }

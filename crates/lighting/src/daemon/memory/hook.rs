@@ -5,7 +5,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use lt_core::{Call, Fail};
-use lt_memory::{DbResult, Store, day, now, oneline, project_of, stop_word};
+use lt_memory::{DbResult, Store, date, day, now, oneline, project_of, stop_word};
 use regex::Regex;
 use serde_json::Value;
 
@@ -31,6 +31,7 @@ const HINT_TERMS: usize = 2;
 const HINT_SHARE: f64 = 0.4;
 const SAVED_MIN: usize = 6;
 const STEM: usize = 5;
+const DRAFTS_SHOWN: &str = "drafts_shown";
 
 static SAY: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
@@ -138,7 +139,9 @@ fn start_text(s: &mut Store, here: &str, commits: Vec<String>) -> DbResult<Strin
     lines.extend(listed("Project rules:", s.titles(here, true, START_RULES)?));
     lines.extend(listed("Remembered:", s.titles(here, false, START_NOTES)?));
     let drafts = s.drafts()?;
-    if drafts > 0 {
+    let today = date(now());
+    if drafts > 0 && s.meta(DRAFTS_SHOWN)?.as_deref() != Some(today.as_str()) {
+        s.set_meta(DRAFTS_SHOWN, &today)?;
         lines.push(format!("{drafts} wiki drafts wait for a yes or no: lighting wiki"));
     }
     Ok(lines.join("\n"))
@@ -308,5 +311,28 @@ mod tests {
         let m = SAY.captures("Bitte merk dir, dass Brave der einzige Browser ist.").unwrap();
         assert_eq!(&m[1], "Brave der einzige Browser ist.");
         assert!(SAY.captures("remembering things").is_none());
+    }
+
+    #[test]
+    fn wiki_drafts_are_named_once_a_day() {
+        let home = std::env::temp_dir().join(format!("lt-drafts-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&home);
+        let mut s = Store::open(&home).unwrap();
+        let draft = lt_memory::NewNote {
+            project: "",
+            kind: "draft",
+            title: "Draft",
+            body: "a draft",
+            source: "vault",
+            session: "",
+        };
+        s.add_note(&draft).unwrap();
+        let line = "1 wiki drafts wait for a yes or no: lighting wiki";
+        assert!(start_text(&mut s, "", Vec::new()).unwrap().ends_with(line));
+        assert!(!start_text(&mut s, "", Vec::new()).unwrap().contains("wiki drafts"));
+        s.set_meta(DRAFTS_SHOWN, "2000-01-01").unwrap();
+        assert!(start_text(&mut s, "", Vec::new()).unwrap().ends_with(line));
+        drop(s);
+        let _ = std::fs::remove_dir_all(&home);
     }
 }
