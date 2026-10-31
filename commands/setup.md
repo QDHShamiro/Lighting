@@ -5,7 +5,7 @@ Set up Wisply for this user and switch Claude Code over to it. Keep your report 
 
 0. The plugin folder carries no programs. If `wisply --version` fails and `${CLAUDE_PLUGIN_ROOT}/bin/` has no client
    for this computer, download it from the latest release into `${CLAUDE_PLUGIN_ROOT}/bin/`:
-   `https://github.com/QDHShamiro/Lighting/releases/latest/download/<client>` with `<client>` = `wisply.exe`
+   `https://github.com/QDHShamiro/Wisply/releases/latest/download/<client>` with `<client>` = `wisply.exe`
    (Windows), `wisply-macos`, `wisply-linux-x64` or `wisply-linux-arm64`, plus `SHA256SUMS.txt` from the same
    place. Compare the file's SHA-256 with its line in `SHA256SUMS.txt` and stop if it differs; on macOS/Linux
    `chmod +x` it. The full archive of the release (`wisply-<version>-<system>`) also has the window (`wisply-ui`).

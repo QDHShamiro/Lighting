@@ -42,10 +42,10 @@ One screenshot (**~2,350** image tokens), then the page as text (**~13,500** tok
 <td valign="top">
 
 ```
-[t17] QDHShamiro/Lighting: Claude Code plugin ... - github.com/QDHShamiro/Lighting
+[t17] QDHShamiro/Wisply: Claude Code plugin ... - github.com/QDHShamiro/Wisply
 e16 link "Issues" ->./issues
 e17 link "Pull requests" ->./pulls
-e27 button "Star QDHShamiro/Lighting"
+e27 button "Star QDHShamiro/Wisply"
 ...
 ```
 One call. Everything clickable has a ref. A click answers in one line (**13-53** tokens). Your real browser, your logins.
@@ -78,7 +78,7 @@ One call. Everything clickable has a ref. A click answers in one line (**13-53**
 Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. In Claude Code:
 
 ```
-/plugin marketplace add QDHShamiro/Lighting
+/plugin marketplace add QDHShamiro/Wisply
 /plugin install wisply@wisply
 /wisply:setup
 ```
@@ -112,8 +112,8 @@ None of that is what the AI needs. It needs to know what it can click, and wheth
 Every answer is short text with refs:
 
 ```
-$ wisply open github.com/QDHShamiro/Lighting -f "Issues|Pull requests"
-[t1] QDHShamiro/Lighting: Claude Code plugin: control your real browser ... - github.com/QDHShamiro/Lighting
+$ wisply open github.com/QDHShamiro/Wisply -f "Issues|Pull requests"
+[t1] QDHShamiro/Wisply: Claude Code plugin: control your real browser ... - github.com/QDHShamiro/Wisply
 e1 link "All issues" ->/issues
 e2 link "All pull requests" ->/pulls
 e3 link "Issues" ->./issues
@@ -121,7 +121,7 @@ e4 link "Pull requests" ->./pulls
 more: 74 below (scroll or snap --all)
 ! routine github-issues can finish this in one call: wisply run github-issues page=Wisply
 $ wisply click "Issues"
-ok e3 -> github.com/QDHShamiro/Lighting/issues
+ok e3 -> github.com/QDHShamiro/Wisply/issues
 ```
 
 ```
@@ -361,7 +361,7 @@ Requirements: Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. Nothing 
 **Claude Code**
 
 ```
-/plugin marketplace add QDHShamiro/Lighting
+/plugin marketplace add QDHShamiro/Wisply
 /plugin install wisply@wisply
 /wisply:setup
 ```
@@ -369,7 +369,7 @@ Requirements: Windows 10/11, macOS or Linux, and Brave, Chrome or Edge. Nothing 
 **Codex**
 
 ```
-codex plugin marketplace add QDHShamiro/Lighting
+codex plugin marketplace add QDHShamiro/Wisply
 ```
 
 Then install `wisply` from `/plugins`, download the release archive for your system (below), and run once in a
@@ -382,7 +382,7 @@ wisply install codex
 
 **Antigravity, Cursor, Gemini CLI, VS Code (Copilot), Windsurf, Claude Desktop, LM Studio / Bionic, Cline, Roo Code, Zed, any MCP client**
 
-Download `wisply-<version>-<system>` from [Releases](https://github.com/QDHShamiro/Lighting/releases/latest),
+Download `wisply-<version>-<system>` from [Releases](https://github.com/QDHShamiro/Wisply/releases/latest),
 unpack it, then:
 
 ```bash
@@ -491,7 +491,7 @@ On Windows clicks and typing go through UI Automation in the background, your mo
 - A URL with a long query to a site not opened yet needs `--yes`, so injected instructions cannot quietly send data out.
 - Secrets come from environment variables (`--env VAR`) and are never logged.
 - **Ctrl+Alt+End** stops everything immediately.
-- Every push runs CI on Windows, macOS and Linux (format, clippy, tests, cargo-deny licenses and advisories, the extension and plugin files, the self-test in a real Chrome). Every release carries the archives and clients built by CI from the tag (`wisply.exe`, `wisply-macos`, `wisply-linux-x64`, `wisply-linux-arm64`), each with a GitHub build attestation (`gh attestation verify <file> -R QDHShamiro/Lighting`), and `SHA256SUMS.txt`: check yours with `certutil -hashfile wisply.exe SHA256` (Windows) or `shasum -a 256 wisply-macos`, or build it yourself with `cargo build --release -p lighting`.
+- Every push runs CI on Windows, macOS and Linux (format, clippy, tests, cargo-deny licenses and advisories, the extension and plugin files, the self-test in a real Chrome). Every release carries the archives and clients built by CI from the tag (`wisply.exe`, `wisply-macos`, `wisply-linux-x64`, `wisply-linux-arm64`), each with a GitHub build attestation (`gh attestation verify <file> -R QDHShamiro/Wisply`), and `SHA256SUMS.txt`: check yours with `certutil -hashfile wisply.exe SHA256` (Windows) or `shasum -a 256 wisply-macos`, or build it yourself with `cargo build --release -p wisply`.
 
 <details>
 <summary><b>Files it creates, and how to remove it</b></summary>
@@ -552,7 +552,7 @@ wisply uninstall --purge  # also removes the Wisply files in ~/.wisply (memory a
 ## Development
 
 ```
-cargo build --release -p lighting -p lighting-ui
+cargo build --release -p wisply -p wisply-ui
 target/release/wisply setup --manual    # copies to ~/.wisply/bin, restarts an old daemon
 wisply ext-reload && wisply selftest && wisply bench
 cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace

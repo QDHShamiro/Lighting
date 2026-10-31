@@ -3,7 +3,7 @@ name: release
 on:
   push:
     tags: ["v*"]
-    branches: ["feat/lighting-3.0"]
+    branches: ["release/dry-run"]
     paths: [".github/workflows/release.yml", "mcpb/**"]
 
 permissions:
@@ -52,13 +52,13 @@ jobs:
           mkdir out
           if [ "$RUNNER_OS" = macOS ]; then
             for t in aarch64-apple-darwin x86_64-apple-darwin; do
-              cargo build --release --locked --target "$t" -p lighting -p lighting-ui
+              cargo build --release --locked --target "$t" -p wisply -p wisply-ui
             done
             for b in wisply wisply-ui; do
               lipo -create -output "out/$b" "target/aarch64-apple-darwin/release/$b" "target/x86_64-apple-darwin/release/$b"
             done
           else
-            cargo build --release --locked -p lighting -p lighting-ui
+            cargo build --release --locked -p wisply -p wisply-ui
             if [ "$RUNNER_OS" = Windows ]; then
               cp target/release/wisply.exe target/release/wisply-ui.exe target/release/wisply-task.exe out/
             else
@@ -169,8 +169,8 @@ jobs:
           test -s notes.md || { echo "no CHANGELOG section [$v]"; exit 1; }
           printf '\n### Checksums (SHA-256)\n```\n' >> notes.md
           cat dist/SHA256SUMS.txt >> notes.md
-          printf '```\nEvery file here has a GitHub build attestation: `gh attestation verify <file> -R QDHShamiro/Lighting`\n' >> notes.md
-          printf '\nCode signing policy: https://github.com/QDHShamiro/Lighting/blob/main/CODE_SIGNING.md\n' >> notes.md
+          printf '```\nEvery file here has a GitHub build attestation: `gh attestation verify <file> -R QDHShamiro/Wisply`\n' >> notes.md
+          printf '\nCode signing policy: https://github.com/QDHShamiro/Wisply/blob/main/CODE_SIGNING.md\n' >> notes.md
       - name: Keep the files (dry run)
         if: github.ref_type != 'tag'
         uses: actions/upload-artifact@v7

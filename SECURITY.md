@@ -3,7 +3,7 @@
 ## Report a problem
 
 Please do not open a public issue for a security problem. Use GitHub's private report instead:
-https://github.com/QDHShamiro/Lighting/security/advisories/new
+https://github.com/QDHShamiro/Wisply/security/advisories/new
 
 Say what is affected, how to reproduce it and what an attacker could do with it. You get an answer within 7 days.
 Fixes go into the next release and the release notes name the problem once it is fixed.
@@ -45,7 +45,7 @@ Nothing, unless you ask for it:
 Every file of a release is built by GitHub Actions from the tagged source and has a GitHub build attestation:
 
 ```
-gh attestation verify wisply.exe -R QDHShamiro/Lighting
+gh attestation verify wisply.exe -R QDHShamiro/Wisply
 ```
 
 `SHA256SUMS.txt` in each release lists the hashes, including the clients in `bin/` of the repository at that tag.

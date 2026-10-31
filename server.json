@@ -4,15 +4,15 @@
   "title": "Wisply",
   "description": "Your real logged-in browser and any app on your computer, as a few lines of text instead of screenshots.",
   "repository": {
-    "url": "https://github.com/QDHShamiro/Lighting",
+    "url": "https://github.com/QDHShamiro/Wisply",
     "source": "github"
   },
-  "websiteUrl": "https://github.com/QDHShamiro/Lighting",
+  "websiteUrl": "https://github.com/QDHShamiro/Wisply",
   "version": "0.0.0",
   "packages": [
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/QDHShamiro/Lighting/releases/download/v0.0.0/wisply.mcpb",
+      "identifier": "https://github.com/QDHShamiro/Wisply/releases/download/v0.0.0/wisply.mcpb",
       "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "transport": {
         "type": "stdio"

@@ -82,7 +82,7 @@ export function isOurs(title) {
   return OURS.test(title || "");
 }
 
-async function lightingGroup(windowId, label) {
+async function wisplyGroup(windowId, label) {
   const found = await chrome.tabGroups.query({ title: label, windowId });
   return found.length ? found[0].id : null;
 }
@@ -91,7 +91,7 @@ export async function addToGroup(tabId, label) {
   label = label || GROUP;
   try {
     const tab = await chrome.tabs.get(tabId);
-    const gid = await lightingGroup(tab.windowId, label);
+    const gid = await wisplyGroup(tab.windowId, label);
     if (gid !== null) {
       await chrome.tabs.group({ tabIds: [tabId], groupId: gid });
     } else {

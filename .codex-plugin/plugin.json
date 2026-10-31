@@ -6,8 +6,8 @@
     "name": "QDHShamiro",
     "url": "https://github.com/QDHShamiro"
   },
-  "homepage": "https://github.com/QDHShamiro/Lighting#readme",
-  "repository": "https://github.com/QDHShamiro/Lighting",
+  "homepage": "https://github.com/QDHShamiro/Wisply#readme",
+  "repository": "https://github.com/QDHShamiro/Wisply",
   "license": "Apache-2.0",
   "keywords": [
     "browser",
@@ -31,7 +31,7 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/QDHShamiro/Lighting",
+    "websiteURL": "https://github.com/QDHShamiro/Wisply",
     "defaultPrompt": [
       "Use Wisply to open example.com and tell me what is on the page."
     ],

@@ -22,7 +22,7 @@ jobs:
         env:
           TAG: ${{ inputs.tag }}
         run: |
-          url="https://github.com/QDHShamiro/Lighting/releases/download/$TAG/wisply.mcpb"
+          url="https://github.com/QDHShamiro/Wisply/releases/download/$TAG/wisply.mcpb"
           curl -fsSL -o wisply.mcpb "$url"
           sha=$(sha256sum wisply.mcpb | cut -d' ' -f1)
           python3 - "$TAG" "$url" "$sha" <<'EOF'

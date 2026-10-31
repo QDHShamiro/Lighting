@@ -5,6 +5,12 @@ zip and `SHA256SUMS.txt`: up to 2.x `lighting.exe`, `lighting-macos`, `lighting-
 and `lighting.mcpb`, from 3.0.0 `wisply.exe`, `wisply-macos`, `wisply-linux-x64`, `wisply-linux-arm64`,
 `wisply.mcpb` and one archive per system with the window and the extension.
 
+## [Unreleased]
+
+### Changed
+- The repository is now `QDHShamiro/Wisply` (old links redirect). The crates are `wisply`, `wisply-ui` and
+  `wisply-core`, `wisply-memory`, `wisply-proto`, `wisply-code`, `wisply-squeeze`.
+
 ## [3.0.1] - 2026-10-31
 
 ### Fixed
@@ -103,7 +109,7 @@ Built from 1,831 failed commands in the log since 1.1.0: most came from a few lo
 - The brain: Lighting learns on this PC which controls are used on each page and app (it starts from the recorded
   episodes). On known pages `open`, `snap`, `back`, `forward`, `reload` and app snapshots show only those (up to 15,
   `config snap_top`) plus notes and alerts, with one line saying how many are hidden; `snap --full` shows all.
-  github.com/QDHShamiro/Lighting went from ~450 to ~117 tokens.
+  github.com/QDHShamiro/Wisply went from ~450 to ~117 tokens.
 - Self-correction when it is sure: a ref that is gone after the page changed is retried once by its role and name
   (only if that element is still there once), and a name that missed is replaced by the one that worked right after
   the same miss twice before (once: the error names it).
