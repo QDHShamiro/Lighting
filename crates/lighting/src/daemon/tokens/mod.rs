@@ -52,7 +52,6 @@ const SKIP: &[&str] = &[
     "suggest",
     "version",
     "help",
-    "doctor-info",
     "access-prompt",
     "stop",
     "autoload",
@@ -109,7 +108,7 @@ fn summarize(rows: &[Value]) -> Sum {
     for r in rows {
         let cmd = r["cmd"].as_str().unwrap_or("");
         let t = r["t"].as_str().unwrap_or("");
-        if truthy(r.get("x")) || SKIP.contains(&cmd) || t.is_empty() {
+        if truthy(r.get("x")) || SKIP.contains(&cmd) || t.is_empty() || r["sid"] == lt_proto::WINDOW_SID {
             continue;
         }
         let ok = r.get("ok").is_none_or(routines::truthy);
@@ -293,5 +292,18 @@ mod tests {
         let weeks = buckets(&s.days, false);
         assert_eq!(weeks.len(), 1);
         assert_eq!(date_of(weeks[0].0), "2026-10-26");
+    }
+
+    #[test]
+    fn window_calls_are_not_model_tokens() {
+        let rows = [
+            json!({"t": "2026-10-31 01:05:02", "cmd": "board", "ok": true, "n": 42240, "sid": lt_proto::WINDOW_SID}),
+            json!({"t": "2026-10-31 01:05:03", "cmd": "todo", "ok": true, "n": 400, "sid": lt_proto::WINDOW_SID}),
+            json!({"t": "2026-10-31 01:05:04", "cmd": "todo", "ok": true, "n": 400, "sid": "a-session"}),
+        ];
+        let s = summarize(&rows);
+        assert_eq!(s.runs, 1);
+        assert_eq!(s.groups[4], ("memory and code", [1, 100, 100]));
+        assert_eq!(s.groups[5], (OTHER, [0, 0, 0]));
     }
 }

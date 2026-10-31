@@ -24,7 +24,6 @@ const FILE_MAX: u64 = 4_000_000;
 const LOG_TAIL: u64 = 256 * 1024;
 const LIVE_S: f64 = 900.0;
 const WORKING_S: f64 = 60.0;
-const OWN_SID: &str = "lighting-ui";
 const STATUSES: &[&str] = &["todo", "doing", "done", "dropped"];
 
 static TAG: LazyLock<Regex> =
@@ -217,7 +216,10 @@ fn live_rows(home: &Path) -> Vec<Value> {
         let Ok(row) = serde_json::from_str::<Value>(line) else { continue };
         let t = row["t"].as_str().unwrap_or("");
         let sid = row["sid"].as_str().unwrap_or("").to_string();
-        if t < since.as_str() || sid == OWN_SID || lt_core::QUIET.contains(&row["cmd"].as_str().unwrap_or("")) {
+        if t < since.as_str()
+            || sid == lt_proto::WINDOW_SID
+            || lt_core::QUIET.contains(&row["cmd"].as_str().unwrap_or(""))
+        {
             continue;
         }
         let age = seconds_since(t, now).unwrap_or(LIVE_S);

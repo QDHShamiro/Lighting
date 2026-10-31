@@ -3,13 +3,12 @@ use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use lt_proto::{Conn, Reply, Request, exchange_once, key_token};
+use lt_proto::{Conn, Reply, Request, WINDOW_SID, exchange_once, key_token};
 use serde_json::Value;
 use tao::event_loop::EventLoopProxy;
 
 use super::Ev;
 
-const SID: &str = "lighting-ui";
 const START_WAIT: Duration = Duration::from_secs(15);
 const RETRY: Duration = Duration::from_millis(100);
 const ALLOWED: &[&str] =
@@ -58,7 +57,7 @@ fn call(home: &Path, argv: &[String], secret: Option<&str>) -> (i32, String) {
     let mut started = false;
     loop {
         let token = key_token(home).unwrap_or_default();
-        let req = Request { token: &token, cwd: "", sid: SID, secret, argv }.encode();
+        let req = Request { token: &token, cwd: "", sid: WINDOW_SID, secret, argv }.encode();
         match exchange_once(home, &req) {
             Ok(raw) if !raw.is_empty() => {
                 let r = Reply::decode(&raw);

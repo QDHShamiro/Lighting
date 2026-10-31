@@ -11,3 +11,5 @@ pub use link::Link;
 pub use listen::Listener;
 pub use pipe::{Conn, exchange_once};
 pub use words::words;
+
+pub const WINDOW_SID: &str = "lighting-ui";
