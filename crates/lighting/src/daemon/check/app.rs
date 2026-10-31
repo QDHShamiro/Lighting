@@ -62,7 +62,14 @@ pub fn desktop(r: &mut Run) {
         !e && o.contains("tab 2/3 \"Two\" selected via UI Automation")
     });
     r.step("tab number in background", &["press", &app, "ctrl+alt+3"], |o, e| !e && o.contains("tab 3/3 \"Three\""));
-    r.step("ocr read", &["read", &app], |o, e| !e && o.contains("Remember"));
+    let seen = r.step("ocr read", &["read", &app], |o, e| !e && o.contains("Remember"));
+    let at = grab(r#"(?m)^o\d+ "Go" @(\d+,\d+)$"#, &seen, "");
+    if at.is_empty() {
+        r.skip("click a screen point (the screen text has no Go button)");
+    } else {
+        r.step("click a screen point", &["click", &format!("@{at}")], |o, e| !e && o.contains("clicked at"));
+        r.step("screen point hit Go", &["snap", &app, "--text", "-f", "status"], |o, _| o.contains("clicked 2"));
+    }
     r.check("ocr via PrintWindow", |_, _| match probe::titled(APP_TITLE).first().map(|h| probe::ocr_text(*h)) {
         Some(Ok(text)) => (text.contains("Remember"), text),
         Some(Err(e)) => (false, e),
