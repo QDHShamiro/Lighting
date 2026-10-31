@@ -561,6 +561,11 @@ claude plugin validate .
 
 `HOW-TO-SETUP.md` is the runbook: layout, traps and the verification protocol.
 
+## Code signing policy
+
+Windows releases are meant to be signed through the SignPath Foundation (application pending). What gets signed,
+who approves it and what Wisply sends where: [CODE_SIGNING.md](CODE_SIGNING.md).
+
 ## License
 
 Apache License 2.0 from version 2.0.0 (see `LICENSE` and `NOTICE`; up to 1.1.0 it was MIT). The name and the logo are

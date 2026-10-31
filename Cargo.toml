@@ -11,6 +11,7 @@ repository = "https://github.com/QDHShamiro/Lighting"
 publish = false
 
 [workspace.dependencies]
+winresource = { version = "0.1", default-features = false }
 base64 = "0.22"
 encoding_rs = "0.8"
 half = { version = "2", default-features = false }
