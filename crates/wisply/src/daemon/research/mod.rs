@@ -207,6 +207,10 @@ fn search(
             Outcome::Hits(_) => {}
             Outcome::Blocked(why) => {
                 engines::mark(&d.home, e.name, true);
+                let said = format!("{} blocked", e.name);
+                if found.notes.iter().any(|n| n.starts_with(&said)) {
+                    continue;
+                }
                 found.notes.push(format!("{} blocked ({}), skipped for 30 min", e.name, web::head(&why, 40)));
             }
             Outcome::Failed => {}

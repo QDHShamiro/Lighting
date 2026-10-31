@@ -213,7 +213,7 @@ pub fn ask(e: &Engine, url: &str) -> Outcome {
         }
     };
     let mut raw = Vec::new();
-    if let Err(err) = res.body_mut().as_reader().take(BODY_MAX).read_to_end(&mut raw) {
+    if res.body_mut().as_reader().take(BODY_MAX).read_to_end(&mut raw).is_err() {
         return Outcome::Failed;
     }
     let body = String::from_utf8_lossy(&raw);

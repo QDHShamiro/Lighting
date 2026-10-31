@@ -161,10 +161,11 @@ pub fn passages(page: usize, text: &str) -> Vec<Passage> {
         }
         buf.clear();
     };
-    for block in text.split("\n\n").map(str::trim).filter(|b| !b.is_empty()) {
-        if let Some(h) = block.strip_prefix('#') {
+    for (is_heading, block) in blocks(text) {
+        let block = block.trim();
+        if is_heading {
             flush(&mut buf, &heading, &mut out);
-            heading = h.trim_start_matches('#').trim().to_string();
+            heading = block.to_string();
             continue;
         }
         if !buf.is_empty() && buf.chars().count() + block.chars().count() > PASSAGE_MAX {
@@ -186,6 +187,46 @@ pub fn passages(page: usize, text: &str) -> Vec<Passage> {
         }
     }
     flush(&mut buf, &heading, &mut out);
+    out
+}
+
+fn heading_of(line: &str) -> Option<&str> {
+    let rest = line.trim_start_matches('#');
+    let marks = line.len() - rest.len();
+    ((1..=6).contains(&marks) && rest.starts_with(' ')).then(|| rest.trim())
+}
+
+fn blocks(text: &str) -> Vec<(bool, String)> {
+    let close = |cur: &mut String, out: &mut Vec<(bool, String)>| {
+        if !cur.trim().is_empty() {
+            out.push((false, std::mem::take(cur)));
+        }
+        cur.clear();
+    };
+    let mut out = Vec::new();
+    let mut cur = String::new();
+    let mut code = false;
+    for line in text.lines() {
+        let t = line.trim();
+        let fence = t.starts_with("```");
+        if fence {
+            code = !code;
+        }
+        if let Some(h) = (!code && !fence).then(|| heading_of(t)).flatten() {
+            close(&mut cur, &mut out);
+            out.push((true, h.to_string()));
+            continue;
+        }
+        if t.is_empty() && !code {
+            close(&mut cur, &mut out);
+            continue;
+        }
+        if !cur.is_empty() {
+            cur.push('\n');
+        }
+        cur.push_str(line);
+    }
+    close(&mut cur, &mut out);
     out
 }
 
@@ -390,6 +431,13 @@ mod tests {
         let best = scores.iter().enumerate().max_by(|a, b| a.1.total_cmp(b.1)).unwrap().0;
         assert!(ps[best].text.contains("region scheduler"));
         assert!(boost(&ps[best], &["region scheduler".into()], &q, false) > 1.5);
+        let tight = passages(
+            1,
+            "# Guide\n## Region\nFolia replaces the Bukkit scheduler with a region scheduler.\n```\n# not a heading\n```",
+        );
+        assert_eq!(tight.len(), 1);
+        assert_eq!(tight[0].heading, "Region");
+        assert!(tight[0].text.starts_with("Folia replaces") && tight[0].text.contains("# not a heading"));
     }
 
     #[test]
