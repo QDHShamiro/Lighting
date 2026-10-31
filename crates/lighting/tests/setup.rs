@@ -48,6 +48,15 @@ fn setup_fills_a_home_without_touching_the_browser_and_uninstall_clears_it() {
         home.0.join("v3").is_file() && home.0.join("blocklist.txt").is_file() && home.0.join("bin").join(exe).is_file()
     );
     assert_eq!(home.run(&["version"]).1, env!("CARGO_PKG_VERSION"));
+    let fresh = "stopped the daemon that ran the old build, the next command starts the new one";
+    assert_eq!(home.run(&["ping"]), (0, "pong".into()));
+    let (_, again) = home.run(&["setup", "--manual"]);
+    assert!(!again.contains(fresh), "{again}");
+    let bin = home.0.join("bin").join(exe);
+    fs::rename(&bin, bin.with_extension("was")).unwrap();
+    fs::write(&bin, b"old build").unwrap();
+    let (code, updated) = home.run(&["setup", "--manual"]);
+    assert!(code == 0 && updated.contains(fresh), "{updated}");
     let (code, out) = home.run(&["install", "cursor"]);
     assert!(code == 1 && out.contains("add --register to point it here"), "{out}");
     let (code, out) = home.run(&["install", "nope"]);

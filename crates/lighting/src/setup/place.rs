@@ -88,22 +88,23 @@ pub fn blocklist(home: &Path) -> io::Result<()> {
     if path.exists() { Ok(()) } else { fs::write(path, BLOCKLIST) }
 }
 
-pub fn copy_exes(home: &Path) -> io::Result<PathBuf> {
+pub fn copy_exes(home: &Path) -> io::Result<(PathBuf, bool)> {
     let bin = home.join("bin");
     let me = std::env::current_exe()?;
     let dst = bin.join(exe_name("lighting"));
     let from = me.parent().map(Path::to_path_buf).unwrap_or_default();
     if same_file(&from, &bin) {
-        return Ok(dst);
+        return Ok((dst, false));
     }
     fs::create_dir_all(&bin)?;
+    let mut daemon_new = false;
     for stem in EXES {
         let src = from.join(exe_name(stem));
-        if src.is_file() {
-            replace(&src, &bin.join(exe_name(stem)))?;
+        if src.is_file() && replace(&src, &bin.join(exe_name(stem)))? {
+            daemon_new |= *stem == "lighting";
         }
     }
-    Ok(dst)
+    Ok((dst, daemon_new))
 }
 
 fn same_file(a: &Path, b: &Path) -> bool {
@@ -113,10 +114,10 @@ fn same_file(a: &Path, b: &Path) -> bool {
     }
 }
 
-fn replace(src: &Path, dst: &Path) -> io::Result<()> {
+fn replace(src: &Path, dst: &Path) -> io::Result<bool> {
     let data = fs::read(src)?;
     if fs::read(dst).is_ok_and(|old| old == data) {
-        return Ok(());
+        return Ok(false);
     }
     let old = dst.with_extension("old");
     let _ = fs::remove_file(&old);
@@ -127,7 +128,7 @@ fn replace(src: &Path, dst: &Path) -> io::Result<()> {
         use std::os::unix::fs::PermissionsExt;
         fs::set_permissions(dst, fs::Permissions::from_mode(0o755))?;
     }
-    Ok(())
+    Ok(true)
 }
 
 pub fn host_json(home: &Path) -> PathBuf {

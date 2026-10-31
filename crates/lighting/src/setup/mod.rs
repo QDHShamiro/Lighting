@@ -38,19 +38,19 @@ pub fn run(home: &Path, args: &[String]) -> ExitCode {
     }
 }
 
-fn refresh(home: &Path, global: bool) -> Result<(Option<String>, std::path::PathBuf), String> {
+fn refresh(home: &Path, global: bool) -> Result<(Option<String>, std::path::PathBuf, bool), String> {
     let text = |e: std::io::Error| e.to_string();
     fs::create_dir_all(home.join("out")).map_err(text)?;
     fs::write(home.join(MARKER), "").map_err(text)?;
     place::blocklist(home).map_err(text)?;
     let root = place::source_root();
     let ext_id = place::copy_extension(home, root.as_deref()).map_err(text)?;
-    let exe = place::copy_exes(home).map_err(text)?;
+    let (exe, daemon_new) = place::copy_exes(home).map_err(text)?;
     place::write_host(home, &exe, ext_id.as_deref()).map_err(text)?;
     if global {
         agents::refresh_skills(root.as_deref());
     }
-    Ok((ext_id, exe))
+    Ok((ext_id, exe, daemon_new))
 }
 
 fn installed(home: &Path, exe: &Path, argv: &[&str]) -> Result<String, String> {
@@ -73,9 +73,12 @@ fn connected(home: &Path, exe: &Path) -> Vec<String> {
 }
 
 fn setup(home: &Path, manual: bool, global: bool, browser: Option<&str>) -> Result<(), String> {
-    let (ext_id, exe) = refresh(home, global)?;
+    let (ext_id, exe, daemon_new) = refresh(home, global)?;
     let browsers = crate::daemon::installed_browsers();
     println!("lighting {VERSION} set up in {}", home.display());
+    if daemon_new && installed(home, &exe, &["stop"]).is_ok_and(|out| out.ends_with("stopped")) {
+        println!("stopped the daemon that ran the old build, the next command starts the new one");
+    }
     if global {
         println!("native host registered for: {}", place::register(home, &browsers).join(", "));
         match place::add_to_path(&exe) {
@@ -127,7 +130,7 @@ fn install(home: &Path, name: &str, global: bool) -> Result<(), String> {
             "{name} keeps one Lighting for every folder; LIGHTING_HOME is set, add --register to point it here"
         ));
     }
-    let (_, exe) = refresh(home, global)?;
+    let (_, exe, _) = refresh(home, global)?;
     agents::install(name, &exe, place::source_root().as_deref()).map_err(|e| e.to_string())?;
     println!("lighting MCP server added to {name}, restart it to load the tool");
     Ok(())
