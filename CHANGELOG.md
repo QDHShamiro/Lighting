@@ -5,7 +5,17 @@ zip and `SHA256SUMS.txt`: up to 2.x `lighting.exe`, `lighting-macos`, `lighting-
 and `lighting.mcpb`, from 3.0.0 `wisply.exe`, `wisply-macos`, `wisply-linux-x64`, `wisply-linux-arm64`,
 `wisply.mcpb` and one archive per system with the window and the extension.
 
-## [3.0.0] - unreleased
+## [3.0.1] - 2026-10-31
+
+### Fixed
+- Moving from `~/.lighting` to `~/.wisply`: the browser host could restart the old daemon between setup stopping it
+  and forwarding `~/.lighting/bin`, so the extension kept talking to the old folder. Setup now puts Wisply into the
+  old bin first, stops the old daemon through the kept old program, then copies.
+- A browser that loaded the extension from `~/.lighting/extension` now gets the new one: that folder becomes a link to
+  `~/.wisply/extension` (the old files stay as `extension.old`).
+- Setup and uninstall name `WISPLY_BIN`.
+
+## [3.0.0] - 2026-10-31
 
 Lighting is now **Wisply**, rewritten in Rust as one program. Same commands, same extension protocol, no Python.
 
