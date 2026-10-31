@@ -1,5 +1,6 @@
 use std::path::Path;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use lt_memory::{
     Due, NewNote, Record, Store, WIKI_KINDS, chunks, condense, now, oneline, points, project_of_files, render_page,
@@ -35,6 +36,7 @@ const MIN_CHARS: usize = 600;
 const QUIET_S: f64 = 600.0;
 const RETRY_S: f64 = 1800.0;
 const POLL_S: f64 = 60.0;
+const BACKOFF_STEPS: u32 = 4;
 const DUP_SIM: f64 = 0.7;
 const DRAFT_TITLE: usize = 100;
 const INBOX: &str = "Inbox";
@@ -84,6 +86,13 @@ fn field(v: &Value, key: &str) -> String {
         Some(Value::Array(a)) => a.iter().filter_map(Value::as_str).collect::<Vec<_>>().join("\n"),
         _ => String::new(),
     }
+}
+
+static WAITS: AtomicU32 = AtomicU32::new(0);
+
+fn backoff() -> f64 {
+    let n = WAITS.fetch_add(1, Ordering::Relaxed).min(BACKOFF_STEPS);
+    (POLL_S * f64::from(1u32 << n)).min(QUIET_S)
 }
 
 enum Stop {
@@ -243,6 +252,7 @@ pub fn tick(home: &Path, store: &mut Store, soon: bool) {
     for row in &due {
         match learn(home, store, &p, row) {
             Ok(n) => set(|s| {
+                WAITS.store(0, Ordering::Relaxed);
                 s.learned += n;
                 s.last = format!(
                     "{} learned {}",
@@ -252,7 +262,7 @@ pub fn tick(home: &Path, store: &mut Store, soon: bool) {
                 s.error.clear();
             }),
             Err(Stop::Wait(why)) => {
-                let _ = store.session_retry(&row.id, now() + POLL_S, false);
+                let _ = store.session_retry(&row.id, now() + backoff(), false);
                 set(|s| s.error = why);
                 return;
             }
@@ -277,5 +287,13 @@ mod tests {
         let s = schema();
         assert_eq!(s["properties"]["notes"]["maxItems"], 6);
         assert_eq!(s["properties"]["lessons"]["items"]["properties"]["kind"]["enum"][0], "mistake");
+    }
+
+    #[test]
+    fn a_busy_model_is_asked_less_and_less_often() {
+        let waits: Vec<f64> = (0..6).map(|_| backoff()).collect();
+        assert_eq!(waits, [60.0, 120.0, 240.0, 480.0, 600.0, 600.0]);
+        WAITS.store(0, Ordering::Relaxed);
+        assert_eq!(backoff(), POLL_S);
     }
 }
