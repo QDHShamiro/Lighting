@@ -14,7 +14,7 @@ use super::super::ctx::Ctx;
 use super::super::{Daemon, config};
 use super::{QUERY_BUDGET, embed, index, with_store};
 
-const USAGE: &str = "lighting board home | project <name> | note <id> | save <path> --mtime <ms> | todo <id> <status> | \
+const USAGE: &str = "lighting board home | pulse | project <name> | note <id> | save <path> --mtime <ms> | todo <id> <status> | \
                      todo-add <project> <task> | search <words> | graph [project] | live | lessons | unlearn <sig> | settings";
 const NOTES_SHOWN: usize = 400;
 const RUNS_SHOWN: usize = 60;
@@ -56,16 +56,22 @@ fn inside(root: &Path, path: &Path) -> Option<PathBuf> {
     (full.starts_with(&root) && full.extension().is_some_and(|e| e.eq_ignore_ascii_case("md"))).then_some(full)
 }
 
+fn pulse_view(d: &Daemon) -> Result<Value, Fail> {
+    let (notes, queued, drafts) = with_store(d, |s| Ok((s.note_count()?, s.queued()?, s.drafts()?)))?;
+    let live = live_rows(&d.home);
+    let working = live.iter().filter(|r| r["age"].as_f64().is_some_and(|a| a <= WORKING_S)).count();
+    Ok(json!({"pid": d.pid, "up": d.started.elapsed().as_secs(), "working": working, "queued": queued,
+              "drafts": drafts, "notes": notes, "problem": index::problem()}))
+}
+
 fn home_view(d: &Daemon) -> Result<Value, Fail> {
-    let (cards, counts, drafts) = with_store(d, |s| Ok((s.cards()?, s.counts()?, s.drafts()?)))?;
-    let projects: Vec<Value> = cards
+    let cards = with_store(d, |s| s.cards())?;
+    let mut out = pulse_view(d)?;
+    out["projects"] = cards
         .iter()
         .map(|c| json!({"name": c.name, "notes": c.notes, "todos": c.todos, "sessions": c.sessions, "last": c.last, "title": c.title}))
         .collect();
-    let live = live_rows(&d.home);
-    let working = live.iter().filter(|r| r["age"].as_f64().is_some_and(|a| a <= WORKING_S)).count();
-    Ok(json!({"pid": d.pid, "up": d.started.elapsed().as_secs(), "working": working, "queued": counts.queued,
-              "drafts": drafts, "notes": counts.notes, "problem": index::problem(), "projects": projects}))
+    Ok(out)
 }
 
 fn project_view(d: &Daemon, name: &str) -> Result<Value, Fail> {
@@ -273,6 +279,7 @@ pub fn board(d: &Daemon, ctx: &Ctx, c: &Call) -> Result<String, Fail> {
     let what = c.pos.first().map(String::as_str).unwrap_or("");
     let out = match what {
         "home" => home_view(d)?,
+        "pulse" => pulse_view(d)?,
         "project" => project_view(d, &c.pos[1..].join(" "))?,
         "note" => note_view(d, c)?,
         "save" => save(d, ctx, c)?,

@@ -1,4 +1,4 @@
-import { board, type Home } from "./api";
+import { board, type Pulse } from "./api";
 import { enc, go, h, mount } from "./dom";
 import { T } from "./text";
 import { graph } from "./views/graph";
@@ -72,7 +72,7 @@ async function route(): Promise<void> {
 }
 
 async function pulse(): Promise<void> {
-  const data = await board<Home>("home").catch(() => null);
+  const data = await board<Pulse>("pulse").catch(() => null);
   if (!data) {
     mount(status, h("span", {}, h("span", { class: "dot off" }), T.status.offline));
     return;

@@ -98,6 +98,10 @@ impl Store {
         self.db.query_row("select count(*) from notes where source = 'vault' and kind = 'draft'", [], |r| r.get(0))
     }
 
+    pub fn queued(&self) -> rusqlite::Result<i64> {
+        self.db.query_row("select count(*) from sessions where status = 'open' and transcript != ''", [], |r| r.get(0))
+    }
+
     pub fn project_about(&self, project: &str) -> rusqlite::Result<String> {
         if project.is_empty() {
             return Ok(String::new());
@@ -164,11 +168,35 @@ mod tests {
         let mine: Vec<String> = s.titles("web", false, 8).unwrap().into_iter().map(|(_, t)| t).collect();
         assert_eq!(mine, ["Brave only", "Use pnpm"]);
         assert!(s.titles("", true, 5).unwrap().is_empty());
-        assert_eq!((s.note_count().unwrap(), s.drafts().unwrap()), (3, 0));
+        assert_eq!((s.note_count().unwrap(), s.drafts().unwrap(), s.queued().unwrap()), (3, 0, 1));
         let c = s.counts().unwrap();
         assert_eq!((c.notes, c.vecs, c.todos, c.summaries, c.queued), (3, 0, 0, 1, 1));
         assert_eq!(s.meta("vault_indexed").unwrap(), None);
         assert_eq!(s.project_about("web").unwrap(), "");
+        drop(s);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn start_queries_use_their_index() {
+        let dir = std::env::temp_dir().join(format!("ltm-plan-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        let s = Store::open(&dir).unwrap();
+        for (sql, index) in [
+            ("select count(*) from notes where source = 'vault' and kind = 'draft'", "notes_source"),
+            (
+                "select id, title from notes where source = 'user' and project in ('web', '') order by updated desc limit 8",
+                "notes_source",
+            ),
+            (
+                "select last, title, summary, next from sessions where summary != '' order by last desc limit 5",
+                "sessions_last",
+            ),
+        ] {
+            let mut stmt = s.db.prepare(&format!("explain query plan {sql}")).unwrap();
+            let plan: Vec<String> = stmt.query_map([], |r| r.get(3)).unwrap().map(Result::unwrap).collect();
+            assert!(plan.iter().any(|p| p.contains(index)), "{sql}: {plan:?}");
+        }
         drop(s);
         let _ = fs::remove_dir_all(&dir);
     }

@@ -26,6 +26,7 @@ create table if not exists notes(id integer primary key, project text, kind text
   origin text default '');
 create index if not exists notes_project on notes(project, updated);
 create index if not exists notes_origin on notes(origin);
+create index if not exists notes_source on notes(source, kind, project, updated);
 create virtual table if not exists notes_fts using fts5(title, body, content='notes', content_rowid='id',
   tokenize='unicode61 remove_diacritics 2', prefix='3');
 create trigger if not exists notes_ai after insert on notes begin
@@ -43,6 +44,7 @@ create table if not exists sessions(id text primary key, project text, cwd text,
   tries integer default 0, retry_at real default 0, source text default 'live', why text default '',
   rejected text default '');
 create index if not exists sessions_project on sessions(project, last);
+create index if not exists sessions_last on sessions(last);
 create table if not exists todos(id integer primary key, project text, list text default '', task text,
   status text default 'todo', note text default '', created real, updated real, origin text default '');
 create index if not exists todos_project on todos(project, status);

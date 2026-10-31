@@ -51,7 +51,8 @@ export async function plain(...argv: string[]): Promise<string> {
 }
 
 export type Card = { name: string; notes: number; todos: number; sessions: number; last: number; title: string };
-export type Home = { pid: number; up: number; working: number; queued: number; drafts: number; notes: number; problem: string; projects: Card[] };
+export type Pulse = { pid: number; up: number; working: number; queued: number; drafts: number; notes: number; problem: string };
+export type Home = Pulse & { projects: Card[] };
 export type NoteRow = { id: number; title: string; project: string; kind: string; source: string; updated: number; path: string };
 export type Todo = { id: number; task: string; status: string; list: string; note: string; updated: number };
 export type Run = { id: string; title: string; summary: string; next: string; last: number; status: string };
