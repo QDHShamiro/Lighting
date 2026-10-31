@@ -209,7 +209,7 @@ fn search(
                 engines::mark(&d.home, e.name, true);
                 found.notes.push(format!("{} blocked ({}), skipped for 30 min", e.name, web::head(&why, 40)));
             }
-            Outcome::Failed(_) => {}
+            Outcome::Failed => {}
         }
     }
     if !pages_answered && base.is_none() && web::any_browser(d) {

@@ -135,7 +135,7 @@ pub struct Hit {
 pub enum Outcome {
     Hits(Vec<Hit>),
     Blocked(String),
-    Failed(String),
+    Failed,
 }
 
 pub fn quote(text: &str) -> String {
@@ -208,13 +208,13 @@ pub fn ask(e: &Engine, url: &str) -> Outcome {
             return if ["403", "429", "503", "451"].iter().any(|c| text.contains(c)) {
                 Outcome::Blocked(text)
             } else {
-                Outcome::Failed(text)
+                Outcome::Failed
             };
         }
     };
     let mut raw = Vec::new();
     if let Err(err) = res.body_mut().as_reader().take(BODY_MAX).read_to_end(&mut raw) {
-        return Outcome::Failed(err.to_string());
+        return Outcome::Failed;
     }
     let body = String::from_utf8_lossy(&raw);
     parse(e, &body)
@@ -231,7 +231,7 @@ pub fn parse(e: &Engine, body: &str) -> Outcome {
         }
         _ => match serde_json::from_str::<Value>(body) {
             Ok(v) => api_hits(e, &v),
-            Err(err) => return Outcome::Failed(format!("not json: {err}")),
+            Err(_) => return Outcome::Failed,
         },
     };
     Outcome::Hits(hits.into_iter().take(PER_ENGINE).collect())

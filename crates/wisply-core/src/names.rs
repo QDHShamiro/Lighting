@@ -177,7 +177,7 @@ mod tests {
         let want = "back bench brain call channels check claude click clip close code config console demo desktop dialog \
                     dismiss do done downloads drag expect ext-reload fetch fill focus forget forward frames grep help \
                     hover improve inbox js keep keys launch listen log memory net open phone press read recall record \
-                    reload remember reply routine routines run scroll search secure select selftest shot snap squeeze \
+                    reload remember reply research routine routines run scroll search secure select selftest shot snap squeeze \
                     status stop tab table tabs text todo tokens tools type ui unread upload version viewport voice wait watch \
                     wiki windows";
         assert_eq!(known(), want.split(' ').collect::<Vec<_>>());

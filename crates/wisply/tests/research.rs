@@ -134,6 +134,7 @@ fn research_searches_reads_ranks_and_saves() {
     let home = std::env::temp_dir().join(format!("wisply-it-research-{}", std::process::id()));
     let _ = fs::remove_dir_all(&home);
     fs::create_dir_all(&home).unwrap();
+    fs::write(home.join("v3"), "").unwrap();
     let guard = Gone(home.clone());
     let asked = Arc::new(Mutex::new(Vec::new()));
     let base = format!("http://127.0.0.1:{}", web(asked.clone()));

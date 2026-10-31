@@ -314,7 +314,7 @@ pub fn agreed(items: &[(String, &str)], query: &[String], n: usize) -> Vec<(Stri
         found.extend(QUOTED.captures_iter(text).filter_map(|c| c.get(1).or(c.get(2))).map(|m| m.as_str().to_string()));
         for f in found {
             let key = f.to_lowercase();
-            if query.iter().any(|q| *q == key) {
+            if query.contains(&key) {
                 continue;
             }
             seen.entry(key).or_insert_with(|| (f.clone(), HashSet::new())).1.insert(host.clone());
