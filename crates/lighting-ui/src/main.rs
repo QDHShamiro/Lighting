@@ -18,6 +18,7 @@ const MIN_SIZE: (f64, f64) = (720.0, 480.0);
 const START: &str = "lighting://localhost/";
 const BACKGROUND: (u8, u8, u8, u8) = (14, 14, 16, 255);
 const QUIET_ENV: &str = "LIGHTING_UI_QUIET";
+const HELP: &str = "the Lighting window, open it with lighting ui";
 
 pub enum Ev {
     Reply(u64, i32, String),
@@ -29,6 +30,11 @@ fn ours(url: &str) -> bool {
 }
 
 fn main() -> wry::Result<()> {
+    if let Some(arg) = std::env::args().nth(1).filter(|a| ["--version", "-V", "--help", "-h"].contains(&a.as_str())) {
+        let version = format!("lighting-ui {}", env!("CARGO_PKG_VERSION"));
+        println!("{}", if arg.contains('V') || arg == "--version" { version } else { format!("{version}: {HELP}") });
+        return Ok(());
+    }
     let home = lt_proto::home();
     let event_loop = EventLoopBuilder::<Ev>::with_user_event().build();
     let proxy = event_loop.create_proxy();
