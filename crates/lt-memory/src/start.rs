@@ -137,7 +137,7 @@ impl Store {
             "select id, title from notes where kind = 'rule' and source = 'vault' and project = ?1 \
              order by updated desc limit ?2"
         } else {
-            "select id, title from notes where source = 'user' and project in (?1, '') order by updated desc limit ?2"
+            "select id, title from notes where source = 'user' and project in (?1, '')              order by project = ?1 desc, updated desc limit ?2"
         };
         if rules && project.is_empty() {
             return Ok(Vec::new());
@@ -180,7 +180,9 @@ mod tests {
         s.add_note(&note("", "Brave only")).unwrap();
         s.add_note(&note("api", "Elsewhere")).unwrap();
         let mine: Vec<String> = s.titles("web", false, 8).unwrap().into_iter().map(|(_, t)| t).collect();
-        assert_eq!(mine, ["Brave only", "Use pnpm"]);
+        assert_eq!(mine, ["Use pnpm", "Brave only"]);
+        let first: Vec<String> = s.titles("web", false, 1).unwrap().into_iter().map(|(_, t)| t).collect();
+        assert_eq!(first, ["Use pnpm"]);
         assert!(s.titles("", true, 5).unwrap().is_empty());
         assert_eq!((s.note_count().unwrap(), s.drafts().unwrap(), s.queued().unwrap()), (3, 0, 1));
         let c = s.counts().unwrap();

@@ -55,6 +55,7 @@ const SESSION_FREE: &[&str] = &[
     "record-stop",
     "record-status",
 ];
+const FRONT_WAIT: f64 = 5.0;
 const REOPEN: &[&str] = &["snap", "text", "shot", "frames", "expect"];
 
 fn re(pattern: &str) -> Regex {
@@ -63,6 +64,7 @@ fn re(pattern: &str) -> Regex {
 
 pub static REF_RE: LazyLock<Regex> = LazyLock::new(|| re(r"^(?:f\d+\.)?e\d+$"));
 static REF: LazyLock<Regex> = LazyLock::new(|| re(r"^(?:(f\d+)\.)?(e|d|o|w|t)(\d+)$"));
+static FRONT: LazyLock<Regex> = LazyLock::new(|| re(r"(?m)^(t\d+) a (.+?) - "));
 static NEW_TAB: LazyLock<Regex> = LazyLock::new(|| re(r"new tab (t\d+) opened from (t\d+)"));
 
 pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
@@ -263,9 +265,16 @@ fn session_tab(d: &Daemon, ctx: &mut Ctx, cmd: &str, args: &mut Map<String, Valu
         return Ok(Some(first.clone()));
     }
     let Some(last) = ctx.closed_url.clone().filter(|u| !u.is_empty()) else {
+        let front = call(d, ctx, "tabs", obj(json!({"all": false})), FRONT_WAIT).ok().and_then(|m| {
+            FRONT
+                .captures(text_of(&m, "out"))
+                .map(|c| format!("lighting tab {} uses the tab in front ({})", &c[1], head(&c[2], 40)))
+        });
+        let ways =
+            "lighting open <url>, lighting tabs + lighting tab t3 to use one, or lighting windows -f <app> for an app";
         return Err(Fail::hint(
             "this session has no tab yet",
-            "lighting open <url>, lighting tabs + lighting tab t3 to use one, or lighting windows -f <app> for an app",
+            front.map_or_else(|| ways.to_string(), |f| format!("{f}, {ways}")),
         ));
     };
     if REOPEN.contains(&cmd) {
@@ -319,6 +328,10 @@ pub fn target_args<'a>(pos: &'a [String], c: &Call) -> Result<(Map<String, Value
     let mut args = Map::new();
     if REF_RE.is_match(first) {
         args.insert("ref".into(), json!(first));
+        return Ok((args, &pos[1..]));
+    }
+    if first == "focused" {
+        args.insert("focused".into(), json!(true));
         return Ok((args, &pos[1..]));
     }
     args.insert("text".into(), json!(first));

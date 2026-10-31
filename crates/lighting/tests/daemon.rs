@@ -27,11 +27,15 @@ impl Home {
     }
 
     fn run(&self, args: &[&str]) -> (i32, String) {
+        self.run_as("it-1", args)
+    }
+
+    fn run_as(&self, sid: &str, args: &[&str]) -> (i32, String) {
         let out = Command::new(EXE)
             .args(args)
             .env("LIGHTING_HOME", &self.0)
             .env(if cfg!(windows) { "USERPROFILE" } else { "HOME" }, &self.0)
-            .env("CLAUDE_CODE_SESSION_ID", "it-1")
+            .env("CLAUDE_CODE_SESSION_ID", sid)
             .env_remove("MSYSTEM")
             .stdin(Stdio::null())
             .output()
@@ -142,6 +146,7 @@ fn fake_browser(link: lt_proto::Link, got: Arc<Mutex<Vec<Value>>>) {
             "tabs" if msg["args"]["all"] == true => json!({"ok": true, "out": "t1 L* One - one.com
 t3 a Mine - mine.com"}),
             "tabs" => json!({"ok": true, "out": "t1 L* One - one.com
+t3 a Mine - mine.com
 +1 other tabs of yours (lighting tabs --all lists them)"}),
             "tab" => json!({"ok": true, "where": {"tab": "t2", "url": "https://example.com/2"},
                             "out": "target t2 Two - example.com/2"}),
@@ -244,6 +249,9 @@ fn a_browser_host_gets_the_session_tab_and_done_closes_it() {
     let (_, own) = home.run(&["tabs"]);
     assert!(own.starts_with("t1 L* One") && own.contains("+1 other tabs of yours"), "{own}");
     assert!(home.run(&["tabs", "--all"]).1.contains("t3 a Mine"));
+    let (code, none) = home.run_as("it-2", &["snap"]);
+    assert!(code == 1 && none.starts_with("err: this session has no tab yet"), "{none}");
+    assert!(none.contains("-> try: lighting tab t3 uses the tab in front (Mine), lighting open <url>"), "{none}");
     assert!(home.run(&["tabs", "-f", "mine"]).1.starts_with("t3 a Mine"));
     assert_eq!(home.run(&["done"]), (0, "closed 1 tab".into()));
     let (code, lost) = home.run(&["press", "Enter"]);

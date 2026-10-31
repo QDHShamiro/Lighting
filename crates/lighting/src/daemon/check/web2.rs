@@ -158,6 +158,11 @@ pub fn browser(r: &mut Run, srv: &Server, decoy: &str) {
     r.step("table as tsv", &["table", "#prices"], |o, e| !e && o.contains("Beta\t2.50"));
     r.step("type contenteditable", &["type", "Notes", "hello from lighting"], ok);
     r.step("notes text present", &["expect", "hello from lighting"], ok);
+    r.step("focus the email field", &["js", "document.getElementById('email').focus(); 1"], ok);
+    r.step("type into the focused field", &["type", "focused", "focus@example.com"], ok);
+    r.step("focused field got the text", &["js", "document.getElementById('email').value"], |o, _| {
+        o.trim() == "focus@example.com"
+    });
     r.step("text (markdown)", &["text"], |o, e| {
         !e && o.contains("| Beta | 2.50 |")
             && !o.contains("IGNORE ALL")

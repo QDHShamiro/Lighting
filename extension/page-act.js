@@ -607,5 +607,13 @@
     return { ok: true };
   }
 
-  L.act = { find, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info, viewSize, frameBox, frameHit, domClick, armClick, clickSeen, armKey, keySeen, domEnter };
+  function focusedRef() {
+    let el = document.activeElement;
+    while (el && el.shadowRoot && el.shadowRoot.activeElement) el = el.shadowRoot.activeElement;
+    if (!el || el === document.body || el === document.documentElement) return { none: true };
+    if (el.tagName === "IFRAME" || el.tagName === "FRAME") return { frame: true };
+    return { ref: ref(el) };
+  }
+
+  L.act = { find, focusedRef, focusFor, valueOf, setValue, selectOpt, checked, fields, submitOf, text, table, waitFor, settle, pointer, marks, dismiss, mark, unmark, scrollInfo, scrollBy, visibleText, peek, searchField, lineOf, info, viewSize, frameBox, frameHit, domClick, armClick, clickSeen, armKey, keySeen, domEnter };
 })();

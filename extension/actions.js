@@ -296,6 +296,12 @@ async function after(tabId, nav, beforeUrl, extra, mark, startBudget, beforeTitl
 
 async function resolveRef(tabId, a) {
   if (a.ref) return { ref: a.ref };
+  if (a.focused) {
+    const f = await page(tabId, "act.focusedRef", []);
+    if (f.frame) throw new Error("the focused field is inside a frame -> try: lighting snap, then lighting type f1.e3 \"text\"");
+    if (!f.ref) throw new Error("nothing on the page has the focus -> try: lighting click <field>, then lighting type focused \"text\"");
+    return f;
+  }
   if (!a.text) throw new Error("need a ref (e12) or \"text\"");
   const f = await page(tabId, "act.find", [a.text, { role: a.role, first: a.first }]);
   if (f.none) throw new Error('nothing matches "' + a.text + '" -> try: lighting snap -f "' + a.text.split(" ")[0] + '"');
