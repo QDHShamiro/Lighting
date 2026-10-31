@@ -34,6 +34,8 @@ Wisply has no telemetry and no account. It works on your computer and sends data
 - With your own API key only: questions about videos, images and sound go to Google Gemini, speech to text goes to
   Groq or OpenAI, and the session notes of the local memory can be written by Gemini. `wisply config gemini false`
   and `wisply config memory_learn false` turn this off; without a key nothing is sent.
+- `wisply research` sends the search words to DuckDuckGo, Bing, Brave Search, Mojeek, Wikipedia, GitHub, Stack
+  Exchange, Reddit and Hacker News, and loads the result pages, like a browser would.
 - `wisply secure` sends the names and versions of a project's dependencies to [osv.dev](https://osv.dev) to look up
   known vulnerabilities.
 - `read` and `fetch` of GitHub links ask `api.github.com`. `wisply doctor --fix` downloads yt-dlp and ffmpeg, and the

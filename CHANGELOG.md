@@ -7,6 +7,12 @@ and `lighting.mcpb`, from 3.0.0 `wisply.exe`, `wisply-macos`, `wisply-linux-x64`
 
 ## [Unreleased]
 
+### Added
+- `wisply research "words" ["other words"]`: asks 10 search engines and sites at once, reads the best pages, ranks
+  their passages without any AI model and returns a short report with links and what several sources agree on.
+  Two rounds by default (the second searches with terms found in the first), `--quick`, `--deep`, `--site`.
+  Reports are saved to the vault (`Research/`) and found again by `recall`.
+
 ### Changed
 - The repository is now `QDHShamiro/Wisply` (old links redirect). The crates are `wisply`, `wisply-ui` and
   `wisply-core`, `wisply-memory`, `wisply-proto`, `wisply-code`, `wisply-squeeze`.

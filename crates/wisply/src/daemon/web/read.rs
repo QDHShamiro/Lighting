@@ -34,6 +34,8 @@ static CODE: LazyLock<Regex> = LazyLock::new(|| re(r"```[\s\S]*?```|`[^`\n]*`"))
 static LINK: LazyLock<Regex> = LazyLock::new(|| re(r"!?\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)"));
 static FOOT: LazyLock<Regex> = LazyLock::new(|| re(r"\[\^[^\]]+\](:?)"));
 static PARA: LazyLock<Regex> = LazyLock::new(|| re(r"\n\s*\n"));
+static OUT_LINK: LazyLock<Regex> = LazyLock::new(|| re(r"\]\((https?://[^)\s]+)\)"));
+const HEAD_CHARS: usize = 60_000;
 static GATE: LazyLock<Regex> = LazyLock::new(|| {
     re(
         r"(?i)<title>\s*(just a moment|attention required|access denied|verify you are human|are you a robot|checking your browser)",
@@ -172,6 +174,55 @@ fn browser(d: &Daemon, ctx: &mut Ctx, url: &str, c: &Call, chars: usize, why: &s
     let body = got?;
     let top = format!("[read] {} (in the browser: {})", head(url, 90), head(why, 120));
     Ok(capped(d, ctx, &format!("{top}\n{body}"), "read", None, chars))
+}
+
+pub struct Fetched {
+    pub title: String,
+    pub text: String,
+    pub links: Vec<String>,
+    pub place: String,
+    pub head: String,
+}
+
+pub fn fetch_page(url: &str) -> Result<Fetched, Fail> {
+    let got = grab(&Source::Web(url.to_string()))?;
+    if gated(&got) {
+        return Err(Fail::new("the site showed a bot check"));
+    }
+    let empty = |text: String, place: String| Fetched {
+        title: String::new(),
+        text,
+        links: Vec::new(),
+        place,
+        head: String::new(),
+    };
+    if got.raw.starts_with(b"%PDF-") || got.ctype.contains("pdf") || bare(&got.place).ends_with(".pdf") {
+        return Ok(empty(pdf_text(&got.raw)?.0, got.place));
+    }
+    let body = decode(&got.raw, &got.ctype);
+    if !got.ctype.contains("html") {
+        if got.ctype.contains("text/") {
+            return Ok(empty(body.trim().to_string(), got.place));
+        }
+        return Err(Fail::new(format!("not a text page ({})", got.ctype.split(';').next().unwrap_or(""))));
+    }
+    let (title, md) = html::convert(&body, &got.place);
+    let links = OUT_LINK.captures_iter(&md).map(|m| m[1].to_string()).collect();
+    let head = body.chars().take(HEAD_CHARS).collect();
+    Ok(Fetched { title, text: plain_links(&md), links, place: got.place, head })
+}
+
+pub fn browser_js(d: &Daemon, ctx: &mut Ctx, url: &str, code: &str) -> Result<String, Fail> {
+    let mut open = Call { name: "open".into(), pos: vec![url.to_string()], ..Call::default() };
+    open.flags.insert("new".into(), Flag::On);
+    let js = Call { name: "js".into(), pos: vec![code.to_string()], ..Call::default() };
+    let (target, tabs) = (ctx.target.clone(), ctx.tabs.clone());
+    let got = cmds::open(d, ctx, &open).and_then(|_| cmds::js(d, ctx, &js));
+    if let Some(tab) = ctx.tabs.iter().find(|t| !tabs.contains(t)).cloned() {
+        let _ = cmds::close(d, ctx, &Call { name: "close".into(), pos: vec![tab], ..Call::default() });
+    }
+    ctx.target = target;
+    got
 }
 
 fn source(ctx: &Ctx, url: &str) -> Source {

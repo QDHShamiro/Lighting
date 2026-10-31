@@ -28,7 +28,7 @@ pub use data::pystr;
 #[cfg(windows)]
 pub use launch::browser_exe;
 pub use launch::{any_browser, ensure_host, installed_browsers, pick};
-pub use read::{read, wants as wants_read};
+pub use read::{Fetched, browser_js, fetch_page, read, wants as wants_read};
 #[cfg(windows)]
 pub use shot::out_path;
 pub use shot::save_picture;

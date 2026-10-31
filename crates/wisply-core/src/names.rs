@@ -68,7 +68,7 @@ pub const WEB_ONLY: &[&str] = &[
     "viewport",
     "frames",
 ];
-const MORE: &[&str] = &["read", "listen", "watch", "voice", "phone", "claude", "desktop"];
+const MORE: &[&str] = &["read", "research", "listen", "watch", "voice", "phone", "claude", "desktop"];
 const HIDDEN: &[&str] = &["hook", "suggest", "board", "access-prompt", "autoload", "ping"];
 const GUESS: &[(&str, &str)] = &[
     ("find", "snap -f \"word\" (page), code <name> (code) or recall \"words\" (memory)"),
