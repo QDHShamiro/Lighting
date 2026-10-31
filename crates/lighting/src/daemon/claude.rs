@@ -243,12 +243,23 @@ fn background(d: &Daemon, c: &Call, prompt: &str, folder: &Path, name: &str) -> 
 }
 
 #[cfg(windows)]
-fn terminal(c: &Call, prompt: String, folder: &Path, name: String) -> Result<Out, Fail> {
-    use super::desk::{find_tab, tab_text, type_prompt};
+fn terminal(d: &Daemon, c: &Call, prompt: String, folder: &Path, name: String) -> Result<Out, Fail> {
+    use super::desk::{find_tab, tab_text};
     let wt =
         which("wt").ok_or_else(|| Fail::hint("needs Windows Terminal", "winget install Microsoft.WindowsTerminal"))?;
     let name = if find_tab(&name).is_some() { format!("{name} {}", now() as u64 % 1000) } else { name };
-    let base = vec![
+    let mut claude_args = passed(c, &name, Vec::new());
+    if !prompt.is_empty() {
+        claude_args.push(prompt.clone());
+    }
+    let out_dir = d.home.join("out");
+    let _ = fs::create_dir_all(&out_dir);
+    let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |t| t.as_nanos());
+    let start = out_dir.join(format!("claude-start-{}-{nanos}.json", std::process::id()));
+    let spec = serde_json::json!({"exe": claude_exe().display().to_string(), "args": claude_args});
+    fs::write(&start, spec.to_string()).map_err(|e| Fail::new(format!("could not write {}: {e}", start.display())))?;
+    let me = env::current_exe().map_err(|e| Fail::new(e.to_string()))?;
+    let args = vec![
         "-w".into(),
         "0".into(),
         "new-tab".into(),
@@ -257,39 +268,39 @@ fn terminal(c: &Call, prompt: String, folder: &Path, name: String) -> Result<Out
         "--suppressApplicationTitle".into(),
         "-d".into(),
         folder.display().to_string(),
-        shim().display().to_string(),
+        me.display().to_string(),
+        "claude-start".into(),
+        start.display().to_string(),
     ];
-    let args = passed(c, &name, base);
     let mut cmd = Command::new(wt);
     clean(&mut cmd).args(&args).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
-    cmd.spawn().map_err(|e| Fail::hint(format!("could not start Windows Terminal: {e}"), "wt --version"))?;
+    if let Err(e) = cmd.spawn() {
+        let _ = fs::remove_file(&start);
+        return Err(Fail::hint(format!("could not start Windows Terminal: {e}"), "wt --version"));
+    }
     let remote = if c.on("no-remote") { "" } else { ", remote control on (claude.ai/code or the Claude app)" };
-    let head = format!("started Claude \"{name}\" in a new Windows Terminal tab ({}){remote}", folder.display());
-    Ok(Out::Wait(Pending::new(TIMEOUT, Duration::from_secs(1), move |d, ctx, last| {
-        let hwnd = find_tab(&name);
-        let text = hwnd.map(tab_text).unwrap_or_default();
+    let sent =
+        if prompt.is_empty() { String::new() } else { format!(", prompt passed ({} chars)", prompt.chars().count()) };
+    let head = format!("started Claude \"{name}\" in a new Windows Terminal tab ({}){remote}{sent}", folder.display());
+    Ok(Out::Wait(Pending::new(TIMEOUT, Duration::from_secs(1), move |_, _, last| {
+        let text = find_tab(&name).map(tab_text).unwrap_or_default();
         if TRUST.is_match(&text) {
             return Err(Fail::new(format!(
-                "{head}, but Claude asks whether to trust this folder: the user answers in the terminal"
+                "{head}, but Claude asks whether to trust this folder: the user answers in the terminal, then it starts"
             )));
         }
-        if !READY.is_match(&text) {
-            if last {
-                return Err(Fail::new(format!("{head}, but it did not get ready within {} s", TIMEOUT.as_secs())));
-            }
-            return Ok(None);
+        if READY.is_match(&text) {
+            return Ok(Some(head.clone()));
         }
-        let Some(hwnd) = hwnd.filter(|_| !prompt.is_empty()) else { return Ok(Some(head.clone())) };
-        if find_tab(&name) != Some(hwnd) {
-            return Err(Fail::new(format!("{head}, but its tab is no longer in front: prompt not sent")));
+        if last {
+            return Err(Fail::new(format!("{head}, but it did not get ready within {} s", TIMEOUT.as_secs())));
         }
-        type_prompt(d, ctx, hwnd, &prompt)?;
-        Ok(Some(format!("{head}, prompt sent ({} chars)", prompt.chars().count())))
+        Ok(None)
     })))
 }
 
 #[cfg(not(windows))]
-fn terminal(_: &Call, _: String, _: &Path, _: String) -> Result<Out, Fail> {
+fn terminal(_: &Daemon, _: &Call, _: String, _: &Path, _: String) -> Result<Out, Fail> {
     Err(super::route::later("claude in a terminal window on this system (use --bg)"))
 }
 
@@ -331,7 +342,7 @@ pub fn run(d: &Daemon, ctx: &mut Ctx, c: &Call) -> Result<Out, Fail> {
     if c.on("bg") {
         return background(d, c, &prompt, &folder, &name);
     }
-    terminal(c, prompt, &folder, name)
+    terminal(d, c, prompt, &folder, name)
 }
 
 #[cfg(test)]

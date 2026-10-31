@@ -2,6 +2,8 @@ mod client;
 mod daemon;
 mod hook;
 mod host;
+#[cfg(windows)]
+mod launch;
 mod mcp;
 mod more;
 mod pipe;
@@ -30,6 +32,8 @@ fn main() -> ExitCode {
         "voice-session" | "voice-watch" => return voice::main(&args),
         #[cfg(windows)]
         "testapp" => testapp::main(&args),
+        #[cfg(windows)]
+        "claude-start" => return launch::main(&args),
         _ => return client::run(&args),
     }
     ExitCode::SUCCESS

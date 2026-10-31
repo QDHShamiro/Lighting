@@ -67,7 +67,7 @@ pub use imp::{cleanup, keep, run};
 #[cfg(windows)]
 pub use rec::Recorder;
 #[cfg(windows)]
-pub use tab::{find_tab, tab_text, type_prompt};
+pub use tab::{find_tab, tab_text};
 
 #[cfg(windows)]
 pub enum Halt {
